@@ -1,3 +1,4 @@
 ﻿web/.next
 web/node_modules
 web/.idea
+web/lib/api-client
