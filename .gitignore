@@ -2,3 +2,5 @@
 web/node_modules
 web/.idea
 web/lib/api-client
+docs/api/openapi.json
+.idea
