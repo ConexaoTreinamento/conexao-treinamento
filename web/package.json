@@ -7,8 +7,7 @@
     "dev": "next dev",
     "lint": "next lint",
     "start": "next start",
-    "generate-api-client": "cd ../backend && mvn clean install && cd ../web && openapi-ts",
-    "postinstall": "pnpm run generate-api-client"
+    "generate-api-client": "cd ../backend && mvn clean install && cd ../web && openapi-ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
