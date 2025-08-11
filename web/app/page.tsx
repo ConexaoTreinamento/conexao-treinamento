@@ -1,18 +1,26 @@
 "use client"
 
 import { useState } from "react"
+
+import type React from "react"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, Dumbbell } from 'lucide-react'
-import { useRouter } from "next/navigation"
+import { Eye, EyeOff, Dumbbell } from "lucide-react"
 
-export default function LoginPage() {
+export default function HomePage() {
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const router = useRouter()
+
+  useEffect(() => {
+    // Redirect to reports page (new dashboard)
+    router.replace("/reports")
+  }, [router])
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
@@ -24,7 +32,7 @@ export default function LoginPage() {
       localStorage.setItem("userRole", "professor")
       localStorage.setItem("userName", "Professor Silva")
     }
-    router.push("/dashboard")
+    router.push("/reports")
   }
 
   return (
@@ -35,7 +43,7 @@ export default function LoginPage() {
             <Dumbbell className="w-8 h-8 text-white" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">FitManager</CardTitle>
+            <CardTitle className="text-2xl font-bold">Conexão Treino</CardTitle>
             <CardDescription>Sistema de Gerenciamento da Academia</CardDescription>
           </div>
         </CardHeader>

@@ -1,103 +1,112 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { BarChart3, Download, Filter, Users, Calendar, TrendingUp, Clock, Target } from 'lucide-react'
+import { BarChart3, Users, Clock, Calendar, Search, User } from "lucide-react"
 import Layout from "@/components/layout"
 
 export default function ReportsPage() {
-  const [selectedReport, setSelectedReport] = useState("students")
   const [selectedPeriod, setSelectedPeriod] = useState("month")
+  const [selectedTeacher, setSelectedTeacher] = useState("all")
+  const [searchTerm, setSearchTerm] = useState("")
+  const [userRole, setUserRole] = useState<string>("")
 
-  const studentReports = [
-    {
-      name: "Maria Silva",
-      age: 28,
-      neighborhood: "Vila Madalena",
-      profession: "Designer",
-      plan: "Mensal",
-      status: "Ativo",
-      joinDate: "15/01/2024",
-      attendance: 85
-    },
-    {
-      name: "João Santos",
-      age: 35,
-      neighborhood: "Pinheiros",
-      profession: "Engenheiro",
-      plan: "Trimestral",
-      status: "Ativo",
-      joinDate: "03/02/2024",
-      attendance: 92
-    },
-    {
-      name: "Ana Costa",
-      age: 42,
-      neighborhood: "Jardins",
-      profession: "Médica",
-      plan: "Mensal",
-      status: "Vencido",
-      joinDate: "20/12/2023",
-      attendance: 78
-    },
-    {
-      name: "Carlos Lima",
-      age: 31,
-      neighborhood: "Moema",
-      profession: "Advogado",
-      plan: "Semestral",
-      status: "Ativo",
-      joinDate: "10/03/2024",
-      attendance: 88
-    }
-  ]
+  useEffect(() => {
+    const role = localStorage.getItem("userRole") || "professor"
+    setUserRole(role)
+  }, [])
 
+  // Mock teacher reports data
   const teacherReports = [
     {
+      id: 1,
       name: "Prof. Ana Silva",
       hoursWorked: 120,
       classesGiven: 48,
       studentsManaged: 35,
       avgRating: 4.8,
-      compensation: "Horista"
+      compensation: "Horista",
+      hourlyRate: 45,
+      totalEarnings: 5400,
+      specialties: ["Pilates", "Yoga"],
+      weeklyHours: 30,
+      monthlyClasses: 48,
     },
     {
+      id: 2,
       name: "Prof. Carlos Santos",
       hoursWorked: 160,
       classesGiven: 64,
       studentsManaged: 42,
       avgRating: 4.6,
-      compensation: "Mensalista"
+      compensation: "Mensalista",
+      monthlySalary: 3500,
+      totalEarnings: 3500,
+      specialties: ["Musculação", "CrossFit"],
+      weeklyHours: 40,
+      monthlyClasses: 64,
     },
     {
+      id: 3,
       name: "Prof. Marina Costa",
       hoursWorked: 100,
       classesGiven: 40,
       studentsManaged: 28,
       avgRating: 4.9,
-      compensation: "Horista"
-    }
+      compensation: "Horista",
+      hourlyRate: 50,
+      totalEarnings: 5000,
+      specialties: ["Dança", "Aeróbica"],
+      weeklyHours: 25,
+      monthlyClasses: 40,
+    },
+    {
+      id: 4,
+      name: "Prof. Roberto Lima",
+      hoursWorked: 140,
+      classesGiven: 56,
+      studentsManaged: 38,
+      avgRating: 4.7,
+      compensation: "Horista",
+      hourlyRate: 48,
+      totalEarnings: 6720,
+      specialties: ["CrossFit", "Funcional"],
+      weeklyHours: 35,
+      monthlyClasses: 56,
+    },
   ]
 
-  const getAttendanceColor = (attendance: number) => {
-    if (attendance >= 90) return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-    if (attendance >= 70) return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-    return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-  }
+  // Mock student profile data for filtering
+  const studentProfiles = [
+    { age: "18-25", count: 45, percentage: 32 },
+    { age: "26-35", count: 52, percentage: 37 },
+    { age: "36-45", count: 28, percentage: 20 },
+    { age: "46+", count: 17, percentage: 12 },
+  ]
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Ativo":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      case "Vencido":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-    }
-  }
+  const professions = [
+    { name: "Estudante", count: 23 },
+    { name: "Engenheiro", count: 18 },
+    { name: "Designer", count: 15 },
+    { name: "Médico", count: 12 },
+    { name: "Advogado", count: 10 },
+    { name: "Professor", count: 8 },
+    { name: "Outros", count: 56 },
+  ]
+
+  const filteredReports = teacherReports.filter((teacher) => {
+    const matchesSearch = teacher.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesTeacher = selectedTeacher === "all" || teacher.id.toString() === selectedTeacher
+    return matchesSearch && matchesTeacher
+  })
+
+  const totalHours = filteredReports.reduce((sum, teacher) => sum + teacher.hoursWorked, 0)
+  const totalClasses = filteredReports.reduce((sum, teacher) => sum + teacher.classesGiven, 0)
+  const totalStudents = filteredReports.reduce((sum, teacher) => sum + teacher.studentsManaged, 0)
+  const avgRating = filteredReports.reduce((sum, teacher) => sum + teacher.avgRating, 0) / filteredReports.length
 
   return (
     <Layout>
@@ -106,27 +115,33 @@ export default function ReportsPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold">Relatórios</h1>
-            <p className="text-muted-foreground">
-              Análises e métricas da academia
-            </p>
+            <p className="text-muted-foreground">Análise de horas trabalhadas e aulas ministradas</p>
           </div>
-          <Button variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
-          </Button>
         </div>
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
-          <Select value={selectedReport} onValueChange={setSelectedReport}>
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Buscar professor..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
             <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Tipo de relatório" />
+              <SelectValue placeholder="Todos os professores" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="students">Perfil dos Alunos</SelectItem>
-              <SelectItem value="teachers">Perfil dos Professores</SelectItem>
-              <SelectItem value="attendance">Controle de Presença</SelectItem>
-              <SelectItem value="revenue">Receita</SelectItem>
+              <SelectItem value="all">Todos os professores</SelectItem>
+              {teacherReports.map((teacher) => (
+                <SelectItem key={teacher.id} value={teacher.id.toString()}>
+                  {teacher.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
@@ -141,246 +156,193 @@ export default function ReportsPage() {
               <SelectItem value="year">Este Ano</SelectItem>
             </SelectContent>
           </Select>
-
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Mais Filtros
-          </Button>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Alunos Ativos</p>
-                  <p className="text-2xl font-bold">142</p>
-                  <p className="text-xs text-green-600">+8% vs mês anterior</p>
+                  <p className="text-sm font-medium text-muted-foreground">Total de Horas</p>
+                  <p className="text-2xl font-bold">{totalHours}h</p>
                 </div>
-                <Users className="w-8 h-8 text-green-600" />
+                <Clock className="w-6 h-6 text-blue-600" />
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Taxa de Presença</p>
-                  <p className="text-2xl font-bold">87%</p>
-                  <p className="text-xs text-green-600">+3% vs mês anterior</p>
-                </div>
-                <TrendingUp className="w-8 h-8 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Aulas Ministradas</p>
-                  <p className="text-2xl font-bold">152</p>
-                  <p className="text-xs text-green-600">+12% vs mês anterior</p>
+                  <p className="text-2xl font-bold">{totalClasses}</p>
                 </div>
-                <Calendar className="w-8 h-8 text-purple-600" />
+                <Calendar className="w-6 h-6 text-green-600" />
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Horas Trabalhadas</p>
-                  <p className="text-2xl font-bold">380</p>
-                  <p className="text-xs text-green-600">+5% vs mês anterior</p>
+                  <p className="text-sm font-medium text-muted-foreground">Alunos Atendidos</p>
+                  <p className="text-2xl font-bold">{totalStudents}</p>
                 </div>
-                <Clock className="w-8 h-8 text-orange-600" />
+                <Users className="w-6 h-6 text-purple-600" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Avaliação Média</p>
+                  <p className="text-2xl font-bold">{avgRating.toFixed(1)}</p>
+                </div>
+                <BarChart3 className="w-6 h-6 text-orange-600" />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Report Content */}
-        {selectedReport === "students" && (
+        {/* Teachers Performance Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              Performance dos Professores
+            </CardTitle>
+            <CardDescription>Detalhamento de horas trabalhadas e aulas ministradas por professor</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-3">Professor</th>
+                    <th className="text-left p-3">Horas/Semana</th>
+                    <th className="text-left p-3">Horas Totais</th>
+                    <th className="text-left p-3">Aulas/Mês</th>
+                    <th className="text-left p-3">Alunos</th>
+                    <th className="text-left p-3">Avaliação</th>
+                    <th className="text-left p-3">Regime</th>
+                    <th className="text-left p-3">Especialidades</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredReports.map((teacher) => (
+                    <tr key={teacher.id} className="border-b hover:bg-muted/50">
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <User className="w-4 h-4 text-green-600" />
+                          </div>
+                          <span className="font-medium">{teacher.name}</span>
+                        </div>
+                      </td>
+                      <td className="p-3 font-medium">{teacher.weeklyHours}h</td>
+                      <td className="p-3 font-medium">{teacher.hoursWorked}h</td>
+                      <td className="p-3 font-medium">{teacher.monthlyClasses}</td>
+                      <td className="p-3">{teacher.studentsManaged}</td>
+                      <td className="p-3">
+                        <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
+                          {teacher.avgRating}/5.0
+                        </Badge>
+                      </td>
+                      <td className="p-3">
+                        <Badge
+                          className={
+                            teacher.compensation === "Mensalista"
+                              ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                              : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
+                          }
+                        >
+                          {teacher.compensation}
+                        </Badge>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex flex-wrap gap-1">
+                          {teacher.specialties.map((specialty, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs">
+                              {specialty}
+                            </Badge>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Student Profile Analysis */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="w-5 h-5" />
-                Perfil dos Alunos
+                Perfil Etário dos Alunos
               </CardTitle>
-              <CardDescription>
-                Análise detalhada do perfil dos alunos da academia
-              </CardDescription>
+              <CardDescription>Distribuição dos alunos por faixa etária</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2">Nome</th>
-                      <th className="text-left p-2">Idade</th>
-                      <th className="text-left p-2">Bairro</th>
-                      <th className="text-left p-2">Profissão</th>
-                      <th className="text-left p-2">Plano</th>
-                      <th className="text-left p-2">Status</th>
-                      <th className="text-left p-2">Presença</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {studentReports.map((student, index) => (
-                      <tr key={index} className="border-b">
-                        <td className="p-2 font-medium">{student.name}</td>
-                        <td className="p-2">{student.age}</td>
-                        <td className="p-2">{student.neighborhood}</td>
-                        <td className="p-2">{student.profession}</td>
-                        <td className="p-2">{student.plan}</td>
-                        <td className="p-2">
-                          <Badge className={getStatusColor(student.status)}>
-                            {student.status}
-                          </Badge>
-                        </td>
-                        <td className="p-2">
-                          <Badge className={getAttendanceColor(student.attendance)}>
-                            {student.attendance}%
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="space-y-4">
+                {studentProfiles.map((profile, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-4 h-4 bg-green-600 rounded"></div>
+                      <span className="font-medium">{profile.age} anos</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-32 bg-muted rounded-full h-2">
+                        <div
+                          className="bg-green-600 h-2 rounded-full"
+                          style={{ width: `${profile.percentage}%` }}
+                        ></div>
+                      </div>
+                      <span className="text-sm font-medium w-12 text-right">{profile.count}</span>
+                      <span className="text-sm text-muted-foreground w-8">({profile.percentage}%)</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
-        )}
 
-        {selectedReport === "teachers" && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="w-5 h-5" />
-                Perfil dos Professores
-              </CardTitle>
-              <CardDescription>
-                Controle de horas e performance dos professores
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2">Nome</th>
-                      <th className="text-left p-2">Horas Trabalhadas</th>
-                      <th className="text-left p-2">Aulas Ministradas</th>
-                      <th className="text-left p-2">Alunos</th>
-                      <th className="text-left p-2">Avaliação</th>
-                      <th className="text-left p-2">Regime</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {teacherReports.map((teacher, index) => (
-                      <tr key={index} className="border-b">
-                        <td className="p-2 font-medium">{teacher.name}</td>
-                        <td className="p-2">{teacher.hoursWorked}h</td>
-                        <td className="p-2">{teacher.classesGiven}</td>
-                        <td className="p-2">{teacher.studentsManaged}</td>
-                        <td className="p-2">
-                          <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
-                            {teacher.avgRating}/5.0
-                          </Badge>
-                        </td>
-                        <td className="p-2">{teacher.compensation}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {selectedReport === "attendance" && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="w-5 h-5" />
-                Controle de Presença
+                Profissões dos Alunos
               </CardTitle>
-              <CardDescription>
-                Análise de frequência e presença dos alunos
-              </CardDescription>
+              <CardDescription>Distribuição por área profissional</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="text-center p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                    <p className="text-2xl font-bold text-green-600">87%</p>
-                    <p className="text-sm text-muted-foreground">Taxa Geral</p>
+              <div className="space-y-3">
+                {professions.map((profession, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <span className="font-medium">{profession.name}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-20 bg-muted rounded-full h-2">
+                        <div
+                          className="bg-blue-600 h-2 rounded-full"
+                          style={{ width: `${(profession.count / 142) * 100}%` }}
+                        ></div>
+                      </div>
+                      <span className="text-sm font-medium w-8 text-right">{profession.count}</span>
+                    </div>
                   </div>
-                  <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                    <p className="text-2xl font-bold text-blue-600">92%</p>
-                    <p className="text-sm text-muted-foreground">Melhor Turma</p>
-                  </div>
-                  <div className="text-center p-4 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
-                    <p className="text-2xl font-bold text-orange-600">78%</p>
-                    <p className="text-sm text-muted-foreground">Menor Presença</p>
-                  </div>
-                </div>
-                
-                <div className="text-center py-8 text-muted-foreground">
-                  <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Gráfico de presença seria exibido aqui</p>
-                  <p className="text-sm">Dados detalhados de frequência por período</p>
-                </div>
+                ))}
               </div>
             </CardContent>
           </Card>
-        )}
-
-        {selectedReport === "revenue" && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                Análise de Receita
-              </CardTitle>
-              <CardDescription>
-                Controle financeiro e análise de receitas
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
-                    <p className="text-2xl font-bold text-green-600">R$ 28.500</p>
-                    <p className="text-sm text-muted-foreground">Receita Mensal</p>
-                  </div>
-                  <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
-                    <p className="text-2xl font-bold text-blue-600">R$ 85.500</p>
-                    <p className="text-sm text-muted-foreground">Receita Trimestral</p>
-                  </div>
-                  <div className="text-center p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
-                    <p className="text-2xl font-bold text-purple-600">R$ 200</p>
-                    <p className="text-sm text-muted-foreground">Ticket Médio</p>
-                  </div>
-                  <div className="text-center p-4 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
-                    <p className="text-2xl font-bold text-orange-600">+12%</p>
-                    <p className="text-sm text-muted-foreground">Crescimento</p>
-                  </div>
-                </div>
-                
-                <div className="text-center py-8 text-muted-foreground">
-                  <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Gráfico de receita seria exibido aqui</p>
-                  <p className="text-sm">Análise temporal de receitas e projeções</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        </div>
       </div>
     </Layout>
   )

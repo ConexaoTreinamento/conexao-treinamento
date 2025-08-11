@@ -17,7 +17,7 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
   const [settings, setSettings] = useState({
     // General Settings
-    gymName: "Conexão Treinamento",
+    gymName: "FitManager Academia",
     gymAddress: "Rua das Flores, 123 - São Paulo, SP",
     gymPhone: "(11) 3333-4444",
     gymEmail: "contato@fitmanager.com",

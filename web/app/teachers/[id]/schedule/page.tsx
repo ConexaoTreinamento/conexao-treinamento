@@ -1,13 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Plus, Edit, Trash2, Save, Calendar, Clock } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -17,100 +15,143 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { ArrowLeft, Plus, Edit, Trash2, Clock, Users, Calendar, Save } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
 
 export default function TeacherSchedulePage() {
   const router = useRouter()
   const params = useParams()
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isNewScheduleOpen, setIsNewScheduleOpen] = useState(false)
   const [editingSchedule, setEditingSchedule] = useState<any>(null)
 
-  const [scheduleData, setScheduleData] = useState([
-    { id: 1, day: "Segunda", time: "09:00-10:00", class: "Pilates Iniciante", room: "Sala 1", maxStudents: 10, currentStudents: 8 },
-    { id: 2, day: "Segunda", time: "18:00-19:00", class: "Yoga", room: "Sala 2", maxStudents: 12, currentStudents: 12 },
-    { id: 3, day: "Quarta", time: "09:00-10:00", class: "Pilates Intermediário", room: "Sala 1", maxStudents: 8, currentStudents: 6 },
-    { id: 4, day: "Quarta", time: "19:00-20:00", class: "Alongamento", room: "Sala 3", maxStudents: 15, currentStudents: 10 },
-    { id: 5, day: "Sexta", time: "17:00-18:00", class: "Pilates Avançado", room: "Sala 1", maxStudents: 6, currentStudents: 4 }
+  // Mock teacher data
+  const teacherName = "Prof. Ana Silva"
+
+  const [schedules, setSchedules] = useState([
+    {
+      id: 1,
+      day: "Segunda",
+      time: "09:00-10:00",
+      class: "Pilates Iniciante",
+      room: "Sala 1",
+      maxStudents: 10,
+      currentStudents: 8,
+    },
+    {
+      id: 2,
+      day: "Segunda",
+      time: "18:00-19:00",
+      class: "Yoga",
+      room: "Sala 2",
+      maxStudents: 12,
+      currentStudents: 6,
+    },
+    {
+      id: 3,
+      day: "Quarta",
+      time: "09:00-10:00",
+      class: "Pilates Intermediário",
+      room: "Sala 1",
+      maxStudents: 10,
+      currentStudents: 10,
+    },
+    {
+      id: 4,
+      day: "Quarta",
+      time: "18:00-19:00",
+      class: "Alongamento",
+      room: "Sala 3",
+      maxStudents: 8,
+      currentStudents: 5,
+    },
+    {
+      id: 5,
+      day: "Sexta",
+      time: "09:00-10:00",
+      class: "Pilates Iniciante",
+      room: "Sala 1",
+      maxStudents: 10,
+      currentStudents: 7,
+    },
   ])
 
-  const [formData, setFormData] = useState({
+  const [scheduleForm, setScheduleForm] = useState({
     day: "",
     startTime: "",
     endTime: "",
     class: "",
     room: "",
-    maxStudents: ""
+    maxStudents: "",
   })
 
   const weekDays = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
-  const timeSlots = ["06:00", "07:00", "08:00", "09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"]
-  const classTypes = ["Pilates Iniciante", "Pilates Intermediário", "Pilates Avançado", "Yoga", "Alongamento", "Meditação"]
-  const rooms = ["Sala 1", "Sala 2", "Sala 3"]
+  const rooms = ["Sala 1", "Sala 2", "Sala 3", "Área Externa"]
+  const classes = ["Pilates Iniciante", "Pilates Intermediário", "Yoga", "Alongamento", "Funcional"]
 
-  const teacherName = "Ana Silva" // Mock teacher name
+  const handleSubmit = () => {
+    if (scheduleForm.day && scheduleForm.startTime && scheduleForm.endTime && scheduleForm.class) {
+      const timeSlot = `${scheduleForm.startTime}-${scheduleForm.endTime}`
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    const timeRange = `${formData.startTime}-${formData.endTime}`
-    
-    if (editingSchedule) {
-      // Update existing schedule
-      setScheduleData(prev => prev.map(item => 
-        item.id === editingSchedule.id 
-          ? { 
-              ...item, 
-              day: formData.day,
-              time: timeRange,
-              class: formData.class,
-              room: formData.room,
-              maxStudents: parseInt(formData.maxStudents)
-            }
-          : item
-      ))
-    } else {
-      // Add new schedule
-      const newSchedule = {
-        id: Date.now(),
-        day: formData.day,
-        time: timeRange,
-        class: formData.class,
-        room: formData.room,
-        maxStudents: parseInt(formData.maxStudents),
-        currentStudents: 0
+      if (editingSchedule) {
+        // Update existing schedule
+        setSchedules((prev) =>
+          prev.map((schedule) =>
+            schedule.id === editingSchedule.id
+              ? {
+                  ...schedule,
+                  day: scheduleForm.day,
+                  time: timeSlot,
+                  class: scheduleForm.class,
+                  room: scheduleForm.room,
+                  maxStudents: Number.parseInt(scheduleForm.maxStudents) || 10,
+                }
+              : schedule,
+          ),
+        )
+      } else {
+        // Add new schedule
+        const newSchedule = {
+          id: Date.now(),
+          day: scheduleForm.day,
+          time: timeSlot,
+          class: scheduleForm.class,
+          room: scheduleForm.room,
+          maxStudents: Number.parseInt(scheduleForm.maxStudents) || 10,
+          currentStudents: 0,
+        }
+        setSchedules((prev) => [...prev, newSchedule])
       }
-      setScheduleData(prev => [...prev, newSchedule])
+
+      setScheduleForm({
+        day: "",
+        startTime: "",
+        endTime: "",
+        class: "",
+        room: "",
+        maxStudents: "",
+      })
+      setIsNewScheduleOpen(false)
+      setEditingSchedule(null)
     }
-    
-    setIsDialogOpen(false)
-    setEditingSchedule(null)
-    setFormData({
-      day: "",
-      startTime: "",
-      endTime: "",
-      class: "",
-      room: "",
-      maxStudents: ""
-    })
   }
 
   const handleEdit = (schedule: any) => {
-    const [startTime, endTime] = schedule.time.split('-')
+    const [startTime, endTime] = schedule.time.split("-")
     setEditingSchedule(schedule)
-    setFormData({
+    setScheduleForm({
       day: schedule.day,
       startTime,
       endTime,
       class: schedule.class,
       room: schedule.room,
-      maxStudents: schedule.maxStudents.toString()
+      maxStudents: schedule.maxStudents.toString(),
     })
-    setIsDialogOpen(true)
+    setIsNewScheduleOpen(true)
   }
 
   const handleDelete = (scheduleId: number) => {
-    setScheduleData(prev => prev.filter(item => item.id !== scheduleId))
+    setSchedules((prev) => prev.filter((schedule) => schedule.id !== scheduleId))
   }
 
   const getOccupancyColor = (current: number, max: number) => {
@@ -120,263 +161,280 @@ export default function TeacherSchedulePage() {
     return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
   }
 
-  const groupedSchedule = weekDays.reduce((acc, day) => {
-    acc[day] = scheduleData.filter(item => item.day === day)
-    return acc
-  }, {} as Record<string, any[]>)
+  // Group schedules by day
+  const schedulesByDay = schedules.reduce(
+    (acc, schedule) => {
+      if (!acc[schedule.day]) {
+        acc[schedule.day] = []
+      }
+      acc[schedule.day].push(schedule)
+      return acc
+    },
+    {} as Record<string, typeof schedules>,
+  )
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">Agenda - {teacherName}</h1>
-            <p className="text-muted-foreground">
-              Gerencie os horários e aulas
-            </p>
+            <h1 className="text-xl font-bold">Gerenciar Agenda</h1>
+            <p className="text-sm text-muted-foreground">{teacherName}</p>
           </div>
         </div>
 
         {/* Add Schedule Button */}
         <div className="flex justify-end">
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isNewScheduleOpen} onOpenChange={setIsNewScheduleOpen}>
             <DialogTrigger asChild>
               <Button className="bg-green-600 hover:bg-green-700">
                 <Plus className="w-4 h-4 mr-2" />
                 Novo Horário
               </Button>
             </DialogTrigger>
-            <DialogContent>
-              <form onSubmit={handleSubmit}>
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingSchedule ? "Editar Horário" : "Novo Horário"}
-                  </DialogTitle>
-                  <DialogDescription>
-                    {editingSchedule ? "Edite as informações do horário" : "Adicione um novo horário à agenda"}
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>{editingSchedule ? "Editar Horário" : "Novo Horário"}</DialogTitle>
+                <DialogDescription>
+                  {editingSchedule ? "Edite as informações do horário" : "Adicione um novo horário à agenda"}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="day">Dia da Semana</Label>
+                  <Select
+                    value={scheduleForm.day}
+                    onValueChange={(value) => setScheduleForm((prev) => ({ ...prev, day: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o dia" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {weekDays.map((day) => (
+                        <SelectItem key={day} value={day}>
+                          {day}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label htmlFor="day">Dia da Semana</Label>
-                    <Select value={formData.day} onValueChange={(value) => setFormData(prev => ({ ...prev, day: value }))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o dia" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {weekDays.map((day) => (
-                          <SelectItem key={day} value={day}>{day}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="startTime">Horário de Início</Label>
-                      <Select value={formData.startTime} onValueChange={(value) => setFormData(prev => ({ ...prev, startTime: value }))}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Início" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {timeSlots.map((time) => (
-                            <SelectItem key={time} value={time}>{time}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="endTime">Horário de Fim</Label>
-                      <Select value={formData.endTime} onValueChange={(value) => setFormData(prev => ({ ...prev, endTime: value }))}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Fim" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {timeSlots.map((time) => (
-                            <SelectItem key={time} value={time}>{time}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <Label htmlFor="startTime">Horário Início</Label>
+                    <Input
+                      id="startTime"
+                      type="time"
+                      value={scheduleForm.startTime}
+                      onChange={(e) => setScheduleForm((prev) => ({ ...prev, startTime: e.target.value }))}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="class">Tipo de Aula</Label>
-                    <Select value={formData.class} onValueChange={(value) => setFormData(prev => ({ ...prev, class: value }))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a aula" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {classTypes.map((classType) => (
-                          <SelectItem key={classType} value={classType}>{classType}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="endTime">Horário Fim</Label>
+                    <Input
+                      id="endTime"
+                      type="time"
+                      value={scheduleForm.endTime}
+                      onChange={(e) => setScheduleForm((prev) => ({ ...prev, endTime: e.target.value }))}
+                    />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="class">Aula</Label>
+                  <Select
+                    value={scheduleForm.class}
+                    onValueChange={(value) => setScheduleForm((prev) => ({ ...prev, class: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a aula" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {classes.map((classType) => (
+                        <SelectItem key={classType} value={classType}>
+                          {classType}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label htmlFor="room">Sala</Label>
-                    <Select value={formData.room} onValueChange={(value) => setFormData(prev => ({ ...prev, room: value }))}>
+                    <Select
+                      value={scheduleForm.room}
+                      onValueChange={(value) => setScheduleForm((prev) => ({ ...prev, room: value }))}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione a sala" />
                       </SelectTrigger>
                       <SelectContent>
                         {rooms.map((room) => (
-                          <SelectItem key={room} value={room}>{room}</SelectItem>
+                          <SelectItem key={room} value={room}>
+                            {room}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="maxStudents">Máximo de Alunos</Label>
+                    <Label htmlFor="maxStudents">Máx. Alunos</Label>
                     <Input
                       id="maxStudents"
                       type="number"
-                      value={formData.maxStudents}
-                      onChange={(e) => setFormData(prev => ({ ...prev, maxStudents: e.target.value }))}
-                      placeholder="15"
-                      required
+                      value={scheduleForm.maxStudents}
+                      onChange={(e) => setScheduleForm((prev) => ({ ...prev, maxStudents: e.target.value }))}
+                      placeholder="10"
                     />
                   </div>
                 </div>
-                <DialogFooter>
-                  <Button type="submit" className="bg-green-600 hover:bg-green-700">
-                    <Save className="w-4 h-4 mr-2" />
-                    {editingSchedule ? "Salvar Alterações" : "Adicionar Horário"}
-                  </Button>
-                </DialogFooter>
-              </form>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsNewScheduleOpen(false)
+                    setEditingSchedule(null)
+                    setScheduleForm({
+                      day: "",
+                      startTime: "",
+                      endTime: "",
+                      class: "",
+                      room: "",
+                      maxStudents: "",
+                    })
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700">
+                  <Save className="w-4 h-4 mr-2" />
+                  {editingSchedule ? "Salvar" : "Adicionar"}
+                </Button>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
         </div>
 
-        {/* Schedule Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
-          {weekDays.map((day) => (
-            <Card key={day}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-center">
-                  <div className="text-lg font-bold">{day}</div>
-                  <Badge variant="outline" className="mt-1">
-                    {groupedSchedule[day].length} aulas
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {groupedSchedule[day].map((schedule) => (
-                  <div
-                    key={schedule.id}
-                    className="p-3 rounded-lg border bg-card hover:shadow-md transition-shadow"
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-semibold text-sm">{schedule.class}</h4>
-                        <Badge className={getOccupancyColor(schedule.currentStudents, schedule.maxStudents)}>
-                          {schedule.currentStudents}/{schedule.maxStudents}
-                        </Badge>
-                      </div>
-                      
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="w-3 h-3" />
-                        {schedule.time}
-                      </div>
-                      
-                      <div className="text-xs text-muted-foreground">
-                        {schedule.room}
-                      </div>
-                      
-                      <div className="flex gap-1 pt-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEdit(schedule)}
-                          className="flex-1"
-                        >
-                          <Edit className="w-3 h-3 mr-1" />
-                          Editar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDelete(schedule.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </div>
+        {/* Schedule by Day */}
+        <div className="space-y-4">
+          {weekDays.map((day) => {
+            const daySchedules = schedulesByDay[day] || []
+            if (daySchedules.length === 0) return null
+
+            return (
+              <Card key={day}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Calendar className="w-4 h-4" />
+                    {day}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {daySchedules
+                      .sort((a, b) => a.time.localeCompare(b.time))
+                      .map((schedule) => (
+                        <div key={schedule.id} className="flex items-center justify-between p-3 rounded-lg border">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-medium text-sm">{schedule.class}</h4>
+                              <span
+                                className={`px-2 py-1 rounded text-xs font-medium ${getOccupancyColor(
+                                  schedule.currentStudents,
+                                  schedule.maxStudents,
+                                )}`}
+                              >
+                                {schedule.currentStudents}/{schedule.maxStudents}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                <span>{schedule.time}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Users className="w-3 h-3" />
+                                <span>{schedule.room}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex gap-1 ml-2">
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(schedule)}>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDelete(schedule.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                   </div>
-                ))}
-                
-                {groupedSchedule[day].length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Calendar className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Nenhuma aula agendada</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
 
-        {/* Summary Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        {schedules.length === 0 && (
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total de Aulas</p>
-                  <p className="text-2xl font-bold">{scheduleData.length}</p>
-                </div>
-                <Calendar className="w-8 h-8 text-green-600" />
-              </div>
+            <CardContent className="text-center py-12">
+              <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Nenhum horário definido</h3>
+              <p className="text-muted-foreground mb-4">Adicione horários à agenda do professor.</p>
+              <Button onClick={() => setIsNewScheduleOpen(true)} className="bg-green-600 hover:bg-green-700">
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar Primeiro Horário
+              </Button>
             </CardContent>
           </Card>
-          
+        )}
+
+        {/* Summary */}
+        {schedules.length > 0 && (
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Horas Semanais</p>
-                  <p className="text-2xl font-bold">{scheduleData.length}</p>
+            <CardHeader>
+              <CardTitle className="text-base">Resumo da Semana</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{schedules.length}</p>
+                  <p className="text-sm text-muted-foreground">Horários</p>
                 </div>
-                <Clock className="w-8 h-8 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Alunos Totais</p>
-                  <p className="text-2xl font-bold">
-                    {scheduleData.reduce((sum, item) => sum + item.currentStudents, 0)}
-                  </p>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{schedules.reduce((sum, s) => sum + s.currentStudents, 0)}</p>
+                  <p className="text-sm text-muted-foreground">Alunos</p>
                 </div>
-                <Badge className="w-8 h-8 text-purple-600" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Taxa de Ocupação</p>
+                <div className="text-center">
+                  <p className="text-2xl font-bold">{schedules.reduce((sum, s) => sum + s.maxStudents, 0)}</p>
+                  <p className="text-sm text-muted-foreground">Capacidade</p>
+                </div>
+                <div className="text-center">
                   <p className="text-2xl font-bold">
                     {Math.round(
-                      (scheduleData.reduce((sum, item) => sum + item.currentStudents, 0) /
-                       scheduleData.reduce((sum, item) => sum + item.maxStudents, 0)) * 100
-                    )}%
+                      (schedules.reduce((sum, s) => sum + s.currentStudents, 0) /
+                        schedules.reduce((sum, s) => sum + s.maxStudents, 0)) *
+                        100,
+                    )}
+                    %
                   </p>
+                  <p className="text-sm text-muted-foreground">Ocupação</p>
                 </div>
-                <Badge className="w-8 h-8 text-orange-600" />
               </div>
             </CardContent>
           </Card>
-        </div>
+        )}
       </div>
     </Layout>
   )

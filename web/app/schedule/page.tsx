@@ -1,25 +1,48 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Calendar, Clock, Users, Plus, ChevronLeft, ChevronRight, MapPin } from 'lucide-react'
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Calendar, Clock, Users, Plus, MapPin, User, CheckCircle, XCircle, CalendarDays } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 
 export default function SchedulePage() {
-  const [currentDate, setCurrentDate] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState(new Date())
+  const [userRole, setUserRole] = useState<string>("")
+  const [isNewClassOpen, setIsNewClassOpen] = useState(false)
+  const [newClassForm, setNewClassForm] = useState({
+    name: "",
+    instructor: "",
+    room: "",
+    time: "",
+    maxStudents: "",
+    weekDay: "",
+    description: "",
+  })
   const router = useRouter()
 
-  const weekDays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-  const timeSlots = [
-    '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
-    '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'
-  ]
+  useEffect(() => {
+    const role = localStorage.getItem("userRole") || "professor"
+    setUserRole(role)
+  }, [])
 
-  const classes = [
+  // Mock classes data
+  const [classes, setClasses] = useState([
     {
       id: 1,
       name: "Pilates Iniciante",
@@ -29,79 +52,79 @@ export default function SchedulePage() {
       duration: 60,
       maxStudents: 10,
       currentStudents: 8,
-      day: 1, // Monday
+      date: new Date().toISOString().split("T")[0],
       students: [
-        { name: "Maria Silva", avatar: "/placeholder.svg?height=32&width=32" },
-        { name: "João Santos", avatar: "/placeholder.svg?height=32&width=32" },
-        { name: "Ana Costa", avatar: "/placeholder.svg?height=32&width=32" }
-      ]
+        { id: 1, name: "Maria Silva", avatar: "/placeholder.svg?height=32&width=32", present: true },
+        { id: 2, name: "João Santos", avatar: "/placeholder.svg?height=32&width=32", present: true },
+        { id: 3, name: "Ana Costa", avatar: "/placeholder.svg?height=32&width=32", present: false },
+        { id: 4, name: "Carlos Lima", avatar: "/placeholder.svg?height=32&width=32", present: true },
+        { id: 5, name: "Lucia Ferreira", avatar: "/placeholder.svg?height=32&width=32", present: false },
+      ],
     },
     {
       id: 2,
-      name: "Musculação",
-      instructor: "Prof. Carlos",
-      room: "Sala 3",
-      time: "14:00",
-      duration: 60,
-      maxStudents: 15,
-      currentStudents: 12,
-      day: 1,
-      students: [
-        { name: "Carlos Lima", avatar: "/placeholder.svg?height=32&width=32" },
-        { name: "Lucia Ferreira", avatar: "/placeholder.svg?height=32&width=32" }
-      ]
-    },
-    {
-      id: 3,
-      name: "Yoga",
+      name: "Yoga Avançado",
       instructor: "Prof. Marina",
       room: "Sala 2",
       time: "18:00",
       duration: 60,
       maxStudents: 12,
       currentStudents: 6,
-      day: 2, // Tuesday
+      date: new Date().toISOString().split("T")[0],
       students: [
-        { name: "Patricia Oliveira", avatar: "/placeholder.svg?height=32&width=32" }
-      ]
+        { id: 6, name: "Patricia Oliveira", avatar: "/placeholder.svg?height=32&width=32", present: true },
+        { id: 7, name: "Roberto Silva", avatar: "/placeholder.svg?height=32&width=32", present: true },
+      ],
     },
     {
-      id: 4,
+      id: 3,
       name: "CrossFit",
       instructor: "Prof. Roberto",
       room: "Sala 3",
-      time: "19:00",
+      time: "07:00",
       duration: 60,
       maxStudents: 8,
       currentStudents: 8,
-      day: 3, // Wednesday
-      students: []
+      date: new Date(Date.now() + 86400000).toISOString().split("T")[0], // Tomorrow
+      students: [],
+    },
+  ])
+
+  const teachers = ["Prof. Ana", "Prof. Marina", "Prof. Roberto", "Prof. Carlos"]
+  const rooms = ["Sala 1", "Sala 2", "Sala 3", "Área Externa"]
+  const weekDays = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
+
+  // Generate dates for horizontal scroll (14 days)
+  const getScrollDates = () => {
+    const dates = []
+    const today = new Date()
+    for (let i = -2; i <= 11; i++) {
+      const date = new Date(today)
+      date.setDate(today.getDate() + i)
+      dates.push(date)
     }
-  ]
-
-  const getWeekDates = () => {
-    const startOfWeek = new Date(currentDate)
-    const day = startOfWeek.getDay()
-    const diff = startOfWeek.getDate() - day
-    startOfWeek.setDate(diff)
-
-    return Array.from({ length: 7 }, (_, i) => {
-      const date = new Date(startOfWeek)
-      date.setDate(startOfWeek.getDate() + i)
-      return date
-    })
+    return dates
   }
 
-  const weekDates = getWeekDates()
+  const scrollDates = getScrollDates()
 
-  const navigateWeek = (direction: 'prev' | 'next') => {
-    const newDate = new Date(currentDate)
-    newDate.setDate(currentDate.getDate() + (direction === 'next' ? 7 : -7))
-    setCurrentDate(newDate)
+  const formatDayName = (date: Date) => {
+    const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
+    return days[date.getDay()]
   }
 
-  const getClassesForDay = (dayIndex: number) => {
-    return classes.filter(cls => cls.day === dayIndex)
+  const isToday = (date: Date) => {
+    const today = new Date()
+    return date.toDateString() === today.toDateString()
+  }
+
+  const isSelected = (date: Date) => {
+    return date.toDateString() === selectedDate.toDateString()
+  }
+
+  const getClassesForDate = (date: Date) => {
+    const dateStr = date.toISOString().split("T")[0]
+    return classes.filter((cls) => cls.date === dateStr)
   }
 
   const getOccupancyColor = (current: number, max: number) => {
@@ -111,165 +134,285 @@ export default function SchedulePage() {
     return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
   }
 
+  const handleCreateClass = () => {
+    if (newClassForm.name && newClassForm.instructor && newClassForm.time) {
+      const newClass = {
+        id: Date.now(),
+        name: newClassForm.name,
+        instructor: newClassForm.instructor,
+        room: newClassForm.room,
+        time: newClassForm.time,
+        duration: 60,
+        maxStudents: Number.parseInt(newClassForm.maxStudents) || 10,
+        currentStudents: 0,
+        date: selectedDate.toISOString().split("T")[0],
+        students: [],
+      }
+      setClasses((prev) => [...prev, newClass])
+      setNewClassForm({
+        name: "",
+        instructor: "",
+        room: "",
+        time: "",
+        maxStudents: "",
+        weekDay: "",
+        description: "",
+      })
+      setIsNewClassOpen(false)
+    }
+  }
+
+  const goToToday = () => {
+    setSelectedDate(new Date())
+  }
+
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Agenda</h1>
-            <p className="text-muted-foreground">
-              Gerencie as turmas e horários da academia
-            </p>
+      <div className="space-y-3 pb-4">
+        {/* Mobile Header */}
+        <div className="flex flex-col space-y-2">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-bold">Agenda</h1>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={goToToday}>
+                <CalendarDays className="w-4 h-4 mr-1" />
+                Hoje
+              </Button>
+              {userRole === "admin" && (
+                <Dialog open={isNewClassOpen} onOpenChange={setIsNewClassOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Nova Turma</DialogTitle>
+                      <DialogDescription>Crie uma nova turma para a agenda</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="className">Nome da Turma</Label>
+                        <Input
+                          id="className"
+                          value={newClassForm.name}
+                          onChange={(e) => setNewClassForm((prev) => ({ ...prev, name: e.target.value }))}
+                          placeholder="Ex: Pilates Iniciante"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="instructor">Professor</Label>
+                          <Select
+                            value={newClassForm.instructor}
+                            onValueChange={(value) => setNewClassForm((prev) => ({ ...prev, instructor: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {teachers.map((teacher) => (
+                                <SelectItem key={teacher} value={teacher}>
+                                  {teacher}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="room">Sala</Label>
+                          <Select
+                            value={newClassForm.room}
+                            onValueChange={(value) => setNewClassForm((prev) => ({ ...prev, room: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {rooms.map((room) => (
+                                <SelectItem key={room} value={room}>
+                                  {room}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="time">Horário</Label>
+                          <Input
+                            id="time"
+                            type="time"
+                            value={newClassForm.time}
+                            onChange={(e) => setNewClassForm((prev) => ({ ...prev, time: e.target.value }))}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="maxStudents">Máx. Alunos</Label>
+                          <Input
+                            id="maxStudents"
+                            type="number"
+                            value={newClassForm.maxStudents}
+                            onChange={(e) => setNewClassForm((prev) => ({ ...prev, maxStudents: e.target.value }))}
+                            placeholder="10"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setIsNewClassOpen(false)}>
+                        Cancelar
+                      </Button>
+                      <Button onClick={handleCreateClass} className="bg-green-600 hover:bg-green-700">
+                        Criar Turma
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => setCurrentDate(new Date())}
-              className="flex items-center gap-2"
-            >
-              <Calendar className="w-4 h-4" />
-              Hoje
-            </Button>
-            <Button className="bg-green-600 hover:bg-green-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Turma
-            </Button>
+          <p className="text-sm text-muted-foreground">
+            {selectedDate.toLocaleDateString("pt-BR", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+            })}
+          </p>
+        </div>
+
+        {/* Horizontal Date Scroll - Mobile First */}
+        <div className="w-full">
+          <div
+            className="flex gap-2 overflow-x-auto pb-2 px-1"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {scrollDates.map((date, index) => (
+              <button
+                key={index}
+                className={`flex-shrink-0 flex flex-col items-center justify-center p-2 rounded-lg border transition-all min-w-[50px] h-[60px] ${
+                  isSelected(date)
+                    ? "bg-green-600 text-white border-green-600"
+                    : isToday(date)
+                      ? "border-green-600 text-green-600 bg-green-50 dark:bg-green-950"
+                      : "border-border hover:bg-muted"
+                }`}
+                onClick={() => setSelectedDate(date)}
+              >
+                <span className="text-xs font-medium leading-none">{formatDayName(date)}</span>
+                <span className="text-lg font-bold leading-none mt-1">{date.getDate()}</span>
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Week Navigation */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Semana de {weekDates[0].toLocaleDateString('pt-BR')} a {weekDates[6].toLocaleDateString('pt-BR')}
-              </CardTitle>
-              <div className="flex gap-2">
-                <Button variant="outline" size="icon" onClick={() => navigateWeek('prev')}>
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <Button variant="outline" size="icon" onClick={() => navigateWeek('next')}>
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
-
-        {/* Schedule Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
-          {weekDates.map((date, dayIndex) => (
-            <Card key={dayIndex} className={dayIndex === new Date().getDay() ? "ring-2 ring-green-500" : ""}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-center">
-                  <div className="text-sm font-medium text-muted-foreground">
-                    {weekDays[dayIndex]}
-                  </div>
-                  <div className="text-lg font-bold">
-                    {date.getDate()}
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {getClassesForDay(dayIndex).map((classItem) => (
-                  <div
-                    key={classItem.id}
-                    className="p-3 rounded-lg border bg-card hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => router.push(`/schedule/${classItem.id}`)}
+        {/* Classes for Selected Date */}
+        <div className="space-y-3">
+          {getClassesForDate(selectedDate).length === 0 ? (
+            <Card>
+              <CardContent className="text-center py-8">
+                <Calendar className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                <h3 className="font-semibold mb-1">Nenhuma aula</h3>
+                <p className="text-sm text-muted-foreground">Não há aulas para este dia.</p>
+                {userRole === "admin" && (
+                  <Button
+                    size="sm"
+                    className="mt-3 bg-green-600 hover:bg-green-700"
+                    onClick={() => setIsNewClassOpen(true)}
                   >
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-semibold text-sm">{classItem.name}</h4>
-                        <Badge className={getOccupancyColor(classItem.currentStudents, classItem.maxStudents)}>
-                          {classItem.currentStudents}/{classItem.maxStudents}
-                        </Badge>
-                      </div>
-                      
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="w-3 h-3" />
-                        {classItem.time} - {parseInt(classItem.time.split(':')[0]) + 1}:00
-                      </div>
-                      
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <MapPin className="w-3 h-3" />
-                        {classItem.room}
-                      </div>
-                      
-                      <div className="text-xs text-muted-foreground">
-                        {classItem.instructor}
-                      </div>
-                      
-                      {classItem.students.length > 0 && (
-                        <div className="flex -space-x-2">
-                          {classItem.students.slice(0, 3).map((student, idx) => (
-                            <Avatar key={idx} className="w-6 h-6 border-2 border-background">
-                              <AvatarImage src={student.avatar || "/placeholder.svg"} />
-                              <AvatarFallback className="text-xs">
-                                {student.name.split(' ').map(n => n[0]).join('')}
-                              </AvatarFallback>
-                            </Avatar>
-                          ))}
-                          {classItem.students.length > 3 && (
-                            <div className="w-6 h-6 rounded-full bg-muted border-2 border-background flex items-center justify-center">
-                              <span className="text-xs font-medium">+{classItem.students.length - 3}</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                
-                {getClassesForDay(dayIndex).length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Calendar className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Nenhuma aula agendada</p>
-                  </div>
+                    <Plus className="w-4 h-4 mr-1" />
+                    Criar Primeira Turma
+                  </Button>
                 )}
               </CardContent>
             </Card>
-          ))}
-        </div>
+          ) : (
+            getClassesForDate(selectedDate).map((classItem) => (
+              <Card key={classItem.id} className="hover:shadow-sm transition-shadow">
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <CardTitle className="text-base leading-tight">{classItem.name}</CardTitle>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          <span>{classItem.time}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          <span>{classItem.room}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          <span>{classItem.instructor}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <Badge className={`${getOccupancyColor(classItem.currentStudents, classItem.maxStudents)} text-xs`}>
+                      {classItem.currentStudents}/{classItem.maxStudents}
+                    </Badge>
+                  </div>
+                </CardHeader>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Aulas Hoje</p>
-                  <p className="text-2xl font-bold">6</p>
-                </div>
-                <Calendar className="w-8 h-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Alunos Agendados</p>
-                  <p className="text-2xl font-bold">34</p>
-                </div>
-                <Users className="w-8 h-8 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Taxa de Ocupação</p>
-                  <p className="text-2xl font-bold">78%</p>
-                </div>
-                <Clock className="w-8 h-8 text-purple-600" />
-              </div>
-            </CardContent>
-          </Card>
+                <CardContent className="space-y-3">
+                  {/* Students List - Mobile Optimized */}
+                  {classItem.students.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">Alunos</span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-xs bg-transparent"
+                          onClick={() => router.push(`/schedule/${classItem.id}`)}
+                        >
+                          Gerenciar
+                        </Button>
+                      </div>
+
+                      {/* Scrollable Students List */}
+                      <div className="max-h-32 overflow-y-auto space-y-1" style={{ scrollbarWidth: "thin" }}>
+                        {classItem.students.map((student) => (
+                          <div key={student.id} className="flex items-center gap-2 p-1">
+                            <Avatar className="w-6 h-6">
+                              <AvatarImage src={student.avatar || "/placeholder.svg"} />
+                              <AvatarFallback className="text-xs">
+                                {student.name
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm flex-1 min-w-0 truncate">{student.name}</span>
+                            {student.present ? (
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                            ) : (
+                              <XCircle className="w-4 h-4 text-red-500" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {classItem.students.length === 0 && (
+                    <div className="text-center py-2">
+                      <p className="text-sm text-muted-foreground">Nenhum aluno inscrito</p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 h-7 px-2 text-xs bg-transparent"
+                        onClick={() => router.push(`/schedule/${classItem.id}`)}
+                      >
+                        Adicionar Alunos
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
       </div>
     </Layout>

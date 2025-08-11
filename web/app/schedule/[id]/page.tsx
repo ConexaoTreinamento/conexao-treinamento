@@ -1,12 +1,24 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, Clock, MapPin, Users, UserPlus, UserMinus, Activity, Save, Calendar } from 'lucide-react'
+import { Label } from "@/components/ui/label"
+import {
+  ArrowLeft,
+  Clock,
+  MapPin,
+  Users,
+  UserPlus,
+  Activity,
+  Save,
+  Calendar,
+  CheckCircle,
+  XCircle,
+  Plus,
+} from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -16,7 +28,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
@@ -25,11 +36,12 @@ export default function ClassDetailPage() {
   const router = useRouter()
   const params = useParams()
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false)
-  const [isWorkoutOpen, setIsWorkoutOpen] = useState(false)
+  const [isExerciseOpen, setIsExerciseOpen] = useState(false)
+  const [isNewExerciseOpen, setIsNewExerciseOpen] = useState(false)
   const [selectedStudent, setSelectedStudent] = useState<any>(null)
 
   // Mock class data
-  const classData = {
+  const [classData, setClassData] = useState({
     id: 1,
     name: "Pilates Iniciante",
     instructor: "Prof. Ana Silva",
@@ -40,96 +52,165 @@ export default function ClassDetailPage() {
     currentStudents: 8,
     description: "Aula de Pilates para iniciantes focada em fortalecimento do core e flexibilidade.",
     students: [
-      { 
-        id: 1, 
-        name: "Maria Silva", 
+      {
+        id: 1,
+        name: "Maria Silva",
         avatar: "/placeholder.svg?height=40&width=40",
-        attendance: "Presente",
-        workout: [
-          { exercise: "Prancha", sets: 3, reps: "30s", weight: "-" },
-          { exercise: "Roll Up", sets: 2, reps: 10, weight: "-" }
-        ]
+        present: true,
+        exercises: [
+          { exercise: "Prancha", sets: 3, reps: "30s", completed: true },
+          { exercise: "Roll Up", sets: 2, reps: 10, completed: true },
+        ],
       },
-      { 
-        id: 2, 
-        name: "João Santos", 
+      {
+        id: 2,
+        name: "João Santos",
         avatar: "/placeholder.svg?height=40&width=40",
-        attendance: "Presente",
-        workout: [
-          { exercise: "Hundred", sets: 1, reps: 100, weight: "-" },
-          { exercise: "Single Leg Stretch", sets: 2, reps: 10, weight: "-" }
-        ]
+        present: true,
+        exercises: [
+          { exercise: "Hundred", sets: 1, reps: 100, completed: false },
+          { exercise: "Single Leg Stretch", sets: 2, reps: 10, completed: true },
+        ],
       },
-      { 
-        id: 3, 
-        name: "Ana Costa", 
+      {
+        id: 3,
+        name: "Ana Costa",
         avatar: "/placeholder.svg?height=40&width=40",
-        attendance: "Ausente",
-        workout: []
-      }
-    ]
-  }
+        present: false,
+        exercises: [],
+      },
+    ],
+  })
 
   const availableStudents = [
     { id: 4, name: "Carlos Lima", avatar: "/placeholder.svg?height=40&width=40" },
     { id: 5, name: "Lucia Ferreira", avatar: "/placeholder.svg?height=40&width=40" },
-    { id: 6, name: "Patricia Oliveira", avatar: "/placeholder.svg?height=40&width=40" }
   ]
 
-  const availableExercises = [
-    "Prancha", "Roll Up", "Hundred", "Single Leg Stretch", "Teaser", 
-    "Swan Dive", "Leg Circles", "Criss Cross", "Double Leg Stretch"
-  ]
+  const [availableExercises, setAvailableExercises] = useState([
+    "Prancha",
+    "Roll Up",
+    "Hundred",
+    "Single Leg Stretch",
+    "Teaser",
+    "Swan Dive",
+    "Leg Circles",
+    "Criss Cross",
+    "Double Leg Stretch",
+  ])
 
-  const [workoutData, setWorkoutData] = useState({
+  const [exerciseForm, setExerciseForm] = useState({
     exercise: "",
     sets: "",
     reps: "",
-    weight: ""
+    completed: false,
   })
 
-  const getAttendanceColor = (attendance: string) => {
-    return attendance === "Presente" 
-      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+  const [newExerciseForm, setNewExerciseForm] = useState({
+    name: "",
+    category: "",
+    equipment: "",
+    muscle: "",
+    difficulty: "",
+    description: "",
+  })
+
+  const categories = ["Peito", "Pernas", "Braços", "Costas", "Ombros", "Core", "Cardio"]
+  const equipments = ["Barra", "Halter", "Polia", "Peso Corporal", "Máquina", "Elástico", "Kettlebell"]
+  const difficulties = ["Iniciante", "Intermediário", "Avançado"]
+
+  const togglePresence = (studentId: number) => {
+    setClassData((prev) => ({
+      ...prev,
+      students: prev.students.map((student) =>
+        student.id === studentId ? { ...student, present: !student.present } : student,
+      ),
+    }))
   }
 
   const handleAddExercise = () => {
-    if (selectedStudent && workoutData.exercise) {
-      // Mock adding exercise to student's workout
-      console.log("Adding exercise:", workoutData, "to student:", selectedStudent.name)
-      setIsWorkoutOpen(false)
-      setWorkoutData({ exercise: "", sets: "", reps: "", weight: "" })
+    if (selectedStudent && exerciseForm.exercise) {
+      setClassData((prev) => ({
+        ...prev,
+        students: prev.students.map((student) =>
+          student.id === selectedStudent.id
+            ? {
+                ...student,
+                exercises: [...student.exercises, { ...exerciseForm }],
+              }
+            : student,
+        ),
+      }))
+
+      setExerciseForm({
+        exercise: "",
+        sets: "",
+        reps: "",
+        completed: false,
+      })
+      setIsExerciseOpen(false)
     }
+  }
+
+  const handleCreateNewExercise = () => {
+    if (newExerciseForm.name) {
+      setAvailableExercises((prev) => [...prev, newExerciseForm.name])
+      setExerciseForm((prev) => ({ ...prev, exercise: newExerciseForm.name }))
+      setNewExerciseForm({
+        name: "",
+        category: "",
+        equipment: "",
+        muscle: "",
+        difficulty: "",
+        description: "",
+      })
+      setIsNewExerciseOpen(false)
+    }
+  }
+
+  const toggleExerciseCompletion = (studentId: number, exerciseIndex: number) => {
+    setClassData((prev) => ({
+      ...prev,
+      students: prev.students.map((student) =>
+        student.id === studentId
+          ? {
+              ...student,
+              exercises: student.exercises.map((ex, idx) =>
+                idx === exerciseIndex ? { ...ex, completed: !ex.completed } : ex,
+              ),
+            }
+          : student,
+      ),
+    }))
   }
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">{classData.name}</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-xl font-bold">{classData.name}</h1>
+            <p className="text-sm text-muted-foreground">
               {classData.date} • {classData.time}
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Class Info */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
                 <Activity className="w-5 h-5" />
                 Informações da Aula
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="w-4 h-4 text-muted-foreground" />
                   <span>{classData.time}</span>
@@ -140,37 +221,27 @@ export default function ClassDetailPage() {
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Users className="w-4 h-4 text-muted-foreground" />
-                  <span>{classData.currentStudents}/{classData.maxStudents} alunos</span>
+                  <span>
+                    {classData.currentStudents}/{classData.maxStudents} alunos
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
                   <span>{classData.instructor}</span>
                 </div>
               </div>
-              
-              <div className="pt-4 border-t">
-                <p className="text-sm text-muted-foreground">{classData.description}</p>
-              </div>
 
-              <div className="pt-4 border-t">
-                <div className="w-full bg-muted rounded-full h-2 mb-2">
-                  <div 
-                    className="bg-green-600 h-2 rounded-full transition-all"
-                    style={{ width: `${(classData.currentStudents / classData.maxStudents) * 100}%` }}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground text-center">
-                  {Math.round((classData.currentStudents / classData.maxStudents) * 100)}% de ocupação
-                </p>
+              <div className="pt-3 border-t">
+                <p className="text-sm text-muted-foreground">{classData.description}</p>
               </div>
             </CardContent>
           </Card>
 
           {/* Students List */}
           <Card className="lg:col-span-2">
-            <CardHeader>
+            <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="text-lg flex items-center gap-2">
                   <Users className="w-5 h-5" />
                   Alunos da Aula
                 </CardTitle>
@@ -178,24 +249,25 @@ export default function ClassDetailPage() {
                   <DialogTrigger asChild>
                     <Button size="sm" className="bg-green-600 hover:bg-green-700">
                       <UserPlus className="w-4 h-4 mr-2" />
-                      Adicionar Aluno
+                      Adicionar
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Adicionar Aluno à Aula</DialogTitle>
-                      <DialogDescription>
-                        Selecione um aluno para adicionar a esta aula
-                      </DialogDescription>
+                      <DialogDescription>Selecione um aluno para adicionar a esta aula</DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {availableStudents.map((student) => (
                         <div key={student.id} className="flex items-center justify-between p-3 rounded-lg border">
                           <div className="flex items-center gap-3">
-                            <Avatar>
+                            <Avatar className="w-8 h-8">
                               <AvatarImage src={student.avatar || "/placeholder.svg"} />
                               <AvatarFallback>
-                                {student.name.split(' ').map(n => n[0]).join('')}
+                                {student.name
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")}
                               </AvatarFallback>
                             </Avatar>
                             <span className="font-medium">{student.name}</span>
@@ -204,49 +276,94 @@ export default function ClassDetailPage() {
                         </div>
                       ))}
                     </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsAddStudentOpen(false)}>
-                        Cancelar
-                      </Button>
-                    </DialogFooter>
                   </DialogContent>
                 </Dialog>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {classData.students.map((student) => (
-                  <div key={student.id} className="flex items-center justify-between p-4 rounded-lg border">
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={student.avatar || "/placeholder.svg"} />
-                        <AvatarFallback>
-                          {student.name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{student.name}</p>
-                        <Badge className={getAttendanceColor(student.attendance)}>
-                          {student.attendance}
-                        </Badge>
+                  <div key={student.id} className="p-3 rounded-lg border bg-card">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage src={student.avatar || "/placeholder.svg"} />
+                          <AvatarFallback>
+                            {student.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{student.name}</p>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant={student.present ? "default" : "outline"}
+                              onClick={() => togglePresence(student.id)}
+                              className={`h-6 text-xs ${
+                                student.present
+                                  ? "bg-green-600 hover:bg-green-700"
+                                  : "border-red-300 text-red-600 hover:bg-red-50"
+                              }`}
+                            >
+                              {student.present ? (
+                                <>
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Presente
+                                </>
+                              ) : (
+                                <>
+                                  <XCircle className="w-3 h-3 mr-1" />
+                                  Ausente
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedStudent(student)
+                            setIsExerciseOpen(true)
+                          }}
+                        >
+                          <Activity className="w-3 h-3 mr-1" />
+                          Exercícios
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedStudent(student)
-                          setIsWorkoutOpen(true)
-                        }}
-                      >
-                        <Activity className="w-4 h-4 mr-2" />
-                        Exercícios
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <UserMinus className="w-4 h-4" />
-                      </Button>
-                    </div>
+
+                    {/* Student Exercises */}
+                    {student.exercises.length > 0 && (
+                      <div className="space-y-2 pt-2 border-t">
+                        <p className="text-sm font-medium">Exercícios realizados:</p>
+                        <div className="space-y-1">
+                          {student.exercises.map((exercise, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm"
+                            >
+                              <span>
+                                {exercise.exercise} - {exercise.sets}x{exercise.reps}
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => toggleExerciseCompletion(student.id, idx)}
+                                className={`h-6 w-6 p-0 ${exercise.completed ? "text-green-600" : "text-gray-400"}`}
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -254,43 +371,23 @@ export default function ClassDetailPage() {
           </Card>
         </div>
 
-        {/* Workout Dialog */}
-        <Dialog open={isWorkoutOpen} onOpenChange={setIsWorkoutOpen}>
-          <DialogContent className="sm:max-w-[500px]">
+        {/* Exercise Dialog */}
+        <Dialog open={isExerciseOpen} onOpenChange={setIsExerciseOpen}>
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>
-                Exercícios - {selectedStudent?.name}
-              </DialogTitle>
-              <DialogDescription>
-                Registre os exercícios realizados pelo aluno nesta aula
-              </DialogDescription>
+              <DialogTitle>Registrar Exercício - {selectedStudent?.name}</DialogTitle>
+              <DialogDescription>Adicione um exercício realizado pelo aluno</DialogDescription>
             </DialogHeader>
-            
-            {/* Current Workout */}
-            {selectedStudent?.workout && selectedStudent.workout.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="font-medium">Exercícios Realizados:</h4>
-                <div className="space-y-2">
-                  {selectedStudent.workout.map((exercise: any, idx: number) => (
-                    <div key={idx} className="flex items-center justify-between p-2 bg-muted rounded">
-                      <span className="font-medium">{exercise.exercise}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {exercise.sets}x{exercise.reps} {exercise.weight !== "-" && `- ${exercise.weight}kg`}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {/* Add New Exercise */}
-            <div className="space-y-4 pt-4 border-t">
-              <h4 className="font-medium">Adicionar Exercício:</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="exercise">Exercício</Label>
-                  <Select value={workoutData.exercise} onValueChange={(value) => setWorkoutData(prev => ({ ...prev, exercise: value }))}>
-                    <SelectTrigger>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label>Exercício</Label>
+                <div className="flex gap-2">
+                  <Select
+                    value={exerciseForm.exercise}
+                    onValueChange={(value) => setExerciseForm((prev) => ({ ...prev, exercise: value }))}
+                  >
+                    <SelectTrigger className="flex-1">
                       <SelectValue placeholder="Selecione o exercício" />
                     </SelectTrigger>
                     <SelectContent>
@@ -301,45 +398,106 @@ export default function ClassDetailPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <Dialog open={isNewExerciseOpen} onOpenChange={setIsNewExerciseOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="icon" variant="outline">
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Novo Exercício</DialogTitle>
+                        <DialogDescription>Crie um novo exercício</DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="exerciseName">Nome do Exercício</Label>
+                          <Input
+                            id="exerciseName"
+                            value={newExerciseForm.name}
+                            onChange={(e) => setNewExerciseForm((prev) => ({ ...prev, name: e.target.value }))}
+                            placeholder="Ex: Supino Inclinado"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label>Categoria</Label>
+                            <Select
+                              value={newExerciseForm.category}
+                              onValueChange={(value) => setNewExerciseForm((prev) => ({ ...prev, category: value }))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {categories.map((category) => (
+                                  <SelectItem key={category} value={category}>
+                                    {category}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Dificuldade</Label>
+                            <Select
+                              value={newExerciseForm.difficulty}
+                              onValueChange={(value) => setNewExerciseForm((prev) => ({ ...prev, difficulty: value }))}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {difficulties.map((difficulty) => (
+                                  <SelectItem key={difficulty} value={difficulty}>
+                                    {difficulty}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsNewExerciseOpen(false)}>
+                          Cancelar
+                        </Button>
+                        <Button onClick={handleCreateNewExercise} className="bg-green-600 hover:bg-green-700">
+                          Criar e Usar
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="sets">Séries</Label>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Séries</Label>
                   <Input
-                    id="sets"
                     type="number"
-                    value={workoutData.sets}
-                    onChange={(e) => setWorkoutData(prev => ({ ...prev, sets: e.target.value }))}
+                    value={exerciseForm.sets}
+                    onChange={(e) => setExerciseForm((prev) => ({ ...prev, sets: e.target.value }))}
                     placeholder="3"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reps">Repetições</Label>
+                <div className="space-y-1">
+                  <Label>Repetições</Label>
                   <Input
-                    id="reps"
-                    value={workoutData.reps}
-                    onChange={(e) => setWorkoutData(prev => ({ ...prev, reps: e.target.value }))}
+                    value={exerciseForm.reps}
+                    onChange={(e) => setExerciseForm((prev) => ({ ...prev, reps: e.target.value }))}
                     placeholder="10 ou 30s"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="weight">Peso (kg)</Label>
-                  <Input
-                    id="weight"
-                    value={workoutData.weight}
-                    onChange={(e) => setWorkoutData(prev => ({ ...prev, weight: e.target.value }))}
-                    placeholder="Opcional"
                   />
                 </div>
               </div>
             </div>
-            
+
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsWorkoutOpen(false)}>
-                Fechar
+              <Button variant="outline" onClick={() => setIsExerciseOpen(false)}>
+                Cancelar
               </Button>
               <Button onClick={handleAddExercise} className="bg-green-600 hover:bg-green-700">
                 <Save className="w-4 h-4 mr-2" />
-                Adicionar Exercício
+                Registrar
               </Button>
             </DialogFooter>
           </DialogContent>

@@ -1,43 +1,38 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Home, Users, Calendar, Activity, BarChart3, Settings, Menu, Sun, Moon, LogOut, Dumbbell, UserPlus, CalendarPlus, Trophy } from 'lucide-react'
-import { useTheme } from "next-themes"
-import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Menu, BarChart3, Users, Calendar, UserCheck, Dumbbell, User, Sun, Moon, LogOut } from "lucide-react"
+import { useTheme } from "next-themes"
 
-interface LayoutProps {
-  children: React.ReactNode
-}
+const navigation = [
+  { name: "Agenda", href: "/schedule", icon: Calendar },
+  { name: "Alunos", href: "/students", icon: Users },
+  { name: "Professores", href: "/teachers", icon: UserCheck },
+  { name: "Exercícios", href: "/exercises", icon: Dumbbell },
+  { name: "Relatórios", href: "/reports", icon: BarChart3 }
+]
 
-export default function Layout({ children }: LayoutProps) {
+export default function Layout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  const router = useRouter()
+  const { theme, setTheme } = useTheme()
   const [userRole, setUserRole] = useState<string>("")
   const [userName, setUserName] = useState<string>("")
-  const { theme, setTheme } = useTheme()
-  const router = useRouter()
-  const pathname = usePathname()
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    const role = localStorage.getItem("userRole")
-    const name = localStorage.getItem("userName")
-    if (!role) {
-      router.push("/")
-      return
-    }
+    setMounted(true)
+    const role = localStorage.getItem("userRole") || "professor"
+    const name = localStorage.getItem("userName") || "Professor"
     setUserRole(role)
-    setUserName(name || "")
-  }, [router])
+    setUserName(name)
+  }, [])
 
   const handleLogout = () => {
     localStorage.removeItem("userRole")
@@ -45,206 +40,154 @@ export default function Layout({ children }: LayoutProps) {
     router.push("/")
   }
 
-  const navigation = [
-    {
-      name: "Dashboard",
-      href: "/dashboard",
-      icon: Home,
-      current: pathname === "/dashboard"
-    },
-    {
-      name: "Alunos",
-      href: "/students",
-      icon: Users,
-      current: pathname.startsWith("/students")
-    },
-    {
-      name: "Agenda",
-      href: "/schedule",
-      icon: Calendar,
-      current: pathname.startsWith("/schedule")
-    },
-    {
-      name: "Exercícios",
-      href: "/exercises",
-      icon: Activity,
-      current: pathname.startsWith("/exercises")
-    },
-    {
-      name: "Eventos",
-      href: "/events",
-      icon: Trophy,
-      current: pathname.startsWith("/events")
-    },
-    {
-      name: "Relatórios",
-      href: "/reports",
-      icon: BarChart3,
-      current: pathname.startsWith("/reports")
+  const filteredNavigation = navigation.filter((item) => {
+    if (userRole === "professor") {
+      return !["Professores"].includes(item.name)
     }
-  ]
+    return true
+  })
 
-  // Add admin-only navigation items
-  if (userRole === "admin") {
-    navigation.splice(2, 0, {
-      name: "Professores",
-      href: "/teachers",
-      icon: UserPlus,
-      current: pathname.startsWith("/teachers")
-    })
+  if (!mounted) {
+    return null
   }
 
-  const NavItems = () => (
-    <>
-      {navigation.map((item) => (
-        <Link
-          key={item.name}
-          href={item.href}
-          className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-            item.current
-              ? "bg-green-100 text-green-900 dark:bg-green-900 dark:text-green-100"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          }`}
-        >
-          <item.icon className="h-4 w-4" />
-          {item.name}
-        </Link>
-      ))}
-    </>
-  )
-
-  if (!userRole) return null
-
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0">
-        <div className="flex flex-col flex-grow bg-card border-r">
-          {/* Logo */}
-          <div className="flex items-center gap-2 px-6 py-4 border-b">
-            <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-              <Dumbbell className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold">FitManager</span>
-          </div>
+    <div className="min-h-screen bg-background">
+      {/* Mobile Header */}
+      <div className="lg:hidden">
+        <div className="flex items-center justify-between p-4 border-b">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon">
+                <Menu className="h-4 w-4" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-64">
+              <div className="flex flex-col h-full">
+                <div className="p-4 border-b">
+                  <h2 className="text-lg font-semibold">FitManager</h2>
+                  <p className="text-sm text-muted-foreground">{userName}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{userRole}</p>
+                </div>
+                <nav className="flex-1 p-4 space-y-2">
+                  {filteredNavigation.map((item) => {
+                    const Icon = item.icon
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                          pathname.startsWith(item.href)
+                            ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        {item.name}
+                      </Link>
+                    )
+                  })}
+                </nav>
+                <div className="p-4 border-t space-y-2">
+                  <Link
+                    href="/profile"
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                  >
+                    <User className="w-4 h-4" />
+                    Perfil
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                    className="w-full justify-start gap-3 px-3"
+                  >
+                    {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    {theme === "dark" ? "Modo Claro" : "Modo Escuro"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLogout}
+                    className="w-full justify-start gap-3 px-3 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sair
+                  </Button>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
 
-          {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
-            <NavItems />
-          </nav>
+          <h1 className="text-lg font-semibold">FitManager</h1>
 
-          {/* Settings */}
-          <div className="px-4 py-4 border-t">
-            <Link
-              href="/settings"
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                pathname === "/settings"
-                  ? "bg-green-100 text-green-900 dark:bg-green-900 dark:text-green-100"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
-            >
-              <Settings className="h-4 w-4" />
-              Configurações
-            </Link>
-          </div>
+          <Button variant="outline" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="lg:pl-64 flex flex-col flex-1">
-        {/* Top Bar */}
-        <header className="bg-card border-b px-4 py-3 lg:px-6">
-          <div className="flex items-center justify-between">
-            {/* Mobile Menu */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-64 p-0 sm:w-80">
-                <div className="flex flex-col h-full">
-                  {/* Logo */}
-                  <div className="flex items-center gap-2 px-6 py-4 border-b">
-                    <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-                      <Dumbbell className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="text-xl font-bold">FitManager</span>
-                  </div>
-
-                  {/* Navigation */}
-                  <nav className="flex-1 px-4 py-6 space-y-2">
-                    <NavItems />
-                  </nav>
-
-                  {/* Settings */}
-                  <div className="px-4 py-4 border-t">
-                    <Link
-                      href="/settings"
-                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-                    >
-                      <Settings className="h-4 w-4" />
-                      Configurações
-                    </Link>
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-
-            {/* User Menu */}
-            <div className="flex items-center gap-4">
-              {/* Theme Toggle */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                className="relative border border-border/40 hover:border-border"
-              >
-                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                <span className="sr-only">Toggle theme</span>
-              </Button>
-
-              {/* User Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src="/placeholder.svg?height=32&width=32" />
-                      <AvatarFallback>
-                        {userName.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="hidden sm:block text-left">
-                      <p className="text-sm font-medium">{userName}</p>
-                      <p className="text-xs text-muted-foreground capitalize">{userRole}</p>
-                    </div>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push("/profile")}>
-                    Perfil
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/settings")}>
-                    Configurações
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-600">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sair
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:flex">
+        <div className="w-64 bg-card border-r min-h-screen">
+          <div className="p-6 border-b">
+            <h2 className="text-xl font-bold">FitManager</h2>
+            <p className="text-sm text-muted-foreground mt-1">{userName}</p>
+            <p className="text-xs text-muted-foreground capitalize">{userRole}</p>
           </div>
-        </header>
+          <nav className="p-4 space-y-2">
+            {filteredNavigation.map((item) => {
+              const Icon = item.icon
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                    pathname.startsWith(item.href)
+                      ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                  {item.name}
+                </Link>
+              )
+            })}
+          </nav>
+          <div className="absolute bottom-0 w-64 p-4 border-t space-y-2">
+            <Link
+              href="/profile"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            >
+              <User className="w-5 h-5" />
+              Perfil
+            </Link>
+            <Button
+              variant="ghost"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="w-full justify-start gap-3 px-3"
+            >
+              {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              {theme === "dark" ? "Modo Claro" : "Modo Escuro"}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={handleLogout}
+              className="w-full justify-start gap-3 px-3 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+            >
+              <LogOut className="w-5 h-5" />
+              Sair
+            </Button>
+          </div>
+        </div>
+        <div className="flex-1">
+          <main className="p-6">{children}</main>
+        </div>
+      </div>
 
-        {/* Page Content */}
-        <main className="flex-1 p-3 sm:p-4 lg:p-6">
-          {children}
-        </main>
+      {/* Mobile Content */}
+      <div className="lg:hidden">
+        <main className="p-4">{children}</main>
       </div>
     </div>
   )
