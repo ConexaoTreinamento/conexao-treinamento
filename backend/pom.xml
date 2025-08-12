@@ -159,14 +159,16 @@
 
                     <mutators>
                         <mutator>DEFAULTS</mutator>
+                        <mutator>INCREMENTS</mutator>
+                        <mutator>REMOVE_CONDITIONALS</mutator>
                         <mutator>INVERT_NEGS</mutator>
                         <mutator>VOID_METHOD_CALLS</mutator>
                         <mutator>REMOVE_CONDITIONALS</mutator>
                     </mutators>
 
-                    <!-- Optional: fail the build if mutation coverage drops below a threshold -->
+                    <!-- Fail the build if mutation coverage drops below a threshold -->
                     <failWhenNoMutations>false</failWhenNoMutations>
-                    <mutationThreshold>70</mutationThreshold>  <!-- 75% mutation coverage required -->
+                    <mutationThreshold>70</mutationThreshold>  <!-- 70% mutation coverage required -->
                 </configuration>
             </plugin>
         </plugins>
