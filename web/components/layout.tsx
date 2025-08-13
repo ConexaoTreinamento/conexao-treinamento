@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, BarChart3, Users, Calendar, UserCheck, Dumbbell, User, Sun, Moon, LogOut } from "lucide-react"
 import { useTheme } from "next-themes"
+import {DialogTitle} from "@/components/ui/dialog";
 
 const navigation = [
   { name: "Agenda", href: "/schedule", icon: Calendar },
@@ -55,7 +56,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       {/* Mobile Header */}
-      <div className="lg:hidden">
+      <div className="lg:hidden sticky bg-background top-0 z-50">
         <div className="flex items-center justify-between p-4 border-b">
           <Sheet>
             <SheetTrigger asChild>
