@@ -2,33 +2,24 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.5.4</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/>
     </parent>
+
     <groupId>org.conexaotreinamento</groupId>
     <artifactId>conexao-treinamento-backend</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>conexao-treinamento-backend</name>
     <description>conexao-treinamento-backend</description>
-    <url/>
-    <licenses>
-        <license/>
-    </licenses>
-    <developers>
-        <developer/>
-    </developers>
-    <scm>
-        <connection/>
-        <developerConnection/>
-        <tag/>
-        <url/>
-    </scm>
+
     <properties>
         <java.version>21</java.version>
     </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.springdoc</groupId>
@@ -59,7 +50,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
@@ -92,19 +82,24 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.5.4</version>
-                <configuration>
-                    <jvmArguments>-Dspring.application.admin.enabled=true</jvmArguments>
-                </configuration>
                 <executions>
                     <execution>
                         <goals>
-                            <goal>start</goal>
-                            <goal>stop</goal>
+                            <goal>process-aot</goal>
                         </goals>
                     </execution>
                 </executions>
+                <version>3.5.4</version>
+                <configuration>
+                    <jvmArguments>
+                        -Xms32m -Xmx256m
+                        -XX:+TieredCompilation
+                        -XX:TieredStopAtLevel=1
+                        -Xshare:on
+                    </jvmArguments>
+                </configuration>
             </plugin>
+
             <plugin>
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-maven-plugin</artifactId>
@@ -116,13 +111,13 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <!-- This is the default, but good to be explicit -->
                             <outputDir>${project.build.directory}/../../docs/api</outputDir>
                             <outputFileName>openapi.json</outputFileName>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -135,28 +130,15 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
+
             <plugin>
                 <groupId>org.pitest</groupId>
                 <artifactId>pitest-maven</artifactId>
                 <version>1.20.1</version>
                 <configuration>
                     <targetClasses>
-                        <!-- Adjust this to your main package -->
                         <param>com.conexaotreinamento.*</param>
                     </targetClasses>
-
                     <mutators>
                         <mutator>DEFAULTS</mutator>
                         <mutator>INCREMENTS</mutator>
@@ -165,10 +147,8 @@
                         <mutator>VOID_METHOD_CALLS</mutator>
                         <mutator>REMOVE_CONDITIONALS</mutator>
                     </mutators>
-
-                    <!-- Fail the build if mutation coverage drops below a threshold -->
                     <failWhenNoMutations>false</failWhenNoMutations>
-                    <mutationThreshold>70</mutationThreshold>  <!-- 70% mutation coverage required -->
+                    <mutationThreshold>70</mutationThreshold>
                 </configuration>
             </plugin>
         </plugins>
