@@ -25,9 +25,15 @@ import Layout from "@/components/layout"
 
 export default function TeachersPage() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [userRole, setUserRole] = useState<string>("")
+  const [userRole, setUserRole] = useState<string>("admin")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingTeacher, setEditingTeacher] = useState<any>(null)
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false)
+  const [filters, setFilters] = useState({
+    status: "all",
+    compensation: "all",
+    specialty: "",
+  })
   const router = useRouter()
 
   useEffect(() => {
@@ -88,16 +94,23 @@ export default function TeachersPage() {
     email: "",
     phone: "",
     specialties: "",
-    compensation: "",
+    compensation: "Horista",
     status: "Ativo",
   })
 
-  const filteredTeachers = teachers.filter(
-    (teacher) =>
+  const filteredTeachers = teachers.filter((teacher) => {
+    const matchesSearch =
       teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       teacher.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      teacher.specialties.some((s) => s.toLowerCase().includes(searchTerm.toLowerCase())),
-  )
+      teacher.specialties.some((s) => s.toLowerCase().includes(searchTerm.toLowerCase()))
+
+    const matchesStatus = filters.status === "all" || teacher.status === filters.status
+    const matchesCompensation = filters.compensation === "all" || teacher.compensation === filters.compensation
+    const matchesSpecialty =
+      !filters.specialty || teacher.specialties.some((s) => s.toLowerCase().includes(filters.specialty.toLowerCase()))
+
+    return matchesSearch && matchesStatus && matchesCompensation && matchesSpecialty
+  })
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -153,7 +166,7 @@ export default function TeachersPage() {
       email: "",
       phone: "",
       specialties: "",
-      compensation: "",
+      compensation: "Horista",
       status: "Ativo",
     })
   }
@@ -304,10 +317,71 @@ export default function TeachersPage() {
               className="pl-10"
             />
           </div>
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Filtros
-          </Button>
+          <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Filter className="w-4 h-4 mr-2" />
+                Filtros
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Filtros</DialogTitle>
+                <DialogDescription>Filtre professores por critérios específicos</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select
+                    value={filters.status}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, status: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos os status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="Ativo">Ativo</SelectItem>
+                      <SelectItem value="Inativo">Inativo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Compensação</Label>
+                  <Select
+                    value={filters.compensation}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, compensation: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos os tipos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="Horista">Horista</SelectItem>
+                      <SelectItem value="Mensalista">Mensalista</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Especialidade</Label>
+                  <Input
+                    placeholder="Ex: Pilates, Yoga..."
+                    value={filters.specialty}
+                    onChange={(e) => setFilters((prev) => ({ ...prev, specialty: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setFilters({ status: "all", compensation: "all", specialty: "" })}
+                >
+                  Limpar
+                </Button>
+                <Button onClick={() => setIsFiltersOpen(false)}>Aplicar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Teachers Grid */}
@@ -323,8 +397,11 @@ export default function TeachersPage() {
                   <div className="flex items-center gap-3">
                     <Avatar>
                       <AvatarImage src={teacher.avatar || "/placeholder.svg"} />
-                      <AvatarFallback>
-                        <User className="w-4 h-4" />
+                      <AvatarFallback className="select-none">
+                        {teacher.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
                       </AvatarFallback>
                     </Avatar>
                     <div>

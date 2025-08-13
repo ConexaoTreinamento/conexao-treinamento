@@ -15,7 +15,8 @@ const navigation = [
   { name: "Alunos", href: "/students", icon: Users },
   { name: "Professores", href: "/teachers", icon: UserCheck },
   { name: "Exercícios", href: "/exercises", icon: Dumbbell },
-  { name: "Relatórios", href: "/reports", icon: BarChart3 }
+  { name: "Eventos", href: "/events", icon: Calendar },
+  { name: "Relatórios", href: "/reports", icon: BarChart3 },
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -54,18 +55,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       {/* Mobile Header */}
-      <div className="lg:hidden">
+      <div className="lg:hidden sticky bg-background top-0 z-50">
         <div className="flex items-center justify-between p-4 border-b">
+          <Button variant="outline" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
+
+          <h1 className="text-lg font-semibold">Conexão Treino</h1>
+
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon">
                 <Menu className="h-4 w-4" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64">
+            <SheetContent side="right" className="w-64">
               <div className="flex flex-col h-full">
                 <div className="p-4 border-b">
-                  <h2 className="text-lg font-semibold">FitManager</h2>
+                  <h2 className="text-lg font-semibold">Conexão Treino</h2>
                   <p className="text-sm text-muted-foreground">{userName}</p>
                   <p className="text-xs text-muted-foreground capitalize">{userRole}</p>
                 </div>
@@ -118,12 +125,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </SheetContent>
           </Sheet>
-
-          <h1 className="text-lg font-semibold">FitManager</h1>
-
-          <Button variant="outline" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
         </div>
       </div>
 
@@ -131,7 +132,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <div className="hidden lg:flex">
         <div className="w-64 bg-card border-r min-h-screen">
           <div className="p-6 border-b">
-            <h2 className="text-xl font-bold">FitManager</h2>
+            <h2 className="text-xl font-bold">Conexão Treino</h2>
             <p className="text-sm text-muted-foreground mt-1">{userName}</p>
             <p className="text-xs text-muted-foreground capitalize">{userRole}</p>
           </div>

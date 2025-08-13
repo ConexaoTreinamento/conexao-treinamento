@@ -22,13 +22,10 @@ export default function TeacherProfilePage() {
     birthDate: "1985-08-20",
     specialties: ["Pilates", "Yoga", "Alongamento"],
     compensation: "Horista",
-    hourlyRate: 45,
     status: "Ativo",
     joinDate: "2024-01-15",
     hoursWorked: 120,
     avatar: "/placeholder.svg?height=100&width=100",
-    bio: "Professora especializada em Pilates e Yoga com mais de 8 anos de experiência. Formada em Educação Física e certificada em Pilates pelo método clássico.",
-    certifications: ["Educação Física - CREF 123456", "Pilates Clássico - Studio Pilates", "Yoga Alliance RYT-200"],
 
     // Schedule
     schedule: [
@@ -44,8 +41,6 @@ export default function TeacherProfilePage() {
       monthlyHours: 120,
       monthlyClasses: 48,
       studentsManaged: 35,
-      avgRating: 4.8,
-      totalEarnings: 5400,
     },
 
     // Recent classes
@@ -137,8 +132,6 @@ export default function TeacherProfilePage() {
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                   <span>{teacherData.hoursWorked}h este mês</span>
-
-                  <span>{teacherData.hoursWorked}h este mês</span>
                 </div>
               </div>
 
@@ -177,7 +170,7 @@ export default function TeacherProfilePage() {
 
           {/* Content Tabs */}
           <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4 h-auto">
+            <TabsList className="grid w-full grid-cols-3 h-auto">
               <TabsTrigger value="overview" className="text-xs px-2 py-2">
                 Visão Geral
               </TabsTrigger>
@@ -187,14 +180,11 @@ export default function TeacherProfilePage() {
               <TabsTrigger value="performance" className="text-xs px-2 py-2">
                 Desempenho
               </TabsTrigger>
-              <TabsTrigger value="details" className="text-xs px-2 py-2">
-                Detalhes
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">
               {/* Stats Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
@@ -228,28 +218,7 @@ export default function TeacherProfilePage() {
                     </div>
                   </CardContent>
                 </Card>
-                <Card>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">Avaliação</p>
-                        <p className="text-xl font-bold">{teacherData.performance.avgRating}</p>
-                      </div>
-                      <Badge className="bg-yellow-100 text-yellow-800 text-xs">★</Badge>
-                    </div>
-                  </CardContent>
-                </Card>
               </div>
-
-              {/* Bio */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Sobre</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{teacherData.bio}</p>
-                </CardContent>
-              </Card>
 
               {/* Recent Classes */}
               <Card>
@@ -320,62 +289,13 @@ export default function TeacherProfilePage() {
                       <p className="text-sm text-muted-foreground">Aulas Ministradas</p>
                       <p className="text-2xl font-bold">{teacherData.performance.monthlyClasses}</p>
                     </div>
-                    <div className="p-3 rounded-lg bg-muted/50">
+                    <div className="p-3 rounded-lg bg-muted/50 col-span-2">
                       <p className="text-sm text-muted-foreground">Alunos Atendidos</p>
                       <p className="text-2xl font-bold">{teacherData.performance.studentsManaged}</p>
-                    </div>
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <p className="text-sm text-muted-foreground">Ganhos do Mês</p>
-                      <p className="text-2xl font-bold">R$ {teacherData.performance.totalEarnings.toLocaleString()}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
-
-            <TabsContent value="details" className="space-y-4">
-              <div className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Informações Pessoais</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <span className="text-sm text-muted-foreground">Data de Nascimento:</span>
-                      <p>{new Date(teacherData.birthDate).toLocaleDateString("pt-BR")}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-muted-foreground">Data de Contratação:</span>
-                      <p>{new Date(teacherData.joinDate).toLocaleDateString("pt-BR")}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-muted-foreground">Regime de Compensação:</span>
-                      <p>{teacherData.compensation}</p>
-                    </div>
-                    {teacherData.hourlyRate && (
-                      <div>
-                        <span className="text-sm text-muted-foreground">Valor por Hora:</span>
-                        <p>R$ {teacherData.hourlyRate},00</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Certificações</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {teacherData.certifications.map((cert, index) => (
-                        <div key={index} className="p-2 rounded border bg-muted/30">
-                          <p className="text-sm">{cert}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
             </TabsContent>
           </Tabs>
         </div>

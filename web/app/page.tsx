@@ -1,9 +1,7 @@
 "use client"
 
-import { useState } from "react"
-
+import { useState, useEffect } from "react"
 import type React from "react"
-import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,8 +16,10 @@ export default function HomePage() {
   const router = useRouter()
 
   useEffect(() => {
-    // Redirect to reports page (new dashboard)
-    router.replace("/reports")
+    const userRole = localStorage.getItem("userRole")
+    if (userRole) {
+      router.push("/reports")
+    }
   }, [router])
 
   const handleLogin = (e: React.FormEvent) => {

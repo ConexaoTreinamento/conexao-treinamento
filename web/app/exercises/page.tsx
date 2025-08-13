@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import {
   Dialog,
   DialogContent,
@@ -17,12 +18,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Search, Filter, Plus, Activity, Dumbbell, Target } from "lucide-react"
+import { Search, Filter, Plus, Activity, Dumbbell, Target, X } from "lucide-react"
 import Layout from "@/components/layout"
 
 export default function ExercisesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isNewExerciseOpen, setIsNewExerciseOpen] = useState(false)
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [filters, setFilters] = useState({
+    category: "",
+    equipment: "",
+    difficulty: "",
+    muscle: "",
+  })
   const [newExerciseForm, setNewExerciseForm] = useState({
     name: "",
     category: "",
@@ -93,12 +101,20 @@ export default function ExercisesPage() {
   const equipments = ["Barra", "Halter", "Polia", "Peso Corporal", "Máquina", "Elástico", "Kettlebell"]
   const difficulties = ["Iniciante", "Intermediário", "Avançado"]
 
-  const filteredExercises = exercises.filter(
-    (exercise) =>
+  const filteredExercises = exercises.filter((exercise) => {
+    const matchesSearch =
       exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       exercise.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exercise.muscle.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+      exercise.muscle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      exercise.equipment.toLowerCase().includes(searchTerm.toLowerCase())
+
+    const matchesCategory = !filters.category || exercise.category === filters.category
+    const matchesEquipment = !filters.equipment || exercise.equipment === filters.equipment
+    const matchesDifficulty = !filters.difficulty || exercise.difficulty === filters.difficulty
+    const matchesMuscle = !filters.muscle || exercise.muscle.toLowerCase().includes(filters.muscle.toLowerCase())
+
+    return matchesSearch && matchesCategory && matchesEquipment && matchesDifficulty && matchesMuscle
+  })
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -144,6 +160,17 @@ export default function ExercisesPage() {
       setIsNewExerciseOpen(false)
     }
   }
+
+  const clearFilters = () => {
+    setFilters({
+      category: "",
+      equipment: "",
+      difficulty: "",
+      muscle: "",
+    })
+  }
+
+  const hasActiveFilters = Object.values(filters).some((filter) => filter !== "")
 
   return (
     <Layout>
@@ -277,11 +304,110 @@ export default function ExercisesPage() {
               className="pl-10"
             />
           </div>
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Filtros
-          </Button>
+          <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="relative bg-transparent">
+                <Filter className="w-4 h-4 mr-2" />
+                Filtros
+                {hasActiveFilters && (
+                  <Badge className="ml-2 bg-green-600 text-white text-xs px-1 py-0">
+                    {Object.values(filters).filter((f) => f !== "").length}
+                  </Badge>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>Filtros de Exercícios</SheetTitle>
+                <SheetDescription>Refine sua busca por exercícios</SheetDescription>
+              </SheetHeader>
+              <div className="space-y-4 mt-6">
+                <div className="space-y-2">
+                  <Label>Categoria</Label>
+                  <Select
+                    value={filters.category}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, category: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas as categorias" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as categorias</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Equipamento</Label>
+                  <Select
+                    value={filters.equipment}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, equipment: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos os equipamentos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os equipamentos</SelectItem>
+                      {equipments.map((equipment) => (
+                        <SelectItem key={equipment} value={equipment}>
+                          {equipment}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Dificuldade</Label>
+                  <Select
+                    value={filters.difficulty}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, difficulty: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todas as dificuldades" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as dificuldades</SelectItem>
+                      {difficulties.map((difficulty) => (
+                        <SelectItem key={difficulty} value={difficulty}>
+                          {difficulty}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Músculo</Label>
+                  <Input
+                    placeholder="Digite o músculo..."
+                    value={filters.muscle}
+                    onChange={(e) => setFilters((prev) => ({ ...prev, muscle: e.target.value }))}
+                  />
+                </div>
+
+                {hasActiveFilters && (
+                  <Button variant="outline" onClick={clearFilters} className="w-full bg-transparent">
+                    <X className="w-4 h-4 mr-2" />
+                    Limpar Filtros
+                  </Button>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
+
+        {/* Results Summary */}
+        {(searchTerm || hasActiveFilters) && (
+          <div className="text-sm text-muted-foreground">
+            Mostrando {filteredExercises.length} de {exercises.length} exercícios
+          </div>
+        )}
 
         {/* Exercises Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -325,7 +451,11 @@ export default function ExercisesPage() {
             <CardContent className="text-center py-12">
               <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">Nenhum exercício encontrado</h3>
-              <p className="text-muted-foreground mb-4">Tente ajustar os filtros ou adicione um novo exercício.</p>
+              <p className="text-muted-foreground mb-4">
+                {searchTerm || hasActiveFilters
+                  ? "Tente ajustar os filtros ou termo de busca."
+                  : "Comece adicionando o primeiro exercício."}
+              </p>
               <Button className="bg-green-600 hover:bg-green-700" onClick={() => setIsNewExerciseOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Adicionar Primeiro Exercício

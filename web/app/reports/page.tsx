@@ -27,7 +27,6 @@ export default function ReportsPage() {
       hoursWorked: 120,
       classesGiven: 48,
       studentsManaged: 35,
-      avgRating: 4.8,
       compensation: "Horista",
       hourlyRate: 45,
       totalEarnings: 5400,
@@ -41,7 +40,6 @@ export default function ReportsPage() {
       hoursWorked: 160,
       classesGiven: 64,
       studentsManaged: 42,
-      avgRating: 4.6,
       compensation: "Mensalista",
       monthlySalary: 3500,
       totalEarnings: 3500,
@@ -55,7 +53,6 @@ export default function ReportsPage() {
       hoursWorked: 100,
       classesGiven: 40,
       studentsManaged: 28,
-      avgRating: 4.9,
       compensation: "Horista",
       hourlyRate: 50,
       totalEarnings: 5000,
@@ -69,7 +66,6 @@ export default function ReportsPage() {
       hoursWorked: 140,
       classesGiven: 56,
       studentsManaged: 38,
-      avgRating: 4.7,
       compensation: "Horista",
       hourlyRate: 48,
       totalEarnings: 6720,
@@ -106,7 +102,6 @@ export default function ReportsPage() {
   const totalHours = filteredReports.reduce((sum, teacher) => sum + teacher.hoursWorked, 0)
   const totalClasses = filteredReports.reduce((sum, teacher) => sum + teacher.classesGiven, 0)
   const totalStudents = filteredReports.reduce((sum, teacher) => sum + teacher.studentsManaged, 0)
-  const avgRating = filteredReports.reduce((sum, teacher) => sum + teacher.avgRating, 0) / filteredReports.length
 
   return (
     <Layout>
@@ -159,7 +154,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -195,18 +190,6 @@ export default function ReportsPage() {
               </div>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Avaliação Média</p>
-                  <p className="text-2xl font-bold">{avgRating.toFixed(1)}</p>
-                </div>
-                <BarChart3 className="w-6 h-6 text-orange-600" />
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Teachers Performance Table */}
@@ -228,7 +211,6 @@ export default function ReportsPage() {
                     <th className="text-left p-3">Horas Totais</th>
                     <th className="text-left p-3">Aulas/Mês</th>
                     <th className="text-left p-3">Alunos</th>
-                    <th className="text-left p-3">Avaliação</th>
                     <th className="text-left p-3">Regime</th>
                     <th className="text-left p-3">Especialidades</th>
                   </tr>
@@ -248,11 +230,6 @@ export default function ReportsPage() {
                       <td className="p-3 font-medium">{teacher.hoursWorked}h</td>
                       <td className="p-3 font-medium">{teacher.monthlyClasses}</td>
                       <td className="p-3">{teacher.studentsManaged}</td>
-                      <td className="p-3">
-                        <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
-                          {teacher.avgRating}/5.0
-                        </Badge>
-                      </td>
                       <td className="p-3">
                         <Badge
                           className={

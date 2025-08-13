@@ -8,16 +8,18 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Calendar, Clock, Users, Plus, MapPin, User, CheckCircle, XCircle, CalendarDays } from "lucide-react"
+import { Calendar, Clock, Plus, MapPin, User, CheckCircle, XCircle, CalendarDays, X, UserPlus } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 
@@ -25,14 +27,24 @@ export default function SchedulePage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [userRole, setUserRole] = useState<string>("")
   const [isNewClassOpen, setIsNewClassOpen] = useState(false)
+  const [newEventForm, setNewEventForm] = useState({
+    name: "",
+    description: "",
+    location: "",
+    date: "",
+    startTime: "",
+    endTime: "",
+    students: [] as string[],
+    attendance: {} as Record<string, boolean>,
+  })
   const [newClassForm, setNewClassForm] = useState({
     name: "",
     instructor: "",
     room: "",
-    time: "",
     maxStudents: "",
-    weekDay: "",
     description: "",
+    weekDays: [] as string[],
+    times: [] as { day: string; startTime: string; endTime: string }[],
   })
   const router = useRouter()
 
@@ -40,6 +52,13 @@ export default function SchedulePage() {
     const role = localStorage.getItem("userRole") || "professor"
     setUserRole(role)
   }, [])
+
+  useEffect(() => {
+    setNewEventForm((prev) => ({
+      ...prev,
+      date: selectedDate.toISOString().split("T")[0],
+    }))
+  }, [selectedDate])
 
   // Mock classes data
   const [classes, setClasses] = useState([
@@ -92,7 +111,27 @@ export default function SchedulePage() {
 
   const teachers = ["Prof. Ana", "Prof. Marina", "Prof. Roberto", "Prof. Carlos"]
   const rooms = ["Sala 1", "Sala 2", "Sala 3", "Área Externa"]
-  const weekDays = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"]
+  const weekDays = [
+    { value: "monday", label: "Segunda" },
+    { value: "tuesday", label: "Terça" },
+    { value: "wednesday", label: "Quarta" },
+    { value: "thursday", label: "Quinta" },
+    { value: "friday", label: "Sexta" },
+    { value: "saturday", label: "Sábado" },
+    { value: "sunday", label: "Domingo" },
+  ]
+
+  // Mock students for selection
+  const availableStudents = [
+    "Maria Silva",
+    "João Santos",
+    "Ana Costa",
+    "Carlos Lima",
+    "Lucia Ferreira",
+    "Patricia Oliveira",
+    "Roberto Alves",
+    "Fernanda Costa",
+  ]
 
   // Generate dates for horizontal scroll (14 days)
   const getScrollDates = () => {
@@ -134,29 +173,164 @@ export default function SchedulePage() {
     return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
   }
 
-  const handleCreateClass = () => {
-    if (newClassForm.name && newClassForm.instructor && newClassForm.time) {
-      const newClass = {
-        id: Date.now(),
-        name: newClassForm.name,
-        instructor: newClassForm.instructor,
-        room: newClassForm.room,
-        time: newClassForm.time,
-        duration: 60,
-        maxStudents: Number.parseInt(newClassForm.maxStudents) || 10,
-        currentStudents: 0,
-        date: selectedDate.toISOString().split("T")[0],
-        students: [],
+  const handleWeekDayToggle = (dayValue: string, dayLabel: string) => {
+    setNewClassForm((prev) => {
+      const isSelected = prev.weekDays.includes(dayValue)
+
+      if (isSelected) {
+        // Remove day and its time
+        return {
+          ...prev,
+          weekDays: prev.weekDays.filter((d) => d !== dayValue),
+          times: prev.times.filter((t) => t.day !== dayValue),
+        }
+      } else {
+        // Add day and copy time from first day if exists
+        const firstTime = prev.times[0]
+        const newTime = firstTime
+          ? { day: dayValue, startTime: firstTime.startTime, endTime: firstTime.endTime }
+          : { day: dayValue, startTime: "", endTime: "" }
+
+        return {
+          ...prev,
+          weekDays: [...prev.weekDays, dayValue],
+          times: [...prev.times, newTime],
+        }
       }
-      setClasses((prev) => [...prev, newClass])
+    })
+  }
+
+  const handleTimeChange = (dayValue: string, field: "startTime" | "endTime", value: string) => {
+    setNewClassForm((prev) => ({
+      ...prev,
+      times: prev.times.map((t) => {
+        if (t.day === dayValue) {
+          const updatedTime = { ...t, [field]: value }
+
+          // Validate times
+          if (updatedTime.startTime && updatedTime.endTime) {
+            const start = new Date(`2000-01-01T${updatedTime.startTime}`)
+            const end = new Date(`2000-01-01T${updatedTime.endTime}`)
+
+            if (end < start) {
+              // If end time is earlier than start time, set end time to start time
+              updatedTime.endTime = updatedTime.startTime
+            }
+          }
+
+          return updatedTime
+        }
+        return t
+      }),
+    }))
+  }
+
+  const handleCreateClass = () => {
+    if (newClassForm.name && newClassForm.instructor && newClassForm.weekDays.length > 0) {
+      // Create classes for each selected day
+      newClassForm.weekDays.forEach((dayValue) => {
+        const timeForDay = newClassForm.times.find((t) => t.day === dayValue)
+        if (timeForDay && timeForDay.startTime) {
+          const newClass = {
+            id: Date.now() + Math.random(),
+            name: newClassForm.name,
+            instructor: newClassForm.instructor,
+            room: newClassForm.room,
+            time: timeForDay.startTime,
+            duration: 60,
+            maxStudents: Number.parseInt(newClassForm.maxStudents) || 10,
+            currentStudents: 0,
+            date: selectedDate.toISOString().split("T")[0],
+            students: [],
+          }
+          setClasses((prev: any) => [...prev, newClass])
+        }
+      })
+
       setNewClassForm({
         name: "",
         instructor: "",
         room: "",
-        time: "",
         maxStudents: "",
-        weekDay: "",
         description: "",
+        weekDays: [],
+        times: [],
+      })
+      setIsNewClassOpen(false)
+    }
+  }
+
+  const handleEventTimeChange = (field: "startTime" | "endTime", value: string) => {
+    setNewEventForm((prev) => {
+      const newForm = { ...prev, [field]: value }
+
+      // Validate times
+      if (newForm.startTime && newForm.endTime) {
+        const start = new Date(`2000-01-01T${newForm.startTime}`)
+        const end = new Date(`2000-01-01T${newForm.endTime}`)
+
+        if (end < start) {
+          // If end time is earlier than start time, set end time to start time
+          newForm.endTime = newForm.startTime
+        }
+      }
+
+      return newForm
+    })
+  }
+
+  const toggleEventStudent = (student: string) => {
+    setNewEventForm((prev) => ({
+      ...prev,
+      students: prev.students.includes(student)
+        ? prev.students.filter((s) => s !== student)
+        : [...prev.students, student],
+    }))
+  }
+
+  const removeEventStudent = (student: string) => {
+    setNewEventForm((prev) => ({
+      ...prev,
+      students: prev.students.filter((s) => s !== student),
+    }))
+  }
+
+  const toggleEventAttendance = (student: string) => {
+    setNewEventForm((prev) => ({
+      ...prev,
+      attendance: {
+        ...prev.attendance,
+        [student]: !prev.attendance?.[student],
+      },
+    }))
+  }
+
+  const handleCreateEvent = () => {
+    if (newEventForm.name && newEventForm.date && newEventForm.startTime) {
+      const newEvent = {
+        id: Date.now(),
+        name: newEventForm.name,
+        description: newEventForm.description,
+        location: newEventForm.location,
+        date: newEventForm.date,
+        startTime: newEventForm.startTime,
+        endTime: newEventForm.endTime,
+        students: newEventForm.students,
+        attendance: newEventForm.attendance,
+        type: "event",
+      }
+
+      console.log("New event created:", newEvent)
+
+      setNewEventForm({
+        name: "",
+        description: "",
+        location: "",
+        date: selectedDate.toISOString().split("T")[0],
+        startTime: "",
+        endTime: "",
+        students: [],
+        attendance: {},
       })
       setIsNewClassOpen(false)
     }
@@ -179,97 +353,287 @@ export default function SchedulePage() {
                 Hoje
               </Button>
               {userRole === "admin" && (
-                <Dialog open={isNewClassOpen} onOpenChange={setIsNewClassOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Nova Turma</DialogTitle>
-                      <DialogDescription>Crie uma nova turma para a agenda</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="className">Nome da Turma</Label>
-                        <Input
-                          id="className"
-                          value={newClassForm.name}
-                          onChange={(e) => setNewClassForm((prev) => ({ ...prev, name: e.target.value }))}
-                          placeholder="Ex: Pilates Iniciante"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                          <Label htmlFor="instructor">Professor</Label>
-                          <Select
-                            value={newClassForm.instructor}
-                            onValueChange={(value) => setNewClassForm((prev) => ({ ...prev, instructor: value }))}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {teachers.map((teacher) => (
-                                <SelectItem key={teacher} value={teacher}>
-                                  {teacher}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="room">Sala</Label>
-                          <Select
-                            value={newClassForm.room}
-                            onValueChange={(value) => setNewClassForm((prev) => ({ ...prev, room: value }))}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {rooms.map((room) => (
-                                <SelectItem key={room} value={room}>
-                                  {room}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                          <Label htmlFor="time">Horário</Label>
-                          <Input
-                            id="time"
-                            type="time"
-                            value={newClassForm.time}
-                            onChange={(e) => setNewClassForm((prev) => ({ ...prev, time: e.target.value }))}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="maxStudents">Máx. Alunos</Label>
-                          <Input
-                            id="maxStudents"
-                            type="number"
-                            value={newClassForm.maxStudents}
-                            onChange={(e) => setNewClassForm((prev) => ({ ...prev, maxStudents: e.target.value }))}
-                            placeholder="10"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsNewClassOpen(false)}>
-                        Cancelar
+                <div className="flex gap-1">
+                  <Dialog open={isNewClassOpen} onOpenChange={setIsNewClassOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                        <Plus className="w-4 h-4" />
                       </Button>
-                      <Button onClick={handleCreateClass} className="bg-green-600 hover:bg-green-700">
-                        Criar Turma
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+                      <DialogHeader>
+                        <DialogTitle>Criar Novo</DialogTitle>
+                        <DialogDescription>Crie uma nova turma ou evento</DialogDescription>
+                      </DialogHeader>
+                      <Tabs defaultValue="class" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                          <TabsTrigger value="class">Turma</TabsTrigger>
+                          <TabsTrigger value="event">Evento</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="class" className="space-y-4 mt-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="className">Nome da Turma</Label>
+                            <Input
+                              id="className"
+                              value={newClassForm.name}
+                              onChange={(e) => setNewClassForm((prev) => ({ ...prev, name: e.target.value }))}
+                              placeholder="Ex: Pilates Iniciante"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <Label htmlFor="instructor">Professor</Label>
+                              <Select
+                                value={newClassForm.instructor}
+                                onValueChange={(value) => setNewClassForm((prev) => ({ ...prev, instructor: value }))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {teachers.map((teacher) => (
+                                    <SelectItem key={teacher} value={teacher}>
+                                      {teacher}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="room">Sala</Label>
+                              <Select
+                                value={newClassForm.room}
+                                onValueChange={(value) => setNewClassForm((prev) => ({ ...prev, room: value }))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {rooms.map((room) => (
+                                    <SelectItem key={room} value={room}>
+                                      {room}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Label>Dias da Semana</Label>
+                            <div className="grid grid-cols-2 gap-2">
+                              {weekDays.map((day) => (
+                                <div key={day.value} className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={day.value}
+                                    checked={newClassForm.weekDays.includes(day.value)}
+                                    onCheckedChange={() => handleWeekDayToggle(day.value, day.label)}
+                                  />
+                                  <Label htmlFor={day.value} className="text-sm">
+                                    {day.label}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          {newClassForm.weekDays.length > 0 && (
+                            <div className="space-y-3">
+                              <Label>Horários por Dia</Label>
+                              {newClassForm.weekDays.map((dayValue) => {
+                                const dayLabel = weekDays.find((d) => d.value === dayValue)?.label
+                                const timeForDay = newClassForm.times.find((t) => t.day === dayValue)
+
+                                return (
+                                  <div key={dayValue} className="p-3 border rounded-lg space-y-2">
+                                    <div className="flex items-center justify-between">
+                                      <Label className="font-medium">{dayLabel}</Label>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => handleWeekDayToggle(dayValue, dayLabel || "")}
+                                        className="h-6 w-6 p-0"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </Button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="space-y-1">
+                                        <Label className="text-xs">Início</Label>
+                                        <Input
+                                          type="time"
+                                          value={timeForDay?.startTime || ""}
+                                          onChange={(e) => handleTimeChange(dayValue, "startTime", e.target.value)}
+                                          className="h-8"
+                                        />
+                                      </div>
+                                      <div className="space-y-1">
+                                        <Label className="text-xs">Fim</Label>
+                                        <Input
+                                          type="time"
+                                          value={timeForDay?.endTime || ""}
+                                          onChange={(e) => handleTimeChange(dayValue, "endTime", e.target.value)}
+                                          className="h-8"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+                          <div className="space-y-2">
+                            <Label htmlFor="maxStudents">Máx. Alunos</Label>
+                            <Input
+                              id="maxStudents"
+                              type="number"
+                              value={newClassForm.maxStudents}
+                              onChange={(e) => setNewClassForm((prev) => ({ ...prev, maxStudents: e.target.value }))}
+                              placeholder="10"
+                            />
+                          </div>
+                          <div className="flex gap-2 pt-4">
+                            <Button variant="outline" onClick={() => setIsNewClassOpen(false)} className="flex-1">
+                              Cancelar
+                            </Button>
+                            <Button onClick={handleCreateClass} className="bg-green-600 hover:bg-green-700 flex-1">
+                              Criar Turma
+                            </Button>
+                          </div>
+                        </TabsContent>
+                        <TabsContent value="event" className="space-y-4 mt-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="eventName">Nome do Evento</Label>
+                            <Input
+                              id="eventName"
+                              value={newEventForm.name}
+                              onChange={(e) => setNewEventForm((prev) => ({ ...prev, name: e.target.value }))}
+                              placeholder="Ex: Workshop de Yoga"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="eventDescription">Descrição</Label>
+                            <Textarea
+                              id="eventDescription"
+                              value={newEventForm.description}
+                              onChange={(e) => setNewEventForm((prev) => ({ ...prev, description: e.target.value }))}
+                              placeholder="Descrição do evento..."
+                              rows={3}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="eventLocation">Local</Label>
+                            <Input
+                              id="eventLocation"
+                              value={newEventForm.location}
+                              onChange={(e) => setNewEventForm((prev) => ({ ...prev, location: e.target.value }))}
+                              placeholder="Ex: Sala 1, Área Externa"
+                            />
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <div className="space-y-2">
+                              <Label htmlFor="eventDate">Data</Label>
+                              <Input
+                                id="eventDate"
+                                type="date"
+                                value={newEventForm.date}
+                                onChange={(e) => setNewEventForm((prev) => ({ ...prev, date: e.target.value }))}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="eventStartTime">Início</Label>
+                              <Input
+                                id="eventStartTime"
+                                type="time"
+                                value={newEventForm.startTime}
+                                onChange={(e) => handleEventTimeChange("startTime", e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="eventEndTime">Fim</Label>
+                              <Input
+                                id="eventEndTime"
+                                type="time"
+                                value={newEventForm.endTime}
+                                onChange={(e) => handleEventTimeChange("endTime", e.target.value)}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Label>Participantes ({newEventForm.students?.length || 0} selecionados)</Label>
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button size="sm" variant="outline">
+                                    <UserPlus className="w-4 h-4 mr-1" />
+                                    Adicionar
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-md">
+                                  <DialogHeader>
+                                    <DialogTitle>Adicionar Participantes</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="max-h-64 overflow-y-auto">
+                                    <div className="space-y-2">
+                                      {availableStudents.map((student) => (
+                                        <div key={student} className="flex items-center space-x-2">
+                                          <Checkbox
+                                            id={student}
+                                            checked={newEventForm.students?.includes(student)}
+                                            onCheckedChange={() => toggleEventStudent(student)}
+                                          />
+                                          <label htmlFor={student} className="text-sm cursor-pointer flex-1">
+                                            {student}
+                                          </label>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                            </div>
+
+                            {newEventForm.students?.length > 0 && (
+                              <div className="border rounded-lg p-3 max-h-32 overflow-y-auto space-y-2">
+                                {newEventForm.students.map((student: string) => (
+                                  <div key={student} className="flex items-center justify-between p-2 bg-muted rounded">
+                                    <span className="text-sm">{student}</span>
+                                    <div className="flex items-center gap-1">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => toggleEventAttendance(student)}
+                                        className={`h-6 w-6 p-0 ${newEventForm.attendance?.[student] ? "text-green-600" : "text-muted-foreground"}`}
+                                      >
+                                        <CheckCircle className="w-3 h-3" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => removeEventStudent(student)}
+                                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex gap-2 pt-4">
+                            <Button variant="outline" onClick={() => setIsNewClassOpen(false)} className="flex-1">
+                              Cancelar
+                            </Button>
+                            <Button onClick={handleCreateEvent} className="bg-green-600 hover:bg-green-700 flex-1">
+                              Criar Evento
+                            </Button>
+                          </div>
+                        </TabsContent>
+                      </Tabs>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               )}
             </div>
           </div>
@@ -281,7 +645,6 @@ export default function SchedulePage() {
             })}
           </p>
         </div>
-
         {/* Horizontal Date Scroll - Mobile First */}
         <div className="w-full">
           <div
@@ -306,7 +669,6 @@ export default function SchedulePage() {
             ))}
           </div>
         </div>
-
         {/* Classes for Selected Date */}
         <div className="space-y-3">
           {getClassesForDate(selectedDate).length === 0 ? (
@@ -322,7 +684,7 @@ export default function SchedulePage() {
                     onClick={() => setIsNewClassOpen(true)}
                   >
                     <Plus className="w-4 h-4 mr-1" />
-                    Criar Primeira Turma
+                    Criar evento
                   </Button>
                 )}
               </CardContent>
@@ -354,9 +716,7 @@ export default function SchedulePage() {
                     </Badge>
                   </div>
                 </CardHeader>
-
                 <CardContent className="space-y-3">
-                  {/* Students List - Mobile Optimized */}
                   {classItem.students.length > 0 && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -370,8 +730,6 @@ export default function SchedulePage() {
                           Gerenciar
                         </Button>
                       </div>
-
-                      {/* Scrollable Students List */}
                       <div className="max-h-32 overflow-y-auto space-y-1" style={{ scrollbarWidth: "thin" }}>
                         {classItem.students.map((student) => (
                           <div key={student.id} className="flex items-center gap-2 p-1">
@@ -395,7 +753,6 @@ export default function SchedulePage() {
                       </div>
                     </div>
                   )}
-
                   {classItem.students.length === 0 && (
                     <div className="text-center py-2">
                       <p className="text-sm text-muted-foreground">Nenhum aluno inscrito</p>

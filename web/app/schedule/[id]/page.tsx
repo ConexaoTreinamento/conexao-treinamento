@@ -32,6 +32,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
 
+// Mock functions for demonstration purposes
+const getStudentSchedule = (studentId: number) => {
+  return { daysPerWeek: 5 }
+}
+
+const getStudentSelectedDays = (studentId: number) => {
+  return ["Segunda-feira", "Terça-feira"]
+}
+
+const updateStudentSchedule = (studentId: number, classId: number, classDate: string) => {
+  console.log(`Updated student ${studentId} schedule for class ${classId} on ${classDate}`)
+}
+
 export default function ClassDetailPage() {
   const router = useRouter()
   const params = useParams()
@@ -263,7 +276,7 @@ export default function ClassDetailPage() {
                           <div className="flex items-center gap-3">
                             <Avatar className="w-8 h-8">
                               <AvatarImage src={student.avatar || "/placeholder.svg"} />
-                              <AvatarFallback>
+                              <AvatarFallback className="select-none">
                                 {student.name
                                   .split(" ")
                                   .map((n) => n[0])
@@ -272,7 +285,44 @@ export default function ClassDetailPage() {
                             </Avatar>
                             <span className="font-medium">{student.name}</span>
                           </div>
-                          <Button size="sm">Adicionar</Button>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              // Check if student has available days in their plan
+                              const studentSchedule = getStudentSchedule(student.id)
+                              const selectedDays = getStudentSelectedDays(student.id)
+
+                              if (selectedDays.length >= studentSchedule.daysPerWeek) {
+                                alert(
+                                  `${student.name} já atingiu o limite de ${studentSchedule.daysPerWeek} dias por semana do seu plano.`,
+                                )
+                                return
+                              }
+
+                              // Add student to class
+                              setClassData((prev) => ({
+                                ...prev,
+                                students: [
+                                  ...prev.students,
+                                  {
+                                    id: student.id,
+                                    name: student.name,
+                                    avatar: student.avatar,
+                                    present: false,
+                                    exercises: [],
+                                  },
+                                ],
+                                currentStudents: prev.currentStudents + 1,
+                              }))
+
+                              // Update student's schedule (mock implementation)
+                              updateStudentSchedule(student.id, classData.id, classData.date)
+
+                              setIsAddStudentOpen(false)
+                            }}
+                          >
+                            Adicionar
+                          </Button>
                         </div>
                       ))}
                     </div>
@@ -288,7 +338,7 @@ export default function ClassDetailPage() {
                       <div className="flex items-center gap-3">
                         <Avatar className="w-8 h-8">
                           <AvatarImage src={student.avatar || "/placeholder.svg"} />
-                          <AvatarFallback>
+                          <AvatarFallback className="select-none">
                             {student.name
                               .split(" ")
                               .map((n) => n[0])
@@ -305,7 +355,7 @@ export default function ClassDetailPage() {
                               className={`h-6 text-xs ${
                                 student.present
                                   ? "bg-green-600 hover:bg-green-700"
-                                  : "border-red-300 text-red-600 hover:bg-red-50"
+                                  : "border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
                               }`}
                             >
                               {student.present ? (
