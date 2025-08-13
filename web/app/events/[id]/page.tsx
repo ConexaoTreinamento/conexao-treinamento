@@ -15,8 +15,9 @@ import {
   UserPlus,
   UserMinus,
   Edit,
-  UserCheck,
   X,
+  CheckCircle,
+  XCircle,
 } from "lucide-react"
 import {
   Dialog,
@@ -345,7 +346,7 @@ export default function EventDetailPage() {
                               onClick={() => toggleAttendance(student)}
                               className={`h-6 w-6 p-0 ${eventForm.attendance?.[student] ? "text-green-600" : "text-muted-foreground"}`}
                             >
-                              <UserCheck className="w-3 h-3" />
+                              <CheckCircle className="w-3 h-3" />
                             </Button>
                             <Button
                               size="sm"
@@ -418,44 +419,6 @@ export default function EventDetailPage() {
               </div>
 
               <div className="pt-4 border-t space-y-2">
-                <Dialog open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" className="w-full bg-transparent">
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Adicionar Participante
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Adicionar Participante</DialogTitle>
-                      <DialogDescription>Selecione um aluno para adicionar ao evento</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3">
-                      {availableStudents
-                        .filter((student) => !eventForm.students.includes(student))
-                        .map((student) => (
-                          <div key={student} className="flex items-center justify-between p-3 rounded-lg border">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="w-8 h-8">
-                                <AvatarImage src="/placeholder.svg" />
-                                <AvatarFallback>
-                                  {student
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="font-medium">{student}</span>
-                            </div>
-                            <Button size="sm" onClick={() => handleQuickAddStudent(student)}>
-                              Adicionar
-                            </Button>
-                          </div>
-                        ))}
-                    </div>
-                  </DialogContent>
-                </Dialog>
-
                 <Dialog open={isEnrollDialogOpen} onOpenChange={setIsEnrollDialogOpen}>
                   <DialogTrigger asChild>
                     <Button
@@ -515,10 +478,48 @@ export default function EventDetailPage() {
           {/* Participants List */}
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Participantes ({eventData.participants.length})
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Participantes ({eventData.participants.length})
+                </CardTitle>
+                <Dialog open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Adicionar
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Adicionar Participante</DialogTitle>
+                      <DialogDescription>Selecione um aluno para adicionar ao evento</DialogDescription>
+                    </DialogHeader>
+                    <div className="max-h-64 overflow-y-auto space-y-2">
+                      {availableStudents
+                        .filter((student) => !eventForm.students.includes(student))
+                        .map((student) => (
+                          <div key={student} className="flex items-center justify-between p-3 rounded-lg border">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="w-8 h-8">
+                                <AvatarFallback className="select-none">
+                                  {student
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="font-medium">{student}</span>
+                            </div>
+                            <Button size="sm" onClick={() => handleQuickAddStudent(student)}>
+                              Adicionar
+                            </Button>
+                          </div>
+                        ))}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -527,7 +528,7 @@ export default function EventDetailPage() {
                     <div className="flex items-center gap-3">
                       <Avatar>
                         <AvatarImage src={participant.avatar || "/placeholder.svg"} />
-                        <AvatarFallback>
+                        <AvatarFallback className="select-none">
                           {participant.name
                             .split(" ")
                             .map((n) => n[0])
@@ -548,19 +549,19 @@ export default function EventDetailPage() {
                         onClick={() => toggleAttendance(participant.name)}
                         className={`h-8 text-xs ${
                           participant.present
-                            ? "bg-green-600 hover:bg-green-700"
-                            : "border-gray-300 text-gray-600 hover:bg-gray-50"
+                            ? "bg-green-600 hover:bg-green-700 text-white"
+                            : "border-red-600 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
                         }`}
                       >
                         {participant.present ? (
                           <>
-                            <UserCheck className="w-3 h-3 mr-1" />
+                            <CheckCircle className="w-3 h-3 mr-1" />
                             Presente
                           </>
                         ) : (
                           <>
-                            <UserCheck className="w-3 h-3 mr-1" />
-                            Marcar Presente
+                            <XCircle className="w-3 h-3 mr-1" />
+                            Ausente
                           </>
                         )}
                       </Button>

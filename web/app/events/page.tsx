@@ -259,6 +259,12 @@ export default function EventsPage() {
   const [isNewEventOpen, setIsNewEventOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState<any>(null)
   const [joinModalEvent, setJoinModalEvent] = useState<any>(null)
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false)
+  const [filters, setFilters] = useState({
+    type: "all",
+    status: "all",
+    date: "",
+  })
   const [eventForm, setEventForm] = useState({
     name: "",
     type: "",
@@ -321,12 +327,18 @@ export default function EventsPage() {
     "Fernanda Costa",
   ]
 
-  const filteredEvents = events.filter(
-    (event) =>
+  const filteredEvents = events.filter((event) => {
+    const matchesSearch =
       event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       event.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.location.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+      event.location.toLowerCase().includes(searchTerm.toLowerCase())
+
+    const matchesType = filters.type === "all" || event.type === filters.type
+    const matchesStatus = filters.status === "all" || event.status === filters.status
+    const matchesDate = !filters.date || event.date === filters.date
+
+    return matchesSearch && matchesType && matchesStatus && matchesDate
+  })
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -472,10 +484,74 @@ export default function EventsPage() {
               className="pl-10"
             />
           </div>
-          <Button variant="outline">
-            <Filter className="w-4 h-4 mr-2" />
-            Filtros
-          </Button>
+          <Dialog open={isFiltersOpen} onOpenChange={setIsFiltersOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Filter className="w-4 h-4 mr-2" />
+                Filtros
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Filtros</DialogTitle>
+                <DialogDescription>Filtre eventos por critérios específicos</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Tipo</Label>
+                  <Select
+                    value={filters.type}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, type: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos os tipos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="Corrida">Corrida</SelectItem>
+                      <SelectItem value="Yoga">Yoga</SelectItem>
+                      <SelectItem value="Trilha">Trilha</SelectItem>
+                      <SelectItem value="Competição">Competição</SelectItem>
+                      <SelectItem value="Workshop">Workshop</SelectItem>
+                      <SelectItem value="Palestra">Palestra</SelectItem>
+                      <SelectItem value="Treino Funcional">Treino Funcional</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select
+                    value={filters.status}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, status: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos os status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="Aberto">Aberto</SelectItem>
+                      <SelectItem value="Lotado">Lotado</SelectItem>
+                      <SelectItem value="Cancelado">Cancelado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Data</Label>
+                  <Input
+                    type="date"
+                    value={filters.date}
+                    onChange={(e) => setFilters((prev) => ({ ...prev, date: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setFilters({ type: "all", status: "all", date: "" })}>
+                  Limpar
+                </Button>
+                <Button onClick={() => setIsFiltersOpen(false)}>Aplicar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Events Grid */}
@@ -546,7 +622,7 @@ export default function EventsPage() {
                       {event.participants.slice(0, 5).map((participant, idx) => (
                         <Avatar key={idx} className="w-8 h-8 border-2 border-background">
                           <AvatarImage src={participant.avatar || "/placeholder.svg"} />
-                          <AvatarFallback className="text-xs">
+                          <AvatarFallback className="text-xs select-none">
                             {participant.name
                               .split(" ")
                               .map((n) => n[0])
@@ -564,17 +640,6 @@ export default function EventsPage() {
                 )}
 
                 <div className="flex gap-2 pt-2 border-t">
-                  <Button
-                    variant="outline"
-                    className="flex-1 bg-transparent"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      router.push(`/events/${event.id}`)
-                    }}
-                  >
-                    Ver Detalhes
-                  </Button>
                   <Button
                     className="flex-1 bg-green-600 hover:bg-green-700"
                     size="sm"

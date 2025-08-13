@@ -276,7 +276,7 @@ export default function ClassDetailPage() {
                           <div className="flex items-center gap-3">
                             <Avatar className="w-8 h-8">
                               <AvatarImage src={student.avatar || "/placeholder.svg"} />
-                              <AvatarFallback>
+                              <AvatarFallback className="select-none">
                                 {student.name
                                   .split(" ")
                                   .map((n) => n[0])
@@ -338,7 +338,7 @@ export default function ClassDetailPage() {
                       <div className="flex items-center gap-3">
                         <Avatar className="w-8 h-8">
                           <AvatarImage src={student.avatar || "/placeholder.svg"} />
-                          <AvatarFallback>
+                          <AvatarFallback className="select-none">
                             {student.name
                               .split(" ")
                               .map((n) => n[0])
@@ -355,7 +355,7 @@ export default function ClassDetailPage() {
                               className={`h-6 text-xs ${
                                 student.present
                                   ? "bg-green-600 hover:bg-green-700"
-                                  : "border-red-300 text-red-600 hover:bg-red-50"
+                                  : "border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
                               }`}
                             >
                               {student.present ? (

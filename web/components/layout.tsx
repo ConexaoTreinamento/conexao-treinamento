@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, BarChart3, Users, Calendar, UserCheck, Dumbbell, User, Sun, Moon, LogOut } from "lucide-react"
 import { useTheme } from "next-themes"
-import {DialogTitle} from "@/components/ui/dialog";
 
 const navigation = [
   { name: "Agenda", href: "/schedule", icon: Calendar },
@@ -58,13 +57,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Mobile Header */}
       <div className="lg:hidden sticky bg-background top-0 z-50">
         <div className="flex items-center justify-between p-4 border-b">
+          <Button variant="outline" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
+
+          <h1 className="text-lg font-semibold">Conexão Treino</h1>
+
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon">
                 <Menu className="h-4 w-4" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64">
+            <SheetContent side="right" className="w-64">
               <div className="flex flex-col h-full">
                 <div className="p-4 border-b">
                   <h2 className="text-lg font-semibold">Conexão Treino</h2>
@@ -120,12 +125,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </SheetContent>
           </Sheet>
-
-          <h1 className="text-lg font-semibold">Conexão Treino</h1>
-
-          <Button variant="outline" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
         </div>
       </div>
 
