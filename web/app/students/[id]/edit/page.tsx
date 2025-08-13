@@ -54,12 +54,20 @@ export default function EditStudentPage() {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      router.back()
+    } else {
+      router.push(`/students/${params.id}`)
+    }
+  }
+
   return (
     <Layout>
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+          <Button variant="ghost" size="icon" onClick={handleBack}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
@@ -263,7 +271,7 @@ export default function EditStudentPage() {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={() => router.back()} className="flex-1 sm:flex-none">
+            <Button type="button" variant="outline" onClick={handleBack} className="flex-1 sm:flex-none bg-transparent">
               Cancelar
             </Button>
             <Button type="submit" disabled={isLoading} className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700">

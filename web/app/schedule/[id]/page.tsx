@@ -32,6 +32,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
 
+// Mock functions for demonstration purposes
+const getStudentSchedule = (studentId: number) => {
+  return { daysPerWeek: 5 }
+}
+
+const getStudentSelectedDays = (studentId: number) => {
+  return ["Segunda-feira", "Terça-feira"]
+}
+
+const updateStudentSchedule = (studentId: number, classId: number, classDate: string) => {
+  console.log(`Updated student ${studentId} schedule for class ${classId} on ${classDate}`)
+}
+
 export default function ClassDetailPage() {
   const router = useRouter()
   const params = useParams()
@@ -272,7 +285,44 @@ export default function ClassDetailPage() {
                             </Avatar>
                             <span className="font-medium">{student.name}</span>
                           </div>
-                          <Button size="sm">Adicionar</Button>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              // Check if student has available days in their plan
+                              const studentSchedule = getStudentSchedule(student.id)
+                              const selectedDays = getStudentSelectedDays(student.id)
+
+                              if (selectedDays.length >= studentSchedule.daysPerWeek) {
+                                alert(
+                                  `${student.name} já atingiu o limite de ${studentSchedule.daysPerWeek} dias por semana do seu plano.`,
+                                )
+                                return
+                              }
+
+                              // Add student to class
+                              setClassData((prev) => ({
+                                ...prev,
+                                students: [
+                                  ...prev.students,
+                                  {
+                                    id: student.id,
+                                    name: student.name,
+                                    avatar: student.avatar,
+                                    present: false,
+                                    exercises: [],
+                                  },
+                                ],
+                                currentStudents: prev.currentStudents + 1,
+                              }))
+
+                              // Update student's schedule (mock implementation)
+                              updateStudentSchedule(student.id, classData.id, classData.date)
+
+                              setIsAddStudentOpen(false)
+                            }}
+                          >
+                            Adicionar
+                          </Button>
                         </div>
                       ))}
                     </div>

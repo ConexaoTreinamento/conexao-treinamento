@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, TrendingUp, Edit, Dumbbell } from "lucide-react"
+import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, TrendingUp, Edit, CalendarDays } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
 
@@ -56,14 +56,14 @@ export default function StudentProfilePage() {
       { name: "Pilates Iniciante", date: "2024-07-15", instructor: "Prof. Ana", status: "Ausente" },
     ],
 
-    // Current workout plan
-    workoutPlan: {
-      name: "Plano de Condicionamento",
-      startDate: "2024-07-01",
-      endDate: "2024-09-30",
-      goal: "Perda de peso",
-      activeDays: 4,
-      totalExercises: 24,
+    // Current class schedule
+    classSchedule: {
+      daysPerWeek: 3,
+      selectedClasses: [
+        { day: "Segunda", time: "09:00", class: "Pilates Iniciante", instructor: "Prof. Ana" },
+        { day: "Quarta", time: "18:00", class: "Yoga", instructor: "Prof. Marina" },
+        { day: "Sexta", time: "17:00", class: "CrossFit Iniciante", instructor: "Prof. Roberto" },
+      ],
     },
   }
 
@@ -171,9 +171,13 @@ export default function StudentProfilePage() {
                   <Activity className="w-4 h-4 mr-2" />
                   Avaliação
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => router.push(`/students/${params.id}/workout-plan`)}>
-                  <Dumbbell className="w-4 h-4 mr-2" />
-                  Treino
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => router.push(`/students/${params.id}/class-schedule`)}
+                >
+                  <CalendarDays className="w-4 h-4 mr-2" />
+                  Cronograma
                 </Button>
               </div>
             </CardContent>
@@ -234,40 +238,38 @@ export default function StudentProfilePage() {
                 </Card>
               </div>
 
-              {/* Current Workout Plan */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
-                    <Dumbbell className="w-4 h-4" />
-                    Plano de Treino Atual
+                    <CalendarDays className="w-4 h-4" />
+                    Cronograma de Aulas
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="font-medium">{studentData.workoutPlan.name}</span>
-                      <Badge variant="outline">{studentData.workoutPlan.goal}</Badge>
+                      <span className="font-medium">Plano {studentData.plan}</span>
+                      <Badge variant="outline">{studentData.classSchedule.daysPerWeek} dias/semana</Badge>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Período:</span>
-                        <p className="text-xs">
-                          {new Date(studentData.workoutPlan.startDate).toLocaleDateString("pt-BR")} -{" "}
-                          {new Date(studentData.workoutPlan.endDate).toLocaleDateString("pt-BR")}
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Dias ativos:</span>
-                        <p>{studentData.workoutPlan.activeDays}/7</p>
-                      </div>
+                    <div className="space-y-2">
+                      {studentData.classSchedule.selectedClasses.map((classItem, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 rounded border bg-muted/50">
+                          <div>
+                            <p className="font-medium text-sm">{classItem.class}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {classItem.day} - {classItem.time} • {classItem.instructor}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
                       className="w-full bg-transparent"
-                      onClick={() => router.push(`/students/${params.id}/workout-plan`)}
+                      onClick={() => router.push(`/students/${params.id}/class-schedule`)}
                     >
-                      Ver Plano Completo
+                      Gerenciar Cronograma
                     </Button>
                   </div>
                 </CardContent>
