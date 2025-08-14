@@ -18,7 +18,7 @@ export default function HomePage() {
   useEffect(() => {
     const userRole = localStorage.getItem("userRole")
     if (userRole) {
-      router.push("/reports")
+      router.push("/schedule")
     }
   }, [router])
 
