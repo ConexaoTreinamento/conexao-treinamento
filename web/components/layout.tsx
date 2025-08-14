@@ -6,9 +6,10 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
 import { Menu, BarChart3, Users, Calendar, UserCheck, Dumbbell, User, Sun, Moon, LogOut } from "lucide-react"
 import { useTheme } from "next-themes"
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 
 const navigation = [
   { name: "Agenda", href: "/schedule", icon: Calendar },
@@ -70,6 +71,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-64">
+              <VisuallyHidden>
+                <SheetTitle>Menu de Navegação</SheetTitle>
+              </VisuallyHidden>
               <div className="flex flex-col h-full">
                 <div className="p-4 border-b">
                   <h2 className="text-lg font-semibold">Conexão Treino</h2>
