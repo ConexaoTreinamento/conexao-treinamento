@@ -24,8 +24,8 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/webjars/**"
                         ).permitAll()
-                        // TODO: implement authentication
-                        .anyRequest().permitAll()
+                        // Require authentication for all other endpoints
+                        .anyRequest().authenticated()
                 );
         // .httpBasic(withDefaults()); // Or .formLogin(withDefaults()); depending on your auth type
 
