@@ -36,6 +36,37 @@ import {
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 
+// Define interfaces for better type safety
+interface EventData {
+  id: number
+  name: string
+  type: string
+  date: string
+  startTime: string
+  endTime: string
+  location: string
+  status: string
+  description: string
+  students: string[]
+  attendance: Record<string, boolean>
+  participants: Array<{
+    name: string
+    avatar: string
+  }>
+}
+
+interface EventFormData {
+  name: string
+  type: string
+  date: string
+  startTime: string
+  endTime: string
+  location: string
+  description: string
+  students: string[]
+  attendance: Record<string, boolean>
+}
+
 const EventForm = ({
   eventForm,
   setEventForm,
@@ -44,7 +75,7 @@ const EventForm = ({
   onCancel,
   isEditing = false,
 }: {
-  eventForm: any
+  eventForm: EventFormData
   setEventForm: any
   availableStudents: string[]
   onSubmit: () => void
@@ -276,7 +307,7 @@ export default function EventsPage() {
     students: [] as string[],
     attendance: {} as Record<string, boolean>,
   })
-  const [events, setEvents] = useState([
+  const [events, setEvents] = useState<EventData[]>([
     {
       id: 1,
       name: "Corrida no Parque",
