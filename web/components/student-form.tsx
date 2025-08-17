@@ -127,12 +127,12 @@ export default function StudentForm({
 
     // Anamnesis fields
     medication: initialData.medication || "",
-    isDoctorAwareOfPhysicalActivity: initialData.isDoctorAwareOfPhysicalActivity || false,
+    isDoctorAwareOfPhysicalActivity: false,
     favoritePhysicalActivity: initialData.favoritePhysicalActivity || "",
     hasInsomnia: initialData.hasInsomnia || "",
     dietOrientedBy: initialData.dietOrientedBy || "",
     cardiacProblems: initialData.cardiacProblems || "",
-    hasHypertension: initialData.hasHypertension || false,
+    hasHypertension: false,
     chronicDiseases: initialData.chronicDiseases || "",
     difficultiesInPhysicalActivities: initialData.difficultiesInPhysicalActivities || "",
     medicalOrientationsToAvoidPhysicalActivity: initialData.medicalOrientationsToAvoidPhysicalActivity || "",
@@ -142,7 +142,7 @@ export default function StudentForm({
     spinalDiscProblems: initialData.spinalDiscProblems || "",
     diabetes: initialData.diabetes || "",
     smokingDuration: initialData.smokingDuration || "",
-    alteredCholesterol: initialData.alteredCholesterol || false,
+    alteredCholesterol: false,
     osteoporosisLocation: initialData.osteoporosisLocation || "",
     impairmentObservations: initialData.impairmentObservations || "",
 
@@ -474,7 +474,7 @@ export default function StudentForm({
                   id="isDoctorAwareOfPhysicalActivity"
                   checked={formData.isDoctorAwareOfPhysicalActivity}
                   onCheckedChange={(checked) => handleBooleanChange("isDoctorAwareOfPhysicalActivity", !!checked)}
-                  className="h-5 w-5 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                  className="h-5 w-5 data-[state=checked]:!bg-green-600 data-[state=checked]:!border-green-600 data-[state=checked]:!text-white"
                 />
                 <Label
                   htmlFor="isDoctorAwareOfPhysicalActivity"
@@ -539,7 +539,7 @@ export default function StudentForm({
                   id="hasHypertension"
                   checked={formData.hasHypertension}
                   onCheckedChange={(checked) => handleBooleanChange("hasHypertension", !!checked)}
-                  className="h-5 w-5 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                  className="h-5 w-5"
                 />
                 <Label
                   htmlFor="hasHypertension"
@@ -647,7 +647,7 @@ export default function StudentForm({
                   id="alteredCholesterol"
                   checked={formData.alteredCholesterol}
                   onCheckedChange={(checked) => handleBooleanChange("alteredCholesterol", !!checked)}
-                  className="h-5 w-5 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                  className="h-5 w-5"
                 />
                 <Label
                   htmlFor="alteredCholesterol"
