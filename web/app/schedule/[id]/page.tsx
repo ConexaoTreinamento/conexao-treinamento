@@ -18,6 +18,7 @@ import {
   XCircle,
   Plus,
   X,
+  Edit,
 } from "lucide-react"
 import {
   Dialog,
@@ -52,6 +53,7 @@ export default function ClassDetailPage() {
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false)
   const [isExerciseOpen, setIsExerciseOpen] = useState(false)
   const [isNewExerciseOpen, setIsNewExerciseOpen] = useState(false)
+  const [isEditClassOpen, setIsEditClassOpen] = useState(false)
   const [selectedStudent, setSelectedStudent] = useState<any>(null)
 
   // Mock class data
@@ -91,6 +93,30 @@ export default function ClassDetailPage() {
         exercises: [],
       },
     ],
+  })
+
+  // Available teachers and rooms for editing
+  const availableTeachers = [
+    "Prof. Ana Silva",
+    "Prof. Marina Costa",
+    "Prof. Roberto Lima",
+    "Prof. Carlos Santos",
+    "Prof. Lucia Ferreira"
+  ]
+
+  const availableRooms = [
+    "Sala 1",
+    "Sala 2",
+    "Sala 3",
+    "Área Externa",
+    "Sala de Yoga",
+    "Studio Principal"
+  ]
+
+  // Edit form state
+  const [editForm, setEditForm] = useState({
+    instructor: classData.instructor,
+    room: classData.room
   })
 
   const availableStudents = [
@@ -227,6 +253,25 @@ export default function ClassDetailPage() {
     exercise.toLowerCase().includes(exerciseSearchTerm.toLowerCase())
   )
 
+  // Handle class edit
+  const handleEditClass = () => {
+    setClassData(prev => ({
+      ...prev,
+      instructor: editForm.instructor,
+      room: editForm.room
+    }))
+    setIsEditClassOpen(false)
+  }
+
+  // Reset edit form when opening dialog
+  const openEditDialog = () => {
+    setEditForm({
+      instructor: classData.instructor,
+      room: classData.room
+    })
+    setIsEditClassOpen(true)
+  }
+
   return (
     <Layout>
       <div className="space-y-4">
@@ -247,10 +292,21 @@ export default function ClassDetailPage() {
           {/* Class Info */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Activity className="w-5 h-5" />
-                Informações da Aula
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Activity className="w-5 h-5" />
+                  Informações da Aula
+                </CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={openEditDialog}
+                  className="h-8 px-2"
+                >
+                  <Edit className="w-3 h-3 mr-1" />
+                  Editar
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="space-y-2">
@@ -546,6 +602,66 @@ export default function ClassDetailPage() {
               <Button onClick={handleAddExercise} className="bg-green-600 hover:bg-green-700">
                 <Save className="w-4 h-4 mr-2" />
                 Registrar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Class Dialog */}
+        <Dialog open={isEditClassOpen} onOpenChange={setIsEditClassOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Editar Aula</DialogTitle>
+              <DialogDescription>Altere o professor e sala desta aula</DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="editInstructor">Professor</Label>
+                <Select
+                  value={editForm.instructor}
+                  onValueChange={(value) => setEditForm(prev => ({ ...prev, instructor: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar professor..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableTeachers.map((teacher) => (
+                      <SelectItem key={teacher} value={teacher}>
+                        {teacher}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="editRoom">Sala</Label>
+                <Select
+                  value={editForm.room}
+                  onValueChange={(value) => setEditForm(prev => ({ ...prev, room: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar sala..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableRooms.map((room) => (
+                      <SelectItem key={room} value={room}>
+                        {room}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+              <DialogFooter className="gap-y-2">
+              <Button variant="outline" onClick={() => setIsEditClassOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleEditClass} className="bg-green-600 hover:bg-green-700">
+                <Save className="w-4 h-4 mr-2" />
+                Salvar Alterações
               </Button>
             </DialogFooter>
           </DialogContent>
