@@ -370,7 +370,7 @@ export default function StudentForm({
           <CardTitle>Plano e Status</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="plan">Plano *</Label>
               <Select value={formData.plan} onValueChange={(value) => handleInputChange("plan", value)}>
@@ -401,35 +401,16 @@ export default function StudentForm({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="responsibleTeacher">Professor Responsável</Label>
-              <Select
-                value={formData.responsibleTeacher}
-                onValueChange={(value) => handleInputChange("responsibleTeacher", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o professor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {teachers.map((teacher) => (
-                    <SelectItem key={teacher} value={teacher}>
-                      {teacher}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Objectives and Anamnesis */}
+      {/* Objectives */}
       <Card>
         <CardHeader>
-          <CardTitle>Objetivos e Ficha de Anamnese</CardTitle>
+          <CardTitle>Objetivos</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Objectives section */}
+        <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="objectives">Objetivos</Label>
             <Textarea
@@ -440,304 +421,314 @@ export default function StudentForm({
               rows={3}
             />
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Ficha de Anamnese header */}
-          <div className="border-t pt-4">
-            <h3 className="text-lg font-semibold mb-4">Ficha de Anamnese</h3>
+      {/* General Observations */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Observações</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="impairmentObservations">Observações</Label>
+            <Textarea
+              id="impairmentObservations"
+              value={formData.impairmentObservations}
+              onChange={(e) => handleInputChange("impairmentObservations", e.target.value)}
+              placeholder="Observações gerais sobre a anamnese..."
+              rows={3}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-            {/* Anamnesis fields in responsive grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="medication">Faz uso de algum medicamento?</Label>
-                <Input
-                  id="medication"
-                  value={formData.medication}
-                  onChange={(e) => handleInputChange("medication", e.target.value)}
-                  placeholder="Ex: Vitamina D, Ômega 3"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="isDoctorAwareOfPhysicalActivity">Seu médico tem conhecimento de sua atividade física?</Label>
-                <Select
-                  value={formData.isDoctorAwareOfPhysicalActivity}
-                  onValueChange={(value) => handleInputChange("isDoctorAwareOfPhysicalActivity", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sim">Sim</SelectItem>
-                    <SelectItem value="nao">Não</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="favoritePhysicalActivity">Qual tipo de atividade que mais lhe agrada?</Label>
-                <Input
-                  id="favoritePhysicalActivity"
-                  value={formData.favoritePhysicalActivity}
-                  onChange={(e) => handleInputChange("favoritePhysicalActivity", e.target.value)}
-                  placeholder="Ex: Corrida, Natação"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="hasInsomnia">Você tem insônia?</Label>
-                <Select
-                  value={formData.hasInsomnia}
-                  onValueChange={(value) => handleInputChange("hasInsomnia", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sim">Sim</SelectItem>
-                    <SelectItem value="nao">Não</SelectItem>
-                    <SelectItem value="as-vezes">Às vezes</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="dietOrientedBy">Faz dieta? Se sim, com orientação de:</Label>
-                <Input
-                  id="dietOrientedBy"
-                  value={formData.dietOrientedBy}
-                  onChange={(e) => handleInputChange("dietOrientedBy", e.target.value)}
-                  placeholder="Ex: Nutricionista Ana Silva"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cardiacProblems">Problemas cardíacos?</Label>
-                <Input
-                  id="cardiacProblems"
-                  value={formData.cardiacProblems}
-                  onChange={(e) => handleInputChange("cardiacProblems", e.target.value)}
-                  placeholder="Ex: Arritmia, Pressão alta"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="hasHypertension">Hipertensão arterial?</Label>
-                <Select
-                  value={formData.hasHypertension}
-                  onValueChange={(value) => handleInputChange("hasHypertension", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sim">Sim</SelectItem>
-                    <SelectItem value="nao">Não</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="chronicDiseases">Doenças crônicas?</Label>
-                <Input
-                  id="chronicDiseases"
-                  value={formData.chronicDiseases}
-                  onChange={(e) => handleInputChange("chronicDiseases", e.target.value)}
-                  placeholder="Ex: Diabetes tipo 2, Artrite"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="difficultiesInPhysicalActivities">Dificuldades para realização de exercícios físicos?</Label>
-                <Input
-                  id="difficultiesInPhysicalActivities"
-                  value={formData.difficultiesInPhysicalActivities}
-                  onChange={(e) => handleInputChange("difficultiesInPhysicalActivities", e.target.value)}
-                  placeholder="Ex: Dor no joelho direito"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="medicalOrientationsToAvoidPhysicalActivity">Orientação médica impeditiva de alguma atividade física?</Label>
-                <Input
-                  id="medicalOrientationsToAvoidPhysicalActivity"
-                  value={formData.medicalOrientationsToAvoidPhysicalActivity}
-                  onChange={(e) => handleInputChange("medicalOrientationsToAvoidPhysicalActivity", e.target.value)}
-                  placeholder="Ex: Evitar exercícios de alto impacto"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="surgeriesInTheLast12Months">Cirurgias nos últimos 12 meses?</Label>
-                <Input
-                  id="surgeriesInTheLast12Months"
-                  value={formData.surgeriesInTheLast12Months}
-                  onChange={(e) => handleInputChange("surgeriesInTheLast12Months", e.target.value)}
-                  placeholder="Ex: Cirurgia de menisco"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="respiratoryProblems">Problemas respiratórios?</Label>
-                <Input
-                  id="respiratoryProblems"
-                  value={formData.respiratoryProblems}
-                  onChange={(e) => handleInputChange("respiratoryProblems", e.target.value)}
-                  placeholder="Ex: Asma, Bronquite"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="jointMuscularBackPain">Dor nas articulações, músculos ou nas costas?</Label>
-                <Input
-                  id="jointMuscularBackPain"
-                  value={formData.jointMuscularBackPain}
-                  onChange={(e) => handleInputChange("jointMuscularBackPain", e.target.value)}
-                  placeholder="Ex: Dor lombar crônica"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="spinalDiscProblems">Hérnia de disco, problemas degenerativos na coluna?</Label>
-                <Input
-                  id="spinalDiscProblems"
-                  value={formData.spinalDiscProblems}
-                  onChange={(e) => handleInputChange("spinalDiscProblems", e.target.value)}
-                  placeholder="Ex: Hérnia de disco L4-L5"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="diabetes">Diabetes?</Label>
-                <Input
-                  id="diabetes"
-                  value={formData.diabetes}
-                  onChange={(e) => handleInputChange("diabetes", e.target.value)}
-                  placeholder="Ex: Tipo 2, controlada com medicação"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="smokingDuration">Fumante (se sim, há quanto tempo?)</Label>
-                <Input
-                  id="smokingDuration"
-                  value={formData.smokingDuration}
-                  onChange={(e) => handleInputChange("smokingDuration", e.target.value)}
-                  placeholder="Ex: 5 anos"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="alteredCholesterol">Colesterol alterado?</Label>
-                <Select
-                  value={formData.alteredCholesterol}
-                  onValueChange={(value) => handleInputChange("alteredCholesterol", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sim">Sim</SelectItem>
-                    <SelectItem value="nao">Não</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="osteoporosisLocation">Osteoporose?</Label>
-                <Input
-                  id="osteoporosisLocation"
-                  value={formData.osteoporosisLocation}
-                  onChange={(e) => handleInputChange("osteoporosisLocation", e.target.value)}
-                  placeholder="Ex: Coluna vertebral, Quadril"
-                />
-              </div>
-            </div>
-
-            {/* Physical Impairments Section */}
-            <div className="space-y-4 mt-6">
-              <div className="flex items-center justify-between">
-                <h4 className="text-md font-semibold">Comprometimentos Físicos</h4>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addPhysicalImpairment}
-                  className="bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700 dark:bg-green-600 dark:hover:bg-green-700 dark:text-white dark:border-green-600 dark:hover:border-green-700"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Adicionar
-                </Button>
-              </div>
-
-              {formData.physicalImpairments.map((impairment) => (
-                <div key={impairment.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg">
-                  <div className="space-y-2">
-                    <Label>Tipo</Label>
-                    <Select
-                      value={impairment.type}
-                      onValueChange={(value) => updatePhysicalImpairment(impairment.id, "type", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="motor">Motor</SelectItem>
-                        <SelectItem value="emocional">Emocional</SelectItem>
-                        <SelectItem value="visual">Visual</SelectItem>
-                        <SelectItem value="auditivo">Auditivo</SelectItem>
-                        <SelectItem value="linguistico">Linguístico</SelectItem>
-                        <SelectItem value="outro">Outro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Nome</Label>
-                    <Input
-                      value={impairment.name}
-                      onChange={(e) => updatePhysicalImpairment(impairment.id, "name", e.target.value)}
-                      placeholder="Ex: Limitação no joelho direito"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Observações</Label>
-                    <Input
-                      value={impairment.observations}
-                      onChange={(e) => updatePhysicalImpairment(impairment.id, "observations", e.target.value)}
-                      placeholder="Ex: Devido à cirurgia recente"
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removePhysicalImpairment(impairment.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-
-              {formData.physicalImpairments.length === 0 && (
-                <div className="text-center py-6 text-muted-foreground">
-                  Nenhum comprometimento físico adicionado
-                </div>
-              )}
-            </div>
-
-            {/* General observations */}
-            <div className="space-y-2 mt-6">
-              <Label htmlFor="impairmentObservations">Observações</Label>
-              <Textarea
-                id="impairmentObservations"
-                value={formData.impairmentObservations}
-                onChange={(e) => handleInputChange("impairmentObservations", e.target.value)}
-                placeholder="Observações gerais sobre a anamnese..."
-                rows={3}
+      {/* Anamnesis */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Ficha de Anamnese</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Anamnesis fields in responsive grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="medication">Faz uso de algum medicamento?</Label>
+              <Input
+                id="medication"
+                value={formData.medication}
+                onChange={(e) => handleInputChange("medication", e.target.value)}
+                placeholder="Ex: Vitamina D, Ômega 3"
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="isDoctorAwareOfPhysicalActivity">Seu médico tem conhecimento de sua atividade física?</Label>
+              <Select
+                value={formData.isDoctorAwareOfPhysicalActivity}
+                onValueChange={(value) => handleInputChange("isDoctorAwareOfPhysicalActivity", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sim">Sim</SelectItem>
+                  <SelectItem value="nao">Não</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="favoritePhysicalActivity">Qual tipo de atividade que mais lhe agrada?</Label>
+              <Input
+                id="favoritePhysicalActivity"
+                value={formData.favoritePhysicalActivity}
+                onChange={(e) => handleInputChange("favoritePhysicalActivity", e.target.value)}
+                placeholder="Ex: Corrida, Natação"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="hasInsomnia">Você tem insônia?</Label>
+              <Select
+                value={formData.hasInsomnia}
+                onValueChange={(value) => handleInputChange("hasInsomnia", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sim">Sim</SelectItem>
+                  <SelectItem value="nao">Não</SelectItem>
+                  <SelectItem value="as-vezes">Às vezes</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="dietOrientedBy">Faz dieta? Se sim, com orientação de:</Label>
+              <Input
+                id="dietOrientedBy"
+                value={formData.dietOrientedBy}
+                onChange={(e) => handleInputChange("dietOrientedBy", e.target.value)}
+                placeholder="Ex: Nutricionista Ana Silva"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cardiacProblems">Problemas cardíacos?</Label>
+              <Input
+                id="cardiacProblems"
+                value={formData.cardiacProblems}
+                onChange={(e) => handleInputChange("cardiacProblems", e.target.value)}
+                placeholder="Ex: Arritmia, Pressão alta"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="hasHypertension">Hipertensão arterial?</Label>
+              <Select
+                value={formData.hasHypertension}
+                onValueChange={(value) => handleInputChange("hasHypertension", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sim">Sim</SelectItem>
+                  <SelectItem value="nao">Não</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="chronicDiseases">Doenças crônicas?</Label>
+              <Input
+                id="chronicDiseases"
+                value={formData.chronicDiseases}
+                onChange={(e) => handleInputChange("chronicDiseases", e.target.value)}
+                placeholder="Ex: Diabetes tipo 2, Artrite"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="difficultiesInPhysicalActivities">Dificuldades para realização de exercícios físicos?</Label>
+              <Input
+                id="difficultiesInPhysicalActivities"
+                value={formData.difficultiesInPhysicalActivities}
+                onChange={(e) => handleInputChange("difficultiesInPhysicalActivities", e.target.value)}
+                placeholder="Ex: Dor no joelho direito"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="medicalOrientationsToAvoidPhysicalActivity">Orientação médica impeditiva de alguma atividade física?</Label>
+              <Input
+                id="medicalOrientationsToAvoidPhysicalActivity"
+                value={formData.medicalOrientationsToAvoidPhysicalActivity}
+                onChange={(e) => handleInputChange("medicalOrientationsToAvoidPhysicalActivity", e.target.value)}
+                placeholder="Ex: Evitar exercícios de alto impacto"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="surgeriesInTheLast12Months">Cirurgias nos últimos 12 meses?</Label>
+              <Input
+                id="surgeriesInTheLast12Months"
+                value={formData.surgeriesInTheLast12Months}
+                onChange={(e) => handleInputChange("surgeriesInTheLast12Months", e.target.value)}
+                placeholder="Ex: Cirurgia de menisco"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="respiratoryProblems">Problemas respiratórios?</Label>
+              <Input
+                id="respiratoryProblems"
+                value={formData.respiratoryProblems}
+                onChange={(e) => handleInputChange("respiratoryProblems", e.target.value)}
+                placeholder="Ex: Asma, Bronquite"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="jointMuscularBackPain">Dor nas articulações, músculos ou nas costas?</Label>
+              <Input
+                id="jointMuscularBackPain"
+                value={formData.jointMuscularBackPain}
+                onChange={(e) => handleInputChange("jointMuscularBackPain", e.target.value)}
+                placeholder="Ex: Dor lombar crônica"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="spinalDiscProblems">Hérnia de disco, problemas degenerativos na coluna?</Label>
+              <Input
+                id="spinalDiscProblems"
+                value={formData.spinalDiscProblems}
+                onChange={(e) => handleInputChange("spinalDiscProblems", e.target.value)}
+                placeholder="Ex: Hérnia de disco L4-L5"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="diabetes">Diabetes?</Label>
+              <Input
+                id="diabetes"
+                value={formData.diabetes}
+                onChange={(e) => handleInputChange("diabetes", e.target.value)}
+                placeholder="Ex: Tipo 2, controlada com medicação"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="smokingDuration">Fumante (se sim, há quanto tempo?)</Label>
+              <Input
+                id="smokingDuration"
+                value={formData.smokingDuration}
+                onChange={(e) => handleInputChange("smokingDuration", e.target.value)}
+                placeholder="Ex: 5 anos"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="alteredCholesterol">Colesterol alterado?</Label>
+              <Select
+                value={formData.alteredCholesterol}
+                onValueChange={(value) => handleInputChange("alteredCholesterol", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sim">Sim</SelectItem>
+                  <SelectItem value="nao">Não</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="osteoporosisLocation">Osteoporose?</Label>
+              <Input
+                id="osteoporosisLocation"
+                value={formData.osteoporosisLocation}
+                onChange={(e) => handleInputChange("osteoporosisLocation", e.target.value)}
+                placeholder="Ex: Coluna vertebral, Quadril"
+              />
+            </div>
+          </div>
+
+          {/* Physical Impairments Section */}
+          <div className="space-y-4 mt-6">
+            <div className="flex items-center justify-between">
+              <h4 className="text-md font-semibold">Comprometimentos Físicos</h4>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addPhysicalImpairment}
+                className="bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700 dark:bg-green-600 dark:hover:bg-green-700 dark:text-white dark:border-green-600 dark:hover:border-green-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar
+              </Button>
+            </div>
+
+            {formData.physicalImpairments.map((impairment) => (
+              <div key={impairment.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg">
+                <div className="space-y-2">
+                  <Label>Tipo</Label>
+                  <Select
+                    value={impairment.type}
+                    onValueChange={(value) => updatePhysicalImpairment(impairment.id, "type", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="motor">Motor</SelectItem>
+                      <SelectItem value="emocional">Emocional</SelectItem>
+                      <SelectItem value="visual">Visual</SelectItem>
+                      <SelectItem value="auditivo">Auditivo</SelectItem>
+                      <SelectItem value="linguistico">Linguístico</SelectItem>
+                      <SelectItem value="outro">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Nome</Label>
+                  <Input
+                    value={impairment.name}
+                    onChange={(e) => updatePhysicalImpairment(impairment.id, "name", e.target.value)}
+                    placeholder="Ex: Limitação no joelho direito"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Observações</Label>
+                  <Input
+                    value={impairment.observations}
+                    onChange={(e) => updatePhysicalImpairment(impairment.id, "observations", e.target.value)}
+                    placeholder="Ex: Devido à cirurgia recente"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removePhysicalImpairment(impairment.id)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+
+            {formData.physicalImpairments.length === 0 && (
+              <div className="text-center py-6 text-muted-foreground">
+                Nenhum comprometimento físico adicionado
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
