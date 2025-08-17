@@ -5,8 +5,7 @@ import { useRouter, useParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, Edit, Mail, Phone, Calendar, MapPin, Shield, User } from "lucide-react"
+import { ArrowLeft, Edit, Shield, User } from "lucide-react"
 import Layout from "@/components/layout"
 
 export default function AdministratorProfilePage() {
@@ -30,32 +29,6 @@ export default function AdministratorProfilePage() {
     name: "Admin",
     surname: "Principal",
     email: "admin@gym.com",
-    phone: "(11) 99999-0000",
-    sex: "M",
-    birthDate: "1985-05-15",
-    street: "Rua Administrativa",
-    number: "100",
-    complement: "Sala 1",
-    neighborhood: "Centro",
-    cep: "01000-000",
-    admissionDate: "2023-01-01",
-    status: "Ativo",
-    emergencyContact: {
-      name: "Maria Principal",
-      phone: "(11) 88888-0000",
-      relationship: "Esposa",
-    },
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Ativo":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      case "Inativo":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-    }
   }
 
   // Don't render if not admin
@@ -63,7 +36,6 @@ export default function AdministratorProfilePage() {
     return null
   }
 
-  const age = new Date().getFullYear() - new Date(administrator.birthDate).getFullYear()
   const fullName = `${administrator.name} ${administrator.surname}`
   const initials = `${administrator.name.charAt(0)}${administrator.surname.charAt(0)}`.toUpperCase()
 
@@ -101,26 +73,6 @@ export default function AdministratorProfilePage() {
                       <Shield className="w-3 h-3 mr-1" />
                       Administrador
                     </Badge>
-                    <Badge className={getStatusColor(administrator.status)}>{administrator.status}</Badge>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    <span>{administrator.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    <span>{administrator.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    <span>{age} anos</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    <span>{administrator.sex === "M" ? "Masculino" : "Feminino"}</span>
                   </div>
                 </div>
               </div>
@@ -129,111 +81,23 @@ export default function AdministratorProfilePage() {
         </Card>
 
         {/* Detailed Information */}
-        <Tabs defaultValue="general" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="general">Informações Gerais</TabsTrigger>
-            <TabsTrigger value="contact">Contatos</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="general" className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Informações do Administrador</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Dados Pessoais</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Nome Completo</label>
-                    <p className="text-sm">{fullName}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Data de Nascimento</label>
-                    <p className="text-sm">{new Date(administrator.birthDate).toLocaleDateString("pt-BR")}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Sexo</label>
-                    <p className="text-sm">{administrator.sex === "M" ? "Masculino" : "Feminino"}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Data de Admissão</label>
-                    <p className="text-sm">{new Date(administrator.admissionDate).toLocaleDateString("pt-BR")}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    Endereço
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Logradouro</label>
-                    <p className="text-sm">
-                      {administrator.street}, {administrator.number}
-                    </p>
-                  </div>
-                  {administrator.complement && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Complemento</label>
-                      <p className="text-sm">{administrator.complement}</p>
-                    </div>
-                  )}
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Bairro</label>
-                    <p className="text-sm">{administrator.neighborhood}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">CEP</label>
-                    <p className="text-sm">{administrator.cep}</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Nome Completo</label>
+                <p className="text-sm">{fullName}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Email</label>
+                <p className="text-sm">{administrator.email}</p>
+              </div>
             </div>
-          </TabsContent>
-
-          <TabsContent value="contact" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Contato Principal</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Email</label>
-                    <p className="text-sm">{administrator.email}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Telefone</label>
-                    <p className="text-sm">{administrator.phone}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Contato de Emergência</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Nome</label>
-                    <p className="text-sm">{administrator.emergencyContact.name}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Telefone</label>
-                    <p className="text-sm">{administrator.emergencyContact.phone}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Parentesco</label>
-                    <p className="text-sm">{administrator.emergencyContact.relationship}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   )
