@@ -504,7 +504,65 @@ export default function StudentsPage() {
                 onClick={() => router.push(`/students/${student.id}`)}
               >
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
+                  {/* Mobile Layout */}
+                  <div className="flex flex-col gap-3 sm:hidden">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
+                            {initials}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-base leading-tight">{fullName}</h3>
+                          <Badge className={`${getStatusColor(student.status)} text-xs mt-1`}>
+                            {student.status}
+                          </Badge>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          router.push(`/students/${student.id}/evaluation`)
+                        }}
+                        className="bg-transparent text-xs px-2 py-1 h-8 flex-shrink-0"
+                      >
+                        <Activity className="w-3 h-3 mr-1" />
+                        Avaliação
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate flex-1">{student.email}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-3 h-3 flex-shrink-0" />
+                        <span>{student.phone}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-3 h-3 flex-shrink-0" />
+                        <span>Plano {student.plan}</span>
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <div>
+                        {age} anos • {student.profession} •{" "}
+                        {student.sex === "M" ? "Masculino" : "Feminino"}
+                      </div>
+                      <div>
+                        Ingresso:{" "}
+                        {new Date(student.registrationDate).toLocaleDateString("pt-BR")}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Desktop Layout */}
+                  <div className="hidden sm:flex items-center gap-4">
                     <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
                       <span className="text-green-700 dark:text-green-300 font-semibold select-none">{initials}</span>
                     </div>
@@ -517,7 +575,7 @@ export default function StudentsPage() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-muted-foreground">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1 min-w-0">
                           <Mail className="w-3 h-3 flex-shrink-0" />
                           <span className="truncate">{student.email}</span>
