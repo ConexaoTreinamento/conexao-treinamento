@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -77,14 +76,14 @@ const EventForm = ({
   isEditing = false,
 }: {
   eventForm: EventFormData
-  setEventForm: any
+  setEventForm: React.Dispatch<React.SetStateAction<EventFormData>>
   availableStudents: string[]
   onSubmit: () => void
   onCancel: () => void
   isEditing?: boolean
 }) => {
   const toggleStudent = (student: string) => {
-    setEventForm((prev: any) => ({
+    setEventForm((prev) => ({
       ...prev,
       students: prev.students.includes(student)
         ? prev.students.filter((s: string) => s !== student)
@@ -93,14 +92,14 @@ const EventForm = ({
   }
 
   const removeStudent = (student: string) => {
-    setEventForm((prev: any) => ({
+    setEventForm((prev) => ({
       ...prev,
       students: prev.students.filter((s: string) => s !== student),
     }))
   }
 
   const toggleAttendance = (student: string) => {
-    setEventForm((prev: any) => ({
+    setEventForm((prev) => ({
       ...prev,
       attendance: {
         ...prev.attendance,
@@ -110,7 +109,7 @@ const EventForm = ({
   }
 
   const handleTimeChange = (field: "startTime" | "endTime", value: string) => {
-    setEventForm((prev: any) => {
+    setEventForm((prev) => {
       const newForm = { ...prev, [field]: value }
 
       // Validate times
@@ -136,7 +135,7 @@ const EventForm = ({
           <Input
             id="eventName"
             value={eventForm.name}
-            onChange={(e) => setEventForm((prev: any) => ({ ...prev, name: e.target.value }))}
+            onChange={(e) => setEventForm((prev) => ({ ...prev, name: e.target.value }))}
             placeholder="Ex: Corrida no Parque"
           />
         </div>
@@ -144,7 +143,7 @@ const EventForm = ({
           <Label htmlFor="eventType">Tipo</Label>
           <Select
             value={eventForm.type}
-            onValueChange={(value) => setEventForm((prev: any) => ({ ...prev, type: value }))}
+            onValueChange={(value) => setEventForm((prev) => ({ ...prev, type: value }))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione o tipo" />
@@ -167,7 +166,7 @@ const EventForm = ({
             id="eventDate"
             type="date"
             value={eventForm.date}
-            onChange={(e) => setEventForm((prev: any) => ({ ...prev, date: e.target.value }))}
+            onChange={(e) => setEventForm((prev) => ({ ...prev, date: e.target.value }))}
           />
         </div>
         <div className="space-y-2">
@@ -195,7 +194,7 @@ const EventForm = ({
         <Input
           id="eventLocation"
           value={eventForm.location}
-          onChange={(e) => setEventForm((prev: any) => ({ ...prev, location: e.target.value }))}
+          onChange={(e) => setEventForm((prev) => ({ ...prev, location: e.target.value }))}
           placeholder="Ex: Parque Ibirapuera"
         />
       </div>
@@ -205,7 +204,7 @@ const EventForm = ({
         <Textarea
           id="eventDescription"
           value={eventForm.description}
-          onChange={(e) => setEventForm((prev: any) => ({ ...prev, description: e.target.value }))}
+          onChange={(e) => setEventForm((prev) => ({ ...prev, description: e.target.value }))}
           placeholder="Descreva o evento..."
           rows={3}
         />
@@ -214,7 +213,16 @@ const EventForm = ({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label>Participantes ({eventForm.students?.length || 0} selecionados)</Label>
-          <AddStudentDialog students={availableStudents}/>
+          <AddStudentDialog
+            students={availableStudents}
+            onAddStudent={(student) => {
+              setEventForm((prev) => ({
+                ...prev,
+                students: [...prev.students, student],
+              }))
+            }}
+            excludeStudents={eventForm.students}
+          />
         </div>
 
         {eventForm.students?.length > 0 && (
@@ -261,8 +269,7 @@ const EventForm = ({
 export default function EventsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isNewEventOpen, setIsNewEventOpen] = useState(false)
-  const [editingEvent, setEditingEvent] = useState<any>(null)
-  const [joinModalEvent, setJoinModalEvent] = useState<any>(null)
+  const [editingEvent, setEditingEvent] = useState<EventData | null>(null)
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [filters, setFilters] = useState({
     type: "all",
@@ -431,15 +438,6 @@ export default function EventsPage() {
       attendance: event.attendance || {},
     })
     setIsNewEventOpen(true)
-  }
-
-  const handleJoinEvent = (event: any) => {
-    setJoinModalEvent(event)
-  }
-
-  const confirmJoin = () => {
-    console.log("Joining event:", joinModalEvent.name)
-    setJoinModalEvent(null)
   }
 
   return (
@@ -641,56 +639,10 @@ export default function EventsPage() {
                     </div>
                   </div>
                 )}
-
-                <div className="flex gap-2 pt-2 border-t">
-                  <Button
-                    className="flex-1 bg-green-600 hover:bg-green-700"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleJoinEvent(event)
-                    }}
-                  >
-                    Inscrever
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           ))}
         </div>
-
-        <Dialog open={!!joinModalEvent} onOpenChange={() => setJoinModalEvent(null)}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Inscrever-se no Evento</DialogTitle>
-              <DialogDescription>Confirme sua inscrição no evento "{joinModalEvent?.name}".</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
-                <span>{joinModalEvent && formatDate(joinModalEvent.date)}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="w-4 h-4 text-muted-foreground" />
-                <span>
-                  {joinModalEvent?.startTime} - {joinModalEvent?.endTime}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <MapPin className="w-4 h-4 text-muted-foreground" />
-                <span>{joinModalEvent?.location}</span>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setJoinModalEvent(null)}>
-                Cancelar
-              </Button>
-              <Button onClick={confirmJoin} className="bg-green-600 hover:bg-green-700">
-                Confirmar Inscrição
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
         {filteredEvents.length === 0 && (
           <Card>

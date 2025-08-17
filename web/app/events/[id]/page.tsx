@@ -291,7 +291,15 @@ export default function EventDetailPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label>Participantes ({eventForm.students?.length || 0} selecionados)</Label>
-                    <AddStudentDialog students={availableStudents}
+                    <AddStudentDialog
+                      students={availableStudents}
+                      onAddStudent={(student) => {
+                        setEventForm((prev) => ({
+                          ...prev,
+                          students: [...prev.students, student],
+                        }))
+                      }}
+                      excludeStudents={eventForm.students}
                     />
                 </div>
 

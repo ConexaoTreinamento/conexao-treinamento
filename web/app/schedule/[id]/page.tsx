@@ -263,7 +263,22 @@ export default function ClassDetailPage() {
                   <Users className="w-5 h-5" />
                   Alunos da Aula
                 </CardTitle>
-                <AddStudentDialog students={availableStudents}/>
+                <AddStudentDialog
+                  students={availableStudents}
+                  onAddStudent={(student) => {
+                    setClassData((prev) => ({
+                      ...prev,
+                      students: [...prev.students, {
+                        id: Date.now(),
+                        name: student,
+                        present: false,
+                        exercises: [],
+                      }],
+                      currentStudents: prev.currentStudents + 1,
+                    }))
+                  }}
+                  excludeStudents={classData.students.map(s => s.name)}
+                />
               </div>
             </CardHeader>
             <CardContent>
