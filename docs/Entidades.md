@@ -100,8 +100,8 @@
   - Suprailiac (float)
   - Thigh (float)
 - Diameters
-- Umerus (float)
-- Femur (float)
+- Elbow (float)
+- Knee (float)
 
 ## PastExercise
 - PastExerciseId
