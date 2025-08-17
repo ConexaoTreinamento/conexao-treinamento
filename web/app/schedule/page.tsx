@@ -29,7 +29,7 @@ export default function SchedulePage() {
     name: "",
     instructor: "",
     room: "",
-    maxStudents: "",
+    maxStudents: "2",
     description: "",
     weekDays: [] as string[],
     times: [] as { day: string; startTime: string; endTime: string }[],
@@ -375,7 +375,7 @@ export default function SchedulePage() {
                             type="number"
                             value={newClassForm.maxStudents}
                             onChange={(e) => setNewClassForm((prev) => ({ ...prev, maxStudents: e.target.value }))}
-                            placeholder="10"
+                            placeholder="2"
                           />
                         </div>
                         <div className="flex gap-2 pt-4">
