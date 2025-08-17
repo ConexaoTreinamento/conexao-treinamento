@@ -41,7 +41,7 @@ export default function HomePage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto w-16 h-16 flex items-center justify-center">
-            <Image src="/logo.png" alt="Conexão Treinamento" width={64} height={64} className="rounded-lg" />
+            <Image src="/logo.svg" alt="Conexão Treinamento" width={64} height={64} className="rounded-lg" />
           </div>
           <div>
             <CardTitle className="text-2xl font-bold">Conexão Treinamento</CardTitle>

@@ -79,7 +79,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <div className="flex flex-col h-full">
                 <div className="p-4 border-b">
                   <div className="flex items-center gap-3 mb-3">
-                    <Image src="/logo.png" alt="Conexão Treinamento" width={32} height={32} className="rounded-lg" />
+                    <Image src="/logo.svg" alt="Conexão Treinamento" width={32} height={32} className="rounded-lg" />
                     <h2 className="text-lg font-semibold">Conexão Treinamento</h2>
                   </div>
                   <p className="text-sm text-muted-foreground">{userName}</p>
@@ -142,7 +142,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="w-64 bg-card border-r min-h-screen">
           <div className="p-6 border-b">
             <div className="flex items-center gap-3 mb-3">
-              <Image src="/logo.png" alt="Conexão Treinamento" width={40} height={40} className="rounded-lg" />
+              <Image src="/logo.svg" alt="Conexão Treinamento" width={40} height={40} className="rounded-lg" />
               <h2 className="text-xl font-bold">Conexão Treinamento</h2>
             </div>
             <p className="text-sm text-muted-foreground mt-1">{userName}</p>
