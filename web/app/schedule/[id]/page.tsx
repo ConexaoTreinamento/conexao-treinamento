@@ -17,6 +17,7 @@ import {
   CheckCircle,
   XCircle,
   Plus,
+  X,
 } from "lucide-react"
 import {
   Dialog,
@@ -202,6 +203,14 @@ export default function ClassDetailPage() {
     }))
   }
 
+  const removeStudent = (studentId: number) => {
+    setClassData((prev) => ({
+      ...prev,
+      students: prev.students.filter((student) => student.id !== studentId),
+      currentStudents: prev.currentStudents - 1,
+    }))
+  }
+
   return (
     <Layout>
       <div className="space-y-4">
@@ -299,40 +308,50 @@ export default function ClassDetailPage() {
                           <p className="font-medium truncate">{student.name}</p>
                         </div>
                       </div>
-                      <div className="flex flex-col sm:flex-row items-center h-20 gap-2 w-full sm:w-auto">
+                      <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                        <div className="flex gap-2 w-full sm:w-auto">
+                          <Button
+                            size="sm"
+                            variant={student.present ? "default" : "outline"}
+                            onClick={() => togglePresence(student.id)}
+                            className={`w-full sm:w-28 h-8 text-xs ${
+                              student.present
+                                ? "bg-green-600 hover:bg-green-700"
+                                : "border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
+                            }`}
+                          >
+                            {student.present ? (
+                              <>
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Presente
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-3 h-3 mr-1" />
+                                Ausente
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedStudent(student)
+                              setIsExerciseOpen(true)
+                            }}
+                            className="w-full sm:w-28 h-8 text-xs"
+                          >
+                            <Activity className="w-3 h-3 mr-1" />
+                            Exercícios
+                          </Button>
+                        </div>
                         <Button
                           size="sm"
-                          variant={student.present ? "default" : "outline"}
-                          onClick={() => togglePresence(student.id)}
-                          className={`self-center w-full sm:w-32 h-8 text-xs flex-1 sm:flex-none ${
-                            student.present
-                              ? "bg-green-600 hover:bg-green-700"
-                              : "border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
-                          }`}
+                          variant="ghost"
+                          onClick={() => removeStudent(student.id)}
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 flex-shrink-0"
                         >
-                          {student.present ? (
-                            <>
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Presente
-                            </>
-                          ) : (
-                            <>
-                              <XCircle className="w-3 h-3 mr-1" />
-                              Ausente
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedStudent(student)
-                            setIsExerciseOpen(true)
-                          }}
-                          className="flex-1 w-full sm:w-32 sm:flex-none"
-                        >
-                          <Activity className="w-3 h-3 mr-1" />
-                          Exercícios
+                          <X className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
