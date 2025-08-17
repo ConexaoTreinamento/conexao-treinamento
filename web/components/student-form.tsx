@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import { User, Plus, Trash2 } from "lucide-react"
 import { v4 as uuidv4 } from 'uuid'
 
@@ -50,12 +51,12 @@ interface StudentFormData {
 
   // Anamnesis fields in the required order
   medication: string
-  isDoctorAwareOfPhysicalActivity: string
+  isDoctorAwareOfPhysicalActivity: boolean
   favoritePhysicalActivity: string
   hasInsomnia: string
   dietOrientedBy: string
   cardiacProblems: string
-  hasHypertension: string
+  hasHypertension: boolean
   chronicDiseases: string
   difficultiesInPhysicalActivities: string
   medicalOrientationsToAvoidPhysicalActivity: string
@@ -65,7 +66,7 @@ interface StudentFormData {
   spinalDiscProblems: string
   diabetes: string
   smokingDuration: string
-  alteredCholesterol: string
+  alteredCholesterol: boolean
   osteoporosisLocation: string
   impairmentObservations: string
 
@@ -126,12 +127,12 @@ export default function StudentForm({
 
     // Anamnesis fields
     medication: initialData.medication || "",
-    isDoctorAwareOfPhysicalActivity: initialData.isDoctorAwareOfPhysicalActivity || "",
+    isDoctorAwareOfPhysicalActivity: initialData.isDoctorAwareOfPhysicalActivity || false,
     favoritePhysicalActivity: initialData.favoritePhysicalActivity || "",
     hasInsomnia: initialData.hasInsomnia || "",
     dietOrientedBy: initialData.dietOrientedBy || "",
     cardiacProblems: initialData.cardiacProblems || "",
-    hasHypertension: initialData.hasHypertension || "",
+    hasHypertension: initialData.hasHypertension || false,
     chronicDiseases: initialData.chronicDiseases || "",
     difficultiesInPhysicalActivities: initialData.difficultiesInPhysicalActivities || "",
     medicalOrientationsToAvoidPhysicalActivity: initialData.medicalOrientationsToAvoidPhysicalActivity || "",
@@ -141,7 +142,7 @@ export default function StudentForm({
     spinalDiscProblems: initialData.spinalDiscProblems || "",
     diabetes: initialData.diabetes || "",
     smokingDuration: initialData.smokingDuration || "",
-    alteredCholesterol: initialData.alteredCholesterol || "",
+    alteredCholesterol: initialData.alteredCholesterol || false,
     osteoporosisLocation: initialData.osteoporosisLocation || "",
     impairmentObservations: initialData.impairmentObservations || "",
 
@@ -150,6 +151,10 @@ export default function StudentForm({
   })
 
   const handleInputChange = (field: keyof StudentFormData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleBooleanChange = (field: keyof StudentFormData, value: boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
@@ -463,19 +468,21 @@ export default function StudentForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="isDoctorAwareOfPhysicalActivity">Seu médico tem conhecimento de sua atividade física?</Label>
-              <Select
-                value={formData.isDoctorAwareOfPhysicalActivity}
-                onValueChange={(value) => handleInputChange("isDoctorAwareOfPhysicalActivity", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sim">Sim</SelectItem>
-                  <SelectItem value="nao">Não</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Seu médico tem conhecimento de sua atividade física?</Label>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="isDoctorAwareOfPhysicalActivity"
+                  checked={formData.isDoctorAwareOfPhysicalActivity}
+                  onCheckedChange={(checked) => handleBooleanChange("isDoctorAwareOfPhysicalActivity", !!checked)}
+                  className="h-5 w-5 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                />
+                <Label
+                  htmlFor="isDoctorAwareOfPhysicalActivity"
+                  className="text-sm cursor-pointer"
+                >
+                  Sim
+                </Label>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -526,19 +533,21 @@ export default function StudentForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="hasHypertension">Hipertensão arterial?</Label>
-              <Select
-                value={formData.hasHypertension}
-                onValueChange={(value) => handleInputChange("hasHypertension", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sim">Sim</SelectItem>
-                  <SelectItem value="nao">Não</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Hipertensão arterial?</Label>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="hasHypertension"
+                  checked={formData.hasHypertension}
+                  onCheckedChange={(checked) => handleBooleanChange("hasHypertension", !!checked)}
+                  className="h-5 w-5 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                />
+                <Label
+                  htmlFor="hasHypertension"
+                  className="text-sm cursor-pointer"
+                >
+                  Sim
+                </Label>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -632,19 +641,21 @@ export default function StudentForm({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="alteredCholesterol">Colesterol alterado?</Label>
-              <Select
-                value={formData.alteredCholesterol}
-                onValueChange={(value) => handleInputChange("alteredCholesterol", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sim">Sim</SelectItem>
-                  <SelectItem value="nao">Não</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label>Colesterol alterado?</Label>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="alteredCholesterol"
+                  checked={formData.alteredCholesterol}
+                  onCheckedChange={(checked) => handleBooleanChange("alteredCholesterol", !!checked)}
+                  className="h-5 w-5 data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+                />
+                <Label
+                  htmlFor="alteredCholesterol"
+                  className="text-sm cursor-pointer"
+                >
+                  Sim
+                </Label>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -660,8 +671,8 @@ export default function StudentForm({
 
           {/* Physical Impairments Section */}
           <div className="space-y-4 mt-6">
-            <h4 className="text-md font-semibold">Comprometimentos Físicos</h4>
-            <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <h4 className="text-md font-semibold">Comprometimentos Físicos</h4>
               <Button
                 type="button"
                 variant="outline"
@@ -669,7 +680,8 @@ export default function StudentForm({
                 onClick={addPhysicalImpairment}
                 className="bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700 dark:bg-green-600 dark:hover:bg-green-700 dark:text-white dark:border-green-600 dark:hover:border-green-700 w-full sm:w-auto"
               >
-                <Plus className="w-4 h-4"/>
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar
               </Button>
             </div>
 
