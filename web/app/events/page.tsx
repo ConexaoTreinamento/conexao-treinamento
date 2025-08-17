@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -621,7 +621,6 @@ export default function EventsPage() {
                     <div className="flex -space-x-2">
                       {event.participants.slice(0, 5).map((participant, idx) => (
                         <Avatar key={idx} className="w-8 h-8 border-2 border-background">
-                          <AvatarImage src={participant.avatar || "/placeholder.svg"} />
                           <AvatarFallback className="text-xs select-none">
                             {participant.name
                               .split(" ")

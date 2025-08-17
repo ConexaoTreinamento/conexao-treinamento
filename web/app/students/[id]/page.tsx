@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, TrendingUp, Edit, CalendarDays } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
@@ -117,7 +117,6 @@ export default function StudentProfilePage() {
           <Card>
             <CardHeader className="text-center pb-4">
               <Avatar className="w-20 h-20 mx-auto">
-                <AvatarImage src={studentData.avatar || "/placeholder.svg"} />
                 <AvatarFallback className="text-xl select-none">
                   {studentData.name
                     .split(" ")

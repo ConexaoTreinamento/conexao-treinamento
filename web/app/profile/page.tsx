@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { User, Mail, Phone, MapPin, Calendar, Save, Camera, Shield, Clock, Award } from 'lucide-react'
@@ -106,7 +106,6 @@ export default function ProfilePage() {
             <CardHeader className="text-center">
               <div className="relative mx-auto">
                 <Avatar className="w-24 h-24 mx-auto">
-                  <AvatarImage src={profileData.avatar || "/placeholder.svg"} />
                   <AvatarFallback className="text-2xl">
                     {profileData.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>

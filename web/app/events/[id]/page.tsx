@@ -527,7 +527,6 @@ export default function EventDetailPage() {
                   <div key={participant.id} className="flex items-center justify-between p-4 rounded-lg border">
                     <div className="flex items-center gap-3">
                       <Avatar>
-                        <AvatarImage src={participant.avatar || "/placeholder.svg"} />
                         <AvatarFallback className="select-none">
                           {participant.name
                             .split(" ")
