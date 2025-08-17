@@ -17,16 +17,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
 import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
+import StudentForm from "@/components/student-form"
 
 export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [userRole, setUserRole] = useState<string>("")
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
   const [filters, setFilters] = useState({
     status: "all",
     plan: "all",
@@ -206,11 +207,19 @@ export default function StudentsPage() {
   const hasActiveFilters = Object.values(filters).some((filter) => filter !== "all")
   const uniqueProfessions = [...new Set(students.map((s) => s.profession))]
 
-  const handleCreateStudent = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Mock creation logic
+  const handleCreateStudent = async (formData: any) => {
+    setIsCreating(true)
+
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+
+    setIsCreating(false)
     setIsCreateOpen(false)
     // In real app, would create student and refresh list
+  }
+
+  const handleCancelCreate = () => {
+    setIsCreateOpen(false)
   }
 
   return (
@@ -229,7 +238,7 @@ export default function StudentsPage() {
                 Novo Aluno
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Cadastrar Novo Aluno</DialogTitle>
                 <DialogDescription>
@@ -237,249 +246,13 @@ export default function StudentsPage() {
                 </DialogDescription>
               </DialogHeader>
 
-              <form onSubmit={handleCreateStudent} className="space-y-4">
-                {/* Informações Básicas */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nome *</Label>
-                    <Input id="name" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="surname">Sobrenome *</Label>
-                    <Input id="surname" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
-                    <Input id="email" type="email" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Telefone *</Label>
-                    <Input id="phone" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="sex">Sexo *</Label>
-                    <Select required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="M">Masculino</SelectItem>
-                        <SelectItem value="F">Feminino</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="birthDate">Data de Nascimento *</Label>
-                    <Input id="birthDate" type="date" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="profession">Profissão</Label>
-                    <Input id="profession" />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Endereço</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="street">Rua *</Label>
-                      <Input id="street" required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="number">Número *</Label>
-                      <Input id="number" required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="complement">Complemento</Label>
-                      <Input id="complement" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="neighborhood">Bairro *</Label>
-                      <Input id="neighborhood" required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cep">CEP *</Label>
-                      <Input id="cep" required />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Contato de Emergência</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="emergencyName">Nome *</Label>
-                      <Input id="emergencyName" required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="emergencyPhone">Telefone *</Label>
-                      <Input id="emergencyPhone" required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="emergencyRelationship">Parentesco *</Label>
-                      <Input id="emergencyRelationship" required />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Ficha de Anamnese */}
-                <div className="space-y-4 pt-4 border-t">
-                  <h3 className="text-lg font-semibold">Ficha de Anamnese</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 grid-flow-row-dense">
-                    <div className="space-y-2">
-                      <Label htmlFor="medication">Faz uso de algum medicamento?</Label>
-                      <Input id="medication" placeholder="Ex: Vitamina D, Ômega 3" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="isDoctorAware">Médico ciente da prática de atividade física?</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="true">Sim</SelectItem>
-                          <SelectItem value="false">Não</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="favoritePhysicalActivity">Qual tipo de atividade física mais lhe agrada?</Label>
-                      <Input id="favoritePhysicalActivity" placeholder="Ex: Corrida, Natação" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="hasInsomnia">Tem insônia?</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="sim">Sim</SelectItem>
-                          <SelectItem value="não">Não</SelectItem>
-                          <SelectItem value="às vezes">Às vezes</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="dietOrientedBy">Tem dieta? Se sim, está sendo orientada por?</Label>
-                      <Input id="dietOrientedBy" placeholder="Ex: Nutricionista Ana Silva" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="hasHypertension">Hipertensão arterial?</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="true">Sim</SelectItem>
-                          <SelectItem value="false">Não</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="chronicDiseases">Doenças crônicas?</Label>
-                      <Input id="chronicDiseases" placeholder="Ex: Diabetes tipo 2, Artrite" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="difficultiesInPhysicalActivities">Dificuldades para realização de exercícios físicos?</Label>
-                      <Input id="difficultiesInPhysicalActivities" placeholder="Ex: Dor no joelho direito" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="medicalOrientations">Orientação médica impeditiva de alguma atividade física?</Label>
-                      <Input id="medicalOrientations" placeholder="Ex: Evitar exercícios de alto impacto" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="alteredCholesterol">Colesterol alterado?</Label>
-                      <Select>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="true">Sim</SelectItem>
-                          <SelectItem value="false">Não</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="osteoporosisLocation">Localização de osteoporose</Label>
-                      <Input id="osteoporosisLocation" placeholder="Ex: Coluna vertebral" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="cardiacProblems">Problemas cardíacos</Label>
-                      <Input id="cardiacProblems" placeholder="Ex: Pressão alta, Arritmia" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="surgeriesInTheLast12Months">Cirurgias nos últimos 12 meses</Label>
-                      <Input id="surgeriesInTheLast12Months" placeholder="Ex: Cirurgia de menisco" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="respiratoryProblems">Problemas respiratórios</Label>
-                      <Input id="respiratoryProblems" placeholder="Ex: Asma, Bronquite" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="jointMuscularBackPain">Dor muscular/articular/dorsal</Label>
-                      <Input id="jointMuscularBackPain" placeholder="Ex: Dor lombar crônica" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="spinalDiscProblems">Hérnia de disco ou problemas degenerativos na coluna</Label>
-                      <Input id="spinalDiscProblems" placeholder="Ex: Hérnia de disco L4-L5" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="diabetes">Tem diabetes?</Label>
-                    <Input id="diabetes" placeholder="Ex: Tipo 2, controlada com medicação" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="smokingDuration">É fumante? Se sim, há quanto tempo?</Label>
-                    <Input id="smokingDuration" placeholder="Ex: 5 anos" />
-                  </div>
-                  <div className="space-y-4">
-                    <h4 className="text-md font-semibold">Comprometimentos Físicos</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="impairmentType">Tipo</Label>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="motor">Motor</SelectItem>
-                            <SelectItem value="emocional">Emocional</SelectItem>
-                            <SelectItem value="visual">Visual</SelectItem>
-                            <SelectItem value="auditivo">Auditivo</SelectItem>
-                            <SelectItem value="linguístico">Linguístico</SelectItem>
-                            <SelectItem value="outro">Outro</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="impairmentName">Nome</Label>
-                        <Input id="impairmentName" placeholder="Ex: Limitação no joelho direito" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="impairmentObservations">Observações</Label>
-                        <Input id="impairmentObservations" placeholder="Ex: Devido à cirurgia recente" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="objectives">Objetivos</Label>
-                    <Input id="objectives" placeholder="Ex: Perder 5kg, Melhorar condicionamento" />
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button type="submit" className="bg-green-600 hover:bg-green-700">
-                    Cadastrar Aluno
-                  </Button>
-                </div>
-              </form>
+              <StudentForm
+                onSubmit={handleCreateStudent}
+                onCancel={handleCancelCreate}
+                submitLabel="Cadastrar Aluno"
+                isLoading={isCreating}
+                mode="create"
+              />
             </DialogContent>
           </Dialog>
         </div>
