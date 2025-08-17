@@ -39,12 +39,7 @@ const BooleanCheckbox: React.FC<BooleanCheckboxProps> = ({
       <Checkbox
         id={id}
         checked={checked}
-        onCheckedChange={(checkedValue) => {
-          // Use setTimeout to defer the state update and avoid flushSync error
-          setTimeout(() => {
-            onCheckedChange(!!checkedValue)
-          }, 0)
-        }}
+        onCheckedChange={onCheckedChange}
         className="h-5 w-5 data-[state=checked]:!bg-green-600 data-[state=checked]:!border-green-600 data-[state=checked]:!text-white"
       />
       <Label
