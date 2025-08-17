@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   ArrowLeft,
   Calendar,
@@ -416,61 +416,6 @@ export default function EventDetailPage() {
               <div className="pt-4 border-t">
                 <p className="text-sm font-medium mb-2">Instrutor:</p>
                 <p className="text-sm text-muted-foreground">{eventData.instructor}</p>
-              </div>
-
-              <div className="pt-4 border-t space-y-2">
-                <Dialog open={isEnrollDialogOpen} onOpenChange={setIsEnrollDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button
-                      className={`w-full ${isEnrolled ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}`}
-                    >
-                      {isEnrolled ? (
-                        <>
-                          <UserMinus className="w-4 h-4 mr-2" />
-                          Cancelar Inscrição
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Inscrever-se
-                        </>
-                      )}
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>{isEnrolled ? "Cancelar Inscrição" : "Confirmar Inscrição"}</DialogTitle>
-                      <DialogDescription>
-                        {isEnrolled
-                          ? `Tem certeza que deseja cancelar sua inscrição no evento "${eventData.name}"?`
-                          : `Confirme sua inscrição no evento "${eventData.name}".`}
-                      </DialogDescription>
-                    </DialogHeader>
-                    {!isEnrolled && (
-                      <div className="space-y-3">
-                        <div>
-                          <h4 className="font-medium mb-2">Requisitos:</h4>
-                          <ul className="text-sm text-muted-foreground space-y-1">
-                            {eventData.requirements.map((req, idx) => (
-                              <li key={idx}>• {req}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    )}
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsEnrollDialogOpen(false)}>
-                        Cancelar
-                      </Button>
-                      <Button
-                        onClick={handleEnrollment}
-                        className={isEnrolled ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}
-                      >
-                        {isEnrolled ? "Confirmar Cancelamento" : "Confirmar Inscrição"}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
               </div>
             </CardContent>
           </Card>
