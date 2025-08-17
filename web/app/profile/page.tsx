@@ -110,13 +110,6 @@ export default function ProfilePage() {
                     {profileData.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="absolute -bottom-2 -right-2 rounded-full w-8 h-8"
-                >
-                  <Camera className="w-4 h-4" />
-                </Button>
               </div>
               <div className="space-y-2">
                 <CardTitle>{profileData.name}</CardTitle>
