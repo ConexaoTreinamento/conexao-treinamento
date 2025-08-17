@@ -234,14 +234,6 @@ const EventForm = ({
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => toggleAttendance(student)}
-                    className={`h-6 w-6 p-0 ${eventForm.attendance?.[student] ? "text-green-600" : "text-muted-foreground"}`}
-                  >
-                    <UserCheck className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
                     onClick={() => removeStudent(student)}
                     className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
                   >
