@@ -19,6 +19,39 @@ interface PhysicalImpairment {
   observations: string
 }
 
+// Reusable checkbox component
+interface BooleanCheckboxProps {
+  id: string
+  label: string
+  checked: boolean
+  onCheckedChange: (checked: boolean) => void
+}
+
+const BooleanCheckbox: React.FC<BooleanCheckboxProps> = ({
+  id,
+  label,
+  checked,
+  onCheckedChange
+}) => (
+  <div className="space-y-2">
+    <Label>{label}</Label>
+    <div className="flex items-center space-x-2">
+      <Checkbox
+        id={id}
+        checked={checked}
+        onCheckedChange={(checkedValue) => onCheckedChange(!!checkedValue)}
+        className="h-5 w-5 data-[state=checked]:!bg-green-600 data-[state=checked]:!border-green-600 data-[state=checked]:!text-white"
+      />
+      <Label
+        htmlFor={id}
+        className="text-sm cursor-pointer"
+      >
+        {checked ? "Sim" : "Não"}
+      </Label>
+    </div>
+  </div>
+)
+
 interface StudentFormData {
   // Basic info
   name: string
@@ -468,21 +501,12 @@ export default function StudentForm({
             </div>
 
             <div className="space-y-2">
-              <Label>Seu médico tem conhecimento de sua atividade física?</Label>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="isDoctorAwareOfPhysicalActivity"
-                  checked={formData.isDoctorAwareOfPhysicalActivity}
-                  onCheckedChange={(checked) => handleBooleanChange("isDoctorAwareOfPhysicalActivity", !!checked)}
-                  className="h-5 w-5 data-[state=checked]:!bg-green-600 data-[state=checked]:!border-green-600 data-[state=checked]:!text-white"
-                />
-                <Label
-                  htmlFor="isDoctorAwareOfPhysicalActivity"
-                  className="text-sm cursor-pointer"
-                >
-                  Sim
-                </Label>
-              </div>
+              <BooleanCheckbox
+                id="isDoctorAwareOfPhysicalActivity"
+                label="Seu médico tem conhecimento de sua atividade física?"
+                checked={formData.isDoctorAwareOfPhysicalActivity}
+                onCheckedChange={(checked) => handleBooleanChange("isDoctorAwareOfPhysicalActivity", checked)}
+              />
             </div>
 
             <div className="space-y-2">
@@ -533,25 +557,15 @@ export default function StudentForm({
             </div>
 
             <div className="space-y-2">
-              <Label>Hipertensão arterial?</Label>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="hasHypertension"
-                  checked={formData.hasHypertension}
-                  onCheckedChange={(checked) => handleBooleanChange("hasHypertension", !!checked)}
-                  className="h-5 w-5"
-                />
-                <Label
-                  htmlFor="hasHypertension"
-                  className="text-sm cursor-pointer"
-                >
-                  Sim
-                </Label>
-              </div>
+              <BooleanCheckbox
+                id="hasHypertension"
+                label="Hipertensão arterial?"
+                checked={formData.hasHypertension}
+                onCheckedChange={(checked) => handleBooleanChange("hasHypertension", checked)}
+              />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="chronicDiseases">Doenças crônicas?</Label>
               <Input
                 id="chronicDiseases"
                 value={formData.chronicDiseases}
@@ -641,21 +655,12 @@ export default function StudentForm({
             </div>
 
             <div className="space-y-2">
-              <Label>Colesterol alterado?</Label>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="alteredCholesterol"
-                  checked={formData.alteredCholesterol}
-                  onCheckedChange={(checked) => handleBooleanChange("alteredCholesterol", !!checked)}
-                  className="h-5 w-5"
-                />
-                <Label
-                  htmlFor="alteredCholesterol"
-                  className="text-sm cursor-pointer"
-                >
-                  Sim
-                </Label>
-              </div>
+              <BooleanCheckbox
+                id="alteredCholesterol"
+                label="Colesterol alterado?"
+                checked={formData.alteredCholesterol}
+                onCheckedChange={(checked) => handleBooleanChange("alteredCholesterol", checked)}
+              />
             </div>
 
             <div className="space-y-2">
