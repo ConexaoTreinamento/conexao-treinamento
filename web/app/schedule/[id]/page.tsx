@@ -219,6 +219,14 @@ export default function ClassDetailPage() {
     student.name.toLowerCase().includes(studentSearchTerm.toLowerCase())
   )
 
+  // Add search state for exercises
+  const [exerciseSearchTerm, setExerciseSearchTerm] = useState("")
+
+  // Filter exercises based on search term
+  const filteredExercises = availableExercises.filter(exercise =>
+    exercise.toLowerCase().includes(exerciseSearchTerm.toLowerCase())
+  )
+
   return (
     <Layout>
       <div className="space-y-4">
@@ -421,29 +429,45 @@ export default function ClassDetailPage() {
               <div className="space-y-1">
                 <Label>Exercício</Label>
                 <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Input placeholder="Buscar exercício..." className="pr-10" />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <Select
-                        value={exerciseForm.exercise}
-                        onValueChange={(value) => setExerciseForm((prev) => ({ ...prev, exercise: value }))}
-                      >
-                        <SelectTrigger className="w-8 h-8 p-0 border-0 bg-transparent">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableExercises.map((exercise) => (
+                  <div className="flex-1">
+                    <Select
+                      value={exerciseForm.exercise}
+                      onValueChange={(value) => {
+                        setExerciseForm((prev) => ({ ...prev, exercise: value }))
+                        setExerciseSearchTerm("") // Clear search when selecting
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Buscar e selecionar exercício..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <div className="px-3 py-2 border-b">
+                          <Input
+                            placeholder="Digite para buscar..."
+                            value={exerciseSearchTerm}
+                            onChange={(e) => setExerciseSearchTerm(e.target.value)}
+                            className="h-8"
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
+                          />
+                        </div>
+                        {filteredExercises.length > 0 ? (
+                          filteredExercises.map((exercise) => (
                             <SelectItem key={exercise} value={exercise}>
                               {exercise}
                             </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                          ))
+                        ) : (
+                          <div className="px-3 py-2 text-sm text-muted-foreground text-center">
+                            Nenhum exercício encontrado
+                          </div>
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <Dialog open={isNewExerciseOpen} onOpenChange={setIsNewExerciseOpen}>
                     <DialogTrigger asChild>
-                      <Button size="icon" variant="outline" className="flex-shrink-0 bg-transparent">
+                      <Button size="icon" variant="outline" className="flex-shrink-0">
                         <Plus className="w-4 h-4" />
                       </Button>
                     </DialogTrigger>
@@ -508,7 +532,7 @@ export default function ClassDetailPage() {
                     type="number"
                     step="0.5"
                     value={exerciseForm.weight}
-                    onChange={(e) => setExerciseForm((prev) => ({ ...prev, carga: e.target.value }))}
+                    onChange={(e) => setExerciseForm((prev) => ({ ...prev, weight: e.target.value }))}
                     placeholder="20"
                   />
                 </div>
