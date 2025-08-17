@@ -30,6 +30,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
+import AddStudentDialog from "@/components/add-student-dialog";
 
 // Mock functions for demonstration purposes
 const getStudentSchedule = (studentId: number) => {
@@ -67,7 +68,6 @@ export default function ClassDetailPage() {
       {
         id: 1,
         name: "Maria Silva",
-        avatar: "/placeholder.svg?height=40&width=40",
         present: true,
         exercises: [
           { exercise: "Prancha", sets: 3, reps: 30, completed: true, weight: 70.0 },
@@ -77,7 +77,6 @@ export default function ClassDetailPage() {
       {
         id: 2,
         name: "João Santos",
-        avatar: "/placeholder.svg?height=40&width=40",
         present: true,
         exercises: [
           { exercise: "Hundred", sets: 1, reps: 100, completed: false, weight: 40.0 },
@@ -87,7 +86,6 @@ export default function ClassDetailPage() {
       {
         id: 3,
         name: "Ana Costa",
-        avatar: "/placeholder.svg?height=40&width=40",
         present: false,
         exercises: [],
       },
@@ -95,8 +93,8 @@ export default function ClassDetailPage() {
   })
 
   const availableStudents = [
-    { id: 4, name: "Carlos Lima", avatar: "/placeholder.svg?height=40&width=40" },
-    { id: 5, name: "Lucia Ferreira", avatar: "/placeholder.svg?height=40&width=40" },
+    "Carlos Lima",
+    "Lucia Ferreira"
   ]
 
   const [availableExercises, setAvailableExercises] = useState([
@@ -265,75 +263,7 @@ export default function ClassDetailPage() {
                   <Users className="w-5 h-5" />
                   Alunos da Aula
                 </CardTitle>
-                <Dialog open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Adicionar
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Adicionar Aluno à Aula</DialogTitle>
-                      <DialogDescription>Selecione um aluno para adicionar a esta aula</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-3">
-                      {availableStudents.map((student) => (
-                        <div key={student.id} className="flex items-center justify-between p-3 rounded-lg border">
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
-                              <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
-                                {student.name
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")}
-                              </span>
-                            </div>
-                            <span className="font-medium truncate">{student.name}</span>
-                          </div>
-                          <Button
-                            size="sm"
-                            onClick={() => {
-                              // Check if student has available days in their plan
-                              const studentSchedule = getStudentSchedule(student.id)
-                              const selectedDays = getStudentSelectedDays(student.id)
-
-                              if (selectedDays.length >= studentSchedule.daysPerWeek) {
-                                alert(
-                                  `${student.name} já atingiu o limite de ${studentSchedule.daysPerWeek} dias por semana do seu plano.`,
-                                )
-                                return
-                              }
-
-                              // Add student to class
-                              setClassData((prev) => ({
-                                ...prev,
-                                students: [
-                                  ...prev.students,
-                                  {
-                                    id: student.id,
-                                    name: student.name,
-                                    avatar: student.avatar,
-                                    present: false,
-                                    exercises: [],
-                                  },
-                                ],
-                                currentStudents: prev.currentStudents + 1,
-                              }))
-
-                              // Update student's schedule (mock implementation)
-                              updateStudentSchedule(student.id, classData.id, classData.date)
-
-                              setIsAddStudentOpen(false)
-                            }}
-                          >
-                            Adicionar
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <AddStudentDialog students={availableStudents}/>
               </div>
             </CardHeader>
             <CardContent>

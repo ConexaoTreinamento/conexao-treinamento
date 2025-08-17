@@ -35,6 +35,7 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
+import AddStudentDialog from "@/components/add-student-dialog";
 
 // Define interfaces for better type safety
 interface EventData {
@@ -213,35 +214,7 @@ const EventForm = ({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label>Participantes ({eventForm.students?.length || 0} selecionados)</Label>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button size="sm" variant="outline">
-                <UserPlus className="w-4 h-4 mr-1" />
-                Adicionar
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>Adicionar Participantes</DialogTitle>
-              </DialogHeader>
-              <div className="max-h-64 overflow-y-auto">
-                <div className="space-y-2">
-                  {availableStudents.map((student) => (
-                    <div key={student} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={student}
-                        checked={eventForm.students?.includes(student)}
-                        onCheckedChange={() => toggleStudent(student)}
-                      />
-                      <label htmlFor={student} className="text-sm cursor-pointer flex-1">
-                        {student}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <AddStudentDialog students={availableStudents}/>
         </div>
 
         {eventForm.students?.length > 0 && (
