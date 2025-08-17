@@ -18,6 +18,7 @@ import {
   X,
   CheckCircle,
   XCircle,
+  Search,
 } from "lucide-react"
 import {
   Dialog,
@@ -43,6 +44,7 @@ export default function EventDetailPage() {
   const [isEnrollDialogOpen, setIsEnrollDialogOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false)
+  const [studentSearchTerm, setStudentSearchTerm] = useState("")
   const [eventForm, setEventForm] = useState({
     name: "Corrida no Parque",
     type: "Corrida",
@@ -81,7 +83,7 @@ export default function EventDetailPage() {
       name: student,
       avatar: "/placeholder.svg?height=40&width=40",
       enrolledAt: "2024-07-20",
-      present: eventForm.attendance[student] || false,
+      present: (eventForm.attendance as Record<string, boolean>)[student] || false,
     })),
   }
 
@@ -169,7 +171,7 @@ export default function EventDetailPage() {
       ...prev,
       attendance: {
         ...prev.attendance,
-        [student]: !prev.attendance?.[student],
+        [student]: !(prev.attendance as Record<string, boolean>)[student],
       },
     }))
   }
@@ -178,6 +180,11 @@ export default function EventDetailPage() {
     console.log("Saving event:", eventForm)
     setIsEditOpen(false)
   }
+
+  // Filter students based on search term
+  const filteredAvailableStudents = availableStudents.filter((student) =>
+    student.toLowerCase().includes(studentSearchTerm.toLowerCase())
+  )
 
   const handleQuickAddStudent = (student: string) => {
     if (!eventForm.students.includes(student)) {
@@ -313,21 +320,52 @@ export default function EventDetailPage() {
                       <DialogContent className="max-w-md">
                         <DialogHeader>
                           <DialogTitle>Adicionar Participantes</DialogTitle>
+                          <DialogDescription>Busque e selecione alunos para adicionar ao evento</DialogDescription>
                         </DialogHeader>
-                        <div className="max-h-64 overflow-y-auto">
-                          <div className="space-y-2">
-                            {availableStudents.map((student) => (
-                              <div key={student} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={student}
-                                  checked={eventForm.students?.includes(student)}
-                                  onCheckedChange={() => toggleStudent(student)}
-                                />
-                                <label htmlFor={student} className="text-sm cursor-pointer flex-1">
-                                  {student}
-                                </label>
+                        <div className="space-y-4">
+                          {/* Search Box */}
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                            <Input
+                              placeholder="Buscar alunos..."
+                              value={studentSearchTerm}
+                              onChange={(e) => setStudentSearchTerm(e.target.value)}
+                              className="pl-10"
+                            />
+                          </div>
+
+                          {/* Students List */}
+                          <div className="max-h-64 overflow-y-auto space-y-3">
+                            {filteredAvailableStudents.map((student) => (
+                              <div key={student} className="flex items-center justify-between p-3 rounded-lg border">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                  <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
+                                      {student
+                                        .split(" ")
+                                        .map((n) => n[0])
+                                        .join("")}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center space-x-2 flex-1 min-w-0">
+                                    <Checkbox
+                                      id={`edit-${student}`}
+                                      checked={eventForm.students?.includes(student)}
+                                      onCheckedChange={() => toggleStudent(student)}
+                                    />
+                                    <label htmlFor={`edit-${student}`} className="text-sm cursor-pointer flex-1 truncate">
+                                      {student}
+                                    </label>
+                                  </div>
+                                </div>
                               </div>
                             ))}
+                            {filteredAvailableStudents.length === 0 && (
+                              <div className="text-center py-4 text-muted-foreground">
+                                <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                <p className="text-sm">Nenhum aluno encontrado</p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </DialogContent>
@@ -344,7 +382,7 @@ export default function EventDetailPage() {
                               size="sm"
                               variant="ghost"
                               onClick={() => toggleAttendance(student)}
-                              className={`h-6 w-6 p-0 ${eventForm.attendance?.[student] ? "text-green-600" : "text-muted-foreground"}`}
+                              className={`h-6 w-6 p-0 ${(eventForm.attendance as Record<string, boolean>)[student] ? "text-green-600" : "text-muted-foreground"}`}
                             >
                               <CheckCircle className="w-3 h-3" />
                             </Button>
@@ -428,50 +466,14 @@ export default function EventDetailPage() {
                   <Users className="w-5 h-5" />
                   Participantes ({eventData.participants.length})
                 </CardTitle>
-                <Dialog open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Adicionar
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Adicionar Participante</DialogTitle>
-                      <DialogDescription>Selecione um aluno para adicionar ao evento</DialogDescription>
-                    </DialogHeader>
-                    <div className="max-h-64 overflow-y-auto space-y-2">
-                      {availableStudents
-                        .filter((student) => !eventForm.students.includes(student))
-                        .map((student) => (
-                          <div key={student} className="flex items-center justify-between p-3 rounded-lg border">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="w-8 h-8">
-                                <AvatarFallback className="select-none">
-                                  {student
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="font-medium">{student}</span>
-                            </div>
-                            <Button size="sm" onClick={() => handleQuickAddStudent(student)}>
-                              Adicionar
-                            </Button>
-                          </div>
-                        ))}
-                    </div>
-                  </DialogContent>
-                </Dialog>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {eventData.participants.map((participant) => (
-                  <div key={participant.id} className="flex items-center justify-between p-4 rounded-lg border">
-                    <div className="flex items-center gap-3">
-                      <Avatar>
+                  <div key={participant.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <Avatar className="flex-shrink-0">
                         <AvatarFallback className="select-none">
                           {participant.name
                             .split(" ")
@@ -479,19 +481,19 @@ export default function EventDetailPage() {
                             .join("")}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <p className="font-medium">{participant.name}</p>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium truncate">{participant.name}</p>
                         <p className="text-sm text-muted-foreground">
                           Inscrito em {new Date(participant.enrolledAt).toLocaleDateString("pt-BR")}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <Button
                         size="sm"
                         variant={participant.present ? "default" : "outline"}
                         onClick={() => toggleAttendance(participant.name)}
-                        className={`h-8 text-xs ${
+                        className={`h-8 text-xs flex-1 sm:flex-none min-w-0 ${
                           participant.present
                             ? "bg-green-600 hover:bg-green-700 text-white"
                             : "border-red-600 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
@@ -499,7 +501,7 @@ export default function EventDetailPage() {
                       >
                         {participant.present ? (
                           <>
-                            <CheckCircle className="w-3 h-3 mr-1" />
+                            <CheckCircle className="w-3 h-3 mr-1"/>
                             Presente
                           </>
                         ) : (
@@ -513,7 +515,7 @@ export default function EventDetailPage() {
                         size="sm"
                         variant="ghost"
                         onClick={() => removeStudent(participant.name)}
-                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
                       >
                         <X className="w-4 h-4" />
                       </Button>
