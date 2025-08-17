@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, User, Phone, Mail, Calendar, Clock, Edit, MapPin } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
@@ -25,7 +25,6 @@ export default function TeacherProfilePage() {
     status: "Ativo",
     joinDate: "2024-01-15",
     hoursWorked: 120,
-    avatar: "/placeholder.svg?height=100&width=100",
 
     // Schedule
     schedule: [
@@ -99,8 +98,7 @@ export default function TeacherProfilePage() {
           <Card>
             <CardHeader className="text-center pb-4">
               <Avatar className="w-20 h-20 mx-auto">
-                <AvatarImage src={teacherData.avatar || "/placeholder.svg"} />
-                <AvatarFallback className="text-xl">
+                <AvatarFallback className="text-xl select-none">
                   {teacherData.name
                     .split(" ")
                     .map((n) => n[0])

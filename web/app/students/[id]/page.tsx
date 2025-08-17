@@ -118,7 +118,7 @@ export default function StudentProfilePage() {
             <CardHeader className="text-center pb-4">
               <Avatar className="w-20 h-20 mx-auto">
                 <AvatarImage src={studentData.avatar || "/placeholder.svg"} />
-                <AvatarFallback className="text-xl">
+                <AvatarFallback className="text-xl select-none">
                   {studentData.name
                     .split(" ")
                     .map((n) => n[0])

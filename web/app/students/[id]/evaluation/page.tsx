@@ -2,13 +2,12 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { ArrowLeft, Save, Activity, TrendingUp, User } from "lucide-react"
+import { ArrowLeft, Save, Calculator, User } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
 
@@ -18,36 +17,65 @@ export default function StudentEvaluationPage() {
   const [isLoading, setIsLoading] = useState(false)
 
   const [evaluationData, setEvaluationData] = useState({
+    // Dados básicos
     weight: "",
     height: "",
-    bodyFat: "",
-    muscleMass: "",
-    visceralFat: "",
     bmi: "",
-    bloodPressure: "",
-    restingHeartRate: "",
-    flexibility: "",
-    strength: "",
-    cardio: "",
-    observations: "",
-    goals: "",
-    recommendations: "",
+
+    // Circunferências
+    circumferences: {
+      rightArmRelaxed: "",
+      leftArmRelaxed: "",
+      rightArmFlexed: "",
+      leftArmFlexed: "",
+      waist: "",
+      abdomen: "",
+      hip: "",
+      rightThigh: "",
+      leftThigh: "",
+      rightCalf: "",
+      leftCalf: ""
+    },
+
+    // Dobras Subcutâneas
+    subcutaneousFolds: {
+      triceps: "",
+      thorax: "",
+      subaxillary: "",
+      subscapular: "",
+      abdominal: "",
+      suprailiac: "",
+      thigh: ""
+    },
+
+    // Diâmetros
+    diameters: {
+      umerus: "",
+      femur: ""
+    }
   })
 
   // Mock student data
   const studentName = "Maria Silva"
 
+  // Calcular IMC automaticamente
+  useEffect(() => {
+    const weight = parseFloat(evaluationData.weight)
+    const height = parseFloat(evaluationData.height)
+
+    if (weight > 0 && height > 0) {
+      const heightInMeters = height / 100
+      const bmi = weight / (heightInMeters * heightInMeters)
+      setEvaluationData(prev => ({
+        ...prev,
+        bmi: bmi.toFixed(2)
+      }))
+    }
+  }, [evaluationData.weight, evaluationData.height])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-
-    // Calculate BMI if weight and height are provided
-    if (evaluationData.weight && evaluationData.height) {
-      const weight = Number.parseFloat(evaluationData.weight)
-      const height = Number.parseFloat(evaluationData.height) / 100 // convert cm to m
-      const bmi = (weight / (height * height)).toFixed(1)
-      setEvaluationData((prev) => ({ ...prev, bmi }))
-    }
 
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1500))
@@ -56,232 +84,364 @@ export default function StudentEvaluationPage() {
     router.push(`/students/${params.id}`)
   }
 
-  const handleInputChange = (field: string, value: string) => {
-    setEvaluationData((prev) => ({ ...prev, [field]: value }))
+  const handleInputChange = (category: string, field: string, value: string) => {
+    if (category === "basic") {
+      setEvaluationData(prev => ({
+        ...prev,
+        [field]: value
+      }))
+    } else {
+      setEvaluationData(prev => ({
+        ...prev,
+        [category]: {
+          ...(prev[category as keyof typeof prev] as object),
+          [field]: value
+        }
+      }))
+    }
   }
 
   return (
     <Layout>
       <div className="space-y-4">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <div>
-            <h1 className="text-xl font-bold">Avaliação Física</h1>
-            <p className="text-sm text-muted-foreground">{studentName}</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => router.back()}>
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <div>
+              <h1 className="text-xl font-bold">Avaliação Física</h1>
+              <p className="text-sm text-muted-foreground">{studentName}</p>
+            </div>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Basic Measurements */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="w-5 h-5" />
-                Medidas Básicas
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="weight">Peso (kg) *</Label>
-                  <Input
-                    id="weight"
-                    type="number"
-                    step="0.1"
-                    value={evaluationData.weight}
-                    onChange={(e) => handleInputChange("weight", e.target.value)}
-                    placeholder="70.5"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="height">Altura (cm) *</Label>
-                  <Input
-                    id="height"
-                    type="number"
-                    value={evaluationData.height}
-                    onChange={(e) => handleInputChange("height", e.target.value)}
-                    placeholder="170"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bmi">IMC</Label>
-                  <Input
-                    id="bmi"
-                    value={evaluationData.bmi}
-                    onChange={(e) => handleInputChange("bmi", e.target.value)}
-                    placeholder="Calculado automaticamente"
-                    readOnly
-                    className="bg-muted"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bodyFat">Gordura (%)</Label>
-                  <Input
-                    id="bodyFat"
-                    type="number"
-                    step="0.1"
-                    value={evaluationData.bodyFat}
-                    onChange={(e) => handleInputChange("bodyFat", e.target.value)}
-                    placeholder="15.5"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="muscleMass">Massa Muscular (kg)</Label>
-                  <Input
-                    id="muscleMass"
-                    type="number"
-                    step="0.1"
-                    value={evaluationData.muscleMass}
-                    onChange={(e) => handleInputChange("muscleMass", e.target.value)}
-                    placeholder="45.2"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="visceralFat">Gordura Visceral</Label>
-                  <Input
-                    id="visceralFat"
-                    type="number"
-                    value={evaluationData.visceralFat}
-                    onChange={(e) => handleInputChange("visceralFat", e.target.value)}
-                    placeholder="5"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="bloodPressure">Pressão Arterial</Label>
-                  <Input
-                    id="bloodPressure"
-                    value={evaluationData.bloodPressure}
-                    onChange={(e) => handleInputChange("bloodPressure", e.target.value)}
-                    placeholder="120/80"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Physical Tests */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                Testes Físicos
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="restingHeartRate">FC Repouso (bpm)</Label>
-                  <Input
-                    id="restingHeartRate"
-                    type="number"
-                    value={evaluationData.restingHeartRate}
-                    onChange={(e) => handleInputChange("restingHeartRate", e.target.value)}
-                    placeholder="65"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="flexibility">Flexibilidade (cm)</Label>
-                  <Input
-                    id="flexibility"
-                    type="number"
-                    value={evaluationData.flexibility}
-                    onChange={(e) => handleInputChange("flexibility", e.target.value)}
-                    placeholder="25"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="strength">Força (kg)</Label>
-                  <Input
-                    id="strength"
-                    type="number"
-                    value={evaluationData.strength}
-                    onChange={(e) => handleInputChange("strength", e.target.value)}
-                    placeholder="80"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cardio">Teste Cardiovascular</Label>
-                <Input
-                  id="cardio"
-                  value={evaluationData.cardio}
-                  onChange={(e) => handleInputChange("cardio", e.target.value)}
-                  placeholder="Ex: 12 min Cooper - 2800m"
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Observations and Goals */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Dados Básicos */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="w-5 h-5" />
-                Observações e Objetivos
+                Dados Básicos
               </CardTitle>
+              <CardDescription>
+                Peso, altura e índice de massa corporal
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="observations">Observações Gerais</Label>
-                <Textarea
-                  id="observations"
-                  value={evaluationData.observations}
-                  onChange={(e) => handleInputChange("observations", e.target.value)}
-                  placeholder="Observações sobre postura, lesões, limitações, etc."
-                  rows={3}
-                />
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="weight">Peso (kg)</Label>
+                  <Input
+                    id="weight"
+                    type="number"
+                    step="0.1"
+                    placeholder="70.5"
+                    value={evaluationData.weight}
+                    onChange={(e) => handleInputChange("basic", "weight", e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="goals">Objetivos do Aluno</Label>
-                <Textarea
-                  id="goals"
-                  value={evaluationData.goals}
-                  onChange={(e) => handleInputChange("goals", e.target.value)}
-                  placeholder="Objetivos específicos para este período..."
-                  rows={3}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="height">Altura (cm)</Label>
+                  <Input
+                    id="height"
+                    type="number"
+                    step="0.1"
+                    placeholder="175.0"
+                    value={evaluationData.height}
+                    onChange={(e) => handleInputChange("basic", "height", e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="recommendations">Recomendações</Label>
-                <Textarea
-                  id="recommendations"
-                  value={evaluationData.recommendations}
-                  onChange={(e) => handleInputChange("recommendations", e.target.value)}
-                  placeholder="Recomendações de treino, alimentação, cuidados especiais..."
-                  rows={3}
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="bmi">IMC (kg/m²)</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="bmi"
+                      type="number"
+                      step="0.01"
+                      placeholder="23.10"
+                      value={evaluationData.bmi}
+                      readOnly
+                      className="bg-muted"
+                    />
+                    <Calculator className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-4 pb-6">
-            <Button type="button" variant="outline" onClick={() => router.back()} className="flex-1 sm:flex-none">
+          {/* Circunferências */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Circunferências</CardTitle>
+              <CardDescription>
+                Medidas das circunferências corporais em centímetros
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Braços */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Braços</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Braço Direito Relaxado (cm)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      placeholder="30.0"
+                      value={evaluationData.circumferences.rightArmRelaxed}
+                      onChange={(e) => handleInputChange("circumferences", "rightArmRelaxed", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Braço Esquerdo Relaxado (cm)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      placeholder="30.0"
+                      value={evaluationData.circumferences.leftArmRelaxed}
+                      onChange={(e) => handleInputChange("circumferences", "leftArmRelaxed", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Braço Direito Flexionado (cm)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      placeholder="32.0"
+                      value={evaluationData.circumferences.rightArmFlexed}
+                      onChange={(e) => handleInputChange("circumferences", "rightArmFlexed", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Braço Esquerdo Flexionado (cm)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      placeholder="32.0"
+                      value={evaluationData.circumferences.leftArmFlexed}
+                      onChange={(e) => handleInputChange("circumferences", "leftArmFlexed", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Tronco */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Tronco</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Cintura (cm)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      placeholder="75.0"
+                      value={evaluationData.circumferences.waist}
+                      onChange={(e) => handleInputChange("circumferences", "waist", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Abdômen (cm)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      placeholder="80.0"
+                      value={evaluationData.circumferences.abdomen}
+                      onChange={(e) => handleInputChange("circumferences", "abdomen", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Quadril (cm)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      placeholder="95.0"
+                      value={evaluationData.circumferences.hip}
+                      onChange={(e) => handleInputChange("circumferences", "hip", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Pernas */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Pernas</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Coxa Direita (cm)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      placeholder="55.0"
+                      value={evaluationData.circumferences.rightThigh}
+                      onChange={(e) => handleInputChange("circumferences", "rightThigh", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Coxa Esquerda (cm)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      placeholder="55.0"
+                      value={evaluationData.circumferences.leftThigh}
+                      onChange={(e) => handleInputChange("circumferences", "leftThigh", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Panturrilha Direita (cm)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      placeholder="35.0"
+                      value={evaluationData.circumferences.rightCalf}
+                      onChange={(e) => handleInputChange("circumferences", "rightCalf", e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Panturrilha Esquerda (cm)</Label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      placeholder="35.0"
+                      value={evaluationData.circumferences.leftCalf}
+                      onChange={(e) => handleInputChange("circumferences", "leftCalf", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Dobras Subcutâneas */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Dobras Subcutâneas</CardTitle>
+              <CardDescription>
+                Medidas das dobras cutâneas em milímetros
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Tríceps (mm)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    placeholder="12.0"
+                    value={evaluationData.subcutaneousFolds.triceps}
+                    onChange={(e) => handleInputChange("subcutaneousFolds", "triceps", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tórax (mm)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    placeholder="8.0"
+                    value={evaluationData.subcutaneousFolds.thorax}
+                    onChange={(e) => handleInputChange("subcutaneousFolds", "thorax", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Subaxilar (mm)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    placeholder="10.0"
+                    value={evaluationData.subcutaneousFolds.subaxillary}
+                    onChange={(e) => handleInputChange("subcutaneousFolds", "subaxillary", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Subescapular (mm)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    placeholder="14.0"
+                    value={evaluationData.subcutaneousFolds.subscapular}
+                    onChange={(e) => handleInputChange("subcutaneousFolds", "subscapular", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Abdominal (mm)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    placeholder="16.0"
+                    value={evaluationData.subcutaneousFolds.abdominal}
+                    onChange={(e) => handleInputChange("subcutaneousFolds", "abdominal", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Suprailíaca (mm)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    placeholder="18.0"
+                    value={evaluationData.subcutaneousFolds.suprailiac}
+                    onChange={(e) => handleInputChange("subcutaneousFolds", "suprailiac", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Coxa (mm)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    placeholder="20.0"
+                    value={evaluationData.subcutaneousFolds.thigh}
+                    onChange={(e) => handleInputChange("subcutaneousFolds", "thigh", e.target.value)}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Diâmetros */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Diâmetros</CardTitle>
+              <CardDescription>
+                Medidas dos diâmetros ósseos em centímetros
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md">
+                <div className="space-y-2">
+                  <Label>Úmero (cm)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    placeholder="6.5"
+                    value={evaluationData.diameters.umerus}
+                    onChange={(e) => handleInputChange("diameters", "umerus", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Fêmur (cm)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    placeholder="9.0"
+                    value={evaluationData.diameters.femur}
+                    onChange={(e) => handleInputChange("diameters", "femur", e.target.value)}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Submit Button */}
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => router.back()}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading} className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700">
-              {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Salvando Avaliação...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Salvar Avaliação
-                </>
-              )}
+            <Button type="submit" disabled={isLoading} className="flex items-center gap-2">
+              <Save className="w-4 h-4" />
+              {isLoading ? "Salvando..." : "Salvar Avaliação"}
             </Button>
           </div>
         </form>

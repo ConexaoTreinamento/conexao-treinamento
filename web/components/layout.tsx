@@ -7,9 +7,10 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
-import { Menu, BarChart3, Users, Calendar, UserCheck, Dumbbell, User, Sun, Moon, LogOut } from "lucide-react"
+import { Menu, BarChart3, Users, Calendar, UserCheck, Dumbbell, User, Sun, Moon, LogOut, Shield } from "lucide-react"
 import { useTheme } from "next-themes"
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
+import Image from "next/image"
 
 const navigation = [
   { name: "Agenda", href: "/schedule", icon: Calendar },

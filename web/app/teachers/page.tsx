@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Search, Filter, Plus, User, Phone, Mail, Calendar, Clock, Edit, Trash2, UserPlus } from "lucide-react"
 import {
   Dialog,
@@ -91,8 +91,19 @@ export default function TeachersPage() {
 
   const [formData, setFormData] = useState({
     name: "",
+    surname: "",
     email: "",
     phone: "",
+    sex: "",
+    birthDate: "",
+    street: "",
+    number: "",
+    complement: "",
+    neighborhood: "",
+    cep: "",
+    emergencyName: "",
+    emergencyPhone: "",
+    emergencyRelationship: "",
     specialties: "",
     compensation: "Horista",
     status: "Ativo",
@@ -139,8 +150,12 @@ export default function TeachersPage() {
           teacher.id === editingTeacher.id
             ? {
                 ...teacher,
-                ...formData,
+                name: `${formData.name} ${formData.surname}`,
+                email: formData.email,
+                phone: formData.phone,
                 specialties: formData.specialties.split(",").map((s) => s.trim()),
+                compensation: formData.compensation,
+                status: formData.status,
               }
             : teacher,
         ),
@@ -149,8 +164,12 @@ export default function TeachersPage() {
       // Add new teacher
       const newTeacher = {
         id: Date.now(),
-        ...formData,
+        name: `${formData.name} ${formData.surname}`,
+        email: formData.email,
+        phone: formData.phone,
         specialties: formData.specialties.split(",").map((s) => s.trim()),
+        compensation: formData.compensation,
+        status: formData.status,
         joinDate: new Date().toLocaleDateString("pt-BR"),
         hoursWorked: 0,
         avatar: "/placeholder.svg?height=40&width=40",
@@ -163,8 +182,19 @@ export default function TeachersPage() {
     setEditingTeacher(null)
     setFormData({
       name: "",
+      surname: "",
       email: "",
       phone: "",
+      sex: "",
+      birthDate: "",
+      street: "",
+      number: "",
+      complement: "",
+      neighborhood: "",
+      cep: "",
+      emergencyName: "",
+      emergencyPhone: "",
+      emergencyRelationship: "",
       specialties: "",
       compensation: "Horista",
       status: "Ativo",
@@ -172,11 +202,23 @@ export default function TeachersPage() {
   }
 
   const handleEdit = (teacher: any) => {
+    const nameParts = teacher.name.split(" ")
     setEditingTeacher(teacher)
     setFormData({
-      name: teacher.name,
+      name: nameParts[0] || "",
+      surname: nameParts.slice(1).join(" ") || "",
       email: teacher.email,
       phone: teacher.phone,
+      sex: "",
+      birthDate: "",
+      street: "",
+      number: "",
+      complement: "",
+      neighborhood: "",
+      cep: "",
+      emergencyName: "",
+      emergencyPhone: "",
+      emergencyRelationship: "",
       specialties: teacher.specialties.join(", "),
       compensation: teacher.compensation,
       status: teacher.status,
@@ -218,7 +260,7 @@ export default function TeachersPage() {
                 Novo Professor
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <form onSubmit={handleSubmit}>
                 <DialogHeader>
                   <DialogTitle>{editingTeacher ? "Editar Professor" : "Novo Professor"}</DialogTitle>
@@ -227,35 +269,155 @@ export default function TeachersPage() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nome Completo</Label>
-                    <Input
-                      id="name"
-                      value={formData.name}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                      required
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Nome *</Label>
+                      <Input
+                        id="name"
+                        value={formData.name}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="surname">Sobrenome *</Label>
+                      <Input
+                        id="surname"
+                        value={formData.surname}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, surname: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email *</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Telefone *</Label>
+                      <Input
+                        id="phone"
+                        value={formData.phone}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
+                        placeholder="(11) 99999-9999"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="sex">Sexo *</Label>
+                      <Select
+                        value={formData.sex}
+                        onValueChange={(value) => setFormData((prev) => ({ ...prev, sex: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="M">Masculino</SelectItem>
+                          <SelectItem value="F">Feminino</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="birthDate">Data de Nascimento *</Label>
+                      <Input
+                        id="birthDate"
+                        type="date"
+                        value={formData.birthDate}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, birthDate: e.target.value }))}
+                        required
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-                      required
-                    />
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Endereço</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="street">Rua *</Label>
+                        <Input
+                          id="street"
+                          value={formData.street}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, street: e.target.value }))}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="number">Número *</Label>
+                        <Input
+                          id="number"
+                          value={formData.number}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, number: e.target.value }))}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="complement">Complemento</Label>
+                        <Input
+                          id="complement"
+                          value={formData.complement}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, complement: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="neighborhood">Bairro *</Label>
+                        <Input
+                          id="neighborhood"
+                          value={formData.neighborhood}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, neighborhood: e.target.value }))}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="cep">CEP *</Label>
+                        <Input
+                          id="cep"
+                          value={formData.cep}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, cep: e.target.value }))}
+                          required
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Telefone</Label>
-                    <Input
-                      id="phone"
-                      value={formData.phone}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))}
-                      placeholder="(11) 99999-9999"
-                      required
-                    />
+
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Contato de Emergência</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="emergencyName">Nome *</Label>
+                        <Input
+                          id="emergencyName"
+                          value={formData.emergencyName}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, emergencyName: e.target.value }))}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="emergencyPhone">Telefone *</Label>
+                        <Input
+                          id="emergencyPhone"
+                          value={formData.emergencyPhone}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, emergencyPhone: e.target.value }))}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="emergencyRelationship">Parentesco *</Label>
+                        <Input
+                          id="emergencyRelationship"
+                          value={formData.emergencyRelationship}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, emergencyRelationship: e.target.value }))}
+                          required
+                        />
+                      </div>
+                    </div>
                   </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="specialties">Especialidades</Label>
                     <Input
@@ -265,35 +427,37 @@ export default function TeachersPage() {
                       placeholder="Pilates, Yoga, Musculação"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="compensation">Regime de Compensação</Label>
-                    <Select
-                      value={formData.compensation}
-                      onValueChange={(value) => setFormData((prev) => ({ ...prev, compensation: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o regime" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Horista">Horista</SelectItem>
-                        <SelectItem value="Mensalista">Mensalista</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select
-                      value={formData.status}
-                      onValueChange={(value) => setFormData((prev) => ({ ...prev, status: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Ativo">Ativo</SelectItem>
-                        <SelectItem value="Inativo">Inativo</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="compensation">Regime de Compensação</Label>
+                      <Select
+                        value={formData.compensation}
+                        onValueChange={(value) => setFormData((prev) => ({ ...prev, compensation: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o regime" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Horista">Horista</SelectItem>
+                          <SelectItem value="Mensalista">Mensalista</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="status">Status</Label>
+                      <Select
+                        value={formData.status}
+                        onValueChange={(value) => setFormData((prev) => ({ ...prev, status: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Ativo">Ativo</SelectItem>
+                          <SelectItem value="Inativo">Inativo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
                 <DialogFooter>
@@ -396,7 +560,6 @@ export default function TeachersPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Avatar>
-                      <AvatarImage src={teacher.avatar || "/placeholder.svg"} />
                       <AvatarFallback className="select-none">
                         {teacher.name
                           .split(" ")

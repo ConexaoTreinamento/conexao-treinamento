@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -205,8 +204,8 @@ export default function ClassDetailPage() {
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <div>
-            <h1 className="text-xl font-bold">{classData.name}</h1>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold truncate">{classData.name}</h1>
             <p className="text-sm text-muted-foreground">
               {classData.date} • {classData.time}
             </p>
@@ -253,14 +252,14 @@ export default function ClassDetailPage() {
           {/* Students List */}
           <Card className="lg:col-span-2">
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Users className="w-5 h-5" />
                   Alunos da Aula
                 </CardTitle>
                 <Dialog open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}>
                   <DialogTrigger asChild>
-                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                    <Button size="sm" className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
                       <UserPlus className="w-4 h-4 mr-2" />
                       Adicionar
                     </Button>
@@ -273,17 +272,16 @@ export default function ClassDetailPage() {
                     <div className="space-y-3">
                       {availableStudents.map((student) => (
                         <div key={student.id} className="flex items-center justify-between p-3 rounded-lg border">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="w-8 h-8">
-                              <AvatarImage src={student.avatar || "/placeholder.svg"} />
-                              <AvatarFallback className="select-none">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
+                              <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
                                 {student.name
                                   .split(" ")
                                   .map((n) => n[0])
                                   .join("")}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium">{student.name}</span>
+                              </span>
+                            </div>
+                            <span className="font-medium truncate">{student.name}</span>
                           </div>
                           <Button
                             size="sm"
@@ -334,46 +332,43 @@ export default function ClassDetailPage() {
               <div className="space-y-3">
                 {classData.students.map((student) => (
                   <div key={student.id} className="p-3 rounded-lg border bg-card">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-8 h-8">
-                          <AvatarImage src={student.avatar || "/placeholder.svg"} />
-                          <AvatarFallback className="select-none">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
                             {student.name
                               .split(" ")
                               .map((n) => n[0])
                               .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{student.name}</p>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              size="sm"
-                              variant={student.present ? "default" : "outline"}
-                              onClick={() => togglePresence(student.id)}
-                              className={`h-6 text-xs ${
-                                student.present
-                                  ? "bg-green-600 hover:bg-green-700"
-                                  : "border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
-                              }`}
-                            >
-                              {student.present ? (
-                                <>
-                                  <CheckCircle className="w-3 h-3 mr-1" />
-                                  Presente
-                                </>
-                              ) : (
-                                <>
-                                  <XCircle className="w-3 h-3 mr-1" />
-                                  Ausente
-                                </>
-                              )}
-                            </Button>
-                          </div>
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{student.name}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                        <Button
+                          size="sm"
+                          variant={student.present ? "default" : "outline"}
+                          onClick={() => togglePresence(student.id)}
+                          className={`h-8 text-xs flex-1 sm:flex-none ${
+                            student.present
+                              ? "bg-green-600 hover:bg-green-700"
+                              : "border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
+                          }`}
+                        >
+                          {student.present ? (
+                            <>
+                              <CheckCircle className="w-3 h-3 mr-1" />
+                              Presente
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="w-3 h-3 mr-1" />
+                              Ausente
+                            </>
+                          )}
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
@@ -381,6 +376,7 @@ export default function ClassDetailPage() {
                             setSelectedStudent(student)
                             setIsExerciseOpen(true)
                           }}
+                          className="flex-1 sm:flex-none"
                         >
                           <Activity className="w-3 h-3 mr-1" />
                           Exercícios
@@ -398,14 +394,14 @@ export default function ClassDetailPage() {
                               key={idx}
                               className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm"
                             >
-                              <span>
+                              <span className="flex-1 min-w-0 truncate">
                                 {exercise.exercise} - {exercise.sets}x{exercise.reps}
                               </span>
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => toggleExerciseCompletion(student.id, idx)}
-                                className={`h-6 w-6 p-0 ${exercise.completed ? "text-green-600" : "text-gray-400"}`}
+                                className={`h-6 w-6 p-0 flex-shrink-0 ml-2 ${exercise.completed ? "text-green-600" : "text-gray-400"}`}
                               >
                                 <CheckCircle className="w-4 h-4" />
                               </Button>
@@ -433,24 +429,29 @@ export default function ClassDetailPage() {
               <div className="space-y-1">
                 <Label>Exercício</Label>
                 <div className="flex gap-2">
-                  <Select
-                    value={exerciseForm.exercise}
-                    onValueChange={(value) => setExerciseForm((prev) => ({ ...prev, exercise: value }))}
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Selecione o exercício" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableExercises.map((exercise) => (
-                        <SelectItem key={exercise} value={exercise}>
-                          {exercise}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="relative flex-1">
+                    <Input placeholder="Buscar exercício..." className="pr-10" />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <Select
+                        value={exerciseForm.exercise}
+                        onValueChange={(value) => setExerciseForm((prev) => ({ ...prev, exercise: value }))}
+                      >
+                        <SelectTrigger className="w-8 h-8 p-0 border-0 bg-transparent">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableExercises.map((exercise) => (
+                            <SelectItem key={exercise} value={exercise}>
+                              {exercise}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                   <Dialog open={isNewExerciseOpen} onOpenChange={setIsNewExerciseOpen}>
                     <DialogTrigger asChild>
-                      <Button size="icon" variant="outline">
+                      <Button size="icon" variant="outline" className="flex-shrink-0 bg-transparent">
                         <Plus className="w-4 h-4" />
                       </Button>
                     </DialogTrigger>
@@ -469,43 +470,14 @@ export default function ClassDetailPage() {
                             placeholder="Ex: Supino Inclinado"
                           />
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <Label>Categoria</Label>
-                            <Select
-                              value={newExerciseForm.category}
-                              onValueChange={(value) => setNewExerciseForm((prev) => ({ ...prev, category: value }))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {categories.map((category) => (
-                                  <SelectItem key={category} value={category}>
-                                    {category}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Dificuldade</Label>
-                            <Select
-                              value={newExerciseForm.difficulty}
-                              onValueChange={(value) => setNewExerciseForm((prev) => ({ ...prev, difficulty: value }))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {difficulties.map((difficulty) => (
-                                  <SelectItem key={difficulty} value={difficulty}>
-                                    {difficulty}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="exerciseDescription">Descrição</Label>
+                          <Input
+                            id="exerciseDescription"
+                            value={newExerciseForm.description}
+                            onChange={(e) => setNewExerciseForm((prev) => ({ ...prev, description: e.target.value }))}
+                            placeholder="Descrição do exercício..."
+                          />
                         </div>
                       </div>
                       <DialogFooter>

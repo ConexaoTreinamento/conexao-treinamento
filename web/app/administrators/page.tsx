@@ -18,20 +18,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X } from "lucide-react"
+import { Search, Filter, Plus, Phone, Mail, Calendar, Shield, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 
-export default function StudentsPage() {
+export default function AdministratorsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [userRole, setUserRole] = useState<string>("")
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [filters, setFilters] = useState({
     status: "all",
-    plan: "all",
-    ageRange: "all",
-    profession: "all",
     gender: "all",
     joinPeriod: "all",
   })
@@ -40,151 +37,76 @@ export default function StudentsPage() {
   useEffect(() => {
     const role = localStorage.getItem("userRole") || "professor"
     setUserRole(role)
-  }, [])
 
-  // Mock students data with updated fields
-  const students = [
+    // Redirect if not admin
+    if (role !== "admin") {
+      router.push("/schedule")
+    }
+  }, [router])
+
+  // Mock administrators data
+  const administrators = [
     {
       id: 1,
-      name: "Maria",
-      surname: "Silva",
-      email: "maria@email.com",
-      phone: "(11) 99999-9999",
-      sex: "F",
-      birthDate: "1996-03-15",
-      profession: "Designer",
-      street: "Rua das Flores",
-      number: "123",
-      complement: "Apto 45",
+      name: "Admin",
+      surname: "Principal",
+      email: "admin@gym.com",
+      phone: "(11) 99999-0000",
+      sex: "M",
+      birthDate: "1985-05-15",
+      street: "Rua Administrativa",
+      number: "100",
+      complement: "Sala 1",
       neighborhood: "Centro",
-      cep: "01234-567",
-      registrationDate: "2024-01-15",
+      cep: "01000-000",
+      admissionDate: "2023-01-01",
       status: "Ativo",
-      plan: "Mensal",
     },
     {
       id: 2,
-      name: "João",
-      surname: "Santos",
-      email: "joao@email.com",
-      phone: "(11) 88888-8888",
-      sex: "M",
-      birthDate: "1989-07-22",
-      profession: "Engenheiro",
-      street: "Av. Paulista",
-      number: "456",
-      complement: "",
-      neighborhood: "Bela Vista",
-      cep: "01310-100",
-      registrationDate: "2024-02-03",
-      status: "Ativo",
-      plan: "Trimestral",
-    },
-    {
-      id: 3,
-      name: "Ana",
-      surname: "Costa",
-      email: "ana@email.com",
-      phone: "(11) 77777-7777",
+      name: "Maria",
+      surname: "Administradora",
+      email: "maria.admin@gym.com",
+      phone: "(11) 88888-0000",
       sex: "F",
-      birthDate: "1980-06-20",
-      profession: "Médica",
-      street: "Rua das Palmeiras",
-      number: "789",
+      birthDate: "1990-08-22",
+      street: "Av. Gestão",
+      number: "200",
       complement: "",
-      neighborhood: "Jardins",
-      cep: "01410-000",
-      registrationDate: "2023-12-20",
-      status: "Vencido",
-      plan: "Mensal",
-    },
-    {
-      id: 4,
-      name: "Carlos",
-      surname: "Lima",
-      email: "carlos@email.com",
-      phone: "(11) 66666-6666",
-      sex: "M",
-      birthDate: "1993-03-10",
-      profession: "Advogado",
-      street: "Rua dos Pinheiros",
-      number: "101",
-      complement: "Casa 2",
-      neighborhood: "Pinheiros",
-      cep: "01510-000",
-      registrationDate: "2024-03-10",
+      neighborhood: "Administrativo",
+      cep: "01100-000",
+      admissionDate: "2023-06-15",
       status: "Ativo",
-      plan: "Semestral",
-    },
-    {
-      id: 5,
-      name: "Lucia",
-      surname: "Ferreira",
-      email: "lucia@email.com",
-      phone: "(11) 55555-5555",
-      sex: "F",
-      birthDate: "1995-04-25",
-      profession: "Enfermeira",
-      street: "Rua dos Cedros",
-      number: "202",
-      complement: "",
-      neighborhood: "Cedros",
-      cep: "01610-000",
-      registrationDate: "2024-04-25",
-      status: "Ativo",
-      plan: "Mensal",
     },
   ]
 
-  const filteredStudents = students.filter((student) => {
-    const fullName = `${student.name} ${student.surname}`
+  const filteredAdministrators = administrators.filter((admin) => {
+    const fullName = `${admin.name} ${admin.surname}`
     const matchesSearch =
       fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.profession.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.phone.includes(searchTerm)
+      admin.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      admin.phone.includes(searchTerm)
 
-    const matchesStatus = filters.status === "all" || student.status === filters.status
-    const matchesPlan = filters.plan === "all" || student.plan === filters.plan
-
-    const age = new Date().getFullYear() - new Date(student.birthDate).getFullYear()
-    const matchesAge =
-      filters.ageRange === "all" ||
-      (filters.ageRange === "18-25" && age >= 18 && age <= 25) ||
-      (filters.ageRange === "26-35" && age >= 26 && age <= 35) ||
-      (filters.ageRange === "36-45" && age >= 36 && age <= 45) ||
-      (filters.ageRange === "46+" && age >= 46)
-
-    const matchesProfession = filters.profession === "all" || student.profession === filters.profession
+    const matchesStatus = filters.status === "all" || admin.status === filters.status
     const matchesGender =
       filters.gender === "all" ||
-      (filters.gender === "Masculino" && student.sex === "M") ||
-      (filters.gender === "Feminino" && student.sex === "F")
+      (filters.gender === "Masculino" && admin.sex === "M") ||
+      (filters.gender === "Feminino" && admin.sex === "F")
 
-    const joinYear = new Date(student.registrationDate).getFullYear()
+    const joinYear = new Date(admin.admissionDate).getFullYear()
     const matchesJoinPeriod =
       filters.joinPeriod === "all" ||
       (filters.joinPeriod === "2024" && joinYear === 2024) ||
       (filters.joinPeriod === "2023" && joinYear === 2023) ||
       (filters.joinPeriod === "older" && joinYear < 2023)
 
-    return (
-      matchesSearch &&
-      matchesStatus &&
-      matchesPlan &&
-      matchesAge &&
-      matchesProfession &&
-      matchesGender &&
-      matchesJoinPeriod
-    )
+    return matchesSearch && matchesStatus && matchesGender && matchesJoinPeriod
   })
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Ativo":
         return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      case "Vencido":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
       case "Inativo":
         return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
       default:
@@ -195,22 +117,23 @@ export default function StudentsPage() {
   const clearFilters = () => {
     setFilters({
       status: "all",
-      plan: "all",
-      ageRange: "all",
-      profession: "all",
       gender: "all",
       joinPeriod: "all",
     })
   }
 
   const hasActiveFilters = Object.values(filters).some((filter) => filter !== "all")
-  const uniqueProfessions = [...new Set(students.map((s) => s.profession))]
 
-  const handleCreateStudent = (e: React.FormEvent) => {
+  const handleCreateAdmin = (e: React.FormEvent) => {
     e.preventDefault()
     // Mock creation logic
     setIsCreateOpen(false)
-    // In real app, would create student and refresh list
+    // In real app, would create administrator and refresh list
+  }
+
+  // Don't render if not admin
+  if (userRole !== "admin") {
+    return null
   }
 
   return (
@@ -219,22 +142,22 @@ export default function StudentsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Alunos</h1>
-            <p className="text-muted-foreground">Gerencie todos os alunos da academia</p>
+            <h1 className="text-2xl font-bold">Administradores</h1>
+            <p className="text-muted-foreground">Gerencie todos os administradores do sistema</p>
           </div>
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
+              <Button className="bg-green-600 hover:bg-green-700">
                 <Plus className="w-4 h-4 mr-2" />
-                Novo Aluno
+                Novo Administrador
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Cadastrar Novo Aluno</DialogTitle>
-                <DialogDescription>Preencha as informações do aluno</DialogDescription>
+                <DialogTitle>Cadastrar Novo Administrador</DialogTitle>
+                <DialogDescription>Preencha as informações do administrador</DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleCreateStudent} className="space-y-4">
+              <form onSubmit={handleCreateAdmin} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Nome *</Label>
@@ -267,10 +190,6 @@ export default function StudentsPage() {
                   <div className="space-y-2">
                     <Label htmlFor="birthDate">Data de Nascimento *</Label>
                     <Input id="birthDate" type="date" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="profession">Profissão</Label>
-                    <Input id="profession" />
                   </div>
                 </div>
 
@@ -323,7 +242,7 @@ export default function StudentsPage() {
                     Cancelar
                   </Button>
                   <Button type="submit" className="bg-green-600 hover:bg-green-700">
-                    Cadastrar Aluno
+                    Cadastrar Administrador
                   </Button>
                 </div>
               </form>
@@ -336,7 +255,7 @@ export default function StudentsPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
-              placeholder="Buscar alunos por nome, email, telefone ou profissão..."
+              placeholder="Buscar administradores por nome, email ou telefone..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -345,7 +264,7 @@ export default function StudentsPage() {
 
           <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" className="relative bg-transparent w-full sm:w-auto">
+              <Button variant="outline" className="relative bg-transparent">
                 <Filter className="w-4 h-4 mr-2" />
                 Filtros
                 {hasActiveFilters && (
@@ -358,7 +277,7 @@ export default function StudentsPage() {
             <SheetContent>
               <SheetHeader>
                 <SheetTitle>Filtros Avançados</SheetTitle>
-                <SheetDescription>Refine sua busca por alunos</SheetDescription>
+                <SheetDescription>Refine sua busca por administradores</SheetDescription>
               </SheetHeader>
               <div className="space-y-4 mt-6">
                 <div className="space-y-2">
@@ -373,46 +292,7 @@ export default function StudentsPage() {
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
                       <SelectItem value="Ativo">Ativo</SelectItem>
-                      <SelectItem value="Vencido">Vencido</SelectItem>
                       <SelectItem value="Inativo">Inativo</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Plano</label>
-                  <Select
-                    value={filters.plan}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, plan: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="Mensal">Mensal</SelectItem>
-                      <SelectItem value="Trimestral">Trimestral</SelectItem>
-                      <SelectItem value="Semestral">Semestral</SelectItem>
-                      <SelectItem value="Anual">Anual</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Faixa Etária</label>
-                  <Select
-                    value={filters.ageRange}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, ageRange: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas</SelectItem>
-                      <SelectItem value="18-25">18-25 anos</SelectItem>
-                      <SelectItem value="26-35">26-35 anos</SelectItem>
-                      <SelectItem value="36-45">36-45 anos</SelectItem>
-                      <SelectItem value="46+">46+ anos</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -435,27 +315,7 @@ export default function StudentsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Profissão</label>
-                  <Select
-                    value={filters.profession}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, profession: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas</SelectItem>
-                      {uniqueProfessions.map((profession) => (
-                        <SelectItem key={profession} value={profession}>
-                          {profession}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Período de Ingresso</label>
+                  <label className="text-sm font-medium">Período de Admissão</label>
                   <Select
                     value={filters.joinPeriod}
                     onValueChange={(value) => setFilters((prev) => ({ ...prev, joinPeriod: value }))}
@@ -486,73 +346,61 @@ export default function StudentsPage() {
         {/* Results Summary */}
         {(searchTerm || hasActiveFilters) && (
           <div className="text-sm text-muted-foreground">
-            Mostrando {filteredStudents.length} de {students.length} alunos
+            Mostrando {filteredAdministrators.length} de {administrators.length} administradores
           </div>
         )}
 
-        {/* Students List */}
+        {/* Administrators List */}
         <div className="space-y-3">
-          {filteredStudents.map((student) => {
-            const age = new Date().getFullYear() - new Date(student.birthDate).getFullYear()
-            const fullName = `${student.name} ${student.surname}`
-            const initials = `${student.name.charAt(0)}${student.surname.charAt(0)}`.toUpperCase()
+          {filteredAdministrators.map((admin) => {
+            const age = new Date().getFullYear() - new Date(admin.birthDate).getFullYear()
+            const fullName = `${admin.name} ${admin.surname}`
+            const initials = `${admin.name.charAt(0)}${admin.surname.charAt(0)}`.toUpperCase()
 
             return (
               <Card
-                key={student.id}
+                key={admin.id}
                 className="hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => router.push(`/students/${student.id}`)}
+                onClick={() => router.push(`/administrators/${admin.id}`)}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-green-700 dark:text-green-300 font-semibold select-none">{initials}</span>
+                    <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                      <span className="text-blue-700 dark:text-blue-300 font-semibold select-none">{initials}</span>
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex flex-col gap-2 mb-1">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-lg flex-1 min-w-0">{fullName}</h3>
                         <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-lg flex-1 min-w-0 truncate">{fullName}</h3>
-                          <Badge className={`${getStatusColor(student.status)} flex-shrink-0`}>{student.status}</Badge>
+                          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                            <Shield className="w-3 h-3 mr-1" />
+                            Admin
+                          </Badge>
+                          <Badge className={getStatusColor(admin.status)}>{admin.status}</Badge>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1 min-w-0">
-                          <Mail className="w-3 h-3 flex-shrink-0" />
-                          <span className="truncate">{student.email}</span>
+                        <div className="flex items-center gap-1">
+                          <Mail className="w-3 h-3" />
+                          <span className="truncate">{admin.email}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Phone className="w-3 h-3 flex-shrink-0" />
-                          <span>{student.phone}</span>
+                          <Phone className="w-3 h-3" />
+                          <span>{admin.phone}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3 flex-shrink-0" />
-                          <span>Plano {student.plan}</span>
+                          <Calendar className="w-3 h-3" />
+                          <span>Admissão: {new Date(admin.admissionDate).toLocaleDateString("pt-BR")}</span>
                         </div>
                       </div>
 
-                      <div className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2 text-xs text-muted-foreground">
                         <span>
-                          {age} anos • {student.profession} • {student.sex === "M" ? "Masculino" : "Feminino"}
+                          {age} anos • {admin.sex === "M" ? "Masculino" : "Feminino"}
                         </span>
-                        <span>Ingresso: {new Date(student.registrationDate).toLocaleDateString("pt-BR")}</span>
                       </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2 flex-shrink-0">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          router.push(`/students/${student.id}/evaluation`)
-                        }}
-                        className="bg-transparent text-xs px-2 py-1 h-8"
-                      >
-                        <Activity className="w-3 h-3 mr-1" />
-                        Avaliação
-                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -561,21 +409,21 @@ export default function StudentsPage() {
           })}
         </div>
 
-        {filteredStudents.length === 0 && (
+        {filteredAdministrators.length === 0 && (
           <Card>
             <CardContent className="text-center py-12">
-              <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-green-700 dark:text-green-300 font-semibold text-lg select-none">?</span>
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Shield className="w-6 h-6 text-blue-700 dark:text-blue-300" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Nenhum aluno encontrado</h3>
+              <h3 className="text-lg font-semibold mb-2">Nenhum administrador encontrado</h3>
               <p className="text-muted-foreground mb-4">
                 {searchTerm || hasActiveFilters
                   ? "Tente ajustar os filtros ou termo de busca."
-                  : "Comece adicionando o primeiro aluno."}
+                  : "Comece adicionando o primeiro administrador."}
               </p>
               <Button className="bg-green-600 hover:bg-green-700" onClick={() => setIsCreateOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
-                Adicionar Primeiro Aluno
+                Adicionar Primeiro Administrador
               </Button>
             </CardContent>
           </Card>
