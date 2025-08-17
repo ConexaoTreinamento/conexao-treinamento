@@ -70,8 +70,8 @@ export default function ClassDetailPage() {
         avatar: "/placeholder.svg?height=40&width=40",
         present: true,
         exercises: [
-          { exercise: "Prancha", sets: 3, reps: "30s", completed: true },
-          { exercise: "Roll Up", sets: 2, reps: 10, completed: true },
+          { exercise: "Prancha", sets: 3, reps: 30, completed: true, weight: 70.0 },
+          { exercise: "Roll Up", sets: 2, reps: 10, completed: true, weight: 40.0 },
         ],
       },
       {
@@ -80,8 +80,8 @@ export default function ClassDetailPage() {
         avatar: "/placeholder.svg?height=40&width=40",
         present: true,
         exercises: [
-          { exercise: "Hundred", sets: 1, reps: 100, completed: false },
-          { exercise: "Single Leg Stretch", sets: 2, reps: 10, completed: true },
+          { exercise: "Hundred", sets: 1, reps: 100, completed: false, weight: 40.0 },
+          { exercise: "Single Leg Stretch", sets: 2, reps: 10, completed: true, weight: 50.0 },
         ],
       },
       {
@@ -115,6 +115,7 @@ export default function ClassDetailPage() {
     exercise: "",
     sets: "",
     reps: "",
+    weight: "",
     completed: false,
   })
 
@@ -151,7 +152,8 @@ export default function ClassDetailPage() {
                 exercises: [...student.exercises, {
                   exercise: exerciseForm.exercise,
                   sets: parseInt(exerciseForm.sets) || 0,
-                  reps: exerciseForm.reps, // reps can be string (like "30s") or number
+                  reps: parseInt(exerciseForm.reps),
+                  weight: parseInt(exerciseForm.weight), // weight/load for the exercise
                   completed: exerciseForm.completed
                 }],
               }
@@ -163,6 +165,7 @@ export default function ClassDetailPage() {
         exercise: "",
         sets: "",
         reps: "",
+        weight: "",
         completed: false,
       })
       setIsExerciseOpen(false)
@@ -401,6 +404,7 @@ export default function ClassDetailPage() {
                             >
                               <span className="flex-1 min-w-0 truncate">
                                 {exercise.exercise} - {exercise.sets}x{exercise.reps}
+                                {exercise.weight && ` - ${exercise.weight}kg`}
                               </span>
                               <Button
                                 size="sm"
@@ -497,7 +501,7 @@ export default function ClassDetailPage() {
                   </Dialog>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <Label>Séries</Label>
                   <Input
@@ -513,6 +517,16 @@ export default function ClassDetailPage() {
                     value={exerciseForm.reps}
                     onChange={(e) => setExerciseForm((prev) => ({ ...prev, reps: e.target.value }))}
                     placeholder="10 ou 30s"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Carga (kg)</Label>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    value={exerciseForm.weight}
+                    onChange={(e) => setExerciseForm((prev) => ({ ...prev, carga: e.target.value }))}
+                    placeholder="20"
                   />
                 </div>
               </div>
