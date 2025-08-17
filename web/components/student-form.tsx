@@ -662,7 +662,7 @@ export default function StudentForm({
                   variant="outline"
                   size="sm"
                   onClick={addPhysicalImpairment}
-                  className="bg-green-50 hover:bg-green-100 border-green-200"
+                  className="bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700 dark:bg-green-600 dark:hover:bg-green-700 dark:text-white dark:border-green-600 dark:hover:border-green-700"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Adicionar
