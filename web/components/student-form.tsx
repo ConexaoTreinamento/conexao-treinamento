@@ -659,24 +659,23 @@ export default function StudentForm({
 
           {/* Physical Impairments Section */}
           <div className="space-y-4 mt-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <h4 className="text-md font-semibold">Comprometimentos Físicos</h4>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={addPhysicalImpairment}
-                className="bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700 dark:bg-green-600 dark:hover:bg-green-700 dark:text-white dark:border-green-600 dark:hover:border-green-700"
+                className="bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700 dark:bg-green-600 dark:hover:bg-green-700 dark:text-white dark:border-green-600 dark:hover:border-green-700 w-full sm:w-auto"
               >
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar
+                <Plus className="w-4 h-4" />
               </Button>
             </div>
 
             {formData.physicalImpairments.map((impairment) => (
-              <div key={impairment.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg">
+              <div key={impairment.id} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border rounded-lg">
                 <div className="space-y-2">
-                  <Label>Tipo</Label>
+                  <Label className="text-sm">Tipo</Label>
                   <Select
                     value={impairment.type}
                     onValueChange={(value) => updatePhysicalImpairment(impairment.id, "type", value)}
@@ -695,30 +694,33 @@ export default function StudentForm({
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Nome</Label>
+                  <Label className="text-sm">Nome</Label>
                   <Input
                     value={impairment.name}
                     onChange={(e) => updatePhysicalImpairment(impairment.id, "name", e.target.value)}
-                    placeholder="Ex: Limitação no joelho direito"
+                    placeholder="Ex: Limitação no joelho"
+                    className="text-sm"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Observações</Label>
+                  <Label className="text-sm">Observações</Label>
                   <Input
                     value={impairment.observations}
                     onChange={(e) => updatePhysicalImpairment(impairment.id, "observations", e.target.value)}
-                    placeholder="Ex: Devido à cirurgia recente"
+                    placeholder="Ex: Devido à cirurgia"
+                    className="text-sm"
                   />
                 </div>
-                <div className="flex items-end">
+                <div className="flex items-end sm:col-span-2 lg:col-span-1">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => removePhysicalImpairment(impairment.id)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full lg:w-auto"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4 lg:mr-0 mr-2" />
+                    <span className="lg:hidden">Remover</span>
                   </Button>
                 </div>
               </div>
