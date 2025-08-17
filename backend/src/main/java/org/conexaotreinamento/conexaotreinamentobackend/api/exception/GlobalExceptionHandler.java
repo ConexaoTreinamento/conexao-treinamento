@@ -5,6 +5,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -13,9 +14,9 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<ApiError> handleBusiness(BusinessException ex, HttpServletRequest req) {
-        return build(ex.getStatus(), ex.getMessage(), req, null);
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiError> handleResponseStatus(ResponseStatusException ex, HttpServletRequest req) {
+        return build(HttpStatus.valueOf(ex.getStatusCode().value()), ex.getReason(), req, null);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

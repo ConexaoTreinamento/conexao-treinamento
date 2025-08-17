@@ -1,5 +1,7 @@
 package org.conexaotreinamento.conexaotreinamentobackend.api.dto.response;
 
+import org.conexaotreinamento.conexaotreinamentobackend.persistence.entity.Exercise;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -10,4 +12,15 @@ public record ExerciseResponseDTO(
         Instant createdAt,
         Instant updatedAt,
         Instant deletedAt
-) {}
+) {
+    public static ExerciseResponseDTO fromEntity(Exercise exercise) {
+        return new ExerciseResponseDTO(
+                exercise.getId(),
+                exercise.getName(),
+                exercise.getDescription(),
+                exercise.getCreatedAt(),
+                exercise.getUpdatedAt(),
+                exercise.getDeletedAt()
+        );
+    }
+}
