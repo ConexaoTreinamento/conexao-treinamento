@@ -279,39 +279,37 @@ export default function ReportsPage() {
         </Card>
 
         {/* Student Profile Analysis */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Perfil Etário dos Alunos
-              </CardTitle>
-              <CardDescription>Distribuição dos alunos por faixa etária</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {studentProfiles.map((profile, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 bg-green-600 rounded"></div>
-                      <span className="font-medium">{profile.age} anos</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-32 bg-muted rounded-full h-2">
-                        <div
-                          className="bg-green-600 h-2 rounded-full"
-                          style={{ width: `${profile.percentage}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-medium w-12 text-right">{profile.count}</span>
-                      <span className="text-sm text-muted-foreground w-8">({profile.percentage}%)</span>
-                    </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Perfil Etário dos Alunos
+            </CardTitle>
+            <CardDescription>Distribuição dos alunos por faixa etária</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {studentProfiles.map((profile, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-4 h-4 bg-green-600 rounded"></div>
+                    <span className="font-medium">{profile.age} anos</span>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-32 bg-muted rounded-full h-2">
+                      <div
+                        className="bg-green-600 h-2 rounded-full"
+                        style={{ width: `${profile.percentage}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-medium w-12 text-right">{profile.count}</span>
+                    <span className="text-sm text-muted-foreground w-8">({profile.percentage}%)</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   )
