@@ -14,10 +14,11 @@ import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 const navigation = [
   { name: "Agenda", href: "/schedule", icon: Calendar },
   { name: "Alunos", href: "/students", icon: Users },
-  { name: "Professores", href: "/teachers", icon: UserCheck },
+  { name: "Professores", href: "/teachers", icon: UserCheck, adminOnly: true },
+  { name: "Administradores", href: "/administrators", icon: Shield, adminOnly: true },
   { name: "Exercícios", href: "/exercises", icon: Dumbbell },
   { name: "Eventos", href: "/events", icon: Calendar },
-  { name: "Relatórios", href: "/reports", icon: BarChart3 },
+  { name: "Relatórios", href: "/reports", icon: BarChart3, adminOnly: true },
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -43,8 +44,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }
 
   const filteredNavigation = navigation.filter((item) => {
-    if (userRole === "professor") {
-      return !["Professores"].includes(item.name)
+    if (item.adminOnly && userRole !== "admin") {
+      return false
     }
     return true
   })
