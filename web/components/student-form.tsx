@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { User, Plus, Trash2 } from "lucide-react"
+import { v4 as uuidv4 } from 'uuid'
 
 interface PhysicalImpairment {
   id: string
@@ -154,7 +155,7 @@ export default function StudentForm({
 
   const addPhysicalImpairment = () => {
     const newImpairment: PhysicalImpairment = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       type: "",
       name: "",
       observations: ""
@@ -659,8 +660,8 @@ export default function StudentForm({
 
           {/* Physical Impairments Section */}
           <div className="space-y-4 mt-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <h4 className="text-md font-semibold">Comprometimentos Físicos</h4>
+            <h4 className="text-md font-semibold">Comprometimentos Físicos</h4>
+            <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-3">
               <Button
                 type="button"
                 variant="outline"
@@ -668,7 +669,7 @@ export default function StudentForm({
                 onClick={addPhysicalImpairment}
                 className="bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700 dark:bg-green-600 dark:hover:bg-green-700 dark:text-white dark:border-green-600 dark:hover:border-green-700 w-full sm:w-auto"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4"/>
               </Button>
             </div>
 
@@ -737,9 +738,6 @@ export default function StudentForm({
 
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-3 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel} className="flex-1 sm:flex-none bg-transparent">
-          Cancelar
-        </Button>
         <Button type="submit" disabled={isLoading} className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700">
           {isLoading ? (
             <>
@@ -749,6 +747,9 @@ export default function StudentForm({
           ) : (
             submitLabel
           )}
+        </Button>
+        <Button type="button" variant="outline" onClick={onCancel} className="flex-1 sm:flex-none bg-transparent">
+          Cancelar
         </Button>
       </div>
     </form>
