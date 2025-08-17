@@ -523,7 +523,7 @@ export default function ClassDetailPage() {
                   <Input
                     value={exerciseForm.reps}
                     onChange={(e) => setExerciseForm((prev) => ({ ...prev, reps: e.target.value }))}
-                    placeholder="10 ou 30s"
+                    placeholder="10"
                   />
                 </div>
                 <div className="space-y-1">
