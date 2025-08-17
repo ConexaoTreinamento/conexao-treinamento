@@ -211,6 +211,14 @@ export default function ClassDetailPage() {
     }))
   }
 
+  // Add search state for students
+  const [studentSearchTerm, setStudentSearchTerm] = useState("")
+
+  // Filter students based on search term
+  const filteredStudents = classData.students.filter(student =>
+    student.name.toLowerCase().includes(studentSearchTerm.toLowerCase())
+  )
+
   return (
     <Layout>
       <div className="space-y-4">
@@ -292,7 +300,18 @@ export default function ClassDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {classData.students.map((student) => (
+                {/* Search Input */}
+                <div>
+                  <Label htmlFor="studentSearch">Buscar Aluno</Label>
+                  <Input
+                    id="studentSearch"
+                    placeholder="Digite o nome do aluno..."
+                    value={studentSearchTerm}
+                    onChange={(e) => setStudentSearchTerm(e.target.value)}
+                  />
+                </div>
+
+                {filteredStudents.map((student) => (
                   <div key={student.id} className="p-3 rounded-lg border bg-card">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
                       <div className="flex items-center gap-3 flex-1 min-w-0">

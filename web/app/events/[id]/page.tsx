@@ -166,6 +166,14 @@ export default function EventDetailPage() {
     setIsEditOpen(false)
   }
 
+  // Add search state for participants
+  const [participantSearchTerm, setParticipantSearchTerm] = useState("")
+
+  // Filter participants based on search term
+  const filteredParticipants = eventData.participants.filter(participant =>
+    participant.name.toLowerCase().includes(participantSearchTerm.toLowerCase())
+  )
+
   // Filter students based on search term
   const handleQuickAddStudent = (student: string) => {
     if (!eventForm.students.includes(student)) {
@@ -397,11 +405,17 @@ export default function EventDetailPage() {
                   <Users className="w-5 h-5"/>
                   Participantes ({eventData.participants.length})
                 </CardTitle>
+                <Input
+                    placeholder="Buscar participante..."
+                    value={participantSearchTerm}
+                    onChange={(e) => setParticipantSearchTerm(e.target.value)}
+                    className="max-w-sm"
+                />
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {eventData.participants.map((participant) => (
+                {filteredParticipants.map((participant) => (
                     <div key={participant.id}
                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border gap-3">
                       <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -455,10 +469,10 @@ export default function EventDetailPage() {
                     </div>
                 ))}
 
-                {eventData.participants.length === 0 && (
+                {filteredParticipants.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground">
                       <Users className="w-12 h-12 mx-auto mb-4 opacity-50"/>
-                      <p>Nenhum participante inscrito ainda</p>
+                      <p>Nenhum participante encontrado</p>
                     </div>
                 )}
               </div>
