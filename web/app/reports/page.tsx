@@ -311,34 +311,6 @@ export default function ReportsPage() {
               </div>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="w-5 h-5" />
-                Profissões dos Alunos
-              </CardTitle>
-              <CardDescription>Distribuição por área profissional</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {professions.map((profession, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <span className="font-medium">{profession.name}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-20 bg-muted rounded-full h-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full"
-                          style={{ width: `${(profession.count / 142) * 100}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-medium w-8 text-right">{profession.count}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </Layout>
