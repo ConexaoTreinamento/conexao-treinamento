@@ -25,7 +25,7 @@
     - FavoritePhysicalActivity (string)
     - HasImsomnia (yes, no, sometimes)
     - DietOrientedBy (string)
-    - CardiovascularProblems (list)
+    - CardiacProblems (list)
     - HasHipertension (bool)
     - ChronicDiseases (list)
     - DifficultiesInPhysicalActivities (list)
@@ -42,7 +42,7 @@
       - Tipo (motor, emocional, visual, auditivo. linguístico, outro)
       - Nome
       - Observações
-    - Objetivos (lista de strings)
+  - Objetivos (lista de strings)
 
 ## Teacher
 - TeacherId

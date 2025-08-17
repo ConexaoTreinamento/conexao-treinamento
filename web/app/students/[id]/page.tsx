@@ -31,6 +31,36 @@ export default function StudentProfilePage() {
     goals: "Perda de peso e condicionamento físico",
     medicalConditions: "Nenhuma",
 
+    // Medical data
+    medicalData: {
+      medication: ["Vitamina D", "Ômega 3"],
+      isDoctorAwareOfPhysicalActivity: true,
+      favoritePhysicalActivity: "Corrida",
+      hasInsomnia: "Às vezes",
+      isOnADiet: {orientedBy: "Nutricionista"},
+      cardiacProblems: ["Arritmia"],
+      hasHypertension: true,
+      chronicDiseases: ["Diabetes tipo 2"],
+      difficultiesInPhysicalActivities: ["Dor no joelho direito"],
+      medicalOrientationsToAvoidPhysicalActivity: ["Evitar exercícios de alto impacto"],
+      surgeriesInTheLast12Months: ["Cirurgia de menisco"],
+      respiratoryProblems: [],
+      jointMuscularBackPain: ["Dor lombar crônica"],
+      spinalDiscProblems: ["Hérnia de disco L4-L5"],
+      diabetes: "Tipo 2, controlada com medicação",
+      smokingDuration: "",
+      alteredCholesterol: false,
+      osteoporosisLocation: "",
+      physicalImpairments: [
+        {
+          type: "motor",
+          name: "Limitação no joelho direito",
+          observations: "Devido à cirurgia de menisco recente"
+        }
+      ]
+    },
+    objectives: ["Perder 5kg", "Melhorar condicionamento cardiovascular", "Fortalecer músculos das pernas"],
+
     // Recent evaluations
     evaluations: [
       {
@@ -184,7 +214,7 @@ export default function StudentProfilePage() {
 
           {/* Content Tabs */}
           <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4 h-auto">
+            <TabsList className="grid w-full grid-cols-5 h-auto">
               <TabsTrigger value="overview" className="text-xs px-2 py-2">
                 Visão Geral
               </TabsTrigger>
@@ -196,6 +226,9 @@ export default function StudentProfilePage() {
               </TabsTrigger>
               <TabsTrigger value="details" className="text-xs px-2 py-2">
                 Detalhes
+              </TabsTrigger>
+              <TabsTrigger value="anamnesis" className="text-xs px-2 py-2">
+                Ficha de Anamnese
               </TabsTrigger>
             </TabsList>
 
@@ -392,6 +425,98 @@ export default function StudentProfilePage() {
                     <div>
                       <span className="text-sm text-muted-foreground">Condições Médicas:</span>
                       <p>{studentData.medicalConditions}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="anamnesis" className="space-y-4">
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">Ficha de Anamnese</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <span className="text-sm text-muted-foreground">Medicações em uso:</span>
+                      <p>{studentData.medicalData.medication.length > 0 ? studentData.medicalData.medication.join(", ") : "Não"}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Médico ciente da prática de atividade física?</span>
+                      <p>{studentData.medicalData.isDoctorAwareOfPhysicalActivity ? "Sim" : "Não"}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Atividade física favorita:</span>
+                      <p>{studentData.medicalData.favoritePhysicalActivity}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Insônia:</span>
+                      <p>{studentData.medicalData.hasInsomnia}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Faz dieta?:</span>
+                      <p>{studentData.medicalData.isOnADiet ? studentData.medicalData.isOnADiet.orientedBy ? `Sim, orientado por ${studentData.medicalData.isOnADiet.orientedBy}` : "Sim" : "Não"}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Problemas cardíacos:</span>
+                      <p>{studentData.medicalData.cardiacProblems.join(", ")}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Hipertensão:</span>
+                      <p>{studentData.medicalData.hasHypertension ? "Sim" : "Não"}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Doenças crônicas:</span>
+                      <p>{studentData.medicalData.chronicDiseases.join(", ")}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Dificuldades para realização de exercícios físicos?</span>
+                      <p>{studentData.medicalData.difficultiesInPhysicalActivities.join(", ")}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Orientação médica impeditiva de alguma atividade física?</span>
+                      <p>{studentData.medicalData.medicalOrientationsToAvoidPhysicalActivity.join(", ")}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Cirurgias nos últimos 12 meses:</span>
+                      <p>{studentData.medicalData.surgeriesInTheLast12Months.join(", ")}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Problemas respiratórios:</span>
+                      <p>{studentData.medicalData.respiratoryProblems.length > 0 ? studentData.medicalData.respiratoryProblems.join(", ") : "Nenhum"}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Dor muscular/articular/dorsal:</span>
+                      <p>{studentData.medicalData.jointMuscularBackPain.join(", ")}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Problemas de disco espinhal:</span>
+                      <p>{studentData.medicalData.spinalDiscProblems.join(", ")}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Diabetes:</span>
+                      <p>{studentData.medicalData.diabetes ? `Sim, ${studentData.medicalData.diabetes}` : "Não"}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Fumante:</span>
+                      <p>{studentData.medicalData.smokingDuration ? `Há ${studentData.medicalData.smokingDuration}` : "Não"}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Colesterol alterado:</span>
+                      <p>{studentData.medicalData.alteredCholesterol ? "Sim" : "Não"}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Osteoporose (localização):</span>
+                      <p>{studentData.medicalData.osteoporosisLocation}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Impedimentos físicos:</span>
+                      <p>
+                        {studentData.medicalData.physicalImpairments.length > 0
+                          ? studentData.medicalData.physicalImpairments.map((impairment) => `${impairment.name} (${impairment.observations})`).join(", ")
+                          : "Nenhum"}
+                      </p>
                     </div>
                   </CardContent>
                 </Card>

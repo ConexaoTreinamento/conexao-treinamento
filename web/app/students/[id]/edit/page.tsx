@@ -33,6 +33,30 @@ export default function EditStudentPage() {
     goals: "Perda de peso e condicionamento físico",
     medicalConditions: "Nenhuma",
     responsibleTeacher: "Prof. Ana",
+
+    // Medical data fields
+    medication: "Vitamina D, Ômega 3",
+    isDoctorAwareOfPhysicalActivity: true,
+    favoritePhysicalActivity: "Corrida",
+    hasInsomnia: "Às vezes",
+    dietOrientedBy: "Nutricionista Ana Silva",
+    cardiacProblems: "Arritmia",
+    hasHypertension: true,
+    chronicDiseases: "Diabetes tipo 2",
+    difficultiesInPhysicalActivities: "Dor no joelho direito",
+    medicalOrientationsToAvoidPhysicalActivity: "Evitar exercícios de alto impacto",
+    surgeriesInTheLast12Months: "Cirurgia de menisco",
+    respiratoryProblems: "",
+    jointMuscularBackPain: "Dor lombar crônica",
+    spinalDiscProblems: "Hérnia de disco L4-L5",
+    diabetes: "Tipo 2, controlada com medicação",
+    smokingDuration: "",
+    alteredCholesterol: false,
+    osteoporosisLocation: "",
+    impairmentType: "motor",
+    impairmentName: "Limitação no joelho direito",
+    impairmentObservations: "Devido à cirurgia de menisco recente",
+    objectives: "Perder 5kg, Melhorar condicionamento cardiovascular, Fortalecer músculos das pernas",
   })
 
   const plans = ["Mensal", "Trimestral", "Semestral", "Anual"]
@@ -265,6 +289,270 @@ export default function EditStudentPage() {
                   placeholder="Descreva condições médicas relevantes ou digite 'Nenhuma'"
                   rows={3}
                 />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Medical Data */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Dados Médicos</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="medication">Medicação</Label>
+                  <Input
+                    id="medication"
+                    value={formData.medication}
+                    onChange={(e) => handleInputChange("medication", e.target.value)}
+                    placeholder="Ex: Vitamina D, Ômega 3"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="isDoctorAwareOfPhysicalActivity">Médico ciente da atividade física?</Label>
+                  <Select
+                    value={formData.isDoctorAwareOfPhysicalActivity ? "Sim" : "Não"}
+                    onValueChange={(value) => handleInputChange("isDoctorAwareOfPhysicalActivity", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Sim">Sim</SelectItem>
+                      <SelectItem value="Não">Não</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="favoritePhysicalActivity">Qual tipo de atividade física mais lhe agrada?</Label>
+                  <Input
+                    id="favoritePhysicalActivity"
+                    value={formData.favoritePhysicalActivity}
+                    onChange={(e) => handleInputChange("favoritePhysicalActivity", e.target.value)}
+                    placeholder="Ex: Corrida, Natação"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="hasInsomnia">Insônia</Label>
+                  <Select
+                    value={formData.hasInsomnia ? "sim" : "nao"}
+                    onValueChange={(value) => handleInputChange("hasInsomnia", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sim">Sim</SelectItem>
+                      <SelectItem value="nao">Não</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              <div className="space-y-2">
+                <Label htmlFor="dietOrientedBy">Dieta orientada por</Label>
+                <Input
+                  id="dietOrientedBy"
+                  value={formData.dietOrientedBy}
+                  onChange={(e) => handleInputChange("dietOrientedBy", e.target.value)}
+                  placeholder="Ex: Nutricionista Ana Silva"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cardiacProblems">Problemas cardíacos</Label>
+                <Select
+                  value={formData.cardiacProblems ? "sim" : "nao"}
+                  onValueChange={(value) => handleInputChange("cardiacProblems", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sim">Sim</SelectItem>
+                    <SelectItem value="nao">Não</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hasHypertension">Hipertensão arterial?</Label>
+                <Select
+                  value={formData.hasHypertension ? "sim" : "nao"}
+                  onValueChange={(value) => handleInputChange("hasHypertension", value ? "Sim" : "Não")}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sim">Sim</SelectItem>
+                    <SelectItem value="nao">Não</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="chronicDiseases">Doenças crônicas?</Label>
+                <Select
+                  value={formData.chronicDiseases ? "sim" : "nao"}
+                  onValueChange={(value) => handleInputChange("chronicDiseases", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sim">Sim</SelectItem>
+                    <SelectItem value="nao">Não</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="difficultiesInPhysicalActivities">Dificuldades para realização de exercícios físicos?</Label>
+                <Input
+                  id="difficultiesInPhysicalActivities"
+                  value={formData.difficultiesInPhysicalActivities}
+                  onChange={(e) => handleInputChange("difficultiesInPhysicalActivities", e.target.value)}
+                  placeholder="Ex: Dor no joelho direito"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="medicalOrientationsToAvoidPhysicalActivity">Orientação médica impeditiva de alguma atividade física?</Label>
+                <Input
+                  id="medicalOrientationsToAvoidPhysicalActivity"
+                  value={formData.medicalOrientationsToAvoidPhysicalActivity}
+                  onChange={(e) => handleInputChange("medicalOrientationsToAvoidPhysicalActivity", e.target.value)}
+                  placeholder="Ex: Evitar exercícios de alto impacto"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="surgeriesInTheLast12Months">Cirurgias nos últimos 12 meses</Label>
+                <Input
+                  id="surgeriesInTheLast12Months"
+                  value={formData.surgeriesInTheLast12Months}
+                  onChange={(e) => handleInputChange("surgeriesInTheLast12Months", e.target.value)}
+                  placeholder="Ex: Cirurgia de menisco"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="respiratoryProblems">Problemas respiratórios</Label>
+                <Select
+                  value={formData.respiratoryProblems ? "sim" : "nao"}
+                  onValueChange={(value) => handleInputChange("respiratoryProblems", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sim">Sim</SelectItem>
+                    <SelectItem value="nao">Não</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="jointMuscularBackPain">Dor muscular/articular ou nas costas</Label>
+                <Select
+                  value={formData.jointMuscularBackPain ? "sim" : "nao"}
+                  onValueChange={(value) => handleInputChange("jointMuscularBackPain", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sim">Sim</SelectItem>
+                    <SelectItem value="nao">Não</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="spinalDiscProblems">Problemas de disco espinhal</Label>
+                <Select
+                  value={formData.spinalDiscProblems ? "sim" : "nao"}
+                  onValueChange={(value) => handleInputChange("spinalDiscProblems", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sim">Sim</SelectItem>
+                    <SelectItem value="nao">Não</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="diabetes">Diabetes</Label>
+                <Select
+                  value={formData.diabetes ? "sim" : "nao"}
+                  onValueChange={(value) => handleInputChange("diabetes", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sim">Sim</SelectItem>
+                    <SelectItem value="nao">Não</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="smokingDuration">Tempo de fumos</Label>
+                <Input
+                  id="smokingDuration"
+                  value={formData.smokingDuration}
+                  onChange={(e) => handleInputChange("smokingDuration", e.target.value)}
+                  placeholder="Ex: 10 anos"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="alteredCholesterol">Colesterol alterado</Label>
+                <Select
+                  value={formData.alteredCholesterol ? "sim" : "nao"}
+                  onValueChange={(value) => handleInputChange("alteredCholesterol", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sim">Sim</SelectItem>
+                    <SelectItem value="nao">Não</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="osteoporosisLocation">Localização da osteoporose</Label>
+                <Input
+                  id="osteoporosisLocation"
+                  value={formData.osteoporosisLocation}
+                  onChange={(e) => handleInputChange("osteoporosisLocation", e.target.value)}
+                  placeholder="Ex: Coluna, Quadril"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="impairmentType">Tipo de deficiência</Label>
+                  <Input
+                    id="impairmentType"
+                    value={formData.impairmentType}
+                    onChange={(e) => handleInputChange("impairmentType", e.target.value)}
+                    placeholder="Ex: motor, visual"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="impairmentName">Nome da deficiência</Label>
+                  <Input
+                    id="impairmentName"
+                    value={formData.impairmentName}
+                    onChange={(e) => handleInputChange("impairmentName", e.target.value)}
+                    placeholder="Ex: Limitação no joelho direito"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="impairmentObservations">Observações sobre a deficiência</Label>
+                <Textarea
+                  id="impairmentObservations"
+                  value={formData.impairmentObservations}
+                  onChange={(e) => handleInputChange("impairmentObservations", e.target.value)}
+                  placeholder="Descreva as observações relevantes..."
+                  rows={3}
+                />
+              </div>
               </div>
             </CardContent>
           </Card>

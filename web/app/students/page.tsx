@@ -232,9 +232,13 @@ export default function StudentsPage() {
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Cadastrar Novo Aluno</DialogTitle>
-                <DialogDescription>Preencha as informações do aluno</DialogDescription>
+                <DialogDescription>
+                  Preencha as informações do aluno e a ficha de anamnese
+                </DialogDescription>
               </DialogHeader>
+
               <form onSubmit={handleCreateStudent} className="space-y-4">
+                {/* Informações Básicas */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Nome *</Label>
@@ -315,6 +319,155 @@ export default function StudentsPage() {
                       <Label htmlFor="emergencyRelationship">Parentesco *</Label>
                       <Input id="emergencyRelationship" required />
                     </div>
+                  </div>
+                </div>
+
+                {/* Ficha de Anamnese */}
+                <div className="space-y-4 pt-4 border-t">
+                  <h3 className="text-lg font-semibold">Ficha de Anamnese</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 grid-flow-row-dense">
+                    <div className="space-y-2">
+                      <Label htmlFor="medication">Faz uso de algum medicamento?</Label>
+                      <Input id="medication" placeholder="Ex: Vitamina D, Ômega 3" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="isDoctorAware">Médico ciente da prática de atividade física?</Label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="true">Sim</SelectItem>
+                          <SelectItem value="false">Não</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="favoritePhysicalActivity">Qual tipo de atividade física mais lhe agrada?</Label>
+                      <Input id="favoritePhysicalActivity" placeholder="Ex: Corrida, Natação" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="hasInsomnia">Tem insônia?</Label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sim">Sim</SelectItem>
+                          <SelectItem value="não">Não</SelectItem>
+                          <SelectItem value="às vezes">Às vezes</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="dietOrientedBy">Tem dieta? Se sim, está sendo orientada por?</Label>
+                      <Input id="dietOrientedBy" placeholder="Ex: Nutricionista Ana Silva" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="hasHypertension">Hipertensão arterial?</Label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="true">Sim</SelectItem>
+                          <SelectItem value="false">Não</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="chronicDiseases">Doenças crônicas?</Label>
+                      <Input id="chronicDiseases" placeholder="Ex: Diabetes tipo 2, Artrite" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="difficultiesInPhysicalActivities">Dificuldades para realização de exercícios físicos?</Label>
+                      <Input id="difficultiesInPhysicalActivities" placeholder="Ex: Dor no joelho direito" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="medicalOrientations">Orientação médica impeditiva de alguma atividade física?</Label>
+                      <Input id="medicalOrientations" placeholder="Ex: Evitar exercícios de alto impacto" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="alteredCholesterol">Colesterol alterado?</Label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="true">Sim</SelectItem>
+                          <SelectItem value="false">Não</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="osteoporosisLocation">Localização de osteoporose</Label>
+                      <Input id="osteoporosisLocation" placeholder="Ex: Coluna vertebral" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="cardiacProblems">Problemas cardíacos</Label>
+                      <Input id="cardiacProblems" placeholder="Ex: Pressão alta, Arritmia" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="surgeriesInTheLast12Months">Cirurgias nos últimos 12 meses</Label>
+                      <Input id="surgeriesInTheLast12Months" placeholder="Ex: Cirurgia de menisco" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="respiratoryProblems">Problemas respiratórios</Label>
+                      <Input id="respiratoryProblems" placeholder="Ex: Asma, Bronquite" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="jointMuscularBackPain">Dor muscular/articular/dorsal</Label>
+                      <Input id="jointMuscularBackPain" placeholder="Ex: Dor lombar crônica" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="spinalDiscProblems">Hérnia de disco ou problemas degenerativos na coluna</Label>
+                      <Input id="spinalDiscProblems" placeholder="Ex: Hérnia de disco L4-L5" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="diabetes">Tem diabetes?</Label>
+                    <Input id="diabetes" placeholder="Ex: Tipo 2, controlada com medicação" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="smokingDuration">É fumante? Se sim, há quanto tempo?</Label>
+                    <Input id="smokingDuration" placeholder="Ex: 5 anos" />
+                  </div>
+                  <div className="space-y-4">
+                    <h4 className="text-md font-semibold">Comprometimentos Físicos</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="impairmentType">Tipo</Label>
+                        <Select>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="motor">Motor</SelectItem>
+                            <SelectItem value="emocional">Emocional</SelectItem>
+                            <SelectItem value="visual">Visual</SelectItem>
+                            <SelectItem value="auditivo">Auditivo</SelectItem>
+                            <SelectItem value="linguístico">Linguístico</SelectItem>
+                            <SelectItem value="outro">Outro</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="impairmentName">Nome</Label>
+                        <Input id="impairmentName" placeholder="Ex: Limitação no joelho direito" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="impairmentObservations">Observações</Label>
+                        <Input id="impairmentObservations" placeholder="Ex: Devido à cirurgia recente" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="objectives">Objetivos</Label>
+                    <Input id="objectives" placeholder="Ex: Perder 5kg, Melhorar condicionamento" />
                   </div>
                 </div>
 
