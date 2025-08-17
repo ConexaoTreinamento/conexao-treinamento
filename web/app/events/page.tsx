@@ -140,22 +140,13 @@ const EventForm = ({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="eventType">Tipo</Label>
-          <Select
-            value={eventForm.type}
-            onValueChange={(value) => setEventForm((prev) => ({ ...prev, type: value }))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              {["Corrida", "Yoga", "Trilha", "Competição", "Workshop", "Palestra", "Treino Funcional"].map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label htmlFor="eventLocation">Local</Label>
+          <Input
+              id="eventLocation"
+              value={eventForm.location}
+              onChange={(e) => setEventForm((prev) => ({ ...prev, location: e.target.value }))}
+              placeholder="Ex: Parque Ibirapuera"
+          />
         </div>
       </div>
 
@@ -187,16 +178,6 @@ const EventForm = ({
             onChange={(e) => handleTimeChange("endTime", e.target.value)}
           />
         </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="eventLocation">Local</Label>
-        <Input
-          id="eventLocation"
-          value={eventForm.location}
-          onChange={(e) => setEventForm((prev) => ({ ...prev, location: e.target.value }))}
-          placeholder="Ex: Parque Ibirapuera"
-        />
       </div>
 
       <div className="space-y-2">
@@ -491,27 +472,6 @@ export default function EventsPage() {
                 <DialogDescription>Filtre eventos por critérios específicos</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Tipo</Label>
-                  <Select
-                    value={filters.type}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, type: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todos os tipos" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="Corrida">Corrida</SelectItem>
-                      <SelectItem value="Yoga">Yoga</SelectItem>
-                      <SelectItem value="Trilha">Trilha</SelectItem>
-                      <SelectItem value="Competição">Competição</SelectItem>
-                      <SelectItem value="Workshop">Workshop</SelectItem>
-                      <SelectItem value="Palestra">Palestra</SelectItem>
-                      <SelectItem value="Treino Funcional">Treino Funcional</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="space-y-2">
                   <Label>Status</Label>
                   <Select
