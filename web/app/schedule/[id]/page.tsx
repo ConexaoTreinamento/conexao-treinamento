@@ -356,7 +356,7 @@ export default function ClassDetailPage() {
                           size="sm"
                           variant={student.present ? "default" : "outline"}
                           onClick={() => togglePresence(student.id)}
-                          className={`self-center w-32 h-8 text-xs flex-1 sm:flex-none ${
+                          className={`self-center w-full sm:w-32 h-8 text-xs flex-1 sm:flex-none ${
                             student.present
                               ? "bg-green-600 hover:bg-green-700"
                               : "border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
@@ -381,7 +381,7 @@ export default function ClassDetailPage() {
                             setSelectedStudent(student)
                             setIsExerciseOpen(true)
                           }}
-                          className="flex-1 w-32 sm:flex-none"
+                          className="flex-1 w-full sm:w-32 sm:flex-none"
                         >
                           <Activity className="w-3 h-3 mr-1" />
                           Exercícios
