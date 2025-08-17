@@ -411,7 +411,7 @@ export default function StudentEvaluationPage() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md">
                 <div className="space-y-2">
-                  <Label>Úmero (cm)</Label>
+                  <Label>Cotovelo (cm)</Label>
                   <Input
                     type="number"
                     step="0.1"
@@ -421,7 +421,7 @@ export default function StudentEvaluationPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Fêmur (cm)</Label>
+                  <Label>Joelho (cm)</Label>
                   <Input
                     type="number"
                     step="0.1"
