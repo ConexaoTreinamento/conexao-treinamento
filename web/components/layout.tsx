@@ -63,7 +63,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
 
-          <h1 className="text-lg font-semibold">Conexão Treino</h1>
+          <h1 className="text-lg font-semibold">Conexão Treinamento</h1>
 
           <Sheet>
             <SheetTrigger asChild>
@@ -77,7 +77,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               </VisuallyHidden>
               <div className="flex flex-col h-full">
                 <div className="p-4 border-b">
-                  <h2 className="text-lg font-semibold">Conexão Treino</h2>
+                  <div className="flex items-center gap-3 mb-3">
+                    <Image src="/logo.png" alt="Conexão Treinamento" width={32} height={32} className="rounded-lg" />
+                    <h2 className="text-lg font-semibold">Conexão Treinamento</h2>
+                  </div>
                   <p className="text-sm text-muted-foreground">{userName}</p>
                   <p className="text-xs text-muted-foreground capitalize">{userRole}</p>
                 </div>
@@ -137,7 +140,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <div className="hidden lg:flex">
         <div className="w-64 bg-card border-r min-h-screen">
           <div className="p-6 border-b">
-            <h2 className="text-xl font-bold">Conexão Treino</h2>
+            <div className="flex items-center gap-3 mb-3">
+              <Image src="/logo.png" alt="Conexão Treinamento" width={40} height={40} className="rounded-lg" />
+              <h2 className="text-xl font-bold">Conexão Treinamento</h2>
+            </div>
             <p className="text-sm text-muted-foreground mt-1">{userName}</p>
             <p className="text-xs text-muted-foreground capitalize">{userRole}</p>
           </div>
