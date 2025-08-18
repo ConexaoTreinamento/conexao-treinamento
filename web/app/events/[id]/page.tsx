@@ -46,6 +46,20 @@ export default function EventDetailPage() {
   // Add search state for participants - moved to correct position to fix hook order
   const [participantSearchTerm, setParticipantSearchTerm] = useState("")
 
+  // Function to derive status from participants and max participants
+  const deriveStatus = (currentParticipants: number, maxParticipants: number) => {
+    if (currentParticipants >= maxParticipants) {
+      return "Lotado"
+    }
+    return "Aberto"
+  }
+
+  // Update event data with derived status
+  const updateEventWithDerivedStatus = (event: EventData) => {
+    const newStatus = deriveStatus(event.participants.length, event.maxParticipants)
+    return { ...event, status: newStatus }
+  }
+
   // Mock events data - this should eventually be replaced with API calls
   const mockEvents: EventData[] = [
     {
@@ -126,7 +140,9 @@ export default function EventDetailPage() {
         const event = mockEvents.find(e => e.id === eventId)
 
         if (event) {
-          setEventData(event)
+          // Apply dynamic status computation to the loaded event
+          const eventWithComputedStatus = updateEventWithDerivedStatus(event)
+          setEventData(eventWithComputedStatus)
           // Initialize form with event data
           setEventForm({
             name: event.name,
@@ -256,20 +272,6 @@ export default function EventDetailPage() {
 
       return newForm
     })
-  }
-
-  // Function to derive status from participants and max participants
-  const deriveStatus = (currentParticipants: number, maxParticipants: number) => {
-    if (currentParticipants >= maxParticipants) {
-      return "Lotado"
-    }
-    return "Aberto"
-  }
-
-  // Update event data with derived status
-  const updateEventWithDerivedStatus = (event: EventData) => {
-    const newStatus = deriveStatus(event.participants.length, event.maxParticipants)
-    return { ...event, status: newStatus }
   }
 
   const toggleAttendance = (participantName: string) => {

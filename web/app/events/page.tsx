@@ -122,6 +122,12 @@ export default function EventsPage() {
     return "Aberto"
   }
 
+  // Compute status for each event dynamically
+  const eventsWithComputedStatus = events.map(event => ({
+    ...event,
+    status: deriveStatus(event.participants.length, event.maxParticipants)
+  }))
+
   // Handle creating new event
   const handleCreateEvent = (formData: any) => {
     // Convert form participants to EventParticipant objects
@@ -173,7 +179,7 @@ export default function EventsPage() {
   }
 
   // Filter events based on search term
-  const filteredEvents = events.filter(event =>
+  const filteredEvents = eventsWithComputedStatus.filter(event =>
     event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     event.location.toLowerCase().includes(searchTerm.toLowerCase())
   )
