@@ -17,12 +17,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Calendar, Clock, Plus, MapPin, User, CheckCircle, XCircle, CalendarDays, X } from "lucide-react"
+import { Calendar, Clock, Plus, MapPin, User, CheckCircle, XCircle, CalendarDays, X, ChevronLeft, ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 
 export default function SchedulePage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
+  const [currentMonth, setCurrentMonth] = useState(new Date()) // Track current month/year
   const [userRole, setUserRole] = useState<string>("")
   const [isNewClassOpen, setIsNewClassOpen] = useState(false)
   const [newClassForm, setNewClassForm] = useState({
@@ -102,13 +103,18 @@ export default function SchedulePage() {
     { value: "sunday", label: "Domingo" },
   ]
 
-  // Generate dates for horizontal scroll (14 days)
+  // Generate dates for horizontal scroll based on current month (14 days around middle of month)
   const getScrollDates = () => {
     const dates = []
-    const today = new Date()
-    for (let i = -2; i <= 11; i++) {
-      const date = new Date(today)
-      date.setDate(today.getDate() + i)
+    const year = currentMonth.getFullYear()
+    const month = currentMonth.getMonth()
+
+    // Start from the 15th of the current month and show 14 days around it
+    const baseDate = new Date(year, month, 15)
+
+    for (let i = -7; i <= 6; i++) {
+      const date = new Date(baseDate)
+      date.setDate(baseDate.getDate() + i)
       dates.push(date)
     }
     return dates
@@ -230,7 +236,36 @@ export default function SchedulePage() {
   }
 
   const goToToday = () => {
-    setSelectedDate(new Date())
+    const today = new Date()
+    setSelectedDate(today)
+    setCurrentMonth(today)
+  }
+
+  const goToPreviousMonth = () => {
+    const newMonth = new Date(currentMonth)
+    newMonth.setMonth(currentMonth.getMonth() - 1)
+    setCurrentMonth(newMonth)
+
+    // Update selected date to be in the new month
+    const newSelectedDate = new Date(newMonth.getFullYear(), newMonth.getMonth(), 15)
+    setSelectedDate(newSelectedDate)
+  }
+
+  const goToNextMonth = () => {
+    const newMonth = new Date(currentMonth)
+    newMonth.setMonth(currentMonth.getMonth() + 1)
+    setCurrentMonth(newMonth)
+
+    // Update selected date to be in the new month
+    const newSelectedDate = new Date(newMonth.getFullYear(), newMonth.getMonth(), 15)
+    setSelectedDate(newSelectedDate)
+  }
+
+  const formatMonthYear = (date: Date) => {
+    return date.toLocaleDateString("pt-BR", {
+      month: "long",
+      year: "numeric",
+    })
   }
 
   return (
@@ -393,6 +428,32 @@ export default function SchedulePage() {
               )}
             </div>
           </div>
+
+          {/* Month Picker */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={goToPreviousMonth}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <h2 className="text-lg font-semibold capitalize min-w-[120px] text-center">
+                {formatMonthYear(currentMonth)}
+              </h2>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={goToNextMonth}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+
           <p className="text-sm text-muted-foreground">
             {selectedDate.toLocaleDateString("pt-BR", {
               weekday: "long",
@@ -401,6 +462,7 @@ export default function SchedulePage() {
             })}
           </p>
         </div>
+
         {/* Horizontal Date Scroll - Mobile First */}
         <div className="w-full">
           <div
@@ -425,6 +487,7 @@ export default function SchedulePage() {
             ))}
           </div>
         </div>
+
         {/* Classes for Selected Date */}
         <div className="space-y-3">
           {getClassesForDate(selectedDate).length === 0 ? (
