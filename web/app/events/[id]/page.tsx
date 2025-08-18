@@ -6,22 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ArrowLeft, Calendar, CheckCircle, Clock, Edit, MapPin, Trophy, Users, X, XCircle } from "lucide-react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useParams, useRouter } from "next/navigation"
 import Layout from "@/components/layout"
-import AddStudentDialog from "@/components/add-student-dialog"
+import EventModal from "@/components/event-modal"
 
 // Type definitions
 interface EventParticipant {
@@ -46,7 +34,7 @@ interface EventData {
   meetingPoint: string
   instructor: string
   participants: EventParticipant[]
-  maxParticipants?: number
+  maxParticipants: number // Made required instead of optional
 }
 
 export default function EventDetailPage() {
@@ -228,6 +216,15 @@ export default function EventDetailPage() {
 
   const eventTypes = ["Corrida", "Yoga", "Trilha", "Competição", "Workshop", "Palestra", "Treino Funcional"]
 
+  // Available instructors for the modal
+  const availableInstructors = [
+    "Prof. Carlos Santos",
+    "Prof. Marina Costa",
+    "Prof. Roberto Lima",
+    "Prof. Ana Silva",
+    "Prof. João Pedro"
+  ]
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Aberto":
@@ -277,24 +274,46 @@ export default function EventDetailPage() {
     })
   }
 
+  // Function to derive status from participants and max participants
+  const deriveStatus = (currentParticipants: number, maxParticipants: number) => {
+    if (currentParticipants >= maxParticipants) {
+      return "Lotado"
+    }
+    return "Aberto"
+  }
+
+  // Update event data with derived status
+  const updateEventWithDerivedStatus = (event: EventData) => {
+    const newStatus = deriveStatus(event.participants.length, event.maxParticipants)
+    return { ...event, status: newStatus }
+  }
+
   const toggleAttendance = (participantName: string) => {
     if (!eventData) return
 
-    setEventData(prev => ({
-      ...prev!,
-      participants: prev!.participants.map(p =>
-        p.name === participantName ? { ...p, present: !p.present } : p
-      )
-    }))
+    setEventData(prev => {
+      if (!prev) return prev
+      const updated = {
+        ...prev,
+        participants: prev.participants.map(p =>
+          p.name === participantName ? { ...p, present: !p.present } : p
+        )
+      }
+      return updateEventWithDerivedStatus(updated)
+    })
   }
 
   const removeStudent = (studentName: string) => {
     if (!eventData) return
 
-    setEventData(prev => ({
-      ...prev!,
-      participants: prev!.participants.filter(p => p.name !== studentName)
-    }))
+    setEventData(prev => {
+      if (!prev) return prev
+      const updated = {
+        ...prev,
+        participants: prev.participants.filter(p => p.name !== studentName)
+      }
+      return updateEventWithDerivedStatus(updated)
+    })
   }
 
   const handleSaveEvent = () => {
@@ -336,6 +355,43 @@ export default function EventDetailPage() {
     setIsAddStudentOpen(false)
   }
 
+  // Handle event edit from modal
+  const handleEventEdit = (formData: any) => {
+    if (!eventData) return
+
+    // Convert form participants to EventParticipant objects
+    const updatedParticipants = formData.students.map((studentName: string, index: number) => {
+      const existingParticipant = eventData.participants.find(p => p.name === studentName)
+      return existingParticipant || {
+        id: Date.now() + index,
+        name: studentName,
+        avatar: "/placeholder.svg?height=40&width=40",
+        enrolledAt: new Date().toISOString().split('T')[0],
+        present: formData.attendance?.[studentName] || false
+      }
+    })
+
+    const updatedEvent = {
+      ...eventData,
+      name: formData.name,
+      type: formData.type,
+      date: formData.date,
+      startTime: formData.startTime,
+      endTime: formData.endTime,
+      location: formData.location,
+      description: formData.description,
+      instructor: formData.instructor,
+      meetingPoint: formData.meetingPoint,
+      requirements: formData.requirements,
+      maxParticipants: parseInt(formData.maxParticipants) || 20,
+      participants: updatedParticipants
+    }
+
+    // Update with derived status
+    const eventWithStatus = updateEventWithDerivedStatus(updatedEvent)
+    setEventData(eventWithStatus)
+  }
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -350,153 +406,9 @@ export default function EventDetailPage() {
               {formatDate(eventData.date)} • {eventData.startTime} - {eventData.endTime}
             </p>
           </div>
-          <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Edit className="w-4 h-4"/>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Editar Evento</DialogTitle>
-                <DialogDescription>Edite as informações do evento</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="eventName">Nome do Evento</Label>
-                    <Input
-                        id="eventName"
-                        value={eventForm.name}
-                        onChange={(e) => setEventForm((prev) => ({...prev, name: e.target.value}))}
-                        placeholder="Ex: Corrida no Parque"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="eventType">Tipo</Label>
-                    <Select
-                        value={eventForm.type}
-                        onValueChange={(value) => setEventForm((prev) => ({...prev, type: value}))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o tipo"/>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {eventTypes.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type}
-                            </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="eventDate">Data</Label>
-                    <Input
-                        id="eventDate"
-                        type="date"
-                        value={eventForm.date}
-                        onChange={(e) => setEventForm((prev) => ({...prev, date: e.target.value}))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="eventStartTime">Início</Label>
-                    <Input
-                        id="eventStartTime"
-                        type="time"
-                        value={eventForm.startTime}
-                        onChange={(e) => handleTimeChange("startTime", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="eventEndTime">Fim</Label>
-                    <Input
-                        id="eventEndTime"
-                        type="time"
-                        value={eventForm.endTime}
-                        onChange={(e) => handleTimeChange("endTime", e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="eventLocation">Local</Label>
-                  <Input
-                      id="eventLocation"
-                      value={eventForm.location}
-                      onChange={(e) => setEventForm((prev) => ({...prev, location: e.target.value}))}
-                      placeholder="Ex: Parque Ibirapuera"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="eventDescription">Descrição</Label>
-                  <Textarea
-                      id="eventDescription"
-                      value={eventForm.description}
-                      onChange={(e) => setEventForm((prev) => ({...prev, description: e.target.value}))}
-                      placeholder="Descreva o evento..."
-                      rows={3}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Participantes ({eventForm.students?.length || 0} selecionados)</Label>
-                    <AddStudentDialog
-                      students={availableStudents}
-                      onAddStudent={(student) => {
-                        setEventForm((prev) => ({
-                          ...prev,
-                          students: [...prev.students, student],
-                        }))
-                      }}
-                      excludeStudents={eventForm.students}
-                    />
-                </div>
-
-                  {eventForm.students?.length > 0 && (
-                      <div className="border rounded-lg p-3 max-h-32 overflow-y-auto space-y-2">
-                        {eventForm.students.map((student: string) => (
-                            <div key={student} className="flex items-center justify-between p-2 bg-muted rounded">
-                              <span className="text-sm">{student}</span>
-                              <div className="flex items-center gap-1">
-                                <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => toggleAttendance(student)}
-                                    className={`h-6 w-6 p-0 ${(eventForm.attendance as Record<string, boolean>)[student] ? "text-green-600" : "text-muted-foreground"}`}
-                                >
-                                  <CheckCircle className="w-3 h-3"/>
-                                </Button>
-                                <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => removeStudent(student)}
-                                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                                >
-                                  <X className="w-3 h-3"/>
-                                </Button>
-                              </div>
-                            </div>
-                        ))}
-                      </div>
-                  )}
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleSaveEvent} className="bg-green-600 hover:bg-green-700">
-                  Salvar Alterações
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button variant="outline" size="icon" onClick={() => setIsEditOpen(true)}>
+            <Edit className="w-4 h-4"/>
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -527,9 +439,24 @@ export default function EventDetailPage() {
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Users className="w-4 h-4 text-muted-foreground"/>
-                  <span>{eventData.participants.length} participantes</span>
+                  <span>{eventData.participants.length}/{eventData.maxParticipants} participantes</span>
                 </div>
               </div>
+
+              {/* Requirements section */}
+              {eventData.requirements.length > 0 && (
+                <div className="pt-4 border-t">
+                  <p className="text-sm font-medium mb-2">Requisitos:</p>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    {eventData.requirements.map((requirement, index) => (
+                      <li key={index} className="flex items-start gap-1">
+                        <span className="text-xs mt-1">•</span>
+                        <span>{requirement}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <div className="pt-4 border-t">
                 <p className="text-sm text-muted-foreground mb-3">{eventData.description}</p>
@@ -626,6 +553,32 @@ export default function EventDetailPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Event Edit Modal - using new unified EventModal component */}
+        <EventModal
+          open={isEditOpen}
+          mode="edit"
+          initialData={{
+            name: eventData.name,
+            type: eventData.type,
+            date: eventData.date,
+            startTime: eventData.startTime,
+            endTime: eventData.endTime,
+            location: eventData.location,
+            description: eventData.description,
+            maxParticipants: eventData.maxParticipants.toString(),
+            instructor: eventData.instructor,
+            meetingPoint: eventData.meetingPoint,
+            requirements: eventData.requirements,
+            students: eventData.participants.map(p => p.name),
+            attendance: eventData.participants.reduce((acc, p) => ({ ...acc, [p.name]: p.present }), {})
+          }}
+          onClose={() => setIsEditOpen(false)}
+          onSubmit={handleEventEdit}
+          availableStudents={availableStudents}
+          eventTypes={eventTypes}
+          instructors={availableInstructors}
+        />
       </div>
     </Layout>
   )
