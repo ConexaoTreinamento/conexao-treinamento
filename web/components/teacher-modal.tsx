@@ -54,8 +54,6 @@ export default function TeacherModal({
     status: "Ativo",
   })
 
-  const [specialtyInput, setSpecialtyInput] = useState("")
-
   // Available specialties for suggestions
   const availableSpecialties = [
     "Pilates",
@@ -103,13 +101,12 @@ export default function TeacherModal({
     }
   }, [initialData, open])
 
-  const handleAddSpecialty = () => {
-    if (specialtyInput.trim() && !formData.specialties.includes(specialtyInput.trim())) {
+  const handleAddSpecialty = (specialty: string) => {
+    if (specialty.trim() && !formData.specialties.includes(specialty.trim())) {
       setFormData(prev => ({
         ...prev,
-        specialties: [...prev.specialties, specialtyInput.trim()]
+        specialties: [...prev.specialties, specialty.trim()]
       }))
-      setSpecialtyInput("")
     }
   }
 
@@ -260,32 +257,23 @@ export default function TeacherModal({
 
             <div className="space-y-2">
               <Label>Adicionar Especialidade</Label>
-              <div className="flex gap-2">
-                <Select
-                  value={specialtyInput}
-                  onValueChange={setSpecialtyInput}
-                >
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Selecione uma especialidade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableSpecialties
-                      .filter(spec => !formData.specialties.includes(spec))
-                      .map((specialty) => (
-                        <SelectItem key={specialty} value={specialty}>
-                          {specialty}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  onClick={handleAddSpecialty}
-                  disabled={!specialtyInput || formData.specialties.includes(specialtyInput)}
-                >
-                  Adicionar
-                </Button>
-              </div>
+              <Select
+                value=""
+                onValueChange={handleAddSpecialty}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma especialidade" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableSpecialties
+                    .filter(spec => !formData.specialties.includes(spec))
+                    .map((specialty) => (
+                      <SelectItem key={specialty} value={specialty}>
+                        {specialty}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {formData.specialties.length > 0 && (
