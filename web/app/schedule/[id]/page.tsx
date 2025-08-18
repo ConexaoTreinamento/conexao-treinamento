@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -35,6 +35,40 @@ import Layout from "@/components/layout"
 import AddStudentDialog from "@/components/add-student-dialog"
 import ClassModal from "@/components/class-modal"
 
+// Type definitions
+interface ClassStudent {
+  id: number
+  name: string
+  present: boolean
+  exercises: Array<{
+    exercise: string
+    sets: number
+    reps: number
+    completed: boolean
+    weight: number
+  }>
+  avatar?: string
+}
+
+interface ClassData {
+  id: number
+  name: string
+  instructor: string
+  room: string
+  time: string
+  date: string
+  maxStudents: number
+  currentStudents: number
+  weekDays: string[]
+  times: Array<{
+    day: string
+    startTime: string
+    endTime: string
+  }>
+  description: string
+  students: ClassStudent[]
+}
+
 // Mock functions for demonstration purposes
 const getStudentSchedule = (studentId: number) => {
   return { daysPerWeek: 5 }
@@ -51,86 +85,22 @@ const updateStudentSchedule = (studentId: number, classId: number, classDate: st
 export default function ClassDetailPage() {
   const router = useRouter()
   const params = useParams()
+  const [classData, setClassData] = useState<ClassData | null>(null)
+  const [loading, setLoading] = useState(true)
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false)
   const [isExerciseOpen, setIsExerciseOpen] = useState(false)
   const [isNewExerciseOpen, setIsNewExerciseOpen] = useState(false)
   const [isEditClassOpen, setIsEditClassOpen] = useState(false)
   const [isEditModalityOpen, setIsEditModalityOpen] = useState(false)
   const [selectedStudent, setSelectedStudent] = useState<any>(null)
+  const [studentSearchTerm, setStudentSearchTerm] = useState("")
+  const [exerciseSearchTerm, setExerciseSearchTerm] = useState("")
 
-  // Mock class data - Updated to include weekdays and times
-  const [classData, setClassData] = useState({
-    id: 1,
-    name: "Pilates Iniciante",
-    instructor: "Prof. Ana Silva",
-    room: "Sala 1",
-    time: "09:00 - 10:00",
-    date: "Segunda-feira",
-    maxStudents: 10,
-    currentStudents: 8,
-    weekDays: ["monday", "wednesday", "friday"], // Added weekdays
-    times: [
-      { day: "monday", startTime: "09:00", endTime: "10:00" },
-      { day: "wednesday", startTime: "09:00", endTime: "10:00" },
-      { day: "friday", startTime: "09:00", endTime: "10:00" }
-    ], // Added times
-    description: "Aula de Pilates para iniciantes focada em fortalecimento do core e flexibilidade.",
-    students: [
-      {
-        id: 1,
-        name: "Maria Silva",
-        present: true,
-        exercises: [
-          { exercise: "Prancha", sets: 3, reps: 30, completed: true, weight: 70.0 },
-          { exercise: "Roll Up", sets: 2, reps: 10, completed: true, weight: 40.0 },
-        ],
-      },
-      {
-        id: 2,
-        name: "João Santos",
-        present: true,
-        exercises: [
-          { exercise: "Hundred", sets: 1, reps: 100, completed: false, weight: 40.0 },
-          { exercise: "Single Leg Stretch", sets: 2, reps: 10, completed: true, weight: 50.0 },
-        ],
-      },
-      {
-        id: 3,
-        name: "Ana Costa",
-        present: false,
-        exercises: [],
-      },
-    ],
-  })
-
-  // Available teachers and rooms for editing
-  const availableTeachers = [
-    "Prof. Ana Silva",
-    "Prof. Marina Costa",
-    "Prof. Roberto Lima",
-    "Prof. Carlos Santos",
-    "Prof. Lucia Ferreira"
-  ]
-
-  const availableRooms = [
-    "Sala 1",
-    "Sala 2",
-    "Sala 3",
-    "Área Externa",
-    "Sala de Yoga",
-    "Studio Principal"
-  ]
-
-  // Edit form state
+  // Edit form state - initialize with empty values first
   const [editForm, setEditForm] = useState({
-    instructor: classData.instructor,
-    room: classData.room
+    instructor: "",
+    room: ""
   })
-
-  const availableStudents = [
-    "Carlos Lima",
-    "Lucia Ferreira"
-  ]
 
   const [availableExercises, setAvailableExercises] = useState([
     "Prancha",
@@ -161,9 +131,259 @@ export default function ClassDetailPage() {
     description: "",
   })
 
-  const categories = ["Peito", "Pernas", "Braços", "Costas", "Ombros", "Core", "Cardio"]
-  const equipments = ["Barra", "Halter", "Polia", "Peso Corporal", "Máquina", "Elástico", "Kettlebell"]
-  const difficulties = ["Iniciante", "Intermediário", "Avançado"]
+  // Mock classes data - this should eventually be replaced with API calls
+  const mockClasses: ClassData[] = [
+    {
+      id: 1,
+      name: "Pilates Iniciante",
+      instructor: "Prof. Ana Silva",
+      room: "Sala 1",
+      time: "09:00 - 10:00",
+      date: "Segunda-feira",
+      maxStudents: 10,
+      currentStudents: 8,
+      weekDays: ["monday", "wednesday", "friday"],
+      times: [
+        { day: "monday", startTime: "09:00", endTime: "10:00" },
+        { day: "wednesday", startTime: "09:00", endTime: "10:00" },
+        { day: "friday", startTime: "09:00", endTime: "10:00" }
+      ],
+      description: "Aula de Pilates para iniciantes focada em fortalecimento do core e flexibilidade.",
+      students: [
+        {
+          id: 1,
+          name: "Maria Silva",
+          present: true,
+          exercises: [
+            { exercise: "Prancha", sets: 3, reps: 30, completed: true, weight: 70.0 },
+            { exercise: "Roll Up", sets: 2, reps: 10, completed: true, weight: 40.0 },
+          ],
+        },
+        {
+          id: 2,
+          name: "João Santos",
+          present: true,
+          exercises: [
+            { exercise: "Hundred", sets: 1, reps: 100, completed: false, weight: 40.0 },
+            { exercise: "Single Leg Stretch", sets: 2, reps: 10, completed: true, weight: 50.0 },
+          ],
+        },
+        {
+          id: 3,
+          name: "Ana Costa",
+          present: false,
+          exercises: [],
+        },
+      ],
+    },
+    {
+      id: 2,
+      name: "Yoga Avançado",
+      instructor: "Prof. Marina Costa",
+      room: "Sala 2",
+      time: "18:00 - 19:00",
+      date: "Terça-feira",
+      maxStudents: 12,
+      currentStudents: 6,
+      weekDays: ["tuesday", "thursday"],
+      times: [
+        { day: "tuesday", startTime: "18:00", endTime: "19:00" },
+        { day: "thursday", startTime: "18:00", endTime: "19:00" }
+      ],
+      description: "Aula de Yoga para praticantes avançados com foco em posturas desafiadoras.",
+      students: [
+        {
+          id: 4,
+          name: "Patricia Oliveira",
+          present: true,
+          exercises: [
+            { exercise: "Warrior III", sets: 3, reps: 5, completed: true, weight: 0 },
+            { exercise: "Crow Pose", sets: 2, reps: 30, completed: false, weight: 0 },
+          ],
+        },
+        {
+          id: 5,
+          name: "Roberto Silva",
+          present: true,
+          exercises: [
+            { exercise: "Handstand", sets: 3, reps: 10, completed: true, weight: 0 },
+            { exercise: "Scorpion Pose", sets: 1, reps: 5, completed: false, weight: 0 },
+          ],
+        },
+      ],
+    },
+    {
+      id: 3,
+      name: "CrossFit",
+      instructor: "Prof. Roberto Lima",
+      room: "Sala 3",
+      time: "07:00 - 08:00",
+      date: "Segunda a Sexta",
+      maxStudents: 8,
+      currentStudents: 8,
+      weekDays: ["monday", "tuesday", "wednesday", "thursday", "friday"],
+      times: [
+        { day: "monday", startTime: "07:00", endTime: "08:00" },
+        { day: "tuesday", startTime: "07:00", endTime: "08:00" },
+        { day: "wednesday", startTime: "07:00", endTime: "08:00" },
+        { day: "thursday", startTime: "07:00", endTime: "08:00" },
+        { day: "friday", startTime: "07:00", endTime: "08:00" }
+      ],
+      description: "Treino funcional de alta intensidade com exercícios variados.",
+      students: [
+        {
+          id: 6,
+          name: "Carlos Lima",
+          present: true,
+          exercises: [
+            { exercise: "Burpees", sets: 3, reps: 15, completed: true, weight: 0 },
+            { exercise: "Pull-ups", sets: 3, reps: 8, completed: true, weight: 0 },
+            { exercise: "Deadlift", sets: 3, reps: 10, completed: false, weight: 80.0 },
+          ],
+        },
+        {
+          id: 7,
+          name: "Lucia Ferreira",
+          present: false,
+          exercises: [],
+        },
+      ],
+    },
+  ]
+
+  useEffect(() => {
+    // Simulate fetching class data based on ID
+    const fetchClassData = async () => {
+      setLoading(true)
+      try {
+        // In a real application, this would be an API call
+        // const response = await fetch(`/api/classes/${params.id}`)
+        // const data = await response.json()
+
+        // For now, find the class from mock data
+        const classId = parseInt(params.id as string)
+        const foundClass = mockClasses.find(c => c.id === classId)
+
+        if (foundClass) {
+          setClassData(foundClass)
+          // Update edit form with the loaded class data
+          setEditForm({
+            instructor: foundClass.instructor,
+            room: foundClass.room
+          })
+        } else {
+          // Handle class not found
+          console.error('Class not found')
+          router.push('/schedule')
+        }
+      } catch (error) {
+        console.error('Error fetching class data:', error)
+        router.push('/schedule')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (params.id) {
+      fetchClassData()
+    }
+  }, [params.id, router])
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-2 text-sm text-muted-foreground">Carregando dados da aula...</p>
+          </div>
+        </div>
+      </Layout>
+    )
+  }
+
+  if (!classData) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-lg font-semibold">Aula não encontrada</p>
+            <Button
+              variant="outline"
+              onClick={() => router.push('/schedule')}
+              className="mt-4"
+            >
+              Voltar para cronograma
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    )
+  }
+
+  const availableTeachers = [
+    "Prof. Ana Silva",
+    "Prof. Marina Costa",
+    "Prof. Roberto Lima",
+    "Prof. Carlos Santos",
+    "Prof. Lucia Ferreira"
+  ]
+
+  const availableRooms = [
+    "Sala 1",
+    "Sala 2",
+    "Sala 3",
+    "Área Externa",
+    "Sala de Yoga",
+    "Studio Principal"
+  ]
+
+  const availableStudents = [
+    "Carlos Lima",
+    "Lucia Ferreira",
+    "Pedro Oliveira",
+    "Fernanda Santos",
+    "Ricardo Costa",
+    "Amanda Silva"
+  ]
+
+  // Handle class edit
+  const handleEditClass = () => {
+    setClassData(prev => ({
+      ...prev,
+      instructor: editForm.instructor,
+      room: editForm.room
+    }))
+    setIsEditClassOpen(false)
+  }
+
+  // Handle modality edit - Updated to handle weekdays and times
+  const handleEditModality = (formData: any) => {
+    setClassData(prev => ({
+      ...prev,
+      name: formData.name,
+      instructor: formData.instructor,
+      room: formData.room,
+      weekDays: formData.weekDays, // Update weekdays
+      times: formData.times, // Update times
+      description: formData.description,
+      // Update currentStudents to reflect actual count
+      currentStudents: prev.students.length
+    }))
+  }
+
+  const handleCloseModalityModal = () => {
+    setIsEditModalityOpen(false)
+  }
+
+  // Reset edit form when opening dialog
+  const openEditDialog = () => {
+    setEditForm({
+      instructor: classData.instructor,
+      room: classData.room
+    })
+    setIsEditClassOpen(true)
+  }
 
   const togglePresence = (studentId: number) => {
     setClassData((prev) => ({
@@ -245,59 +465,15 @@ export default function ClassDetailPage() {
     }))
   }
 
-  // Add search state for students
-  const [studentSearchTerm, setStudentSearchTerm] = useState("")
-
   // Filter students based on search term
   const filteredStudents = classData.students.filter(student =>
     student.name.toLowerCase().includes(studentSearchTerm.toLowerCase())
   )
 
-  // Add search state for exercises
-  const [exerciseSearchTerm, setExerciseSearchTerm] = useState("")
-
   // Filter exercises based on search term
   const filteredExercises = availableExercises.filter(exercise =>
     exercise.toLowerCase().includes(exerciseSearchTerm.toLowerCase())
   )
-
-  // Handle class edit
-  const handleEditClass = () => {
-    setClassData(prev => ({
-      ...prev,
-      instructor: editForm.instructor,
-      room: editForm.room
-    }))
-    setIsEditClassOpen(false)
-  }
-
-  // Handle modality edit - Updated to handle weekdays and times
-  const handleEditModality = (formData: any) => {
-    setClassData(prev => ({
-      ...prev,
-      name: formData.name,
-      instructor: formData.instructor,
-      room: formData.room,
-      weekDays: formData.weekDays, // Update weekdays
-      times: formData.times, // Update times
-      description: formData.description,
-      // Update currentStudents to reflect actual count
-      currentStudents: prev.students.length
-    }))
-  }
-
-  const handleCloseModalityModal = () => {
-    setIsEditModalityOpen(false)
-  }
-
-  // Reset edit form when opening dialog
-  const openEditDialog = () => {
-    setEditForm({
-      instructor: classData.instructor,
-      room: classData.room
-    })
-    setIsEditClassOpen(true)
-  }
 
   return (
     <Layout>

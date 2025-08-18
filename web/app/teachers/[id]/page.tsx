@@ -6,49 +6,177 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, User, Phone, Mail, Calendar, Clock, Edit, MapPin } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
+import { useState, useEffect } from "react"
 import Layout from "@/components/layout"
+
+// Type definitions
+interface TeacherSchedule {
+  day: string
+  time: string
+  class: string
+  students: number
+}
+
+interface TeacherPerformance {
+  monthlyHours: number
+  monthlyClasses: number
+  studentsManaged: number
+}
+
+interface RecentClass {
+  name: string
+  date: string
+  students: number
+  attendance: number
+}
+
+interface TeacherData {
+  id: number
+  name: string
+  email: string
+  phone: string
+  address: string
+  birthDate: string
+  specialties: string[]
+  compensation: string
+  status: string
+  joinDate: string
+  hoursWorked: number
+  schedule: TeacherSchedule[]
+  performance: TeacherPerformance
+  recentClasses: RecentClass[]
+}
 
 export default function TeacherProfilePage() {
   const router = useRouter()
   const params = useParams()
+  const [teacherData, setTeacherData] = useState<TeacherData | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Mock teacher data
-  const teacherData = {
-    id: 1,
-    name: "Ana Silva",
-    email: "ana@gym.com",
-    phone: "(11) 99999-9999",
-    address: "Rua das Palmeiras, 456 - Jardins, São Paulo",
-    birthDate: "1985-08-20",
-    specialties: ["Pilates", "Yoga", "Alongamento"],
-    compensation: "Horista",
-    status: "Ativo",
-    joinDate: "2024-01-15",
-    hoursWorked: 120,
-
-    // Schedule
-    schedule: [
-      { day: "Segunda", time: "09:00-10:00", class: "Pilates Iniciante", students: 8 },
-      { day: "Segunda", time: "18:00-19:00", class: "Yoga", students: 6 },
-      { day: "Quarta", time: "09:00-10:00", class: "Pilates Intermediário", students: 10 },
-      { day: "Quarta", time: "18:00-19:00", class: "Alongamento", students: 5 },
-      { day: "Sexta", time: "09:00-10:00", class: "Pilates Iniciante", students: 7 },
-    ],
-
-    // Performance data
-    performance: {
-      monthlyHours: 120,
-      monthlyClasses: 48,
-      studentsManaged: 35,
+  // Mock teachers data - this should eventually be replaced with API calls
+  const mockTeachers: TeacherData[] = [
+    {
+      id: 1,
+      name: "Ana Silva",
+      email: "ana@gym.com",
+      phone: "(11) 99999-9999",
+      address: "Rua das Palmeiras, 456 - Jardins, São Paulo",
+      birthDate: "1985-08-20",
+      specialties: ["Pilates", "Yoga", "Alongamento"],
+      compensation: "Horista",
+      status: "Ativo",
+      joinDate: "2024-01-15",
+      hoursWorked: 120,
+      schedule: [
+        { day: "Segunda", time: "09:00-10:00", class: "Pilates Iniciante", students: 8 },
+        { day: "Segunda", time: "18:00-19:00", class: "Yoga", students: 6 },
+        { day: "Quarta", time: "09:00-10:00", class: "Pilates Intermediário", students: 10 },
+        { day: "Quarta", time: "18:00-19:00", class: "Alongamento", students: 5 },
+        { day: "Sexta", time: "09:00-10:00", class: "Pilates Iniciante", students: 7 },
+      ],
+      performance: {
+        monthlyHours: 120,
+        monthlyClasses: 48,
+        studentsManaged: 35,
+      },
+      recentClasses: [
+        { name: "Pilates Iniciante", date: "2024-07-20", students: 8, attendance: 7 },
+        { name: "Yoga", date: "2024-07-18", students: 6, attendance: 6 },
+        { name: "Pilates Intermediário", date: "2024-07-17", students: 10, attendance: 9 },
+      ],
     },
+    {
+      id: 2,
+      name: "Marina Costa",
+      email: "marina@gym.com",
+      phone: "(11) 88888-8888",
+      address: "Av. Faria Lima, 789 - Itaim Bibi, São Paulo",
+      birthDate: "1990-04-15",
+      specialties: ["Yoga", "Meditação", "Relaxamento"],
+      compensation: "Mensalista",
+      status: "Ativo",
+      joinDate: "2024-02-01",
+      hoursWorked: 160,
+      schedule: [
+        { day: "Terça", time: "18:00-19:00", class: "Yoga Avançado", students: 12 },
+        { day: "Quinta", time: "18:00-19:00", class: "Yoga Avançado", students: 10 },
+        { day: "Sábado", time: "09:00-10:00", class: "Meditação", students: 8 },
+      ],
+      performance: {
+        monthlyHours: 160,
+        monthlyClasses: 36,
+        studentsManaged: 30,
+      },
+      recentClasses: [
+        { name: "Yoga Avançado", date: "2024-07-22", students: 12, attendance: 11 },
+        { name: "Meditação", date: "2024-07-21", students: 8, attendance: 8 },
+        { name: "Yoga Avançado", date: "2024-07-20", students: 10, attendance: 9 },
+      ],
+    },
+    {
+      id: 3,
+      name: "Roberto Lima",
+      email: "roberto@gym.com",
+      phone: "(11) 77777-7777",
+      address: "Rua Augusta, 321 - Consolação, São Paulo",
+      birthDate: "1983-11-30",
+      specialties: ["CrossFit", "Musculação", "Treinamento Funcional"],
+      compensation: "Horista",
+      status: "Ativo",
+      joinDate: "2023-11-10",
+      hoursWorked: 180,
+      schedule: [
+        { day: "Segunda", time: "07:00-08:00", class: "CrossFit", students: 8 },
+        { day: "Terça", time: "07:00-08:00", class: "CrossFit", students: 8 },
+        { day: "Quarta", time: "07:00-08:00", class: "CrossFit", students: 8 },
+        { day: "Quinta", time: "07:00-08:00", class: "CrossFit", students: 8 },
+        { day: "Sexta", time: "07:00-08:00", class: "CrossFit", students: 8 },
+      ],
+      performance: {
+        monthlyHours: 180,
+        monthlyClasses: 60,
+        studentsManaged: 40,
+      },
+      recentClasses: [
+        { name: "CrossFit", date: "2024-07-22", students: 8, attendance: 8 },
+        { name: "CrossFit", date: "2024-07-21", students: 8, attendance: 7 },
+        { name: "CrossFit", date: "2024-07-20", students: 8, attendance: 8 },
+      ],
+    },
+  ]
 
-    // Recent classes
-    recentClasses: [
-      { name: "Pilates Iniciante", date: "2024-07-20", students: 8, attendance: 7 },
-      { name: "Yoga", date: "2024-07-18", students: 6, attendance: 6 },
-      { name: "Pilates Intermediário", date: "2024-07-17", students: 10, attendance: 9 },
-    ],
-  }
+  useEffect(() => {
+    // Simulate fetching teacher data based on ID
+    const fetchTeacherData = async () => {
+      setLoading(true)
+      try {
+        // In a real application, this would be an API call
+        // const response = await fetch(`/api/teachers/${params.id}`)
+        // const data = await response.json()
+
+        // For now, find the teacher from mock data
+        const teacherId = parseInt(params.id as string)
+        const teacher = mockTeachers.find(t => t.id === teacherId)
+
+        if (teacher) {
+          setTeacherData(teacher)
+        } else {
+          // Handle teacher not found
+          console.error('Teacher not found')
+          router.push('/teachers')
+        }
+      } catch (error) {
+        console.error('Error fetching teacher data:', error)
+        router.push('/teachers')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (params.id) {
+      fetchTeacherData()
+    }
+  }, [params.id, router])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -76,6 +204,38 @@ export default function TeacherProfilePage() {
       age--
     }
     return age
+  }
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-2 text-sm text-muted-foreground">Carregando dados do professor...</p>
+          </div>
+        </div>
+      </Layout>
+    )
+  }
+
+  if (!teacherData) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-lg font-semibold">Professor não encontrado</p>
+            <Button
+              variant="outline"
+              onClick={() => router.push('/teachers')}
+              className="mt-4"
+            >
+              Voltar para lista de professores
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    )
   }
 
   return (

@@ -8,10 +8,58 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Edit, Shield, User } from "lucide-react"
 import Layout from "@/components/layout"
 
+// Type definitions
+interface AdministratorData {
+  id: number
+  name: string
+  surname: string
+  email: string
+  phone?: string
+  address?: string
+  joinDate?: string
+  permissions?: string[]
+}
+
 export default function AdministratorProfilePage() {
   const router = useRouter()
   const params = useParams()
   const [userRole, setUserRole] = useState<string>("")
+  const [administratorData, setAdministratorData] = useState<AdministratorData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  // Mock administrators data - this should eventually be replaced with API calls
+  const mockAdministrators: AdministratorData[] = [
+    {
+      id: 1,
+      name: "Admin",
+      surname: "Principal",
+      email: "admin@gym.com",
+      phone: "(11) 99999-0000",
+      address: "Rua Principal, 100 - Centro, São Paulo",
+      joinDate: "2023-01-01",
+      permissions: ["Gerenciar Usuários", "Relatórios", "Configurações do Sistema", "Backup de Dados"]
+    },
+    {
+      id: 2,
+      name: "Maria",
+      surname: "Administradora",
+      email: "maria.admin@gym.com",
+      phone: "(11) 88888-0000",
+      address: "Av. Secundária, 200 - Vila Nova, São Paulo",
+      joinDate: "2023-06-15",
+      permissions: ["Gerenciar Usuários", "Relatórios"]
+    },
+    {
+      id: 3,
+      name: "João",
+      surname: "Supervisor",
+      email: "joao.supervisor@gym.com",
+      phone: "(11) 77777-0000",
+      address: "Rua dos Supervisores, 300 - Jardim das Flores, São Paulo",
+      joinDate: "2024-01-10",
+      permissions: ["Relatórios", "Configurações do Sistema"]
+    }
+  ]
 
   useEffect(() => {
     const role = localStorage.getItem("userRole") || "professor"
@@ -20,24 +68,80 @@ export default function AdministratorProfilePage() {
     // Redirect if not admin
     if (role !== "admin") {
       router.push("/schedule")
+      return
     }
-  }, [router])
 
-  // Mock administrator data
-  const administrator = {
-    id: 1,
-    name: "Admin",
-    surname: "Principal",
-    email: "admin@gym.com",
-  }
+    // Simulate fetching administrator data based on ID
+    const fetchAdministratorData = async () => {
+      setLoading(true)
+      try {
+        // In a real application, this would be an API call
+        // const response = await fetch(`/api/administrators/${params.id}`)
+        // const data = await response.json()
+
+        // For now, find the administrator from mock data
+        const adminId = parseInt(params.id as string)
+        const admin = mockAdministrators.find(a => a.id === adminId)
+
+        if (admin) {
+          setAdministratorData(admin)
+        } else {
+          // Handle administrator not found
+          console.error('Administrator not found')
+          router.push('/administrators')
+        }
+      } catch (error) {
+        console.error('Error fetching administrator data:', error)
+        router.push('/administrators')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (params.id) {
+      fetchAdministratorData()
+    }
+  }, [router, params.id])
 
   // Don't render if not admin
   if (userRole !== "admin") {
     return null
   }
 
-  const fullName = `${administrator.name} ${administrator.surname}`
-  const initials = `${administrator.name.charAt(0)}${administrator.surname.charAt(0)}`.toUpperCase()
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-2 text-sm text-muted-foreground">Carregando dados do administrador...</p>
+          </div>
+        </div>
+      </Layout>
+    )
+  }
+
+  if (!administratorData) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-lg font-semibold">Administrador não encontrado</p>
+            <Button
+              variant="outline"
+              onClick={() => router.push('/administrators')}
+              className="mt-4"
+            >
+              Voltar para lista de administradores
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    )
+  }
+
+  const fullName = `${administratorData.name} ${administratorData.surname}`
+  const initials = `${administratorData.name.charAt(0)}${administratorData.surname.charAt(0)}`.toUpperCase()
 
   return (
     <Layout>
@@ -93,11 +197,47 @@ export default function AdministratorProfilePage() {
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Email</label>
-                <p className="text-sm">{administrator.email}</p>
+                <p className="text-sm">{administratorData.email}</p>
               </div>
+              {administratorData.phone && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Telefone</label>
+                  <p className="text-sm">{administratorData.phone}</p>
+                </div>
+              )}
+              {administratorData.address && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Endereço</label>
+                  <p className="text-sm">{administratorData.address}</p>
+                </div>
+              )}
+              {administratorData.joinDate && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Data de Ingresso</label>
+                  <p className="text-sm">{new Date(administratorData.joinDate).toLocaleDateString("pt-BR")}</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
+
+        {/* Permissions */}
+        {administratorData.permissions && administratorData.permissions.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Permissões do Sistema</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {administratorData.permissions.map((permission, index) => (
+                  <Badge key={index} variant="outline" className="text-xs">
+                    {permission}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </Layout>
   )

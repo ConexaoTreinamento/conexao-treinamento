@@ -1,11 +1,11 @@
 "use client"
 
-import {useState} from "react"
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
-import {Button} from "@/components/ui/button"
-import {Badge} from "@/components/ui/badge"
-import {Avatar, AvatarFallback} from "@/components/ui/avatar"
-import {ArrowLeft, Calendar, CheckCircle, Clock, Edit, MapPin, Trophy, Users, X, XCircle,} from "lucide-react"
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { ArrowLeft, Calendar, CheckCircle, Clock, Edit, MapPin, Trophy, Users, X, XCircle } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -15,61 +15,197 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {Input} from "@/components/ui/input"
-import {Label} from "@/components/ui/label"
-import {Textarea} from "@/components/ui/textarea"
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
-import {useParams, useRouter} from "next/navigation"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useParams, useRouter } from "next/navigation"
 import Layout from "@/components/layout"
-import AddStudentDialog from "@/components/add-student-dialog";
+import AddStudentDialog from "@/components/add-student-dialog"
+
+// Type definitions
+interface EventParticipant {
+  id: number
+  name: string
+  avatar: string
+  enrolledAt: string
+  present: boolean
+}
+
+interface EventData {
+  id: number
+  name: string
+  type: string
+  date: string
+  startTime: string
+  endTime: string
+  location: string
+  status: string
+  description: string
+  requirements: string[]
+  meetingPoint: string
+  instructor: string
+  participants: EventParticipant[]
+  maxParticipants?: number
+}
 
 export default function EventDetailPage() {
   const router = useRouter()
   const params = useParams()
+  const [eventData, setEventData] = useState<EventData | null>(null)
+  const [loading, setLoading] = useState(true)
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [isEnrollDialogOpen, setIsEnrollDialogOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false)
-  const [eventForm, setEventForm] = useState({
-    name: "Corrida no Parque",
-    type: "Corrida",
-    date: "2024-08-15",
-    startTime: "07:00",
-    endTime: "08:00",
-    location: "Parque Ibirapuera",
-    description:
-        "Corrida matinal de 5km no parque para todos os níveis. Venha participar desta atividade ao ar livre e conhecer outros alunos da academia!",
-    students: ["Maria Silva", "João Santos", "Ana Costa", "Carlos Lima", "Lucia Ferreira"],
-    attendance: {
-      "Maria Silva": true,
-      "João Santos": false,
-      "Ana Costa": true,
-      "Carlos Lima": true,
-      "Lucia Ferreira": false,
+
+  // Mock events data - this should eventually be replaced with API calls
+  const mockEvents: EventData[] = [
+    {
+      id: 1,
+      name: "Corrida no Parque",
+      type: "Corrida",
+      date: "2024-08-15",
+      startTime: "07:00",
+      endTime: "08:00",
+      location: "Parque Ibirapuera",
+      status: "Aberto",
+      description: "Corrida matinal de 5km no parque para todos os níveis. Venha participar desta atividade ao ar livre e conhecer outros alunos da academia!",
+      requirements: ["Tênis adequado para corrida", "Roupa confortável", "Garrafa de água", "Protetor solar"],
+      meetingPoint: "Portão 2 do Parque Ibirapuera",
+      instructor: "Prof. Carlos Santos",
+      maxParticipants: 20,
+      participants: [
+        { id: 1, name: "Maria Silva", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-20", present: true },
+        { id: 2, name: "João Santos", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-21", present: false },
+        { id: 3, name: "Ana Costa", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-22", present: true },
+      ],
     },
+    {
+      id: 2,
+      name: "Workshop de Yoga",
+      type: "Workshop",
+      date: "2024-08-20",
+      startTime: "14:00",
+      endTime: "16:00",
+      location: "Studio Principal",
+      status: "Lotado",
+      description: "Workshop intensivo de Yoga com técnicas avançadas de respiração e posturas. Aprenda com especialistas e aprofunde sua prática.",
+      requirements: ["Tapete de yoga próprio", "Roupa confortável", "Toalha"],
+      meetingPoint: "Recepção da academia",
+      instructor: "Prof. Marina Costa",
+      maxParticipants: 15,
+      participants: [
+        { id: 4, name: "Patricia Oliveira", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-15", present: true },
+        { id: 5, name: "Roberto Silva", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-16", present: true },
+        { id: 6, name: "Fernanda Costa", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-17", present: false },
+      ],
+    },
+    {
+      id: 3,
+      name: "Competição de CrossFit",
+      type: "Competição",
+      date: "2024-08-25",
+      startTime: "09:00",
+      endTime: "12:00",
+      location: "Área Externa",
+      status: "Aberto",
+      description: "Competição amistosa de CrossFit com diferentes categorias. Venha testar seus limites e se divertir com outros atletas!",
+      requirements: ["Equipamentos de proteção", "Roupa adequada para exercícios", "Garrafa de água"],
+      meetingPoint: "Área Externa da academia",
+      instructor: "Prof. Roberto Lima",
+      maxParticipants: 30,
+      participants: [
+        { id: 7, name: "Carlos Lima", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-18", present: true },
+        { id: 8, name: "Lucia Ferreira", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-19", present: false },
+      ],
+    },
+  ]
+
+  // Edit form state
+  const [eventForm, setEventForm] = useState({
+    name: "",
+    type: "",
+    date: "",
+    startTime: "",
+    endTime: "",
+    location: "",
+    description: "",
   })
 
-  // Mock event data
-  const eventData = {
-    id: 1,
-    name: eventForm.name,
-    type: eventForm.type,
-    date: eventForm.date,
-    startTime: eventForm.startTime,
-    endTime: eventForm.endTime,
-    location: eventForm.location,
-    status: "Aberto",
-    description: eventForm.description,
-    requirements: ["Tênis adequado para corrida", "Roupa confortável", "Garrafa de água", "Protetor solar"],
-    meetingPoint: "Portão 2 do Parque Ibirapuera",
-    instructor: "Prof. Carlos Santos",
-    participants: eventForm.students.map((student, idx) => ({
-      id: idx + 1,
-      name: student,
-      avatar: "/placeholder.svg?height=40&width=40",
-      enrolledAt: "2024-07-20",
-      present: (eventForm.attendance as Record<string, boolean>)[student] || false,
-    })),
+  useEffect(() => {
+    // Simulate fetching event data based on ID
+    const fetchEventData = async () => {
+      setLoading(true)
+      try {
+        // In a real application, this would be an API call
+        // const response = await fetch(`/api/events/${params.id}`)
+        // const data = await response.json()
+
+        // For now, find the event from mock data
+        const eventId = parseInt(params.id as string)
+        const event = mockEvents.find(e => e.id === eventId)
+
+        if (event) {
+          setEventData(event)
+          // Initialize form with event data
+          setEventForm({
+            name: event.name,
+            type: event.type,
+            date: event.date,
+            startTime: event.startTime,
+            endTime: event.endTime,
+            location: event.location,
+            description: event.description,
+          })
+        } else {
+          // Handle event not found
+          console.error('Event not found')
+          router.push('/events')
+        }
+      } catch (error) {
+        console.error('Error fetching event data:', error)
+        router.push('/events')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (params.id) {
+      fetchEventData()
+    }
+  }, [params.id, router])
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-2 text-sm text-muted-foreground">Carregando dados do evento...</p>
+          </div>
+        </div>
+      </Layout>
+    )
+  }
+
+  if (!eventData) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-lg font-semibold">Evento não encontrado</p>
+            <Button
+              variant="outline"
+              onClick={() => router.push('/events')}
+              className="mt-4"
+            >
+              Voltar para lista de eventos
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    )
   }
 
   // Mock students for selection
@@ -135,34 +271,39 @@ export default function EventDetailPage() {
     })
   }
 
-  const toggleStudent = (student: string) => {
-    setEventForm((prev) => ({
-      ...prev,
-      students: prev.students.includes(student)
-        ? prev.students.filter((s) => s !== student)
-        : [...prev.students, student],
+  const toggleAttendance = (participantName: string) => {
+    if (!eventData) return
+
+    setEventData(prev => ({
+      ...prev!,
+      participants: prev!.participants.map(p =>
+        p.name === participantName ? { ...p, present: !p.present } : p
+      )
     }))
   }
 
-  const removeStudent = (student: string) => {
-    setEventForm((prev) => ({
-      ...prev,
-      students: prev.students.filter((s) => s !== student),
-    }))
-  }
+  const removeStudent = (studentName: string) => {
+    if (!eventData) return
 
-  const toggleAttendance = (student: string) => {
-    setEventForm((prev) => ({
-      ...prev,
-      attendance: {
-        ...prev.attendance,
-        [student]: !(prev.attendance as Record<string, boolean>)[student],
-      },
+    setEventData(prev => ({
+      ...prev!,
+      participants: prev!.participants.filter(p => p.name !== studentName)
     }))
   }
 
   const handleSaveEvent = () => {
-    console.log("Saving event:", eventForm)
+    if (!eventData) return
+
+    setEventData(prev => ({
+      ...prev!,
+      name: eventForm.name,
+      type: eventForm.type,
+      date: eventForm.date,
+      startTime: eventForm.startTime,
+      endTime: eventForm.endTime,
+      location: eventForm.location,
+      description: eventForm.description,
+    }))
     setIsEditOpen(false)
   }
 

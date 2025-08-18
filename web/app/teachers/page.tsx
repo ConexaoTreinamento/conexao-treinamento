@@ -662,7 +662,7 @@ export default function TeachersPage() {
         )}
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -686,19 +686,6 @@ export default function TeachersPage() {
               </div>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Mensalistas</p>
-                  <p className="text-2xl font-bold">{teachers.filter((t) => t.compensation === "Mensalista").length}</p>
-                </div>
-                <Calendar className="w-8 h-8 text-purple-600" />
-              </div>
-            </CardContent>
-          </Card>
-
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
