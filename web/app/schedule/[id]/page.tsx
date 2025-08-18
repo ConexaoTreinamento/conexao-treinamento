@@ -580,7 +580,7 @@ export default function ClassDetailPage() {
 
                 {filteredStudents.map((student) => (
                   <div key={student.id} className="p-3 rounded-lg border bg-card">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                    <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${student.exercises.length > 0 ? 'mb-3' : ''}`}>
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
                           <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
