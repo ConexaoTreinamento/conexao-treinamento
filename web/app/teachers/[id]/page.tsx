@@ -148,19 +148,14 @@ export default function TeacherProfilePage() {
                   ))}
                 </div>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-4 border-t">
+              <div className="w-full flex flex-row justify-center pt-4 border-t">
                 <Button
                   size="sm"
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-green-600 hover:bg-green-700 w-[80%]"
                   onClick={() => router.push(`/teachers/${params.id}/edit`)}
                 >
                   <Edit className="w-4 h-4 mr-2" />
                   Editar Perfil
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => router.push(`/teachers/${params.id}/schedule`)}>
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Gerenciar Agenda
                 </Button>
               </div>
             </CardContent>
