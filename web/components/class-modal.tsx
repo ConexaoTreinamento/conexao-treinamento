@@ -66,9 +66,9 @@ export default function ClassModal({
 
   // Initialize form with initial data when editing
   useEffect(() => {
-    if (initialData && mode === "edit") {
+    if (initialData) {
       setForm(initialData)
-    } else if (mode === "create") {
+    } else {
       setForm({
         name: "",
         instructor: "",

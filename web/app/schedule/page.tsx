@@ -27,6 +27,15 @@ export default function SchedulePage() {
   const [currentMonth, setCurrentMonth] = useState(new Date()) // Track current month/year
   const [userRole, setUserRole] = useState<string>("")
   const [isNewClassOpen, setIsNewClassOpen] = useState(false)
+  const [modalInitialData, setModalInitialData] = useState({
+    name: "",
+    instructor: "",
+    room: "",
+    maxStudents: "2",
+    description: "",
+    weekDays: [] as string[],
+    times: [] as { day: string; startTime: string; endTime: string }[],
+  })
   const [newClassForm, setNewClassForm] = useState({
     name: "",
     instructor: "",
@@ -165,30 +174,23 @@ export default function SchedulePage() {
   const getClassesForDate = (date: Date) => {
     const dayOfWeek = getDayOfWeekValue(date)
 
-    // Filter classes that occur on this day of the week
-    return classes.filter((cls) => {
-      if (cls.weekDays && cls.weekDays.includes(dayOfWeek)) {
-        // Get the time for this specific day
+    // Filter classes that occur on this day of the week and map them with correct times
+    return classes
+      .filter((cls) => {
+        // Check if class has weekDays and includes the current day
+        return cls.weekDays && cls.weekDays.includes(dayOfWeek)
+      })
+      .map((cls) => {
+        // Map each class to include the correct time for the selected day
         const timeForDay = cls.times?.find(t => t.day === dayOfWeek)
-        if (timeForDay) {
-          // Return class with the correct time for this day
-          return {
-            ...cls,
-            time: timeForDay.startTime,
-            endTime: timeForDay.endTime
-          }
+        return {
+          ...cls,
+          time: timeForDay?.startTime || cls.time,
+          endTime: timeForDay?.endTime,
+          // Dynamically calculate current students count
+          currentStudents: cls.students ? cls.students.length : 0
         }
-      }
-      return false
-    }).map((cls) => {
-      // Map each class to include the correct time for the selected day
-      const timeForDay = cls.times?.find(t => t.day === dayOfWeek)
-      return {
-        ...cls,
-        time: timeForDay?.startTime || cls.time,
-        endTime: timeForDay?.endTime
-      }
-    })
+      })
   }
 
   const getOccupancyColor = (current: number, max: number) => {
@@ -273,6 +275,25 @@ export default function SchedulePage() {
     setIsNewClassOpen(false)
   }
 
+  const handleOpenClassModal = () => {
+    // Get the weekday value for the currently selected date
+    const selectedDayOfWeek = getDayOfWeekValue(selectedDate)
+
+    // Pre-populate the modal with the selected day and empty time
+    const initialData = {
+      name: "",
+      instructor: "",
+      room: "",
+      maxStudents: "2",
+      description: "",
+      weekDays: [selectedDayOfWeek], // Pre-select current day
+      times: [{ day: selectedDayOfWeek, startTime: "", endTime: "" }] // Add empty time for selected day
+    }
+
+    setModalInitialData(initialData)
+    setIsNewClassOpen(true)
+  }
+
   const goToToday = () => {
     const today = new Date()
     setSelectedDate(today)
@@ -323,7 +344,7 @@ export default function SchedulePage() {
                   <Button
                     size="sm"
                     className="bg-green-600 hover:bg-green-700"
-                    onClick={() => setIsNewClassOpen(true)}
+                    onClick={handleOpenClassModal}
                   >
                     <Plus className="w-4 h-4" />
                   </Button>
@@ -403,7 +424,7 @@ export default function SchedulePage() {
                   <Button
                     size="sm"
                     className="mt-3 bg-green-600 hover:bg-green-700"
-                    onClick={() => setIsNewClassOpen(true)}
+                    onClick={handleOpenClassModal}
                   >
                     <Plus className="w-4 h-4 mr-1" />
                     Criar turma
@@ -497,6 +518,7 @@ export default function SchedulePage() {
         <ClassModal
           open={isNewClassOpen}
           mode="create"
+          initialData={modalInitialData}
           onClose={handleCloseClassModal}
           onSubmitData={handleCreateClass}
           teachers={teachers}

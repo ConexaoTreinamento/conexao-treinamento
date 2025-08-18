@@ -280,8 +280,14 @@ export default function ClassDetailPage() {
       room: formData.room,
       weekDays: formData.weekDays, // Update weekdays
       times: formData.times, // Update times
-      description: formData.description
+      description: formData.description,
+      // Update currentStudents to reflect actual count
+      currentStudents: prev.students.length
     }))
+  }
+
+  const handleCloseModalityModal = () => {
+    setIsEditModalityOpen(false)
   }
 
   // Reset edit form when opening dialog
@@ -291,10 +297,6 @@ export default function ClassDetailPage() {
       room: classData.room
     })
     setIsEditClassOpen(true)
-  }
-
-  const handleCloseModalityModal = () => {
-    setIsEditModalityOpen(false)
   }
 
   return (
@@ -346,7 +348,7 @@ export default function ClassDetailPage() {
                 <div className="flex items-center gap-2 text-sm">
                   <Users className="w-4 h-4 text-muted-foreground" />
                   <span>
-                    {classData.currentStudents}/{classData.maxStudents} alunos
+                    {classData.students.length}/{classData.maxStudents} alunos
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
