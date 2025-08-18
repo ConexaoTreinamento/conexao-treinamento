@@ -85,7 +85,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 									<p className="text-sm text-muted-foreground">{userName}</p>
 									<p className="text-xs text-muted-foreground capitalize">{userRole}</p>
 								</div>
-								<nav className="flex-1 p-4 space-y-2">
+								<nav className="flex-1 p-4 space-y-2 overflow-y-auto">
 									{filteredNavigation.map((item) => {
 										const Icon = item.icon
 										return (
@@ -104,7 +104,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 										)
 									})}
 								</nav>
-								<div className="p-4 border-t space-y-2">
+								<div className="p-4 border-t space-y-2 flex-shrink-0">
 									<Link
 										href="/profile"
 										className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
