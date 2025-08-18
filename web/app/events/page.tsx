@@ -22,15 +22,12 @@ interface EventParticipant {
 interface EventData {
   id: number
   name: string
-  type: string
   date: string
   startTime: string
   endTime: string
   location: string
   status: string
   description: string
-  requirements: string[]
-  meetingPoint: string
   instructor: string
   participants: EventParticipant[]
   maxParticipants: number
@@ -44,15 +41,12 @@ export default function EventsPage() {
     {
       id: 1,
       name: "Corrida no Parque",
-      type: "Corrida",
       date: "2024-08-15",
       startTime: "07:00",
       endTime: "08:00",
       location: "Parque Ibirapuera",
       status: "Aberto",
       description: "Corrida matinal de 5km no parque para todos os níveis.",
-      requirements: ["Tênis adequado para corrida", "Roupa confortável", "Garrafa de água", "Protetor solar"],
-      meetingPoint: "Portão 2 do Parque Ibirapuera",
       instructor: "Prof. Carlos Santos",
       maxParticipants: 20,
       participants: [
@@ -64,15 +58,12 @@ export default function EventsPage() {
     {
       id: 2,
       name: "Workshop de Yoga",
-      type: "Workshop",
       date: "2024-08-20",
       startTime: "14:00",
       endTime: "16:00",
       location: "Studio Principal",
       status: "Lotado",
       description: "Workshop intensivo de Yoga com técnicas avançadas de respiração e posturas.",
-      requirements: ["Tapete de yoga próprio", "Roupa confortável", "Toalha"],
-      meetingPoint: "Recepção da academia",
       instructor: "Prof. Marina Costa",
       maxParticipants: 15,
       participants: [
@@ -84,15 +75,12 @@ export default function EventsPage() {
     {
       id: 3,
       name: "Competição de CrossFit",
-      type: "Competição",
       date: "2024-08-25",
       startTime: "09:00",
       endTime: "12:00",
       location: "Área Externa",
       status: "Aberto",
       description: "Competição amistosa de CrossFit com diferentes categorias.",
-      requirements: ["Equipamentos de proteção", "Roupa adequada para exercícios", "Garrafa de água"],
-      meetingPoint: "Área Externa da academia",
       instructor: "Prof. Roberto Lima",
       maxParticipants: 30,
       participants: [
@@ -117,8 +105,6 @@ export default function EventsPage() {
     "Rafael Costa",
     "Beatriz Lima"
   ]
-
-  const eventTypes = ["Corrida", "Yoga", "Trilha", "Competição", "Workshop", "Palestra", "Treino Funcional"]
 
   const availableInstructors = [
     "Prof. Carlos Santos",
@@ -150,15 +136,12 @@ export default function EventsPage() {
     const newEvent: EventData = {
       id: Date.now(),
       name: formData.name,
-      type: formData.type,
       date: formData.date,
       startTime: formData.startTime,
       endTime: formData.endTime,
       location: formData.location,
       description: formData.description,
       instructor: formData.instructor,
-      meetingPoint: formData.meetingPoint,
-      requirements: formData.requirements,
       maxParticipants: parseInt(formData.maxParticipants) || 20,
       participants: participants,
       status: deriveStatus(participants.length, parseInt(formData.maxParticipants) || 20)
@@ -192,7 +175,6 @@ export default function EventsPage() {
   // Filter events based on search term
   const filteredEvents = events.filter(event =>
     event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
     event.location.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -237,7 +219,6 @@ export default function EventsPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-lg truncate">{event.name}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{event.type}</p>
                   </div>
                   <Badge className={getStatusColor(event.status)}>{event.status}</Badge>
                 </div>
@@ -309,7 +290,6 @@ export default function EventsPage() {
           onClose={() => setIsCreateModalOpen(false)}
           onSubmit={handleCreateEvent}
           availableStudents={availableStudents}
-          eventTypes={eventTypes}
           instructors={availableInstructors}
         />
       </div>

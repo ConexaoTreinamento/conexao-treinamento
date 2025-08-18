@@ -19,7 +19,6 @@ import AddStudentDialog from "@/components/add-student-dialog"
 
 interface EventFormData {
   name: string
-  type: string
   date: string
   startTime: string
   endTime: string
@@ -27,8 +26,6 @@ interface EventFormData {
   description: string
   maxParticipants: string
   instructor: string
-  meetingPoint: string
-  requirements: string[]
   students: string[]
   attendance?: Record<string, boolean>
 }
@@ -40,7 +37,6 @@ interface EventModalProps {
   onClose: () => void
   onSubmit: (data: EventFormData) => void
   availableStudents: string[]
-  eventTypes: string[]
   instructors: string[]
 }
 
@@ -51,12 +47,10 @@ export default function EventModal({
   onClose,
   onSubmit,
   availableStudents,
-  eventTypes,
   instructors,
 }: EventModalProps) {
   const [formData, setFormData] = useState<EventFormData>({
     name: "",
-    type: "",
     date: "",
     startTime: "",
     endTime: "",
@@ -64,20 +58,15 @@ export default function EventModal({
     description: "",
     maxParticipants: "20",
     instructor: "",
-    meetingPoint: "",
-    requirements: [],
     students: [],
     attendance: {},
   })
-
-  const [requirementInput, setRequirementInput] = useState("")
 
   // Initialize form data when modal opens or initialData changes
   useEffect(() => {
     if (initialData) {
       setFormData({
         name: initialData.name || "",
-        type: initialData.type || "",
         date: initialData.date || "",
         startTime: initialData.startTime || "",
         endTime: initialData.endTime || "",
@@ -85,8 +74,6 @@ export default function EventModal({
         description: initialData.description || "",
         maxParticipants: initialData.maxParticipants || "20",
         instructor: initialData.instructor || "",
-        meetingPoint: initialData.meetingPoint || "",
-        requirements: initialData.requirements || [],
         students: initialData.students || [],
         attendance: initialData.attendance || {},
       })
@@ -94,7 +81,6 @@ export default function EventModal({
       // Reset form for create mode
       setFormData({
         name: "",
-        type: "",
         date: "",
         startTime: "",
         endTime: "",
@@ -102,8 +88,6 @@ export default function EventModal({
         description: "",
         maxParticipants: "20",
         instructor: "",
-        meetingPoint: "",
-        requirements: [],
         students: [],
         attendance: {},
       })
@@ -127,23 +111,6 @@ export default function EventModal({
 
       return newForm
     })
-  }
-
-  const handleAddRequirement = () => {
-    if (requirementInput.trim() && !formData.requirements.includes(requirementInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        requirements: [...prev.requirements, requirementInput.trim()]
-      }))
-      setRequirementInput("")
-    }
-  }
-
-  const handleRemoveRequirement = (requirement: string) => {
-    setFormData(prev => ({
-      ...prev,
-      requirements: prev.requirements.filter(r => r !== requirement)
-    }))
   }
 
   const handleAddStudent = (student: string) => {
@@ -189,13 +156,11 @@ export default function EventModal({
 
   const isFormValid = () => {
     return formData.name.trim() &&
-           formData.type &&
            formData.date &&
            formData.startTime &&
            formData.endTime &&
            formData.location.trim() &&
-           formData.instructor &&
-           formData.meetingPoint.trim()
+           formData.instructor
   }
 
   const getStatus = () => {
@@ -229,7 +194,7 @@ export default function EventModal({
 
         <div className="space-y-6">
           {/* Basic Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="w-full">
             <div className="space-y-2">
               <Label htmlFor="eventName">Nome do Evento *</Label>
               <Input
@@ -238,24 +203,6 @@ export default function EventModal({
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="Ex: Corrida no Parque"
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="eventType">Tipo *</Label>
-              <Select
-                value={formData.type}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {eventTypes.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
           </div>
 
@@ -291,7 +238,6 @@ export default function EventModal({
           </div>
 
           {/* Location and Instructor */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="eventLocation">Local *</Label>
               <Input
@@ -301,6 +247,7 @@ export default function EventModal({
                 placeholder="Ex: Parque Ibirapuera"
               />
             </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="eventInstructor">Instrutor *</Label>
               <Select
@@ -319,19 +266,7 @@ export default function EventModal({
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          {/* Meeting Point and Max Participants */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="eventMeetingPoint">Ponto de Encontro *</Label>
-              <Input
-                id="eventMeetingPoint"
-                value={formData.meetingPoint}
-                onChange={(e) => setFormData(prev => ({ ...prev, meetingPoint: e.target.value }))}
-                placeholder="Ex: Portão 2 do Parque"
-              />
-            </div>
+            {/* Max Participants */}
             <div className="space-y-2">
               <Label htmlFor="eventMaxParticipants">Máximo de Participantes *</Label>
               <Input
@@ -356,39 +291,6 @@ export default function EventModal({
               placeholder="Descreva o evento..."
               rows={3}
             />
-          </div>
-
-          {/* Requirements */}
-          <div className="space-y-2">
-            <Label>Requisitos</Label>
-            <div className="flex gap-2">
-              <Input
-                value={requirementInput}
-                onChange={(e) => setRequirementInput(e.target.value)}
-                placeholder="Adicionar requisito..."
-                onKeyPress={(e) => e.key === "Enter" && handleAddRequirement()}
-              />
-              <Button type="button" onClick={handleAddRequirement} variant="outline">
-                Adicionar
-              </Button>
-            </div>
-            {formData.requirements.length > 0 && (
-              <div className="space-y-1">
-                {formData.requirements.map((requirement, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
-                    <span className="text-sm">{requirement}</span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleRemoveRequirement(requirement)}
-                      className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Participants */}

@@ -23,15 +23,12 @@ interface EventParticipant {
 interface EventData {
   id: number
   name: string
-  type: string
   date: string
   startTime: string
   endTime: string
   location: string
   status: string
   description: string
-  requirements: string[]
-  meetingPoint: string
   instructor: string
   participants: EventParticipant[]
   maxParticipants: number // Made required instead of optional
@@ -54,15 +51,12 @@ export default function EventDetailPage() {
     {
       id: 1,
       name: "Corrida no Parque",
-      type: "Corrida",
       date: "2024-08-15",
       startTime: "07:00",
       endTime: "08:00",
       location: "Parque Ibirapuera",
       status: "Aberto",
       description: "Corrida matinal de 5km no parque para todos os níveis. Venha participar desta atividade ao ar livre e conhecer outros alunos da academia!",
-      requirements: ["Tênis adequado para corrida", "Roupa confortável", "Garrafa de água", "Protetor solar"],
-      meetingPoint: "Portão 2 do Parque Ibirapuera",
       instructor: "Prof. Carlos Santos",
       maxParticipants: 20,
       participants: [
@@ -74,15 +68,12 @@ export default function EventDetailPage() {
     {
       id: 2,
       name: "Workshop de Yoga",
-      type: "Workshop",
       date: "2024-08-20",
       startTime: "14:00",
       endTime: "16:00",
       location: "Studio Principal",
       status: "Lotado",
       description: "Workshop intensivo de Yoga com técnicas avançadas de respiração e posturas. Aprenda com especialistas e aprofunde sua prática.",
-      requirements: ["Tapete de yoga próprio", "Roupa confortável", "Toalha"],
-      meetingPoint: "Recepção da academia",
       instructor: "Prof. Marina Costa",
       maxParticipants: 15,
       participants: [
@@ -94,15 +85,12 @@ export default function EventDetailPage() {
     {
       id: 3,
       name: "Competição de CrossFit",
-      type: "Competição",
       date: "2024-08-25",
       startTime: "09:00",
       endTime: "12:00",
       location: "Área Externa",
       status: "Aberto",
       description: "Competição amistosa de CrossFit com diferentes categorias. Venha testar seus limites e se divertir com outros atletas!",
-      requirements: ["Equipamentos de proteção", "Roupa adequada para exercícios", "Garrafa de água"],
-      meetingPoint: "Área Externa da academia",
       instructor: "Prof. Roberto Lima",
       maxParticipants: 30,
       participants: [
@@ -115,7 +103,6 @@ export default function EventDetailPage() {
   // Edit form state - fixed to include missing properties
   const [eventForm, setEventForm] = useState({
     name: "",
-    type: "",
     date: "",
     startTime: "",
     endTime: "",
@@ -143,7 +130,6 @@ export default function EventDetailPage() {
           // Initialize form with event data
           setEventForm({
             name: event.name,
-            type: event.type,
             date: event.date,
             startTime: event.startTime,
             endTime: event.endTime,
@@ -213,8 +199,6 @@ export default function EventDetailPage() {
     "Roberto Alves",
     "Fernanda Costa",
   ]
-
-  const eventTypes = ["Corrida", "Yoga", "Trilha", "Competição", "Workshop", "Palestra", "Treino Funcional"]
 
   // Available instructors for the modal
   const availableInstructors = [
@@ -324,7 +308,6 @@ export default function EventDetailPage() {
       return {
         ...prev,
         name: eventForm.name,
-        type: eventForm.type,
         date: eventForm.date,
         startTime: eventForm.startTime,
         endTime: eventForm.endTime,
@@ -374,15 +357,12 @@ export default function EventDetailPage() {
     const updatedEvent = {
       ...eventData,
       name: formData.name,
-      type: formData.type,
       date: formData.date,
       startTime: formData.startTime,
       endTime: formData.endTime,
       location: formData.location,
       description: formData.description,
       instructor: formData.instructor,
-      meetingPoint: formData.meetingPoint,
-      requirements: formData.requirements,
       maxParticipants: parseInt(formData.maxParticipants) || 20,
       participants: updatedParticipants
     }
@@ -443,25 +423,8 @@ export default function EventDetailPage() {
                 </div>
               </div>
 
-              {/* Requirements section */}
-              {eventData.requirements.length > 0 && (
-                <div className="pt-4 border-t">
-                  <p className="text-sm font-medium mb-2">Requisitos:</p>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    {eventData.requirements.map((requirement, index) => (
-                      <li key={index} className="flex items-start gap-1">
-                        <span className="text-xs mt-1">•</span>
-                        <span>{requirement}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
               <div className="pt-4 border-t">
                 <p className="text-sm text-muted-foreground mb-3">{eventData.description}</p>
-                <p className="text-sm font-medium mb-2">Ponto de Encontro:</p>
-                <p className="text-sm text-muted-foreground">{eventData.meetingPoint}</p>
               </div>
 
               <div className="pt-4 border-t">
@@ -560,7 +523,6 @@ export default function EventDetailPage() {
           mode="edit"
           initialData={{
             name: eventData.name,
-            type: eventData.type,
             date: eventData.date,
             startTime: eventData.startTime,
             endTime: eventData.endTime,
@@ -568,15 +530,12 @@ export default function EventDetailPage() {
             description: eventData.description,
             maxParticipants: eventData.maxParticipants.toString(),
             instructor: eventData.instructor,
-            meetingPoint: eventData.meetingPoint,
-            requirements: eventData.requirements,
             students: eventData.participants.map(p => p.name),
             attendance: eventData.participants.reduce((acc, p) => ({ ...acc, [p.name]: p.present }), {})
           }}
           onClose={() => setIsEditOpen(false)}
           onSubmit={handleEventEdit}
           availableStudents={availableStudents}
-          eventTypes={eventTypes}
           instructors={availableInstructors}
         />
       </div>
