@@ -58,6 +58,8 @@ export default function EventDetailPage() {
   const [isEnrollDialogOpen, setIsEnrollDialogOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false)
+  // Add search state for participants - moved to correct position to fix hook order
+  const [participantSearchTerm, setParticipantSearchTerm] = useState("")
 
   // Mock events data - this should eventually be replaced with API calls
   const mockEvents: EventData[] = [
@@ -122,7 +124,7 @@ export default function EventDetailPage() {
     },
   ]
 
-  // Edit form state
+  // Edit form state - fixed to include missing properties
   const [eventForm, setEventForm] = useState({
     name: "",
     type: "",
@@ -131,6 +133,8 @@ export default function EventDetailPage() {
     endTime: "",
     location: "",
     description: "",
+    students: [] as string[],
+    attendance: {} as Record<string, boolean>,
   })
 
   useEffect(() => {
@@ -157,6 +161,8 @@ export default function EventDetailPage() {
             endTime: event.endTime,
             location: event.location,
             description: event.description,
+            students: event.participants.map(p => p.name),
+            attendance: event.participants.reduce((acc, p) => ({ ...acc, [p.name]: p.present }), {}),
           })
         } else {
           // Handle event not found
@@ -294,26 +300,26 @@ export default function EventDetailPage() {
   const handleSaveEvent = () => {
     if (!eventData) return
 
-    setEventData(prev => ({
-      ...prev!,
-      name: eventForm.name,
-      type: eventForm.type,
-      date: eventForm.date,
-      startTime: eventForm.startTime,
-      endTime: eventForm.endTime,
-      location: eventForm.location,
-      description: eventForm.description,
-    }))
+    setEventData(prev => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        name: eventForm.name,
+        type: eventForm.type,
+        date: eventForm.date,
+        startTime: eventForm.startTime,
+        endTime: eventForm.endTime,
+        location: eventForm.location,
+        description: eventForm.description,
+      }
+    })
     setIsEditOpen(false)
   }
 
-  // Add search state for participants
-  const [participantSearchTerm, setParticipantSearchTerm] = useState("")
-
-  // Filter participants based on search term
-  const filteredParticipants = eventData.participants.filter(participant =>
+  // Filter participants based on search term - moved to after early returns
+  const filteredParticipants = eventData ? eventData.participants.filter(participant =>
     participant.name.toLowerCase().includes(participantSearchTerm.toLowerCase())
-  )
+  ) : []
 
   // Filter students based on search term
   const handleQuickAddStudent = (student: string) => {
