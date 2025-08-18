@@ -4,19 +4,97 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, TrendingUp, Edit, CalendarDays } from "lucide-react"
+import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, Edit, CalendarDays } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Layout from "@/components/layout"
 
+// Type definitions
+interface MedicalData {
+  medication: string[]
+  isDoctorAwareOfPhysicalActivity: boolean
+  favoritePhysicalActivity: string
+  hasInsomnia: string
+  isOnADiet: { orientedBy: string } | null
+  cardiacProblems: string[]
+  hasHypertension: boolean
+  chronicDiseases: string[]
+  difficultiesInPhysicalActivities: string[]
+  medicalOrientationsToAvoidPhysicalActivity: string[]
+  surgeriesInTheLast12Months: string[]
+  respiratoryProblems: string[]
+  jointMuscularBackPain: string[]
+  spinalDiscProblems: string[]
+  diabetes: string
+  smokingDuration: string
+  alteredCholesterol: boolean
+  osteoporosisLocation: string
+  physicalImpairments: Array<{
+    type: string
+    name: string
+    observations: string
+  }>
+}
+
+interface Evaluation {
+  date: string
+  weight: number
+  bodyFat: number
+  muscleMass: number
+  bmi: number
+}
+
+interface ClassItem {
+  name: string
+  date: string
+  instructor: string
+  status: string
+}
+
+interface ScheduleClass {
+  day: string
+  time: string
+  class: string
+  instructor: string
+}
+
+interface ClassSchedule {
+  daysPerWeek: number
+  selectedClasses: ScheduleClass[]
+}
+
+interface StudentData {
+  id: number
+  name: string
+  email: string
+  phone: string
+  address: string
+  birthDate: string
+  plan: string
+  status: string
+  joinDate: string
+  lastRenewal: string
+  avatar: string
+  emergencyContact: string
+  emergencyPhone: string
+  profession: string
+  goals: string
+  medicalConditions: string
+  medicalData: MedicalData
+  objectives: string[]
+  evaluations: Evaluation[]
+  recentClasses: ClassItem[]
+  classSchedule: ClassSchedule
+}
+
 export default function StudentProfilePage() {
   const router = useRouter()
   const params = useParams()
-  const [studentData, setStudentData] = useState<any>(null)
+  const [studentData, setStudentData] = useState<StudentData | null>(null)
   const [loading, setLoading] = useState(true)
 
   // Mock students data - this should eventually be replaced with API calls
-  const mockStudents = [
+  const mockStudents: StudentData[] = [
     {
       id: 1,
       name: "Maria Silva",
@@ -442,12 +520,12 @@ export default function StudentProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between ">
                       <span className="font-medium">Plano {studentData.plan}</span>
                       <Badge variant="outline">{studentData.classSchedule.daysPerWeek} dias/semana</Badge>
                     </div>
                     <div className="space-y-2">
-                      {studentData.classSchedule.selectedClasses.map((classItem, index) => (
+                      {studentData.classSchedule.selectedClasses.map((classItem: ScheduleClass, index: number) => (
                         <div key={index} className="flex items-center justify-between p-2 rounded border bg-muted/50">
                           <div>
                             <p className="font-medium text-sm">{classItem.class}</p>
@@ -479,7 +557,7 @@ export default function StudentProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {studentData.evaluations.map((evaluation, index) => (
+                    {studentData.evaluations.map((evaluation: Evaluation, index: number) => (
                       <div key={index} className="p-4 rounded-lg border bg-muted/50">
                         <div className="flex justify-between items-center mb-3">
                           <span className="font-medium">{new Date(evaluation.date).toLocaleDateString("pt-BR")}</span>
