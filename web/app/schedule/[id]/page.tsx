@@ -10,7 +10,6 @@ import {
   Clock,
   MapPin,
   Users,
-  UserPlus,
   Activity,
   Save,
   Calendar,
@@ -92,7 +91,7 @@ export default function ClassDetailPage() {
   const [isNewExerciseOpen, setIsNewExerciseOpen] = useState(false)
   const [isEditClassOpen, setIsEditClassOpen] = useState(false)
   const [isEditModalityOpen, setIsEditModalityOpen] = useState(false)
-  const [selectedStudent, setSelectedStudent] = useState<any>(null)
+  const [selectedStudent, setSelectedStudent] = useState<ClassStudent | null>(null)
   const [studentSearchTerm, setStudentSearchTerm] = useState("")
   const [exerciseSearchTerm, setExerciseSearchTerm] = useState("")
 
@@ -141,7 +140,7 @@ export default function ClassDetailPage() {
       time: "09:00 - 10:00",
       date: "Segunda-feira",
       maxStudents: 10,
-      currentStudents: 8,
+      currentStudents: 5,
       weekDays: ["monday", "wednesday", "friday"],
       times: [
         { day: "monday", startTime: "09:00", endTime: "10:00" },
@@ -174,6 +173,20 @@ export default function ClassDetailPage() {
           present: false,
           exercises: [],
         },
+        {
+          id: 4,
+          name: "Carlos Lima",
+          present: true,
+          exercises: [
+            { exercise: "Prancha", sets: 2, reps: 20, completed: true, weight: 0 },
+          ],
+        },
+        {
+          id: 5,
+          name: "Lucia Ferreira",
+          present: false,
+          exercises: [],
+        },
       ],
     },
     {
@@ -184,7 +197,7 @@ export default function ClassDetailPage() {
       time: "18:00 - 19:00",
       date: "Terça-feira",
       maxStudents: 12,
-      currentStudents: 6,
+      currentStudents: 2,
       weekDays: ["tuesday", "thursday"],
       times: [
         { day: "tuesday", startTime: "18:00", endTime: "19:00" },
@@ -193,7 +206,7 @@ export default function ClassDetailPage() {
       description: "Aula de Yoga para praticantes avançados com foco em posturas desafiadoras.",
       students: [
         {
-          id: 4,
+          id: 6,
           name: "Patricia Oliveira",
           present: true,
           exercises: [
@@ -202,7 +215,7 @@ export default function ClassDetailPage() {
           ],
         },
         {
-          id: 5,
+          id: 7,
           name: "Roberto Silva",
           present: true,
           exercises: [
@@ -220,7 +233,7 @@ export default function ClassDetailPage() {
       time: "07:00 - 08:00",
       date: "Segunda a Sexta",
       maxStudents: 8,
-      currentStudents: 8,
+      currentStudents: 0,
       weekDays: ["monday", "tuesday", "wednesday", "thursday", "friday"],
       times: [
         { day: "monday", startTime: "07:00", endTime: "08:00" },
@@ -230,24 +243,7 @@ export default function ClassDetailPage() {
         { day: "friday", startTime: "07:00", endTime: "08:00" }
       ],
       description: "Treino funcional de alta intensidade com exercícios variados.",
-      students: [
-        {
-          id: 6,
-          name: "Carlos Lima",
-          present: true,
-          exercises: [
-            { exercise: "Burpees", sets: 3, reps: 15, completed: true, weight: 0 },
-            { exercise: "Pull-ups", sets: 3, reps: 8, completed: true, weight: 0 },
-            { exercise: "Deadlift", sets: 3, reps: 10, completed: false, weight: 80.0 },
-          ],
-        },
-        {
-          id: 7,
-          name: "Lucia Ferreira",
-          present: false,
-          exercises: [],
-        },
-      ],
+      students: [],
     },
   ]
 
@@ -349,27 +345,33 @@ export default function ClassDetailPage() {
 
   // Handle class edit
   const handleEditClass = () => {
-    setClassData(prev => ({
-      ...prev,
-      instructor: editForm.instructor,
-      room: editForm.room
-    }))
+    setClassData(prev => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        instructor: editForm.instructor,
+        room: editForm.room
+      }
+    })
     setIsEditClassOpen(false)
   }
 
   // Handle modality edit - Updated to handle weekdays and times
   const handleEditModality = (formData: any) => {
-    setClassData(prev => ({
-      ...prev,
-      name: formData.name,
-      instructor: formData.instructor,
-      room: formData.room,
-      weekDays: formData.weekDays, // Update weekdays
-      times: formData.times, // Update times
-      description: formData.description,
-      // Update currentStudents to reflect actual count
-      currentStudents: prev.students.length
-    }))
+    setClassData(prev => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        name: formData.name,
+        instructor: formData.instructor,
+        room: formData.room,
+        weekDays: formData.weekDays, // Update weekdays
+        times: formData.times, // Update times
+        description: formData.description,
+        // Update currentStudents to reflect actual count
+        currentStudents: prev.students.length
+      }
+    })
   }
 
   const handleCloseModalityModal = () => {
@@ -386,33 +388,39 @@ export default function ClassDetailPage() {
   }
 
   const togglePresence = (studentId: number) => {
-    setClassData((prev) => ({
-      ...prev,
-      students: prev.students.map((student) =>
-        student.id === studentId ? { ...student, present: !student.present } : student,
-      ),
-    }))
+    setClassData((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        students: prev.students.map((student) =>
+          student.id === studentId ? { ...student, present: !student.present } : student,
+        ),
+      }
+    })
   }
 
   const handleAddExercise = () => {
     if (selectedStudent && exerciseForm.exercise) {
-      setClassData((prev) => ({
-        ...prev,
-        students: prev.students.map((student) =>
-          student.id === selectedStudent.id
-            ? {
-                ...student,
-                exercises: [...student.exercises, {
-                  exercise: exerciseForm.exercise,
-                  sets: parseInt(exerciseForm.sets) || 0,
-                  reps: parseInt(exerciseForm.reps),
-                  weight: parseInt(exerciseForm.weight), // weight/load for the exercise
-                  completed: exerciseForm.completed
-                }],
-              }
-            : student,
-        ),
-      }))
+      setClassData((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          students: prev.students.map((student) =>
+            student.id === selectedStudent.id
+              ? {
+                  ...student,
+                  exercises: [...student.exercises, {
+                    exercise: exerciseForm.exercise,
+                    sets: parseInt(exerciseForm.sets) || 0,
+                    reps: parseInt(exerciseForm.reps) || 0,
+                    weight: parseInt(exerciseForm.weight) || 0, // weight/load for the exercise
+                    completed: exerciseForm.completed
+                  }],
+                }
+              : student,
+          ),
+        }
+      })
 
       setExerciseForm({
         exercise: "",
@@ -442,27 +450,33 @@ export default function ClassDetailPage() {
   }
 
   const toggleExerciseCompletion = (studentId: number, exerciseIndex: number) => {
-    setClassData((prev) => ({
-      ...prev,
-      students: prev.students.map((student) =>
-        student.id === studentId
-          ? {
-              ...student,
-              exercises: student.exercises.map((ex, idx) =>
-                idx === exerciseIndex ? { ...ex, completed: !ex.completed } : ex,
-              ),
-            }
-          : student,
-      ),
-    }))
+    setClassData((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        students: prev.students.map((student) =>
+          student.id === studentId
+            ? {
+                ...student,
+                exercises: student.exercises.map((ex, idx) =>
+                  idx === exerciseIndex ? { ...ex, completed: !ex.completed } : ex,
+                ),
+              }
+            : student,
+        ),
+      }
+    })
   }
 
   const removeStudent = (studentId: number) => {
-    setClassData((prev) => ({
-      ...prev,
-      students: prev.students.filter((student) => student.id !== studentId),
-      currentStudents: prev.currentStudents - 1,
-    }))
+    setClassData((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        students: prev.students.filter((student) => student.id !== studentId),
+        currentStudents: prev.currentStudents - 1,
+      }
+    })
   }
 
   // Filter students based on search term
@@ -550,16 +564,19 @@ export default function ClassDetailPage() {
                 <AddStudentDialog
                   students={availableStudents}
                   onAddStudent={(student) => {
-                    setClassData((prev) => ({
-                      ...prev,
-                      students: [...prev.students, {
-                        id: Date.now(),
-                        name: student,
-                        present: false,
-                        exercises: [],
-                      }],
-                      currentStudents: prev.currentStudents + 1,
-                    }))
+                    setClassData((prev) => {
+                      if (!prev) return prev
+                      return {
+                        ...prev,
+                        students: [...prev.students, {
+                          id: Date.now(),
+                          name: student,
+                          present: false,
+                          exercises: [],
+                        }],
+                        currentStudents: prev.currentStudents + 1,
+                      }
+                    })
                   }}
                   excludeStudents={classData.students.map(s => s.name)}
                 />
@@ -671,6 +688,38 @@ export default function ClassDetailPage() {
                     )}
                   </div>
                 ))}
+
+                {/* Empty state flavor text - handles both no students and no search results */}
+                {filteredStudents.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Users className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                    {classData.students.length === 0 ? (
+                      // No students enrolled at all
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-medium">Nenhum aluno matriculado</h3>
+                        <p className="text-sm max-w-md mx-auto">
+                          Esta aula ainda não possui alunos inscritos. Use o botão "Adicionar Aluno" acima para matricular estudantes nesta turma.
+                        </p>
+                      </div>
+                    ) : (
+                      // Search returned no results
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-medium">Nenhum aluno encontrado</h3>
+                        <p className="text-sm max-w-md mx-auto">
+                          Não encontramos nenhum aluno com o termo "{studentSearchTerm}". Tente buscar por outro nome ou limpe o filtro para ver todos os alunos.
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setStudentSearchTerm("")}
+                          className="mt-2"
+                        >
+                          Limpar filtro
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
