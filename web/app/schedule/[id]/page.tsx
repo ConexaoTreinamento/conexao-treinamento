@@ -32,7 +32,8 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
-import AddStudentDialog from "@/components/add-student-dialog";
+import AddStudentDialog from "@/components/add-student-dialog"
+import ClassModal from "@/components/class-modal"
 
 // Mock functions for demonstration purposes
 const getStudentSchedule = (studentId: number) => {
@@ -54,6 +55,7 @@ export default function ClassDetailPage() {
   const [isExerciseOpen, setIsExerciseOpen] = useState(false)
   const [isNewExerciseOpen, setIsNewExerciseOpen] = useState(false)
   const [isEditClassOpen, setIsEditClassOpen] = useState(false)
+  const [isEditModalityOpen, setIsEditModalityOpen] = useState(false)
   const [selectedStudent, setSelectedStudent] = useState<any>(null)
 
   // Mock class data
@@ -261,6 +263,16 @@ export default function ClassDetailPage() {
       room: editForm.room
     }))
     setIsEditClassOpen(false)
+  }
+
+  // Handle modality edit
+  const handleEditModality = (formData: any) => {
+    setClassData(prev => ({
+      ...prev,
+      name: formData.name,
+      instructor: formData.instructor,
+      room: formData.room
+    }))
   }
 
   // Reset edit form when opening dialog
@@ -616,6 +628,27 @@ export default function ClassDetailPage() {
             </DialogHeader>
 
             <div className="space-y-4">
+              {/* Modality/Name Field with Edit Button */}
+              <div className="space-y-2">
+                <Label>Modalidade</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={classData.name}
+                    readOnly
+                    className="flex-1"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsEditModalityOpen(true)}
+                    className="flex-shrink-0"
+                  >
+                    <Edit className="w-3 h-3 mr-1" />
+                    Editar
+                  </Button>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="editInstructor">Professor</Label>
                 <Select
@@ -655,7 +688,7 @@ export default function ClassDetailPage() {
               </div>
             </div>
 
-              <DialogFooter className="gap-y-2">
+            <DialogFooter className="gap-y-2">
               <Button variant="outline" onClick={() => setIsEditClassOpen(false)}>
                 Cancelar
               </Button>
@@ -666,6 +699,25 @@ export default function ClassDetailPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Modality Modal */}
+        <ClassModal
+          open={isEditModalityOpen}
+          onOpenChange={setIsEditModalityOpen}
+          mode="edit"
+          initialData={{
+            name: classData.name,
+            instructor: classData.instructor,
+            room: classData.room,
+            maxStudents: classData.maxStudents.toString(),
+            description: classData.description,
+            weekDays: [],
+            times: []
+          }}
+          onSubmit={handleEditModality}
+          teachers={availableTeachers}
+          rooms={availableRooms}
+        />
       </div>
     </Layout>
   )

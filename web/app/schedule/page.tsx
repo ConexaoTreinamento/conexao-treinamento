@@ -20,6 +20,7 @@ import {
 import { Calendar, Clock, Plus, MapPin, User, CheckCircle, XCircle, CalendarDays, X, ChevronLeft, ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
+import ClassModal from "@/components/class-modal"
 
 export default function SchedulePage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
@@ -200,20 +201,20 @@ export default function SchedulePage() {
     }))
   }
 
-  const handleCreateClass = () => {
-    if (newClassForm.name && newClassForm.instructor && newClassForm.weekDays.length > 0) {
+  const handleCreateClass = (formData: any) => {
+    if (formData.name && formData.instructor && formData.weekDays.length > 0) {
       // Create classes for each selected day
-      newClassForm.weekDays.forEach((dayValue) => {
-        const timeForDay = newClassForm.times.find((t) => t.day === dayValue)
+      formData.weekDays.forEach((dayValue: string) => {
+        const timeForDay = formData.times.find((t: any) => t.day === dayValue)
         if (timeForDay && timeForDay.startTime) {
           const newClass = {
             id: Date.now() + Math.random(),
-            name: newClassForm.name,
-            instructor: newClassForm.instructor,
-            room: newClassForm.room,
+            name: formData.name,
+            instructor: formData.instructor,
+            room: formData.room,
             time: timeForDay.startTime,
             duration: 60,
-            maxStudents: Number.parseInt(newClassForm.maxStudents) || 10,
+            maxStudents: Number.parseInt(formData.maxStudents) || 10,
             currentStudents: 0,
             date: selectedDate.toISOString().split("T")[0],
             students: [],
@@ -221,17 +222,6 @@ export default function SchedulePage() {
           setClasses((prev: any) => [...prev, newClass])
         }
       })
-
-      setNewClassForm({
-        name: "",
-        instructor: "",
-        room: "",
-        maxStudents: "",
-        description: "",
-        weekDays: [],
-        times: [],
-      })
-      setIsNewClassOpen(false)
     }
   }
 
@@ -282,148 +272,13 @@ export default function SchedulePage() {
               </Button>
               {userRole === "admin" && (
                 <div className="flex gap-1">
-                  <Dialog open={isNewClassOpen} onOpenChange={setIsNewClassOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Nova Turma</DialogTitle>
-                        <DialogDescription>Crie uma nova turma regular</DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 mt-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="className">Nome da Turma</Label>
-                          <Input
-                            id="className"
-                            value={newClassForm.name}
-                            onChange={(e) => setNewClassForm((prev) => ({ ...prev, name: e.target.value }))}
-                            placeholder="Ex: Pilates Iniciante"
-                          />
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <Label htmlFor="instructor">Professor</Label>
-                            <Select
-                              value={newClassForm.instructor}
-                              onValueChange={(value) => setNewClassForm((prev) => ({ ...prev, instructor: value }))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {teachers.map((teacher) => (
-                                  <SelectItem key={teacher} value={teacher}>
-                                    {teacher}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="room">Sala</Label>
-                            <Select
-                              value={newClassForm.room}
-                              onValueChange={(value) => setNewClassForm((prev) => ({ ...prev, room: value }))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {rooms.map((room) => (
-                                  <SelectItem key={room} value={room}>
-                                    {room}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Dias da Semana</Label>
-                          <div className="grid grid-cols-2 gap-2">
-                            {weekDays.map((day) => (
-                              <div key={day.value} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={day.value}
-                                  checked={newClassForm.weekDays.includes(day.value)}
-                                  onCheckedChange={() => handleWeekDayToggle(day.value, day.label)}
-                                />
-                                <Label htmlFor={day.value} className="text-sm">
-                                  {day.label}
-                                </Label>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        {newClassForm.weekDays.length > 0 && (
-                          <div className="space-y-3">
-                            <Label>Horários por Dia</Label>
-                            {newClassForm.weekDays.map((dayValue) => {
-                              const dayLabel = weekDays.find((d) => d.value === dayValue)?.label
-                              const timeForDay = newClassForm.times.find((t) => t.day === dayValue)
-
-                              return (
-                                <div key={dayValue} className="p-3 border rounded-lg space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <Label className="font-medium">{dayLabel}</Label>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => handleWeekDayToggle(dayValue, dayLabel || "")}
-                                      className="h-6 w-6 p-0"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </Button>
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <div className="space-y-1">
-                                      <Label className="text-xs">Início</Label>
-                                      <Input
-                                        type="time"
-                                        value={timeForDay?.startTime || ""}
-                                        onChange={(e) => handleTimeChange(dayValue, "startTime", e.target.value)}
-                                        className="h-8"
-                                      />
-                                    </div>
-                                    <div className="space-y-1">
-                                      <Label className="text-xs">Fim</Label>
-                                      <Input
-                                        type="time"
-                                        value={timeForDay?.endTime || ""}
-                                        onChange={(e) => handleTimeChange(dayValue, "endTime", e.target.value)}
-                                        className="h-8"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        )}
-                        <div className="space-y-2">
-                          <Label htmlFor="maxStudents">Máx. Alunos</Label>
-                          <Input
-                            id="maxStudents"
-                            type="number"
-                            value={newClassForm.maxStudents}
-                            onChange={(e) => setNewClassForm((prev) => ({ ...prev, maxStudents: e.target.value }))}
-                            placeholder="2"
-                          />
-                        </div>
-                        <div className="flex gap-2 pt-4">
-                          <Button variant="outline" onClick={() => setIsNewClassOpen(false)} className="flex-1">
-                            Cancelar
-                          </Button>
-                          <Button onClick={handleCreateClass} className="bg-green-600 hover:bg-green-700 flex-1">
-                            Criar Turma
-                          </Button>
-                        </div>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                  <Button
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={() => setIsNewClassOpen(true)}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
                 </div>
               )}
             </div>
@@ -589,6 +444,16 @@ export default function SchedulePage() {
             ))
           )}
         </div>
+
+        {/* Class Modal */}
+        <ClassModal
+          open={isNewClassOpen}
+          onOpenChange={setIsNewClassOpen}
+          mode="create"
+          onSubmit={handleCreateClass}
+          teachers={teachers}
+          rooms={rooms}
+        />
       </div>
     </Layout>
   )
