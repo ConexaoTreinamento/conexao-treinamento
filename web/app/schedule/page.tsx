@@ -43,7 +43,7 @@ export default function SchedulePage() {
     setUserRole(role)
   }, [])
 
-  // Mock classes data
+  // Mock classes data - Updated to include weekdays and times for recurrent classes
   const [classes, setClasses] = useState([
     {
       id: 1,
@@ -54,7 +54,13 @@ export default function SchedulePage() {
       duration: 60,
       maxStudents: 10,
       currentStudents: 8,
-      date: new Date().toISOString().split("T")[0],
+      weekDays: ["monday", "wednesday", "friday"], // Added weekdays
+      times: [
+        { day: "monday", startTime: "09:00", endTime: "10:00" },
+        { day: "wednesday", startTime: "09:00", endTime: "10:00" },
+        { day: "friday", startTime: "09:00", endTime: "10:00" }
+      ], // Added times
+      description: "Aula de Pilates para iniciantes focada em fortalecimento do core e flexibilidade.",
       students: [
         { id: 1, name: "Maria Silva", avatar: "/placeholder.svg?height=32&width=32", present: true },
         { id: 2, name: "João Santos", avatar: "/placeholder.svg?height=32&width=32", present: true },
@@ -72,7 +78,12 @@ export default function SchedulePage() {
       duration: 60,
       maxStudents: 12,
       currentStudents: 6,
-      date: new Date().toISOString().split("T")[0],
+      weekDays: ["tuesday", "thursday"], // Added weekdays
+      times: [
+        { day: "tuesday", startTime: "18:00", endTime: "19:00" },
+        { day: "thursday", startTime: "18:00", endTime: "19:00" }
+      ], // Added times
+      description: "Aula de Yoga para praticantes avançados.",
       students: [
         { id: 6, name: "Patricia Oliveira", avatar: "/placeholder.svg?height=32&width=32", present: true },
         { id: 7, name: "Roberto Silva", avatar: "/placeholder.svg?height=32&width=32", present: true },
@@ -87,7 +98,15 @@ export default function SchedulePage() {
       duration: 60,
       maxStudents: 8,
       currentStudents: 8,
-      date: new Date(Date.now() + 86400000).toISOString().split("T")[0], // Tomorrow
+      weekDays: ["monday", "tuesday", "wednesday", "thursday", "friday"], // Added weekdays
+      times: [
+        { day: "monday", startTime: "07:00", endTime: "08:00" },
+        { day: "tuesday", startTime: "07:00", endTime: "08:00" },
+        { day: "wednesday", startTime: "07:00", endTime: "08:00" },
+        { day: "thursday", startTime: "07:00", endTime: "08:00" },
+        { day: "friday", startTime: "07:00", endTime: "08:00" }
+      ], // Added times
+      description: "Treino funcional de alta intensidade.",
       students: [],
     },
   ])
@@ -137,9 +156,39 @@ export default function SchedulePage() {
     return date.toDateString() === selectedDate.toDateString()
   }
 
+  // Helper function to get day of week as our weekDay value
+  const getDayOfWeekValue = (date: Date) => {
+    const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
+    return days[date.getDay()]
+  }
+
   const getClassesForDate = (date: Date) => {
-    const dateStr = date.toISOString().split("T")[0]
-    return classes.filter((cls) => cls.date === dateStr)
+    const dayOfWeek = getDayOfWeekValue(date)
+
+    // Filter classes that occur on this day of the week
+    return classes.filter((cls) => {
+      if (cls.weekDays && cls.weekDays.includes(dayOfWeek)) {
+        // Get the time for this specific day
+        const timeForDay = cls.times?.find(t => t.day === dayOfWeek)
+        if (timeForDay) {
+          // Return class with the correct time for this day
+          return {
+            ...cls,
+            time: timeForDay.startTime,
+            endTime: timeForDay.endTime
+          }
+        }
+      }
+      return false
+    }).map((cls) => {
+      // Map each class to include the correct time for the selected day
+      const timeForDay = cls.times?.find(t => t.day === dayOfWeek)
+      return {
+        ...cls,
+        time: timeForDay?.startTime || cls.time,
+        endTime: timeForDay?.endTime
+      }
+    })
   }
 
   const getOccupancyColor = (current: number, max: number) => {
@@ -203,26 +252,25 @@ export default function SchedulePage() {
 
   const handleCreateClass = (formData: any) => {
     if (formData.name && formData.instructor && formData.weekDays.length > 0) {
-      // Create classes for each selected day
-      formData.weekDays.forEach((dayValue: string) => {
-        const timeForDay = formData.times.find((t: any) => t.day === dayValue)
-        if (timeForDay && timeForDay.startTime) {
-          const newClass = {
-            id: Date.now() + Math.random(),
-            name: formData.name,
-            instructor: formData.instructor,
-            room: formData.room,
-            time: timeForDay.startTime,
-            duration: 60,
-            maxStudents: Number.parseInt(formData.maxStudents) || 10,
-            currentStudents: 0,
-            date: selectedDate.toISOString().split("T")[0],
-            students: [],
-          }
-          setClasses((prev: any) => [...prev, newClass])
-        }
-      })
+      const newClass = {
+        id: Date.now() + Math.random(),
+        name: formData.name,
+        instructor: formData.instructor,
+        room: formData.room,
+        duration: 60,
+        maxStudents: Number.parseInt(formData.maxStudents) || 10,
+        currentStudents: 0,
+        weekDays: formData.weekDays, // Store weekdays
+        times: formData.times, // Store times
+        description: formData.description || "",
+        students: [],
+      }
+      setClasses((prev: any) => [...prev, newClass])
     }
+  }
+
+  const handleCloseClassModal = () => {
+    setIsNewClassOpen(false)
   }
 
   const goToToday = () => {
@@ -448,9 +496,9 @@ export default function SchedulePage() {
         {/* Class Modal */}
         <ClassModal
           open={isNewClassOpen}
-          onOpenChange={setIsNewClassOpen}
           mode="create"
-          onSubmit={handleCreateClass}
+          onClose={handleCloseClassModal}
+          onSubmitData={handleCreateClass}
           teachers={teachers}
           rooms={rooms}
         />

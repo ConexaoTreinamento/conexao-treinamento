@@ -58,7 +58,7 @@ export default function ClassDetailPage() {
   const [isEditModalityOpen, setIsEditModalityOpen] = useState(false)
   const [selectedStudent, setSelectedStudent] = useState<any>(null)
 
-  // Mock class data
+  // Mock class data - Updated to include weekdays and times
   const [classData, setClassData] = useState({
     id: 1,
     name: "Pilates Iniciante",
@@ -68,6 +68,12 @@ export default function ClassDetailPage() {
     date: "Segunda-feira",
     maxStudents: 10,
     currentStudents: 8,
+    weekDays: ["monday", "wednesday", "friday"], // Added weekdays
+    times: [
+      { day: "monday", startTime: "09:00", endTime: "10:00" },
+      { day: "wednesday", startTime: "09:00", endTime: "10:00" },
+      { day: "friday", startTime: "09:00", endTime: "10:00" }
+    ], // Added times
     description: "Aula de Pilates para iniciantes focada em fortalecimento do core e flexibilidade.",
     students: [
       {
@@ -265,13 +271,16 @@ export default function ClassDetailPage() {
     setIsEditClassOpen(false)
   }
 
-  // Handle modality edit
+  // Handle modality edit - Updated to handle weekdays and times
   const handleEditModality = (formData: any) => {
     setClassData(prev => ({
       ...prev,
       name: formData.name,
       instructor: formData.instructor,
-      room: formData.room
+      room: formData.room,
+      weekDays: formData.weekDays, // Update weekdays
+      times: formData.times, // Update times
+      description: formData.description
     }))
   }
 
@@ -282,6 +291,10 @@ export default function ClassDetailPage() {
       room: classData.room
     })
     setIsEditClassOpen(true)
+  }
+
+  const handleCloseModalityModal = () => {
+    setIsEditModalityOpen(false)
   }
 
   return (
@@ -628,15 +641,13 @@ export default function ClassDetailPage() {
             </DialogHeader>
 
             <div className="space-y-4">
-              {/* Modality/Name Field with Edit Button */}
+              {/* Modality/Name Field with Edit Button - Now as Label */}
               <div className="space-y-2">
                 <Label>Modalidade</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={classData.name}
-                    readOnly
-                    className="flex-1"
-                  />
+                <div className="flex gap-2 items-center">
+                  <div className="flex-1 px-3 py-2 border rounded-md bg-muted/50 text-sm">
+                    {classData.name}
+                  </div>
                   <Button
                     size="sm"
                     variant="outline"
@@ -703,7 +714,6 @@ export default function ClassDetailPage() {
         {/* Edit Modality Modal */}
         <ClassModal
           open={isEditModalityOpen}
-          onOpenChange={setIsEditModalityOpen}
           mode="edit"
           initialData={{
             name: classData.name,
@@ -711,10 +721,11 @@ export default function ClassDetailPage() {
             room: classData.room,
             maxStudents: classData.maxStudents.toString(),
             description: classData.description,
-            weekDays: [],
-            times: []
+            weekDays: classData.weekDays || [], // Pass existing weekdays
+            times: classData.times || [] // Pass existing times
           }}
-          onSubmit={handleEditModality}
+          onClose={handleCloseModalityModal}
+          onSubmitData={handleEditModality}
           teachers={availableTeachers}
           rooms={availableRooms}
         />

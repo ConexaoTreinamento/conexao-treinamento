@@ -15,41 +15,43 @@ import {
 } from "@/components/ui/dialog"
 import { X } from "lucide-react"
 
+interface ClassModalData {
+  name: string
+  instructor: string
+  room: string
+  maxStudents: string
+  description: string
+  weekDays: string[]
+  times: { day: string; startTime: string; endTime: string }[]
+}
+
 interface ClassModalProps {
   open: boolean
-  onOpenChange: (open: boolean) => void
   mode: "create" | "edit"
-  initialData?: {
-    name: string
-    instructor: string
-    room: string
-    maxStudents: string
-    description: string
-    weekDays: string[]
-    times: { day: string; startTime: string; endTime: string }[]
-  }
-  onSubmit: (data: any) => void
+  initialData?: ClassModalData
   teachers: string[]
   rooms: string[]
+  onClose: () => void
+  onSubmitData: (data: ClassModalData) => void
 }
 
 export default function ClassModal({
   open,
-  onOpenChange,
   mode,
   initialData,
-  onSubmit,
   teachers,
   rooms,
+  onClose,
+  onSubmitData,
 }: ClassModalProps) {
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<ClassModalData>({
     name: "",
     instructor: "",
     room: "",
     maxStudents: "2",
     description: "",
-    weekDays: [] as string[],
-    times: [] as { day: string; startTime: string; endTime: string }[],
+    weekDays: [],
+    times: [],
   })
 
   const weekDays = [
@@ -79,7 +81,7 @@ export default function ClassModal({
     }
   }, [initialData, mode, open])
 
-  const handleWeekDayToggle = (dayValue: string, dayLabel: string) => {
+  const handleWeekDayToggle = (dayValue: string) => {
     setForm((prev) => {
       const isSelected = prev.weekDays.includes(dayValue)
 
@@ -133,7 +135,7 @@ export default function ClassModal({
 
   const handleSubmit = () => {
     if (form.name && form.instructor && (mode === "edit" || form.weekDays.length > 0)) {
-      onSubmit(form)
+      onSubmitData(form)
       if (mode === "create") {
         setForm({
           name: "",
@@ -145,12 +147,16 @@ export default function ClassModal({
           times: [],
         })
       }
-      onOpenChange(false)
+      onClose()
     }
   }
 
+  const handleClose = () => {
+    onClose()
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{mode === "create" ? "Nova Turma" : "Editar Modalidade"}</DialogTitle>
@@ -207,85 +213,85 @@ export default function ClassModal({
             </div>
           </div>
 
-          {mode === "create" && (
-            <>
-              <div className="space-y-2">
-                <Label>Dias da Semana</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {weekDays.map((day) => (
-                    <div key={day.value} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={day.value}
-                        checked={form.weekDays.includes(day.value)}
-                        onCheckedChange={() => handleWeekDayToggle(day.value, day.label)}
-                      />
-                      <Label htmlFor={day.value} className="text-sm">
-                        {day.label}
-                      </Label>
-                    </div>
-                  ))}
+          <div className="space-y-2">
+            <Label>Dias da Semana</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {weekDays.map((day) => (
+                <div key={day.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={day.value}
+                    checked={form.weekDays.includes(day.value)}
+                    onCheckedChange={() => handleWeekDayToggle(day.value)}
+                  />
+                  <Label htmlFor={day.value} className="text-sm">
+                    {day.label}
+                  </Label>
                 </div>
-              </div>
-              {form.weekDays.length > 0 && (
-                <div className="space-y-3">
-                  <Label>Horários por Dia</Label>
-                  {form.weekDays.map((dayValue) => {
-                    const dayLabel = weekDays.find((d) => d.value === dayValue)?.label
-                    const timeForDay = form.times.find((t) => t.day === dayValue)
+              ))}
+            </div>
+          </div>
 
-                    return (
-                      <div key={dayValue} className="p-3 border rounded-lg space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label className="font-medium">{dayLabel}</Label>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleWeekDayToggle(dayValue, dayLabel || "")}
-                            className="h-6 w-6 p-0"
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-1">
-                            <Label className="text-xs">Início</Label>
-                            <Input
-                              type="time"
-                              value={timeForDay?.startTime || ""}
-                              onChange={(e) => handleTimeChange(dayValue, "startTime", e.target.value)}
-                              className="h-8"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Fim</Label>
-                            <Input
-                              type="time"
-                              value={timeForDay?.endTime || ""}
-                              onChange={(e) => handleTimeChange(dayValue, "endTime", e.target.value)}
-                              className="h-8"
-                            />
-                          </div>
-                        </div>
+          {form.weekDays.length > 0 && (
+            <div className="space-y-3">
+              <Label>Horários por Dia</Label>
+              {form.weekDays.map((dayValue) => {
+                const dayLabel = weekDays.find((d) => d.value === dayValue)?.label
+                const timeForDay = form.times.find((t) => t.day === dayValue)
+
+                return (
+                  <div key={dayValue} className="p-3 border rounded-lg space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="font-medium">{dayLabel}</Label>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleWeekDayToggle(dayValue)}
+                        className="h-6 w-6 p-0"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Início</Label>
+                        <Input
+                          type="time"
+                          value={timeForDay?.startTime || ""}
+                          onChange={(e) => handleTimeChange(dayValue, "startTime", e.target.value)}
+                          className="h-8"
+                        />
                       </div>
-                    )
-                  })}
-                </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="maxStudents">Máx. Alunos</Label>
-                <Input
-                  id="maxStudents"
-                  type="number"
-                  value={form.maxStudents}
-                  onChange={(e) => setForm((prev) => ({ ...prev, maxStudents: e.target.value }))}
-                  placeholder="2"
-                />
-              </div>
-            </>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Fim</Label>
+                        <Input
+                          type="time"
+                          value={timeForDay?.endTime || ""}
+                          onChange={(e) => handleTimeChange(dayValue, "endTime", e.target.value)}
+                          className="h-8"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {mode === "create" && (
+            <div className="space-y-2">
+              <Label htmlFor="maxStudents">Máx. Alunos</Label>
+              <Input
+                id="maxStudents"
+                type="number"
+                value={form.maxStudents}
+                onChange={(e) => setForm((prev) => ({ ...prev, maxStudents: e.target.value }))}
+                placeholder="2"
+              />
+            </div>
           )}
 
           <div className="flex gap-2 pt-4">
-            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">
+            <Button variant="outline" onClick={handleClose} className="flex-1">
               Cancelar
             </Button>
             <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700 flex-1">
