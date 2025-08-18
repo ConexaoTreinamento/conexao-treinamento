@@ -191,6 +191,12 @@ export default function SchedulePage() {
           currentStudents: cls.students ? cls.students.length : 0
         }
       })
+      .sort((a, b) => {
+        // Sort classes by start time from earliest to latest
+        const timeA = a.time || "00:00"
+        const timeB = b.time || "00:00"
+        return timeA.localeCompare(timeB)
+      })
   }
 
   const getOccupancyColor = (current: number, max: number) => {
