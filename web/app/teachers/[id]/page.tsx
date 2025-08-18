@@ -8,6 +8,7 @@ import { ArrowLeft, User, Phone, Mail, Calendar, Clock, Edit, MapPin } from "luc
 import { useRouter, useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Layout from "@/components/layout"
+import TeacherModal from "@/components/teacher-modal"
 
 // Type definitions
 interface TeacherSchedule {
@@ -52,6 +53,7 @@ export default function TeacherProfilePage() {
   const params = useParams()
   const [teacherData, setTeacherData] = useState<TeacherData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   // Mock teachers data - this should eventually be replaced with API calls
   const mockTeachers: TeacherData[] = [
@@ -206,6 +208,30 @@ export default function TeacherProfilePage() {
     return age
   }
 
+  // Handle opening modal for editing
+  const handleEditTeacher = () => {
+    setIsModalOpen(true)
+  }
+
+  // Handle modal submission
+  const handleModalSubmit = (formData: any) => {
+    if (teacherData) {
+      // Update the teacher data with new form data
+      const updatedTeacher = { ...teacherData, ...formData }
+      setTeacherData(updatedTeacher)
+
+      // In a real application, this would make an API call to update the teacher
+      // await fetch(`/api/teachers/${teacherData.id}`, {
+      //   method: 'PUT',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify(formData)
+      // })
+
+      console.log('Teacher updated:', updatedTeacher)
+    }
+    setIsModalOpen(false)
+  }
+
   if (loading) {
     return (
       <Layout>
@@ -311,8 +337,8 @@ export default function TeacherProfilePage() {
               <div className="w-full flex flex-row justify-center pt-4 border-t">
                 <Button
                   size="sm"
-                  className="bg-green-600 hover:bg-green-700 w-[80%]"
-                  onClick={() => router.push(`/teachers/${params.id}/edit`)}
+                  className="bg-green-600 hover:bg-green-700 w-full"
+                  onClick={handleEditTeacher}
                 >
                   <Edit className="w-4 h-4 mr-2" />
                   Editar Perfil
@@ -452,6 +478,15 @@ export default function TeacherProfilePage() {
             </TabsContent>
           </Tabs>
         </div>
+
+        {/* Teacher Edit Modal */}
+        <TeacherModal
+          open={isModalOpen}
+          mode="edit"
+          initialData={teacherData}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleModalSubmit}
+        />
       </div>
     </Layout>
   )

@@ -1,0 +1,329 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
+import { X } from "lucide-react"
+
+interface TeacherFormData {
+  name: string
+  email: string
+  phone: string
+  address: string
+  birthDate: string
+  specialties: string[]
+  compensation: string
+  status: string
+}
+
+interface TeacherModalProps {
+  open: boolean
+  mode: "create" | "edit"
+  initialData?: Partial<TeacherFormData>
+  onClose: () => void
+  onSubmit: (data: TeacherFormData) => void
+}
+
+export default function TeacherModal({
+  open,
+  mode,
+  initialData,
+  onClose,
+  onSubmit,
+}: TeacherModalProps) {
+  const [formData, setFormData] = useState<TeacherFormData>({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    birthDate: "",
+    specialties: [],
+    compensation: "Horista",
+    status: "Ativo",
+  })
+
+  const [specialtyInput, setSpecialtyInput] = useState("")
+
+  // Available specialties for suggestions
+  const availableSpecialties = [
+    "Pilates",
+    "Yoga",
+    "CrossFit",
+    "Musculação",
+    "Alongamento",
+    "Meditação",
+    "Relaxamento",
+    "Treinamento Funcional",
+    "Dança",
+    "Spinning",
+    "Hidroginástica",
+    "Natação",
+    "Zumba",
+    "Boxe",
+    "Muay Thai"
+  ]
+
+  // Initialize form data when modal opens or initialData changes
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        name: initialData.name || "",
+        email: initialData.email || "",
+        phone: initialData.phone || "",
+        address: initialData.address || "",
+        birthDate: initialData.birthDate || "",
+        specialties: initialData.specialties || [],
+        compensation: initialData.compensation || "Horista",
+        status: initialData.status || "Ativo",
+      })
+    } else {
+      // Reset form for create mode
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        address: "",
+        birthDate: "",
+        specialties: [],
+        compensation: "Horista",
+        status: "Ativo",
+      })
+    }
+  }, [initialData, open])
+
+  const handleAddSpecialty = () => {
+    if (specialtyInput.trim() && !formData.specialties.includes(specialtyInput.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        specialties: [...prev.specialties, specialtyInput.trim()]
+      }))
+      setSpecialtyInput("")
+    }
+  }
+
+  const handleRemoveSpecialty = (specialty: string) => {
+    setFormData(prev => ({
+      ...prev,
+      specialties: prev.specialties.filter(s => s !== specialty)
+    }))
+  }
+
+  const handleSubmit = () => {
+    onSubmit(formData)
+    onClose()
+  }
+
+  const isFormValid = () => {
+    return formData.name.trim() &&
+           formData.email.trim() &&
+           formData.phone.trim() &&
+           formData.address.trim() &&
+           formData.birthDate &&
+           formData.compensation &&
+           formData.status
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {mode === "create" ? "Cadastrar Novo Professor" : "Editar Professor"}
+          </DialogTitle>
+          <DialogDescription>
+            {mode === "create"
+              ? "Preencha as informações para cadastrar um novo professor"
+              : "Edite as informações do professor"
+            }
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Personal Information */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium">Informações Pessoais</h4>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="teacherName">Nome Completo *</Label>
+                <Input
+                  id="teacherName"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Ex: Ana Silva"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="teacherBirthDate">Data de Nascimento *</Label>
+                <Input
+                  id="teacherBirthDate"
+                  type="date"
+                  value={formData.birthDate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, birthDate: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="teacherAddress">Endereço *</Label>
+              <Input
+                id="teacherAddress"
+                value={formData.address}
+                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                placeholder="Ex: Rua das Palmeiras, 456 - Jardins, São Paulo"
+              />
+            </div>
+          </div>
+
+          {/* Contact Information */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium">Contato</h4>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="teacherEmail">E-mail *</Label>
+                <Input
+                  id="teacherEmail"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="Ex: ana@email.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="teacherPhone">Telefone *</Label>
+                <Input
+                  id="teacherPhone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  placeholder="Ex: (11) 99999-9999"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Professional Information */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium">Informações Profissionais</h4>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="teacherCompensation">Tipo de Compensação *</Label>
+                <Select
+                  value={formData.compensation}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, compensation: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Horista">Horista</SelectItem>
+                    <SelectItem value="Mensalista">Mensalista</SelectItem>
+                    <SelectItem value="Freelancer">Freelancer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="teacherStatus">Status *</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Ativo">Ativo</SelectItem>
+                    <SelectItem value="Inativo">Inativo</SelectItem>
+                    <SelectItem value="Licença">Licença</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Specialties */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium">Especialidades</h4>
+
+            <div className="space-y-2">
+              <Label>Adicionar Especialidade</Label>
+              <div className="flex gap-2">
+                <Select
+                  value={specialtyInput}
+                  onValueChange={setSpecialtyInput}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Selecione uma especialidade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSpecialties
+                      .filter(spec => !formData.specialties.includes(spec))
+                      .map((specialty) => (
+                        <SelectItem key={specialty} value={specialty}>
+                          {specialty}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  onClick={handleAddSpecialty}
+                  disabled={!specialtyInput || formData.specialties.includes(specialtyInput)}
+                >
+                  Adicionar
+                </Button>
+              </div>
+            </div>
+
+            {formData.specialties.length > 0 && (
+              <div className="space-y-2">
+                <Label>Especialidades Selecionadas</Label>
+                <div className="flex flex-wrap gap-2">
+                  {formData.specialties.map((specialty) => (
+                    <Badge key={specialty} variant="secondary" className="flex items-center gap-1">
+                      {specialty}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleRemoveSpecialty(specialty)}
+                        className="h-4 w-4 p-0 text-muted-foreground hover:text-red-500"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <DialogFooter className="gap-y-2">
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            className="bg-green-600 hover:bg-green-700"
+            disabled={!isFormValid()}
+          >
+            {mode === "create" ? "Cadastrar Professor" : "Salvar Alterações"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

@@ -227,7 +227,7 @@ export default function ReportsPage() {
                 </thead>
                 <tbody>
                   {filteredReports.map((teacher) => {
-                    const initials = teacher.name
+                    const initials = teacher.name.replace("Prof.", "")
                       .split(" ")
                       .map((n) => n[0])
                       .join("")
