@@ -294,8 +294,8 @@ export default function EventModal({
           </div>
 
           {/* Participants */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
               <Label>
                 Participantes ({currentParticipants}/{maxParticipants}) - Status: {getStatus()}
               </Label>
@@ -346,7 +346,7 @@ export default function EventModal({
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2">
           <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>

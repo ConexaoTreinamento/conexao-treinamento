@@ -439,7 +439,7 @@ export default function EventDetailPage() {
           {/* Participants List */}
           <Card className="lg:col-span-2">
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <CardTitle className="flex items-center gap-2">
                   <Users className="w-5 h-5"/>
                   Participantes ({eventData.participants.length})

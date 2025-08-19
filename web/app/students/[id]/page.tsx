@@ -494,7 +494,7 @@ export default function StudentProfilePage() {
           <Tabs defaultValue="overview" className="space-y-4">
             <TabsList className="grid w-full grid-cols-5 h-auto">
               <TabsTrigger value="overview" className="text-xs px-2 py-2">
-                Visão Geral
+                Geral
               </TabsTrigger>
               <TabsTrigger value="evaluations" className="text-xs px-2 py-2">
                 Avaliações
@@ -506,7 +506,7 @@ export default function StudentProfilePage() {
                 Detalhes
               </TabsTrigger>
               <TabsTrigger value="anamnesis" className="text-xs px-2 py-2">
-                Ficha de Anamnese
+                Anamnese
               </TabsTrigger>
             </TabsList>
 

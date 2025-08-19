@@ -72,7 +72,7 @@ export default function ProfilePage() {
   }
 
   const stats = userRole === "admin" ? [
-    { label: "Alunos Gerenciados", value: "142", icon: User },
+    { label: "Alunos", value: "142", icon: User },
     { label: "Professores", value: "8", icon: Award },
     { label: "Anos na Academia", value: "4", icon: Calendar },
     { label: "Eventos Organizados", value: "25", icon: Shield }
@@ -175,7 +175,7 @@ export default function ProfilePage() {
             {/* Profile Form */}
             <Tabs defaultValue="personal" className="space-y-4">
               <TabsList>
-                <TabsTrigger value="personal">Informações Pessoais</TabsTrigger>
+                <TabsTrigger value="personal">Informações</TabsTrigger>
                 <TabsTrigger value="professional">Profissional</TabsTrigger>
                 <TabsTrigger value="security">Segurança</TabsTrigger>
               </TabsList>
@@ -185,7 +185,7 @@ export default function ProfilePage() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <User className="w-5 h-5" />
-                      Informações Pessoais
+                      Informações
                     </CardTitle>
                     <CardDescription>
                       Atualize suas informações pessoais
@@ -255,7 +255,7 @@ export default function ProfilePage() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Award className="w-5 h-5" />
-                      Informações Profissionais
+                      Profissional
                     </CardTitle>
                     <CardDescription>
                       Gerencie suas informações profissionais
