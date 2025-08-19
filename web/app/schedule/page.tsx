@@ -337,7 +337,7 @@ export default function SchedulePage() {
     <Layout>
       <div className="space-y-3 pb-4">
         {/* Mobile Header */}
-        <div className="flex flex-col space-y-2">
+        <div className="flex flex-col space-y-4">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold">Agenda</h1>
             <div className="flex gap-2">
@@ -361,7 +361,7 @@ export default function SchedulePage() {
 
           {/* Month Picker */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Button
                 size="sm"
                 variant="outline"
