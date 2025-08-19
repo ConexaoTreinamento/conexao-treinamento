@@ -246,7 +246,6 @@ export default function TeachersPage() {
                   <option value="all">Todos</option>
                   <option value="Horista">Horista</option>
                   <option value="Mensalista">Mensalista</option>
-                  <option value="Freelancer">Freelancer</option>
                 </select>
               </div>
               <div className="space-y-2">

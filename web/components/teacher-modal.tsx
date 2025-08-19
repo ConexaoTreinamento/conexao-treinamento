@@ -228,7 +228,6 @@ export default function TeacherModal({
                   <SelectContent>
                     <SelectItem value="Horista">Horista</SelectItem>
                     <SelectItem value="Mensalista">Mensalista</SelectItem>
-                    <SelectItem value="Freelancer">Freelancer</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
