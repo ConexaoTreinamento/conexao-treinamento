@@ -3,8 +3,10 @@ package org.conexaotreinamento.conexaotreinamentobackend.api.exception;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.*;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpServerErrorException.InternalServerError;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
@@ -35,15 +37,34 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "Validation failed", req, fields);
     }
 
-    private ResponseEntity<ApiError> build(HttpStatus status, String message, HttpServletRequest req, Map<String, String> fieldErrors) {
+    @ExceptionHandler({ BadCredentialsException.class })
+    public ResponseEntity<ApiError> handleUnauthorized(Exception ex, HttpServletRequest req) {
+        // Você pode adicionar fields específicos para erros de autenticação
+        Map<String, String> fields = new LinkedHashMap<>();
+        fields.put("email", "Credenciais inválidas");
+        fields.put("password", "Verifique seu email e senha");
+
+        return build(HttpStatus.UNAUTHORIZED, "Acesso não autorizado", req, fields);
+    }
+
+    @ExceptionHandler(InternalServerError.class)
+    public ResponseEntity<ApiError> handleInternalError(Exception ex, HttpServletRequest req) {
+        Map<String, String> fields = new LinkedHashMap<>();
+        fields.put("error_type", ex.getClass().getSimpleName());
+        fields.put("timestamp", Instant.now().toString());
+        
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Erro interno do servidor", req, fields);
+    }
+
+    private ResponseEntity<ApiError> build(HttpStatus status, String message, HttpServletRequest req,
+            Map<String, String> fieldErrors) {
         ApiError body = new ApiError(
                 Instant.now(),
                 status.value(),
                 status.getReasonPhrase(),
                 message,
                 req.getRequestURI(),
-                fieldErrors
-        );
+                fieldErrors);
         return ResponseEntity.status(status).body(body);
     }
 }
