@@ -155,10 +155,6 @@ export default function AdministratorProfilePage() {
             <h1 className="text-2xl font-bold">Perfil do Administrador</h1>
             <p className="text-muted-foreground">Informações detalhadas do administrador</p>
           </div>
-          <Button onClick={() => router.push(`/administrators/${params.id}/edit`)}>
-            <Edit className="w-4 h-4 mr-2" />
-            Editar
-          </Button>
         </div>
 
         {/* Profile Header */}
@@ -220,24 +216,6 @@ export default function AdministratorProfilePage() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Permissions */}
-        {administratorData.permissions && administratorData.permissions.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Permissões do Sistema</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {administratorData.permissions.map((permission, index) => (
-                  <Badge key={index} variant="outline" className="text-xs">
-                    {permission}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </Layout>
   )
