@@ -351,7 +351,7 @@ export default function TeacherProfilePage() {
           <Tabs defaultValue="overview" className="space-y-4">
             <TabsList className="grid w-full grid-cols-3 h-auto">
               <TabsTrigger value="overview" className="text-xs px-2 py-2">
-                Visão Geral
+                Geral
               </TabsTrigger>
               <TabsTrigger value="schedule" className="text-xs px-2 py-2">
                 Horários
