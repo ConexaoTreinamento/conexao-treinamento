@@ -2,15 +2,19 @@ package org.conexaotreinamento.conexaotreinamentobackend.api.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.conexaotreinamento.conexaotreinamentobackend.api.dto.request.CreateExerciseRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.api.dto.request.ExerciseRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.api.dto.request.PatchExerciseRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.api.dto.response.ExerciseResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.service.ExerciseService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/exercises")
@@ -19,7 +23,35 @@ public class ExerciseController {
     private final ExerciseService exerciseService;
 
     @PostMapping
-    public ResponseEntity<ExerciseResponseDTO> create(@RequestBody @Valid CreateExerciseRequestDTO request) {
+    public ResponseEntity<ExerciseResponseDTO> create(@RequestBody @Valid ExerciseRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(exerciseService.create(request));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ExerciseResponseDTO> findById(@PathVariable UUID id) {
+        return ResponseEntity.ok(exerciseService.findById(id));
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<ExerciseResponseDTO>> findAll(
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(exerciseService.findAll(search, pageable));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ExerciseResponseDTO> update(@PathVariable UUID id, @RequestBody @Valid ExerciseRequestDTO request) {
+        return ResponseEntity.ok(exerciseService.update(id, request));
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<ExerciseResponseDTO> patch(@PathVariable UUID id, @RequestBody @Valid PatchExerciseRequestDTO request) {
+        return ResponseEntity.ok(exerciseService.patch(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        exerciseService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

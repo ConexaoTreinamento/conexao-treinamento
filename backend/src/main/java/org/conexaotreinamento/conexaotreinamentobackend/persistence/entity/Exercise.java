@@ -10,6 +10,8 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -28,10 +30,12 @@ public class Exercise {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, length = 120, unique = true)
+    @Column(nullable = false, length = 120)
+    @Setter
     private String name;
 
     @Column(length = 255)
+    @Setter
     private String description;
 
     @CreatedDate
@@ -43,6 +47,7 @@ public class Exercise {
     private Instant updatedAt;
 
     @Column(name = "deleted_at")
+    @Setter
     private Instant deletedAt;
 
     public Exercise(String name, String description) {
