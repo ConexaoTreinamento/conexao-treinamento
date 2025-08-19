@@ -79,8 +79,7 @@ export default function ProfilePage() {
   ] : [
     { label: "Alunos Ativos", value: "35", icon: User },
     { label: "Aulas por Semana", value: "12", icon: Calendar },
-    { label: "Horas Trabalhadas", value: "120", icon: Clock },
-    { label: "Avaliação Média", value: "4.8", icon: Award }
+    { label: "Horas Trabalhadas no mês", value: "120", icon: Clock },
   ]
 
   return (
