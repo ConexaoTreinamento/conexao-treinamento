@@ -84,7 +84,7 @@ public class ExerciseService {
         Exercise exercise = repository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Exercise not found"));
 
-        exercise.deactivate(); // Mais semântico!
+        exercise.deactivate();
     }
 
     @Transactional
@@ -96,7 +96,7 @@ public class ExerciseService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Exercise is already active");
         }
 
-        exercise.activate(); // Mais semântico!
+        exercise.activate();
         return ExerciseResponseDTO.fromEntity(exercise);
     }
 
