@@ -92,8 +92,8 @@ public class ExerciseService {
         Exercise exercise = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Exercise not found"));
         
-        if (exercise.isActive()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Exercise is already active");
+        if (exercise.isActive() || repository.existsByNameIgnoringCaseAndDeletedAtIsNull(exercise.getName())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot restore exercise.");
         }
 
         exercise.activate();

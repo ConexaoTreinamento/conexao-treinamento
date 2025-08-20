@@ -80,7 +80,7 @@ class ExerciseServiceTest {
         assertThatThrownBy(() -> exerciseService.create(exerciseRequestDTO))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Exercise already exists");
-
+        
         verify(repository).existsByNameIgnoringCaseAndDeletedAtIsNull("Flexão de Braço");
         verify(repository, never()).save(any(Exercise.class));
     }
@@ -343,6 +343,7 @@ class ExerciseServiceTest {
         deletedExercise.deactivate(); // Mark as deleted
         
         when(repository.findById(exerciseId)).thenReturn(Optional.of(deletedExercise));
+        when(repository.existsByNameIgnoringCaseAndDeletedAtIsNull("Push-up")).thenReturn(false);
 
         // When
         ExerciseResponseDTO result = exerciseService.restore(exerciseId);
@@ -352,6 +353,7 @@ class ExerciseServiceTest {
         assertThat(result.name()).isEqualTo("Push-up");
         assertThat(deletedExercise.isActive()).isTrue(); // Should be active now
         verify(repository).findById(exerciseId);
+        verify(repository).existsByNameIgnoringCaseAndDeletedAtIsNull("Push-up");
     }
 
     @Test
@@ -382,8 +384,28 @@ class ExerciseServiceTest {
         // When & Then
         assertThatThrownBy(() -> exerciseService.restore(exerciseId))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Exercise is already active");
+                .hasMessageContaining("Cannot restore exercise.");
         
         verify(repository).findById(exerciseId);
+    }
+
+    @Test
+    @DisplayName("Should throw conflict when trying to restore exercise with name that already exists active")
+    void shouldThrowConflictWhenTryingToRestoreExerciseWithNameThatAlreadyExistsActive() {
+        // Given
+        UUID exerciseId = UUID.randomUUID();
+        Exercise deletedExercise = new Exercise("Push-up", "Basic push-up exercise");
+        deletedExercise.deactivate(); // Mark as deleted
+        
+        when(repository.findById(exerciseId)).thenReturn(Optional.of(deletedExercise));
+        when(repository.existsByNameIgnoringCaseAndDeletedAtIsNull("Push-up")).thenReturn(true);
+
+        // When & Then
+        assertThatThrownBy(() -> exerciseService.restore(exerciseId))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Cannot restore exercise.");
+        
+        verify(repository).findById(exerciseId);
+        verify(repository).existsByNameIgnoringCaseAndDeletedAtIsNull("Push-up");
     }
 }
