@@ -1,0 +1,33 @@
+package org.conexaotreinamento.conexaotreinamentobackend.api.dto.response;
+
+import org.conexaotreinamento.conexaotreinamentobackend.persistence.entity.Trainer;
+import org.conexaotreinamento.conexaotreinamentobackend.persistence.entity.enums.CompensationType;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+public record TrainerResponseDTO(
+        UUID id,
+        String name,
+        String email,
+        String phone,
+        List<String> specialties,
+        CompensationType compensationType,
+        Instant createdAt,
+        Instant updatedAt
+) {
+
+    public static TrainerResponseDTO fromEntity(Trainer trainer) {
+        return new TrainerResponseDTO(
+                trainer.getId(),
+                trainer.getName(),
+                trainer.getEmail(),
+                trainer.getPhone(),
+                trainer.getSpecialties(),
+                trainer.getCompensationType(),
+                trainer.getCreatedAt(),
+                trainer.getUpdatedAt()
+        );
+    }
+}
