@@ -15,7 +15,8 @@ public record TrainerResponseDTO(
         List<String> specialties,
         CompensationType compensationType,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        boolean active
 ) {
 
     public static TrainerResponseDTO fromEntity(Trainer trainer) {
@@ -27,7 +28,8 @@ public record TrainerResponseDTO(
                 trainer.getSpecialties(),
                 trainer.getCompensationType(),
                 trainer.getCreatedAt(),
-                trainer.getUpdatedAt()
+                trainer.getUpdatedAt(),
+                trainer.isActive()
         );
     }
 }
