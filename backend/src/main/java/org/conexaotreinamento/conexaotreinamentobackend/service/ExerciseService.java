@@ -17,7 +17,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -42,7 +41,7 @@ public class ExerciseService {
         return ExerciseResponseDTO.fromEntity(exercise);
     }
 
-    public Page<ExerciseResponseDTO> findAll(String search, Pageable pageable) {
+    public Page<ExerciseResponseDTO> findAll(String search, Pageable pageable, boolean includeInactive) {
         if (pageable.getSort().isUnsorted()) {
             pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), 
                                     Sort.by("createdAt").descending());
@@ -50,9 +49,14 @@ public class ExerciseService {
         
         Page<Exercise> exercises;
         if (search == null || search.isBlank()) {
-            exercises = repository.findByDeletedAtIsNull(pageable);
+            exercises = includeInactive ? 
+                repository.findAll(pageable) : 
+                repository.findByDeletedAtIsNull(pageable);
         } else {
-            exercises = repository.findBySearchTermAndDeletedAtIsNull("%" + search.toLowerCase() + "%", pageable);
+            String searchTerm = "%" + search.toLowerCase() + "%";
+            exercises = includeInactive ? 
+                repository.findBySearchTermIncludingInactive(searchTerm, pageable) :
+                repository.findBySearchTermAndDeletedAtIsNull(searchTerm, pageable);
         }
         
         return exercises.map(ExerciseResponseDTO::fromEntity);
@@ -80,7 +84,20 @@ public class ExerciseService {
         Exercise exercise = repository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Exercise not found"));
 
-        exercise.setDeletedAt(Instant.now());
+        exercise.deactivate(); // Mais semântico!
+    }
+
+    @Transactional
+    public ExerciseResponseDTO restore(UUID id) {
+        Exercise exercise = repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Exercise not found"));
+        
+        if (exercise.isActive()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Exercise is already active");
+        }
+
+        exercise.activate(); // Mais semântico!
+        return ExerciseResponseDTO.fromEntity(exercise);
     }
 
     @Transactional

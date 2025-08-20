@@ -35,8 +35,9 @@ public class ExerciseController {
     @GetMapping
     public ResponseEntity<Page<ExerciseResponseDTO>> findAll(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false, defaultValue = "false") boolean includeInactive,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(exerciseService.findAll(search, pageable));
+        return ResponseEntity.ok(exerciseService.findAll(search, pageable, includeInactive));
     }
 
     @PutMapping("/{id}")
@@ -53,5 +54,10 @@ public class ExerciseController {
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         exerciseService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/restore")
+    public ResponseEntity<ExerciseResponseDTO> restore(@PathVariable UUID id) {
+        return ResponseEntity.ok(exerciseService.restore(id));
     }
 }

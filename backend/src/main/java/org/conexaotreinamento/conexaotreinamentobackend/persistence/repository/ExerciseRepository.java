@@ -21,4 +21,8 @@ public interface ExerciseRepository extends JpaRepository<Exercise, UUID> {
            "AND (LOWER(e.name) LIKE :search " +
            "OR LOWER(e.description) LIKE :search)")
     Page<Exercise> findBySearchTermAndDeletedAtIsNull(@Param("search") String search, Pageable pageable);
+    
+    @Query("SELECT e FROM Exercise e WHERE " +
+           "(LOWER(e.name) LIKE :search OR LOWER(e.description) LIKE :search)")
+    Page<Exercise> findBySearchTermIncludingInactive(@Param("search") String search, Pageable pageable);
 }

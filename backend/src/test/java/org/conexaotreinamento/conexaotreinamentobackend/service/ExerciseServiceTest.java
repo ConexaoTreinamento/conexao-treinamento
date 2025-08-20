@@ -19,7 +19,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -126,7 +125,7 @@ class ExerciseServiceTest {
         when(repository.findByDeletedAtIsNull(any(Pageable.class))).thenReturn(page);
 
         // When
-        Page<ExerciseResponseDTO> result = exerciseService.findAll(null, pageable);
+        Page<ExerciseResponseDTO> result = exerciseService.findAll(null, pageable, false);
 
         // Then
         assertThat(result).isNotNull();
@@ -147,7 +146,7 @@ class ExerciseServiceTest {
         when(repository.findBySearchTermAndDeletedAtIsNull(eq("%flexão%"), any(Pageable.class))).thenReturn(page);
 
         // When
-        Page<ExerciseResponseDTO> result = exerciseService.findAll("flexão", PageRequest.of(0, 20));
+        Page<ExerciseResponseDTO> result = exerciseService.findAll("flexão", PageRequest.of(0, 20), false);
 
         // Then
         assertThat(result).isNotNull();
@@ -268,7 +267,7 @@ class ExerciseServiceTest {
         when(repository.findByDeletedAtIsNull(any(Pageable.class))).thenReturn(page);
 
         // When
-        exerciseService.findAll(null, unsortedPageable);
+        exerciseService.findAll(null, unsortedPageable, false);
 
         // Then
         verify(repository).findByDeletedAtIsNull(argThat(pageable -> 
@@ -287,10 +286,104 @@ class ExerciseServiceTest {
         when(repository.findByDeletedAtIsNull(any(Pageable.class))).thenReturn(page);
 
         // When
-        exerciseService.findAll("   ", pageable);
+        exerciseService.findAll("   ", pageable, false);
 
         // Then
         verify(repository).findByDeletedAtIsNull(any(Pageable.class));
         verify(repository, never()).findBySearchTermAndDeletedAtIsNull(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should find all exercises including inactive when includeInactive is true")
+    void shouldFindAllExercisesIncludingInactiveWhenIncludeInactiveIsTrue() {
+        // Given
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Exercise> exercises = List.of(exercise);
+        Page<Exercise> page = new PageImpl<>(exercises, pageable, 1);
+        
+        when(repository.findAll(any(Pageable.class))).thenReturn(page);
+
+        // When
+        Page<ExerciseResponseDTO> result = exerciseService.findAll(null, pageable, true);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(1);
+        verify(repository).findAll(any(Pageable.class));
+        verify(repository, never()).findByDeletedAtIsNull(any());
+    }
+
+    @Test
+    @DisplayName("Should search exercises including inactive when includeInactive is true")
+    void shouldSearchExercisesIncludingInactiveWhenIncludeInactiveIsTrue() {
+        // Given
+        String searchTerm = "flexão";
+        Pageable pageable = PageRequest.of(0, 20);
+        List<Exercise> exercises = List.of(exercise);
+        Page<Exercise> page = new PageImpl<>(exercises, pageable, 1);
+        
+        when(repository.findBySearchTermIncludingInactive(anyString(), any(Pageable.class))).thenReturn(page);
+
+        // When
+        Page<ExerciseResponseDTO> result = exerciseService.findAll(searchTerm, pageable, true);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(1);
+        verify(repository).findBySearchTermIncludingInactive(eq("%" + searchTerm.toLowerCase() + "%"), any(Pageable.class));
+        verify(repository, never()).findBySearchTermAndDeletedAtIsNull(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should restore deleted exercise successfully")
+    void shouldRestoreDeletedExerciseSuccessfully() {
+        // Given
+        UUID exerciseId = UUID.randomUUID();
+        Exercise deletedExercise = new Exercise("Push-up", "Basic push-up exercise");
+        deletedExercise.deactivate(); // Mark as deleted
+        
+        when(repository.findById(exerciseId)).thenReturn(Optional.of(deletedExercise));
+
+        // When
+        ExerciseResponseDTO result = exerciseService.restore(exerciseId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.name()).isEqualTo("Push-up");
+        assertThat(deletedExercise.isActive()).isTrue(); // Should be active now
+        verify(repository).findById(exerciseId);
+    }
+
+    @Test
+    @DisplayName("Should throw exception when trying to restore non-existent exercise")
+    void shouldThrowExceptionWhenTryingToRestoreNonExistentExercise() {
+        // Given
+        UUID exerciseId = UUID.randomUUID();
+        when(repository.findById(exerciseId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> exerciseService.restore(exerciseId))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Exercise not found");
+        
+        verify(repository).findById(exerciseId);
+    }
+
+    @Test
+    @DisplayName("Should throw exception when trying to restore already active exercise")
+    void shouldThrowExceptionWhenTryingToRestoreAlreadyActiveExercise() {
+        // Given
+        UUID exerciseId = UUID.randomUUID();
+        Exercise activeExercise = new Exercise("Push-up", "Basic push-up exercise");
+        // Exercise is active by default (deletedAt = null)
+        
+        when(repository.findById(exerciseId)).thenReturn(Optional.of(activeExercise));
+
+        // When & Then
+        assertThatThrownBy(() -> exerciseService.restore(exerciseId))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Exercise is already active");
+        
+        verify(repository).findById(exerciseId);
     }
 }
