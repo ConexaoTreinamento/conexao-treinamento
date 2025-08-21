@@ -1,88 +1,207 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import {
-  ArrowLeft,
-  Calendar,
-  MapPin,
-  Users,
-  Clock,
-  Trophy,
-  UserPlus,
-  UserMinus,
-  Edit,
-  X,
-  CheckCircle,
-  XCircle,
-} from "lucide-react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { ArrowLeft, Calendar, CheckCircle, Clock, Edit, MapPin, Trophy, Users, X, XCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { useRouter, useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import Layout from "@/components/layout"
+import EventModal from "@/components/event-modal"
+
+// Type definitions
+interface EventParticipant {
+  id: number
+  name: string
+  avatar: string
+  enrolledAt: string
+  present: boolean
+}
+
+interface EventData {
+  id: number
+  name: string
+  date: string
+  startTime: string
+  endTime: string
+  location: string
+  status: string
+  description: string
+  instructor: string
+  participants: EventParticipant[]
+  maxParticipants: number // Made required instead of optional
+}
 
 export default function EventDetailPage() {
   const router = useRouter()
   const params = useParams()
+  const [eventData, setEventData] = useState<EventData | null>(null)
+  const [loading, setLoading] = useState(true)
   const [isEnrolled, setIsEnrolled] = useState(false)
   const [isEnrollDialogOpen, setIsEnrollDialogOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false)
-  const [eventForm, setEventForm] = useState({
-    name: "Corrida no Parque",
-    type: "Corrida",
-    date: "2024-08-15",
-    startTime: "07:00",
-    endTime: "08:00",
-    location: "Parque Ibirapuera",
-    description:
-      "Corrida matinal de 5km no parque para todos os níveis. Venha participar desta atividade ao ar livre e conhecer outros alunos da academia!",
-    students: ["Maria Silva", "João Santos", "Ana Costa", "Carlos Lima", "Lucia Ferreira"],
-    attendance: {
-      "Maria Silva": true,
-      "João Santos": false,
-      "Ana Costa": true,
-      "Carlos Lima": true,
-      "Lucia Ferreira": false,
+  // Add search state for participants - moved to correct position to fix hook order
+  const [participantSearchTerm, setParticipantSearchTerm] = useState("")
+
+  // Function to derive status from participants and max participants
+  const deriveStatus = (currentParticipants: number, maxParticipants: number) => {
+    if (currentParticipants >= maxParticipants) {
+      return "Lotado"
+    }
+    return "Aberto"
+  }
+
+  // Update event data with derived status
+  const updateEventWithDerivedStatus = (event: EventData) => {
+    const newStatus = deriveStatus(event.participants.length, event.maxParticipants)
+    return { ...event, status: newStatus }
+  }
+
+  // Mock events data - this should eventually be replaced with API calls
+  const mockEvents: EventData[] = [
+    {
+      id: 1,
+      name: "Corrida no Parque",
+      date: "2024-08-15",
+      startTime: "07:00",
+      endTime: "08:00",
+      location: "Parque Ibirapuera",
+      status: "Aberto",
+      description: "Corrida matinal de 5km no parque para todos os níveis. Venha participar desta atividade ao ar livre e conhecer outros alunos da academia!",
+      instructor: "Prof. Carlos Santos",
+      maxParticipants: 20,
+      participants: [
+        { id: 1, name: "Maria Silva", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-20", present: true },
+        { id: 2, name: "João Santos", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-21", present: false },
+        { id: 3, name: "Ana Costa", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-22", present: true },
+      ],
     },
+    {
+      id: 2,
+      name: "Workshop de Yoga",
+      date: "2024-08-20",
+      startTime: "14:00",
+      endTime: "16:00",
+      location: "Studio Principal",
+      status: "Lotado",
+      description: "Workshop intensivo de Yoga com técnicas avançadas de respiração e posturas. Aprenda com especialistas e aprofunde sua prática.",
+      instructor: "Prof. Marina Costa",
+      maxParticipants: 15,
+      participants: [
+        { id: 4, name: "Patricia Oliveira", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-15", present: true },
+        { id: 5, name: "Roberto Silva", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-16", present: true },
+        { id: 6, name: "Fernanda Costa", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-17", present: false },
+      ],
+    },
+    {
+      id: 3,
+      name: "Competição de CrossFit",
+      date: "2024-08-25",
+      startTime: "09:00",
+      endTime: "12:00",
+      location: "Área Externa",
+      status: "Aberto",
+      description: "Competição amistosa de CrossFit com diferentes categorias. Venha testar seus limites e se divertir com outros atletas!",
+      instructor: "Prof. Roberto Lima",
+      maxParticipants: 30,
+      participants: [
+        { id: 7, name: "Carlos Lima", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-18", present: true },
+        { id: 8, name: "Lucia Ferreira", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-19", present: false },
+      ],
+    },
+  ]
+
+  // Edit form state - fixed to include missing properties
+  const [eventForm, setEventForm] = useState({
+    name: "",
+    date: "",
+    startTime: "",
+    endTime: "",
+    location: "",
+    description: "",
+    students: [] as string[],
+    attendance: {} as Record<string, boolean>,
   })
 
-  // Mock event data
-  const eventData = {
-    id: 1,
-    name: eventForm.name,
-    type: eventForm.type,
-    date: eventForm.date,
-    startTime: eventForm.startTime,
-    endTime: eventForm.endTime,
-    location: eventForm.location,
-    status: "Aberto",
-    description: eventForm.description,
-    requirements: ["Tênis adequado para corrida", "Roupa confortável", "Garrafa de água", "Protetor solar"],
-    meetingPoint: "Portão 2 do Parque Ibirapuera",
-    instructor: "Prof. Carlos Santos",
-    participants: eventForm.students.map((student, idx) => ({
-      id: idx + 1,
-      name: student,
-      avatar: "/placeholder.svg?height=40&width=40",
-      enrolledAt: "2024-07-20",
-      present: eventForm.attendance[student] || false,
-    })),
+  useEffect(() => {
+    // Simulate fetching event data based on ID
+    const fetchEventData = async () => {
+      setLoading(true)
+      try {
+        // In a real application, this would be an API call
+        // const response = await fetch(`/api/events/${params.id}`)
+        // const data = await response.json()
+
+        // For now, find the event from mock data
+        const eventId = parseInt(params.id as string)
+        const event = mockEvents.find(e => e.id === eventId)
+
+        if (event) {
+          // Apply dynamic status computation to the loaded event
+          const eventWithComputedStatus = updateEventWithDerivedStatus(event)
+          setEventData(eventWithComputedStatus)
+          // Initialize form with event data
+          setEventForm({
+            name: event.name,
+            date: event.date,
+            startTime: event.startTime,
+            endTime: event.endTime,
+            location: event.location,
+            description: event.description,
+            students: event.participants.map(p => p.name),
+            attendance: event.participants.reduce((acc, p) => ({ ...acc, [p.name]: p.present }), {}),
+          })
+        } else {
+          // Handle event not found
+          console.error('Event not found')
+          router.push('/events')
+        }
+      } catch (error) {
+        console.error('Error fetching event data:', error)
+        router.push('/events')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (params.id) {
+      fetchEventData()
+    }
+  }, [params.id, router])
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-2 text-sm text-muted-foreground">Carregando dados do evento...</p>
+          </div>
+        </div>
+      </Layout>
+    )
+  }
+
+  if (!eventData) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-lg font-semibold">Evento não encontrado</p>
+            <Button
+              variant="outline"
+              onClick={() => router.push('/events')}
+              className="mt-4"
+            >
+              Voltar para lista de eventos
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    )
   }
 
   // Mock students for selection
@@ -97,7 +216,14 @@ export default function EventDetailPage() {
     "Fernanda Costa",
   ]
 
-  const eventTypes = ["Corrida", "Yoga", "Trilha", "Competição", "Workshop", "Palestra", "Treino Funcional"]
+  // Available instructors for the modal
+  const availableInstructors = [
+    "Prof. Carlos Santos",
+    "Prof. Marina Costa",
+    "Prof. Roberto Lima",
+    "Prof. Ana Silva",
+    "Prof. João Pedro"
+  ]
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -148,37 +274,58 @@ export default function EventDetailPage() {
     })
   }
 
-  const toggleStudent = (student: string) => {
-    setEventForm((prev) => ({
-      ...prev,
-      students: prev.students.includes(student)
-        ? prev.students.filter((s) => s !== student)
-        : [...prev.students, student],
-    }))
+  const toggleAttendance = (participantName: string) => {
+    if (!eventData) return
+
+    setEventData(prev => {
+      if (!prev) return prev
+      const updated = {
+        ...prev,
+        participants: prev.participants.map(p =>
+          p.name === participantName ? { ...p, present: !p.present } : p
+        )
+      }
+      return updateEventWithDerivedStatus(updated)
+    })
   }
 
-  const removeStudent = (student: string) => {
-    setEventForm((prev) => ({
-      ...prev,
-      students: prev.students.filter((s) => s !== student),
-    }))
-  }
+  const removeStudent = (studentName: string) => {
+    if (!eventData) return
 
-  const toggleAttendance = (student: string) => {
-    setEventForm((prev) => ({
-      ...prev,
-      attendance: {
-        ...prev.attendance,
-        [student]: !prev.attendance?.[student],
-      },
-    }))
+    setEventData(prev => {
+      if (!prev) return prev
+      const updated = {
+        ...prev,
+        participants: prev.participants.filter(p => p.name !== studentName)
+      }
+      return updateEventWithDerivedStatus(updated)
+    })
   }
 
   const handleSaveEvent = () => {
-    console.log("Saving event:", eventForm)
+    if (!eventData) return
+
+    setEventData(prev => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        name: eventForm.name,
+        date: eventForm.date,
+        startTime: eventForm.startTime,
+        endTime: eventForm.endTime,
+        location: eventForm.location,
+        description: eventForm.description,
+      }
+    })
     setIsEditOpen(false)
   }
 
+  // Filter participants based on search term - moved to after early returns
+  const filteredParticipants = eventData ? eventData.participants.filter(participant =>
+    participant.name.toLowerCase().includes(participantSearchTerm.toLowerCase())
+  ) : []
+
+  // Filter students based on search term
   const handleQuickAddStudent = (student: string) => {
     if (!eventForm.students.includes(student)) {
       setEventForm((prev) => ({
@@ -193,13 +340,47 @@ export default function EventDetailPage() {
     setIsAddStudentOpen(false)
   }
 
+  // Handle event edit from modal
+  const handleEventEdit = (formData: any) => {
+    if (!eventData) return
+
+    // Convert form participants to EventParticipant objects
+    const updatedParticipants = formData.students.map((studentName: string, index: number) => {
+      const existingParticipant = eventData.participants.find(p => p.name === studentName)
+      return existingParticipant || {
+        id: Date.now() + index,
+        name: studentName,
+        avatar: "/placeholder.svg?height=40&width=40",
+        enrolledAt: new Date().toISOString().split('T')[0],
+        present: formData.attendance?.[studentName] || false
+      }
+    })
+
+    const updatedEvent = {
+      ...eventData,
+      name: formData.name,
+      date: formData.date,
+      startTime: formData.startTime,
+      endTime: formData.endTime,
+      location: formData.location,
+      description: formData.description,
+      instructor: formData.instructor,
+      maxParticipants: parseInt(formData.maxParticipants) || 20,
+      participants: updatedParticipants
+    }
+
+    // Update with derived status
+    const eventWithStatus = updateEventWithDerivedStatus(updatedEvent)
+    setEventData(eventWithStatus)
+  }
+
   return (
     <Layout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4"/>
           </Button>
           <div className="flex-1">
             <h1 className="text-2xl font-bold">{eventData.name}</h1>
@@ -207,172 +388,9 @@ export default function EventDetailPage() {
               {formatDate(eventData.date)} • {eventData.startTime} - {eventData.endTime}
             </p>
           </div>
-          <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Edit className="w-4 h-4" />
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Editar Evento</DialogTitle>
-                <DialogDescription>Edite as informações do evento</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="eventName">Nome do Evento</Label>
-                    <Input
-                      id="eventName"
-                      value={eventForm.name}
-                      onChange={(e) => setEventForm((prev) => ({ ...prev, name: e.target.value }))}
-                      placeholder="Ex: Corrida no Parque"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="eventType">Tipo</Label>
-                    <Select
-                      value={eventForm.type}
-                      onValueChange={(value) => setEventForm((prev) => ({ ...prev, type: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o tipo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {eventTypes.map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="eventDate">Data</Label>
-                    <Input
-                      id="eventDate"
-                      type="date"
-                      value={eventForm.date}
-                      onChange={(e) => setEventForm((prev) => ({ ...prev, date: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="eventStartTime">Início</Label>
-                    <Input
-                      id="eventStartTime"
-                      type="time"
-                      value={eventForm.startTime}
-                      onChange={(e) => handleTimeChange("startTime", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="eventEndTime">Fim</Label>
-                    <Input
-                      id="eventEndTime"
-                      type="time"
-                      value={eventForm.endTime}
-                      onChange={(e) => handleTimeChange("endTime", e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="eventLocation">Local</Label>
-                  <Input
-                    id="eventLocation"
-                    value={eventForm.location}
-                    onChange={(e) => setEventForm((prev) => ({ ...prev, location: e.target.value }))}
-                    placeholder="Ex: Parque Ibirapuera"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="eventDescription">Descrição</Label>
-                  <Textarea
-                    id="eventDescription"
-                    value={eventForm.description}
-                    onChange={(e) => setEventForm((prev) => ({ ...prev, description: e.target.value }))}
-                    placeholder="Descreva o evento..."
-                    rows={3}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Participantes ({eventForm.students?.length || 0} selecionados)</Label>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button size="sm" variant="outline">
-                          <UserPlus className="w-4 h-4 mr-1" />
-                          Adicionar
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-md">
-                        <DialogHeader>
-                          <DialogTitle>Adicionar Participantes</DialogTitle>
-                        </DialogHeader>
-                        <div className="max-h-64 overflow-y-auto">
-                          <div className="space-y-2">
-                            {availableStudents.map((student) => (
-                              <div key={student} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={student}
-                                  checked={eventForm.students?.includes(student)}
-                                  onCheckedChange={() => toggleStudent(student)}
-                                />
-                                <label htmlFor={student} className="text-sm cursor-pointer flex-1">
-                                  {student}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-
-                  {eventForm.students?.length > 0 && (
-                    <div className="border rounded-lg p-3 max-h-32 overflow-y-auto space-y-2">
-                      {eventForm.students.map((student: string) => (
-                        <div key={student} className="flex items-center justify-between p-2 bg-muted rounded">
-                          <span className="text-sm">{student}</span>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => toggleAttendance(student)}
-                              className={`h-6 w-6 p-0 ${eventForm.attendance?.[student] ? "text-green-600" : "text-muted-foreground"}`}
-                            >
-                              <CheckCircle className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => removeStudent(student)}
-                              className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleSaveEvent} className="bg-green-600 hover:bg-green-700">
-                  Salvar Alterações
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button variant="outline" size="icon" onClick={() => setIsEditOpen(true)}>
+            <Edit className="w-4 h-4"/>
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -380,7 +398,7 @@ export default function EventDetailPage() {
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Trophy className="w-5 h-5" />
+                <Trophy className="w-5 h-5"/>
                 Informações do Evento
               </CardTitle>
               <Badge className={getStatusColor(eventData.status)}>{eventData.status}</Badge>
@@ -388,89 +406,32 @@ export default function EventDetailPage() {
             <CardContent className="space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <Calendar className="w-4 h-4 text-muted-foreground"/>
                   <span>{formatDate(eventData.date)}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <Clock className="w-4 h-4 text-muted-foreground"/>
                   <span>
                     {eventData.startTime} - {eventData.endTime}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="w-4 h-4 text-muted-foreground" />
+                  <MapPin className="w-4 h-4 text-muted-foreground"/>
                   <span>{eventData.location}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <Users className="w-4 h-4 text-muted-foreground" />
-                  <span>{eventData.participants.length} participantes</span>
+                  <Users className="w-4 h-4 text-muted-foreground"/>
+                  <span>{eventData.participants.length}/{eventData.maxParticipants} participantes</span>
                 </div>
               </div>
 
               <div className="pt-4 border-t">
                 <p className="text-sm text-muted-foreground mb-3">{eventData.description}</p>
-                <p className="text-sm font-medium mb-2">Ponto de Encontro:</p>
-                <p className="text-sm text-muted-foreground">{eventData.meetingPoint}</p>
               </div>
 
               <div className="pt-4 border-t">
                 <p className="text-sm font-medium mb-2">Instrutor:</p>
                 <p className="text-sm text-muted-foreground">{eventData.instructor}</p>
-              </div>
-
-              <div className="pt-4 border-t space-y-2">
-                <Dialog open={isEnrollDialogOpen} onOpenChange={setIsEnrollDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button
-                      className={`w-full ${isEnrolled ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}`}
-                    >
-                      {isEnrolled ? (
-                        <>
-                          <UserMinus className="w-4 h-4 mr-2" />
-                          Cancelar Inscrição
-                        </>
-                      ) : (
-                        <>
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Inscrever-se
-                        </>
-                      )}
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>{isEnrolled ? "Cancelar Inscrição" : "Confirmar Inscrição"}</DialogTitle>
-                      <DialogDescription>
-                        {isEnrolled
-                          ? `Tem certeza que deseja cancelar sua inscrição no evento "${eventData.name}"?`
-                          : `Confirme sua inscrição no evento "${eventData.name}".`}
-                      </DialogDescription>
-                    </DialogHeader>
-                    {!isEnrolled && (
-                      <div className="space-y-3">
-                        <div>
-                          <h4 className="font-medium mb-2">Requisitos:</h4>
-                          <ul className="text-sm text-muted-foreground space-y-1">
-                            {eventData.requirements.map((req, idx) => (
-                              <li key={idx}>• {req}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    )}
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsEnrollDialogOpen(false)}>
-                        Cancelar
-                      </Button>
-                      <Button
-                        onClick={handleEnrollment}
-                        className={isEnrolled ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}
-                      >
-                        {isEnrolled ? "Confirmar Cancelamento" : "Confirmar Inscrição"}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
               </div>
             </CardContent>
           </Card>
@@ -478,115 +439,107 @@ export default function EventDetailPage() {
           {/* Participants List */}
           <Card className="lg:col-span-2">
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
+                  <Users className="w-5 h-5"/>
                   Participantes ({eventData.participants.length})
                 </CardTitle>
-                <Dialog open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Adicionar
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Adicionar Participante</DialogTitle>
-                      <DialogDescription>Selecione um aluno para adicionar ao evento</DialogDescription>
-                    </DialogHeader>
-                    <div className="max-h-64 overflow-y-auto space-y-2">
-                      {availableStudents
-                        .filter((student) => !eventForm.students.includes(student))
-                        .map((student) => (
-                          <div key={student} className="flex items-center justify-between p-3 rounded-lg border">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="w-8 h-8">
-                                <AvatarFallback className="select-none">
-                                  {student
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="font-medium">{student}</span>
-                            </div>
-                            <Button size="sm" onClick={() => handleQuickAddStudent(student)}>
-                              Adicionar
-                            </Button>
-                          </div>
-                        ))}
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <Input
+                    placeholder="Buscar participante..."
+                    value={participantSearchTerm}
+                    onChange={(e) => setParticipantSearchTerm(e.target.value)}
+                    className="max-w-sm"
+                />
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {eventData.participants.map((participant) => (
-                  <div key={participant.id} className="flex items-center justify-between p-4 rounded-lg border">
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={participant.avatar || "/placeholder.svg"} />
-                        <AvatarFallback className="select-none">
-                          {participant.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{participant.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Inscrito em {new Date(participant.enrolledAt).toLocaleDateString("pt-BR")}
-                        </p>
+                {filteredParticipants.map((participant) => (
+                    <div key={participant.id}
+                         className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border gap-3">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <Avatar className="flex-shrink-0">
+                          <AvatarFallback className="select-none">
+                            {participant.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium truncate">{participant.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Inscrito em {new Date(participant.enrolledAt).toLocaleDateString("pt-BR")}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Button
+                            size="sm"
+                            variant={participant.present ? "default" : "outline"}
+                            onClick={() => toggleAttendance(participant.name)}
+                            className={`h-8 text-xs flex-1 sm:flex-none min-w-0 ${
+                                participant.present
+                                    ? "bg-green-600 hover:bg-green-700 text-white"
+                                    : "border-red-600 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
+                            }`}
+                        >
+                          {participant.present ? (
+                              <>
+                                <CheckCircle className="w-3 h-3 mr-1"/>
+                                Presente
+                              </>
+                          ) : (
+                              <>
+                                <XCircle className="w-3 h-3 mr-1"/>
+                                Ausente
+                              </>
+                          )}
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removeStudent(participant.name)}
+                            className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
+                        >
+                          <X className="w-4 h-4"/>
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant={participant.present ? "default" : "outline"}
-                        onClick={() => toggleAttendance(participant.name)}
-                        className={`h-8 text-xs ${
-                          participant.present
-                            ? "bg-green-600 hover:bg-green-700 text-white"
-                            : "border-red-600 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
-                        }`}
-                      >
-                        {participant.present ? (
-                          <>
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Presente
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="w-3 h-3 mr-1" />
-                            Ausente
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => removeStudent(participant.name)}
-                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
                 ))}
 
-                {eventData.participants.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>Nenhum participante inscrito ainda</p>
-                  </div>
+                {filteredParticipants.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Users className="w-12 h-12 mx-auto mb-4 opacity-50"/>
+                      <p>Nenhum participante encontrado</p>
+                    </div>
                 )}
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Event Edit Modal - using new unified EventModal component */}
+        <EventModal
+          open={isEditOpen}
+          mode="edit"
+          initialData={{
+            name: eventData.name,
+            date: eventData.date,
+            startTime: eventData.startTime,
+            endTime: eventData.endTime,
+            location: eventData.location,
+            description: eventData.description,
+            maxParticipants: eventData.maxParticipants.toString(),
+            instructor: eventData.instructor,
+            students: eventData.participants.map(p => p.name),
+            attendance: eventData.participants.reduce((acc, p) => ({ ...acc, [p.name]: p.present }), {})
+          }}
+          onClose={() => setIsEditOpen(false)}
+          onSubmit={handleEventEdit}
+          availableStudents={availableStudents}
+          instructors={availableInstructors}
+        />
       </div>
     </Layout>
   )

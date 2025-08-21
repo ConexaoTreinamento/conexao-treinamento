@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { User, Mail, Phone, MapPin, Calendar, Save, Camera, Shield, Clock, Award } from 'lucide-react'
@@ -72,15 +72,14 @@ export default function ProfilePage() {
   }
 
   const stats = userRole === "admin" ? [
-    { label: "Alunos Gerenciados", value: "142", icon: User },
+    { label: "Alunos", value: "142", icon: User },
     { label: "Professores", value: "8", icon: Award },
     { label: "Anos na Academia", value: "4", icon: Calendar },
     { label: "Eventos Organizados", value: "25", icon: Shield }
   ] : [
     { label: "Alunos Ativos", value: "35", icon: User },
     { label: "Aulas por Semana", value: "12", icon: Calendar },
-    { label: "Horas Trabalhadas", value: "120", icon: Clock },
-    { label: "Avaliação Média", value: "4.8", icon: Award }
+    { label: "Horas Trabalhadas no mês", value: "120", icon: Clock },
   ]
 
   return (
@@ -106,18 +105,10 @@ export default function ProfilePage() {
             <CardHeader className="text-center">
               <div className="relative mx-auto">
                 <Avatar className="w-24 h-24 mx-auto">
-                  <AvatarImage src={profileData.avatar || "/placeholder.svg"} />
                   <AvatarFallback className="text-2xl">
                     {profileData.name.split(' ').map(n => n[0]).join('')}
                   </AvatarFallback>
                 </Avatar>
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="absolute -bottom-2 -right-2 rounded-full w-8 h-8"
-                >
-                  <Camera className="w-4 h-4" />
-                </Button>
               </div>
               <div className="space-y-2">
                 <CardTitle>{profileData.name}</CardTitle>
@@ -183,7 +174,7 @@ export default function ProfilePage() {
             {/* Profile Form */}
             <Tabs defaultValue="personal" className="space-y-4">
               <TabsList>
-                <TabsTrigger value="personal">Informações Pessoais</TabsTrigger>
+                <TabsTrigger value="personal">Informações</TabsTrigger>
                 <TabsTrigger value="professional">Profissional</TabsTrigger>
                 <TabsTrigger value="security">Segurança</TabsTrigger>
               </TabsList>
@@ -193,7 +184,7 @@ export default function ProfilePage() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <User className="w-5 h-5" />
-                      Informações Pessoais
+                      Informações
                     </CardTitle>
                     <CardDescription>
                       Atualize suas informações pessoais
@@ -263,7 +254,7 @@ export default function ProfilePage() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Award className="w-5 h-5" />
-                      Informações Profissionais
+                      Profissional
                     </CardTitle>
                     <CardDescription>
                       Gerencie suas informações profissionais
