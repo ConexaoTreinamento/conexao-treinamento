@@ -1,4 +1,4 @@
-package org.conexaotreinamento.conexaotreinamentobackend.api.dto.request;
+package org.conexaotreinamento.conexaotreinamentobackend.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

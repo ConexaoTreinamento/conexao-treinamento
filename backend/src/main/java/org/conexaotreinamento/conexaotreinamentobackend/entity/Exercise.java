@@ -1,4 +1,4 @@
-package org.conexaotreinamento.conexaotreinamentobackend.persistence.entity;
+package org.conexaotreinamento.conexaotreinamentobackend.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

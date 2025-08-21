@@ -1,10 +1,10 @@
-package org.conexaotreinamento.conexaotreinamentobackend.api.controller;
+package org.conexaotreinamento.conexaotreinamentobackend.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.conexaotreinamento.conexaotreinamentobackend.api.dto.request.ExerciseRequestDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.api.dto.request.PatchExerciseRequestDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.api.dto.response.ExerciseResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.ExerciseRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchExerciseRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ExerciseResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.service.ExerciseService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

@@ -1,6 +1,6 @@
-package org.conexaotreinamento.conexaotreinamentobackend.persistence.repository;
+package org.conexaotreinamento.conexaotreinamentobackend.repository;
 
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.entity.Exercise;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.Exercise;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
