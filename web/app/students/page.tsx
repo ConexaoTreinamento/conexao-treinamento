@@ -21,6 +21,7 @@ import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X } from "lucide
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import StudentForm from "@/components/student-form"
+import { getStudentPlanExpirationDate, calculateDaysUntilExpiration, getExpiringPlanBadge, isPlanExpiring } from "@/lib/expiring-plans"
 
 export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -423,6 +424,11 @@ export default function StudentsPage() {
             const fullName = `${student.name} ${student.surname}`
             const initials = `${student.name.charAt(0)}${student.surname.charAt(0)}`.toUpperCase()
 
+            // Get expiring plan data
+            const planExpirationDate = getStudentPlanExpirationDate(student.id)
+            const daysUntilExpiration = calculateDaysUntilExpiration(planExpirationDate)
+            const expiringPlanBadge = getExpiringPlanBadge(daysUntilExpiration)
+
             return (
               <Card
                 key={student.id}
@@ -441,9 +447,12 @@ export default function StudentsPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-base leading-tight">{fullName}</h3>
-                          <Badge className={`${getStatusColor(student.status)} text-xs mt-1`}>
-                            {student.status}
-                          </Badge>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            <Badge className={`${getStatusColor(student.status)} text-xs`}>
+                              {student.status}
+                            </Badge>
+                            {expiringPlanBadge}
+                          </div>
                         </div>
                       </div>
                       <Button
@@ -497,7 +506,10 @@ export default function StudentsPage() {
                       <div className="flex flex-col gap-2 mb-1">
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-lg flex-1 min-w-0 truncate">{fullName}</h3>
-                          <Badge className={`${getStatusColor(student.status)} flex-shrink-0`}>{student.status}</Badge>
+                          <div className="flex gap-2 flex-shrink-0">
+                            <Badge className={`${getStatusColor(student.status)}`}>{student.status}</Badge>
+                            {expiringPlanBadge}
+                          </div>
                         </div>
                       </div>
 

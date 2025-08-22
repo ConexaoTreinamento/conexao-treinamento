@@ -8,6 +8,7 @@ import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, Edit, Calenda
 import { useRouter, useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Layout from "@/components/layout"
+import { getStudentPlanExpirationDate, calculateDaysUntilExpiration, getExpiringPlanBadge } from "@/lib/expiring-plans"
 
 // Type definitions
 interface MedicalData {
@@ -697,6 +698,12 @@ export default function StudentProfilePage() {
                 <div className="flex flex-wrap justify-center gap-2">
                   <Badge className={getStatusColor(studentData.status)}>{studentData.status}</Badge>
                   <Badge variant="outline">Plano {studentData.plan}</Badge>
+                  {(() => {
+                    // Get expiring plan data
+                    const planExpirationDate = getStudentPlanExpirationDate(studentData.id)
+                    const daysUntilExpiration = calculateDaysUntilExpiration(planExpirationDate)
+                    return getExpiringPlanBadge(daysUntilExpiration)
+                  })()}
                 </div>
               </div>
             </CardHeader>

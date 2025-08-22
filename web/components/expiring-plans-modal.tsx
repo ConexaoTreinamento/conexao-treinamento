@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle, Calendar, User, Phone, Mail } from "lucide-react"
 import Link from "next/link"
+import { getStudentPlanExpirationDate, calculateDaysUntilExpiration, getExpiringPlanBadge } from "@/lib/expiring-plans"
 
 interface Student {
   id: number
@@ -24,77 +25,68 @@ interface ExpiringPlansModalProps {
 export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansModalProps) {
   const [expiringStudents, setExpiringStudents] = useState<Student[]>([])
 
-  // Mock data - in a real app, this would come from an API
+  // Mock students data - should match the students from the main app
   const mockStudents = [
     {
       id: 1,
       name: "Maria Silva",
-      email: "maria.silva@email.com",
-      phone: "(11) 99999-1234",
-      planExpirationDate: "2024-12-28",
-      daysUntilExpiration: 2
+      email: "maria@email.com",
+      phone: "(11) 99999-9999"
     },
     {
       id: 2,
       name: "João Santos",
-      email: "joao.santos@email.com",
-      phone: "(11) 98888-5678",
-      planExpirationDate: "2024-12-25",
-      daysUntilExpiration: 0 // Expired today
+      email: "joao@email.com",
+      phone: "(11) 88888-8888"
     },
     {
       id: 3,
       name: "Ana Costa",
-      email: "ana.costa@email.com",
-      phone: "(11) 97777-9012",
-      planExpirationDate: "2025-01-01",
-      daysUntilExpiration: 6
+      email: "ana@email.com",
+      phone: "(11) 77777-7777"
     },
     {
       id: 4,
-      name: "Pedro Oliveira",
-      email: "pedro.oliveira@email.com",
-      phone: "(11) 96666-3456",
-      planExpirationDate: "2024-12-30",
-      daysUntilExpiration: 4
+      name: "Carlos Lima",
+      email: "carlos@email.com",
+      phone: "(11) 66666-6666"
+    },
+    {
+      id: 5,
+      name: "Lucia Ferreira",
+      email: "lucia@email.com",
+      phone: "(11) 55555-5555"
     }
   ]
 
   useEffect(() => {
     if (isOpen) {
-      // Filter students whose plans expire within 7 days
-      const today = new Date()
-      const sevenDaysFromNow = new Date()
-      sevenDaysFromNow.setDate(today.getDate() + 7)
+      // Process students and get their expiration data
+      const studentsWithExpiration = mockStudents.map(student => {
+        const planExpirationDate = getStudentPlanExpirationDate(student.id)
+        const daysUntilExpiration = calculateDaysUntilExpiration(planExpirationDate)
 
-      const expiring = mockStudents.filter(student => {
-        const expirationDate = new Date(student.planExpirationDate)
-        return expirationDate <= sevenDaysFromNow
+        return {
+          ...student,
+          planExpirationDate,
+          daysUntilExpiration
+        }
       })
+
+      // Filter students whose plans expire within 7 days
+      const expiring = studentsWithExpiration.filter(student =>
+        student.daysUntilExpiration <= 7
+      )
 
       // Sort by expiration date - earliest first
-      expiring.sort((a, b) => {
-        const dateA = new Date(a.planExpirationDate)
-        const dateB = new Date(b.planExpirationDate)
-        return dateA.getTime() - dateB.getTime()
-      })
+      expiring.sort((a, b) => a.daysUntilExpiration - b.daysUntilExpiration)
 
       setExpiringStudents(expiring)
     }
   }, [isOpen])
 
   const getStatusBadge = (daysUntilExpiration: number) => {
-    if (daysUntilExpiration < 0) {
-      return <Badge variant="destructive">Expirado</Badge>
-    } else if (daysUntilExpiration === 0) {
-      return <Badge variant="destructive">Expira hoje</Badge>
-    } else if (daysUntilExpiration <= 2) {
-      return <Badge variant="destructive">{daysUntilExpiration} dias</Badge>
-    } else if (daysUntilExpiration <= 5) {
-      return <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-400">{daysUntilExpiration} dias</Badge>
-    } else {
-      return <Badge variant="secondary">{daysUntilExpiration} dias</Badge>
-    }
+    return getExpiringPlanBadge(daysUntilExpiration)
   }
 
   const formatDate = (dateString: string) => {
@@ -143,45 +135,45 @@ export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansMod
 
               <div className="flex-1 overflow-y-auto space-y-3 pr-2">
                 {expiringStudents.map((student) => (
-                  <div
+                  <Link
                     key={student.id}
-                    className="border rounded-lg p-4 bg-card hover:bg-accent/50 transition-colors"
+                    href={`/students/${student.id}`}
+                    onClick={onClose}
+                    className="block"
                   >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-muted-foreground" />
-                        <Link
-                          href={`/students/${student.id}`}
-                          className="font-medium hover:underline"
-                          onClick={onClose}
-                        >
-                          {student.name}
-                        </Link>
+                    <div className="border rounded-lg p-4 bg-card hover:bg-accent/50 transition-colors cursor-pointer">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-muted-foreground" />
+                          <span className="font-medium">
+                            {student.name}
+                          </span>
+                        </div>
+                        {getStatusBadge(student.daysUntilExpiration)}
                       </div>
-                      {getStatusBadge(student.daysUntilExpiration)}
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground mb-3">
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-3 h-3" />
-                        <a href={`mailto:${student.email}`} className="hover:underline">
-                          {student.email}
-                        </a>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground mb-3">
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-3 h-3" />
+                          <span className="hover:underline">
+                            {student.email}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-3 h-3" />
+                          <span className="hover:underline">
+                            {student.phone}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-3 h-3" />
-                        <a href={`tel:${student.phone}`} className="hover:underline">
-                          {student.phone}
-                        </a>
-                      </div>
-                    </div>
 
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="w-3 h-3 text-muted-foreground" />
-                      <span className="text-muted-foreground">Vencimento:</span>
-                      <span className="font-medium">{formatDate(student.planExpirationDate)}</span>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Calendar className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">Vencimento:</span>
+                        <span className="font-medium">{formatDate(student.planExpirationDate)}</span>
+                      </div>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </>
