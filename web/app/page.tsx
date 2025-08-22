@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Eye, EyeOff, Dumbbell } from "lucide-react"
+import { Eye, EyeOff } from "lucide-react"
+import Image from "next/image"
 
 export default function HomePage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -32,18 +33,18 @@ export default function HomePage() {
       localStorage.setItem("userRole", "professor")
       localStorage.setItem("userName", "Professor Silva")
     }
-    router.push("/reports")
+    router.push("/schedule")
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 bg-green-600 rounded-full flex items-center justify-center">
-            <Dumbbell className="w-8 h-8 text-white" />
+          <div className="mx-auto w-16 h-16 flex items-center justify-center">
+            <Image src="/logo.svg" alt="Conexão Treinamento" width={64} height={64} className="rounded-lg" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">Conexão Treino</CardTitle>
+            <CardTitle className="text-2xl font-bold">Conexão Treinamento</CardTitle>
             <CardDescription>Sistema de Gerenciamento da Academia</CardDescription>
           </div>
         </CardHeader>

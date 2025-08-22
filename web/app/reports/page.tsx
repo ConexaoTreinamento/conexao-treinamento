@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { BarChart3, Users, Clock, Calendar, Search, User } from "lucide-react"
+import { BarChart3, Users, Clock, Calendar, Search } from "lucide-react"
+import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 
 export default function ReportsPage() {
@@ -13,11 +14,16 @@ export default function ReportsPage() {
   const [selectedTeacher, setSelectedTeacher] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [userRole, setUserRole] = useState<string>("")
+  const router = useRouter()
 
   useEffect(() => {
     const role = localStorage.getItem("userRole") || "professor"
     setUserRole(role)
-  }, [])
+
+    if (role !== "admin") {
+      router.push("/schedule")
+    }
+  }, [router])
 
   // Mock teacher reports data
   const teacherReports = [
@@ -102,6 +108,10 @@ export default function ReportsPage() {
   const totalHours = filteredReports.reduce((sum, teacher) => sum + teacher.hoursWorked, 0)
   const totalClasses = filteredReports.reduce((sum, teacher) => sum + teacher.classesGiven, 0)
   const totalStudents = filteredReports.reduce((sum, teacher) => sum + teacher.studentsManaged, 0)
+
+  if (userRole !== "admin") {
+    return null
+  }
 
   return (
     <Layout>
@@ -216,42 +226,52 @@ export default function ReportsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredReports.map((teacher) => (
-                    <tr key={teacher.id} className="border-b hover:bg-muted/50">
-                      <td className="p-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                            <User className="w-4 h-4 text-green-600" />
+                  {filteredReports.map((teacher) => {
+                    const initials = teacher.name.replace("Prof.", "")
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase()
+
+                    return (
+                      <tr key={teacher.id} className="border-b hover:bg-muted/50">
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                              <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
+                                {initials}
+                              </span>
+                            </div>
+                            <span className="font-medium">{teacher.name}</span>
                           </div>
-                          <span className="font-medium">{teacher.name}</span>
-                        </div>
-                      </td>
-                      <td className="p-3 font-medium">{teacher.weeklyHours}h</td>
-                      <td className="p-3 font-medium">{teacher.hoursWorked}h</td>
-                      <td className="p-3 font-medium">{teacher.monthlyClasses}</td>
-                      <td className="p-3">{teacher.studentsManaged}</td>
-                      <td className="p-3">
-                        <Badge
-                          className={
-                            teacher.compensation === "Mensalista"
-                              ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-                              : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
-                          }
-                        >
-                          {teacher.compensation}
-                        </Badge>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex flex-wrap gap-1">
-                          {teacher.specialties.map((specialty, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs">
-                              {specialty}
-                            </Badge>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="p-3 font-medium">{teacher.weeklyHours}h</td>
+                        <td className="p-3 font-medium">{teacher.hoursWorked}h</td>
+                        <td className="p-3 font-medium">{teacher.monthlyClasses}</td>
+                        <td className="p-3">{teacher.studentsManaged}</td>
+                        <td className="p-3">
+                          <Badge
+                            className={
+                              teacher.compensation === "Mensalista"
+                                ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                                : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
+                            }
+                          >
+                            {teacher.compensation}
+                          </Badge>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex flex-wrap gap-1">
+                            {teacher.specialties.map((specialty, idx) => (
+                              <Badge key={idx} variant="outline" className="text-xs">
+                                {specialty}
+                              </Badge>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
@@ -259,67 +279,37 @@ export default function ReportsPage() {
         </Card>
 
         {/* Student Profile Analysis */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Perfil Etário dos Alunos
-              </CardTitle>
-              <CardDescription>Distribuição dos alunos por faixa etária</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {studentProfiles.map((profile, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 bg-green-600 rounded"></div>
-                      <span className="font-medium">{profile.age} anos</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-32 bg-muted rounded-full h-2">
-                        <div
-                          className="bg-green-600 h-2 rounded-full"
-                          style={{ width: `${profile.percentage}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-medium w-12 text-right">{profile.count}</span>
-                      <span className="text-sm text-muted-foreground w-8">({profile.percentage}%)</span>
-                    </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Perfil Etário dos Alunos
+            </CardTitle>
+            <CardDescription>Distribuição dos alunos por faixa etária</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {studentProfiles.map((profile, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-4 h-4 bg-green-600 rounded"></div>
+                    <span className="font-medium">{profile.age} anos</span>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="w-5 h-5" />
-                Profissões dos Alunos
-              </CardTitle>
-              <CardDescription>Distribuição por área profissional</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {professions.map((profession, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <span className="font-medium">{profession.name}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-20 bg-muted rounded-full h-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full"
-                          style={{ width: `${(profession.count / 142) * 100}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-medium w-8 text-right">{profession.count}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-32 bg-muted rounded-full h-2">
+                      <div
+                        className="bg-green-600 h-2 rounded-full"
+                        style={{ width: `${profile.percentage}%` }}
+                      ></div>
                     </div>
+                    <span className="text-sm font-medium w-12 text-right">{profile.count}</span>
+                    <span className="text-sm text-muted-foreground w-8">({profile.percentage}%)</span>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   )

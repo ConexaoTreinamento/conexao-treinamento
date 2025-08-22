@@ -205,10 +205,37 @@ export default function ClassSchedulePage() {
     }
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     console.log("Saving selected classes:", selectedClasses)
     console.log("Selected days:", selectedDays)
-    router.back()
+
+    // Simulate API call to update student's class enrollments
+    // In a real app, this would be an API call to update the backend
+    try {
+      // Update local storage or global state to propagate changes
+      const enrollmentData = {
+        studentId: student.id,
+        studentName: student.name,
+        selectedClasses: selectedClasses,
+        timestamp: new Date().toISOString(),
+      }
+
+      // Store the enrollment data so it can be picked up by the schedule pages
+      localStorage.setItem(`student_enrollment_${student.id}`, JSON.stringify(enrollmentData))
+
+      // Also store it in a global enrollments array for easier access
+      const existingEnrollments = JSON.parse(localStorage.getItem("all_enrollments") || "[]")
+      const updatedEnrollments = existingEnrollments.filter((e: any) => e.studentId !== student.id)
+      updatedEnrollments.push(enrollmentData)
+      localStorage.setItem("all_enrollments", JSON.stringify(updatedEnrollments))
+
+      console.log("Successfully saved student enrollment data")
+
+      // Show success message or redirect
+      router.back()
+    } catch (error) {
+      console.error("Error saving enrollment:", error)
+    }
   }
 
   const getOccupancyColor = (current: number, max: number) => {
