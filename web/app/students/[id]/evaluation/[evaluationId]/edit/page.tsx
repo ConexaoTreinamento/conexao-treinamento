@@ -46,47 +46,242 @@ export default function EditEvaluationPage() {
   const [loading, setLoading] = useState(true)
   const [studentName, setStudentName] = useState("Maria Silva")
 
-  // Mock evaluation data - replace with API call
+  // Mock students data - should match the data from student profile page
+  const mockStudents = [
+    {
+      id: 1,
+      name: "Maria Silva",
+      evaluations: [
+        {
+          id: "1",
+          date: "2024-07-15",
+          weight: 68.5,
+          height: 165,
+          bmi: 22.5,
+          circumferences: {
+            rightArmRelaxed: 28,
+            leftArmRelaxed: 27,
+            rightArmFlexed: 32,
+            leftArmFlexed: 31,
+            waist: 80,
+            abdomen: 90,
+            hip: 100,
+            rightThigh: 55,
+            leftThigh: 54,
+            rightCalf: 35,
+            leftCalf: 34,
+          },
+          subcutaneousFolds: {
+            triceps: 12,
+            thorax: 10,
+            subaxillary: 14,
+            subscapular: 16,
+            abdominal: 18,
+            suprailiac: 20,
+            thigh: 22,
+          },
+          diameters: {
+            umerus: 12,
+            femur: 14,
+          },
+        },
+        {
+          id: "2",
+          date: "2024-06-15",
+          weight: 70.0,
+          height: 165,
+          bmi: 23.0,
+          circumferences: {
+            rightArmRelaxed: 29,
+            leftArmRelaxed: 28,
+            rightArmFlexed: 33,
+            leftArmFlexed: 32,
+            waist: 82,
+            abdomen: 92,
+            hip: 102,
+            rightThigh: 56,
+            leftThigh: 55,
+            rightCalf: 36,
+            leftCalf: 35,
+          },
+          subcutaneousFolds: {
+            triceps: 13,
+            thorax: 11,
+            subaxillary: 15,
+            subscapular: 17,
+            abdominal: 19,
+            suprailiac: 21,
+            thigh: 23,
+          },
+          diameters: {
+            umerus: 13,
+            femur: 15,
+          },
+        },
+      ],
+    },
+    {
+      id: 2,
+      name: "João Santos",
+      evaluations: [
+        {
+          id: "3",
+          date: "2024-07-20",
+          weight: 75.2,
+          height: 178,
+          bmi: 24.1,
+          circumferences: {
+            rightArmRelaxed: 30,
+            leftArmRelaxed: 29,
+            rightArmFlexed: 34,
+            leftArmFlexed: 33,
+            waist: 84,
+            abdomen: 94,
+            hip: 104,
+            rightThigh: 57,
+            leftThigh: 56,
+            rightCalf: 37,
+            leftCalf: 36,
+          },
+          subcutaneousFolds: {
+            triceps: 14,
+            thorax: 12,
+            subaxillary: 16,
+            subscapular: 18,
+            abdominal: 20,
+            suprailiac: 22,
+            thigh: 24,
+          },
+          diameters: {
+            umerus: 14,
+            femur: 16,
+          },
+        },
+        {
+          id: "4",
+          date: "2024-06-20",
+          weight: 73.8,
+          height: 178,
+          bmi: 23.6,
+          circumferences: {
+            rightArmRelaxed: 31,
+            leftArmRelaxed: 30,
+            rightArmFlexed: 35,
+            leftArmFlexed: 34,
+            waist: 86,
+            abdomen: 96,
+            hip: 106,
+            rightThigh: 58,
+            leftThigh: 57,
+            rightCalf: 38,
+            leftCalf: 37,
+          },
+          subcutaneousFolds: {
+            triceps: 15,
+            thorax: 13,
+            subaxillary: 17,
+            subscapular: 19,
+            abdominal: 21,
+            suprailiac: 23,
+            thigh: 25,
+          },
+          diameters: {
+            umerus: 15,
+            femur: 17,
+          },
+        },
+      ],
+    },
+    {
+      id: 3,
+      name: "Ana Costa",
+      evaluations: [
+        {
+          id: "5",
+          date: "2024-06-15",
+          weight: 62.0,
+          height: 170,
+          bmi: 21.5,
+          circumferences: {
+            rightArmRelaxed: 27,
+            leftArmRelaxed: 26,
+            rightArmFlexed: 31,
+            leftArmFlexed: 30,
+            waist: 78,
+            abdomen: 88,
+            hip: 98,
+            rightThigh: 54,
+            leftThigh: 53,
+            rightCalf: 33,
+            leftCalf: 32,
+          },
+          subcutaneousFolds: {
+            triceps: 11,
+            thorax: 9,
+            subaxillary: 13,
+            subscapular: 15,
+            abdominal: 17,
+            suprailiac: 19,
+            thigh: 21,
+          },
+          diameters: {
+            umerus: 11,
+            femur: 13,
+          },
+        },
+        {
+          id: "6",
+          date: "2024-03-15",
+          weight: 63.2,
+          height: 170,
+          bmi: 21.9,
+          circumferences: {
+            rightArmRelaxed: 28,
+            leftArmRelaxed: 27,
+            rightArmFlexed: 32,
+            leftArmFlexed: 31,
+            waist: 80,
+            abdomen: 90,
+            hip: 100,
+            rightThigh: 55,
+            leftThigh: 54,
+            rightCalf: 34,
+            leftCalf: 33,
+          },
+          subcutaneousFolds: {
+            triceps: 12,
+            thorax: 10,
+            subaxillary: 14,
+            subscapular: 16,
+            abdominal: 18,
+            suprailiac: 20,
+            thigh: 22,
+          },
+          diameters: {
+            umerus: 12,
+            femur: 14,
+          },
+        },
+      ],
+    },
+  ]
+
   useEffect(() => {
-    const mockEvaluation: EvaluationData = {
-      id: params.evaluationId as string,
-      date: "2024-01-15",
-      weight: 65.5,
-      height: 165,
-      bmi: 24.07,
-      circumferences: {
-        rightArmRelaxed: 28.5,
-        leftArmRelaxed: 28.0,
-        rightArmFlexed: 30.5,
-        leftArmFlexed: 30.0,
-        waist: 72.0,
-        abdomen: 78.5,
-        hip: 92.0,
-        rightThigh: 54.0,
-        leftThigh: 53.5,
-        rightCalf: 34.0,
-        leftCalf: 33.5
-      },
-      subcutaneousFolds: {
-        triceps: 12.5,
-        thorax: 8.0,
-        subaxillary: 10.5,
-        subscapular: 14.0,
-        abdominal: 16.5,
-        suprailiac: 18.0,
-        thigh: 20.5
-      },
-      diameters: {
-        umerus: 6.5,
-        femur: 9.0
+    const studentId = parseInt(params.id as string)
+    const evaluationId = params.evaluationId as string
+
+    // Find the student and evaluation
+    const student = mockStudents.find(s => s.id === studentId)
+    if (student) {
+      setStudentName(student.name)
+      const foundEvaluation = student.evaluations.find(e => e.id === evaluationId)
+      if (foundEvaluation) {
+        setEvaluation(foundEvaluation)
       }
     }
 
-    setTimeout(() => {
-      setEvaluation(mockEvaluation)
-      setLoading(false)
-    }, 500)
-  }, [params.evaluationId])
+    setLoading(false)
+  }, [params.id, params.evaluationId])
 
   const handleSubmit = async (data: any) => {
     // Simulate API call to update evaluation
@@ -95,8 +290,8 @@ export default function EditEvaluationPage() {
     // Simulate API delay
     await new Promise((resolve) => setTimeout(resolve, 1500))
 
-    // Navigate back to evaluation detail page
-    router.push(`/students/${params.id}/evaluation/${params.evaluationId}`)
+    // Navigate back to the evaluation page
+    router.replace(`/students/${params.id}/evaluation/${params.evaluationId}`)
   }
 
   const handleCancel = () => {
