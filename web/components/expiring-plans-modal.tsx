@@ -103,8 +103,8 @@ export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansMod
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
             <AlertTriangle className="w-5 h-5" />
             Planos Próximos ao Vencimento
@@ -114,20 +114,22 @@ export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansMod
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex-1 overflow-hidden flex flex-col space-y-4">
           {expiringStudents.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-green-500" />
-              <p className="text-lg font-medium text-green-600 dark:text-green-400">
-                Nenhum plano próximo ao vencimento
-              </p>
-              <p className="text-sm">
-                Todos os planos estão em dia!
-              </p>
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-green-500" />
+                <p className="text-lg font-medium text-green-600 dark:text-green-400">
+                  Nenhum plano próximo ao vencimento
+                </p>
+                <p className="text-sm">
+                  Todos os planos estão em dia!
+                </p>
+              </div>
             </div>
           ) : (
             <>
-              <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+              <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 flex-shrink-0">
                 <div className="flex items-center gap-2 mb-2">
                   <AlertTriangle className="w-4 h-4 text-orange-600 dark:text-orange-400" />
                   <span className="font-medium text-orange-800 dark:text-orange-200">
@@ -139,7 +141,7 @@ export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansMod
                 </p>
               </div>
 
-              <div className="space-y-3">
+              <div className="flex-1 overflow-y-auto space-y-3 pr-2">
                 {expiringStudents.map((student) => (
                   <div
                     key={student.id}
@@ -186,7 +188,7 @@ export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansMod
           )}
         </div>
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
+        <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0">
           <Button variant="outline" onClick={onClose}>
             Fechar
           </Button>
