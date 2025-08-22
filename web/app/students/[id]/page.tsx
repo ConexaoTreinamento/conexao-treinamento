@@ -844,7 +844,7 @@ export default function StudentProfilePage() {
                       >
                         <div className="flex justify-between items-center mb-3">
                           <span className="font-medium">{new Date(evaluation.date).toLocaleDateString("pt-BR")}</span>
-                          <Badge variant="outline">Avaliação {studentData.evaluations.length - index}</Badge>
+                          <Badge variant="outline">Avaliação {evaluation.id}</Badge>
                         </div>
 
                         {/* Most relevant fields in a clean grid */}
