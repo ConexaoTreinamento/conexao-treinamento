@@ -89,6 +89,23 @@ interface ClassSchedule {
   selectedClasses: ScheduleClass[]
 }
 
+interface Exercise {
+  id: string
+  name: string
+  sets: number
+  reps: string
+  weight?: string
+  duration?: string
+  notes?: string
+}
+
+interface ClassExercise {
+  classDate: string
+  className: string
+  instructor: string
+  exercises: Exercise[]
+}
+
 interface StudentData {
   id: number
   name: string
@@ -111,6 +128,7 @@ interface StudentData {
   evaluations: Evaluation[]
   recentClasses: ClassItem[]
   classSchedule: ClassSchedule
+  exercises: ClassExercise[]
 }
 
 export default function StudentProfilePage() {
@@ -247,6 +265,26 @@ export default function StudentProfilePage() {
           { day: "Sexta", time: "17:00", class: "CrossFit Iniciante", instructor: "Prof. Roberto" },
         ],
       },
+      exercises: [
+        {
+          classDate: "2024-07-10",
+          className: "Pilates Iniciante",
+          instructor: "Prof. Ana",
+          exercises: [
+            { id: "1", name: "Abdominais", sets: 3, reps: "15", weight: "5kg", duration: "00:10:00", notes: "Focar na respiração" },
+            { id: "2", name: "Prancha", sets: 3, reps: "30s", notes: "Manter o corpo reto" },
+          ],
+        },
+        {
+          classDate: "2024-07-12",
+          className: "Yoga",
+          instructor: "Prof. Marina",
+          exercises: [
+            { id: "3", name: "Saudação ao Sol", sets: 1, reps: "5", duration: "00:15:00", notes: "Alongar bem" },
+            { id: "4", name: "Postura da Árvore", sets: 3, reps: "10", duration: "00:05:00", notes: "Equilíbrio" },
+          ],
+        },
+      ],
     },
     {
       id: 2,
@@ -369,6 +407,26 @@ export default function StudentProfilePage() {
           { day: "Sexta", time: "19:00", class: "CrossFit", instructor: "Prof. Roberto" },
         ],
       },
+      exercises: [
+        {
+          classDate: "2024-07-11",
+          className: "Musculação Avançada",
+          instructor: "Prof. Carlos",
+          exercises: [
+            { id: "5", name: "Supino", sets: 4, reps: "10", weight: "20kg", notes: "Controlar a descida" },
+            { id: "6", name: "Agachamento", sets: 4, reps: "12", weight: "25kg", notes: "Manter o tronco ereto" },
+          ],
+        },
+        {
+          classDate: "2024-07-13",
+          className: "CrossFit",
+          instructor: "Prof. Roberto",
+          exercises: [
+            { id: "7", name: "Burpees", sets: 3, reps: "15", notes: "Pular alto" },
+            { id: "8", name: "Kettlebell Swing", sets: 3, reps: "20", weight: "16kg", notes: "Manter as costas retas" },
+          ],
+        },
+      ],
     },
     {
       id: 3,
@@ -489,6 +547,26 @@ export default function StudentProfilePage() {
           { day: "Quinta", time: "17:00", class: "Pilates Intermediário", instructor: "Prof. Ana" },
         ],
       },
+      exercises: [
+        {
+          classDate: "2024-07-09",
+          className: "Yoga",
+          instructor: "Prof. Marina",
+          exercises: [
+            { id: "9", name: "Cachorro Olhando para Baixo", sets: 3, reps: "10", duration: "00:05:00", notes: "Alongar bem as costas" },
+            { id: "10", name: "Gato", sets: 3, reps: "10", duration: "00:05:00", notes: "Movimentar bem a coluna" },
+          ],
+        },
+        {
+          classDate: "2024-07-11",
+          className: "Pilates Intermediário",
+          instructor: "Prof. Ana",
+          exercises: [
+            { id: "11", name: "Roll Up", sets: 3, reps: "10", notes: "Controlar a descida" },
+            { id: "12", name: "Single Leg Circle", sets: 3, reps: "10", notes: "Manter o quadril estável" },
+          ],
+        },
+      ],
     },
   ]
 
@@ -674,21 +752,18 @@ export default function StudentProfilePage() {
 
           {/* Content Tabs */}
           <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-5 h-auto">
+            <TabsList className="grid w-full grid-cols-4 h-auto">
               <TabsTrigger value="overview" className="text-xs px-2 py-2">
                 Geral
               </TabsTrigger>
               <TabsTrigger value="evaluations" className="text-xs px-2 py-2">
                 Avaliações
               </TabsTrigger>
-              <TabsTrigger value="classes" className="text-xs px-2 py-2">
-                Aulas
+              <TabsTrigger value="exercises" className="text-xs px-2 py-2">
+                Exercícios
               </TabsTrigger>
               <TabsTrigger value="details" className="text-xs px-2 py-2">
                 Detalhes
-              </TabsTrigger>
-              <TabsTrigger value="anamnesis" className="text-xs px-2 py-2">
-                Anamnese
               </TabsTrigger>
             </TabsList>
 
@@ -726,6 +801,28 @@ export default function StudentProfilePage() {
                     >
                       Gerenciar Cronograma
                     </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Aulas Recentes</CardTitle>
+                  <CardDescription>Histórico de participação em aulas</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {studentData.recentClasses.map((classItem, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
+                        <div>
+                          <p className="font-medium text-sm">{classItem.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(classItem.date).toLocaleDateString("pt-BR")} • {classItem.instructor}
+                          </p>
+                        </div>
+                        <Badge className={getAttendanceColor(classItem.status)}>{classItem.status}</Badge>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -813,23 +910,47 @@ export default function StudentProfilePage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="classes" className="space-y-4">
+            <TabsContent value="exercises" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Aulas Recentes</CardTitle>
-                  <CardDescription>Histórico de participação em aulas</CardDescription>
+                  <CardTitle className="text-base">Exercícios Realizados</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {studentData.recentClasses.map((classItem, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
-                        <div>
-                          <p className="font-medium text-sm">{classItem.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(classItem.date).toLocaleDateString("pt-BR")} • {classItem.instructor}
-                          </p>
+                  <div className="space-y-4">
+                    {studentData.exercises.length === 0 && (
+                      <div className="text-center py-8">
+                        <Activity className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-muted-foreground">Nenhum exercício encontrado</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => router.push(`/students/${params.id}/exercise/new`)}
+                        >
+                          Atribuir primeiro exercício
+                        </Button>
+                      </div>
+                    )}
+
+                    {studentData.exercises.map((exerciseItem, index) => (
+                      <div key={index} className="p-4 rounded-lg border bg-muted/50">
+                        <div className="mb-3">
+                          <h3 className="font-medium">{exerciseItem.className} - {exerciseItem.instructor}</h3>
+                          <p className="text-xs text-muted-foreground">{new Date(exerciseItem.classDate).toLocaleDateString("pt-BR")}</p>
                         </div>
-                        <Badge className={getAttendanceColor(classItem.status)}>{classItem.status}</Badge>
+
+                        <div className="space-y-2">
+                          {exerciseItem.exercises.map((exercise: Exercise) => (
+                            <div key={exercise.id} className="text-sm">
+                              <div>
+                                <span className="text-muted-foreground">{exercise.name}</span>
+                                <p className="text-xs text-muted-foreground">
+                                  {exercise.sets}x{exercise.reps} {exercise.weight ? `• ${exercise.weight}` : ""} {exercise.duration ? `• ${exercise.duration}` : ""}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -894,11 +1015,7 @@ export default function StudentProfilePage() {
                     </div>
                   </CardContent>
                 </Card>
-              </div>
-            </TabsContent>
 
-            <TabsContent value="anamnesis" className="space-y-4">
-              <div className="space-y-4">
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Ficha de Anamnese</CardTitle>
@@ -906,7 +1023,7 @@ export default function StudentProfilePage() {
                   <CardContent className="space-y-3">
                     <div>
                       <span className="text-sm text-muted-foreground">Medicações em uso:</span>
-                      <p>{studentData.medicalData.medication.length > 0 ? studentData.medicalData.medication.join(", ") : "Não"}</p>
+                      <p>{studentData.medicalData.medication.length > 0 ? studentData.medicalData.medication.join(", ") : "Nenhuma"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Médico ciente da prática de atividade física?</span>
@@ -926,7 +1043,7 @@ export default function StudentProfilePage() {
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Problemas cardíacos:</span>
-                      <p>{studentData.medicalData.cardiacProblems.join(", ")}</p>
+                      <p>{studentData.medicalData.cardiacProblems.length > 0 ? studentData.medicalData.cardiacProblems.join(", ") : "Nenhum"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Hipertensão:</span>
@@ -934,19 +1051,19 @@ export default function StudentProfilePage() {
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Doenças crônicas:</span>
-                      <p>{studentData.medicalData.chronicDiseases.join(", ")}</p>
+                      <p>{studentData.medicalData.chronicDiseases.length > 0 ? studentData.medicalData.chronicDiseases.join(", ") : "Nenhuma"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Dificuldades para realização de exercícios físicos?</span>
-                      <p>{studentData.medicalData.difficultiesInPhysicalActivities.join(", ")}</p>
+                      <p>{studentData.medicalData.difficultiesInPhysicalActivities.length > 0 ? studentData.medicalData.difficultiesInPhysicalActivities.join(", ") : "Nenhuma"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Orientação médica impeditiva de alguma atividade física?</span>
-                      <p>{studentData.medicalData.medicalOrientationsToAvoidPhysicalActivity.join(", ")}</p>
+                      <p>{studentData.medicalData.medicalOrientationsToAvoidPhysicalActivity.length > 0 ? studentData.medicalData.medicalOrientationsToAvoidPhysicalActivity.join(", ") : "Nenhuma"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Cirurgias nos últimos 12 meses:</span>
-                      <p>{studentData.medicalData.surgeriesInTheLast12Months.join(", ")}</p>
+                      <p>{studentData.medicalData.surgeriesInTheLast12Months.length > 0 ? studentData.medicalData.surgeriesInTheLast12Months.join(", ") : "Nenhuma"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Problemas respiratórios:</span>
@@ -954,11 +1071,11 @@ export default function StudentProfilePage() {
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Dor muscular/articular/dorsal:</span>
-                      <p>{studentData.medicalData.jointMuscularBackPain.join(", ")}</p>
+                      <p>{studentData.medicalData.jointMuscularBackPain.length > 0 ? studentData.medicalData.jointMuscularBackPain.join(", ") : "Nenhuma"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Problemas de disco espinhal:</span>
-                      <p>{studentData.medicalData.spinalDiscProblems.join(", ")}</p>
+                      <p>{studentData.medicalData.spinalDiscProblems.length > 0 ? studentData.medicalData.spinalDiscProblems.join(", ") : "Nenhum"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Diabetes:</span>
@@ -974,7 +1091,7 @@ export default function StudentProfilePage() {
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Osteoporose (localização):</span>
-                      <p>{studentData.medicalData.osteoporosisLocation}</p>
+                      <p>{studentData.medicalData.osteoporosisLocation || "Não"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Impedimentos físicos:</span>
