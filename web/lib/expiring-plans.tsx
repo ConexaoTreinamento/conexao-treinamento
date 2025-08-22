@@ -26,8 +26,10 @@ export const getExpiringPlanBadge = (daysUntilExpiration: number) => {
     return <Badge variant="destructive" className="text-xs">Plano Expirado</Badge>
   } else if (daysUntilExpiration === 0) {
     return <Badge variant="destructive" className="text-xs">Expira Hoje</Badge>
+  } else if (daysUntilExpiration === 1) {
+    return <Badge variant="destructive" className="text-xs">Expira em 1 dia</Badge>
   } else if (daysUntilExpiration <= 2) {
-    return <Badge variant="destructive" className="text-xs">Expira em {daysUntilExpiration} dia(s)</Badge>
+    return <Badge variant="destructive" className="text-xs">Expira em {daysUntilExpiration} dias</Badge>
   } else if (daysUntilExpiration <= 5) {
     return <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-400 text-xs">
       Expira em {daysUntilExpiration} dias

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { AlertTriangle, Calendar, User, Phone, Mail } from "lucide-react"
 import Link from "next/link"
 import { getStudentPlanExpirationDate, calculateDaysUntilExpiration, getExpiringPlanBadge } from "@/lib/expiring-plans"
+import { STUDENTS, getStudentFullName } from "@/lib/students-data"
 
 interface Student {
   id: number
@@ -25,49 +26,18 @@ interface ExpiringPlansModalProps {
 export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansModalProps) {
   const [expiringStudents, setExpiringStudents] = useState<Student[]>([])
 
-  // Mock students data - should match the students from the main app
-  const mockStudents = [
-    {
-      id: 1,
-      name: "Maria Silva",
-      email: "maria@email.com",
-      phone: "(11) 99999-9999"
-    },
-    {
-      id: 2,
-      name: "João Santos",
-      email: "joao@email.com",
-      phone: "(11) 88888-8888"
-    },
-    {
-      id: 3,
-      name: "Ana Costa",
-      email: "ana@email.com",
-      phone: "(11) 77777-7777"
-    },
-    {
-      id: 4,
-      name: "Carlos Lima",
-      email: "carlos@email.com",
-      phone: "(11) 66666-6666"
-    },
-    {
-      id: 5,
-      name: "Lucia Ferreira",
-      email: "lucia@email.com",
-      phone: "(11) 55555-5555"
-    }
-  ]
-
   useEffect(() => {
     if (isOpen) {
       // Process students and get their expiration data
-      const studentsWithExpiration = mockStudents.map(student => {
+      const studentsWithExpiration = STUDENTS.map(student => {
         const planExpirationDate = getStudentPlanExpirationDate(student.id)
         const daysUntilExpiration = calculateDaysUntilExpiration(planExpirationDate)
 
         return {
-          ...student,
+          id: student.id,
+          name: getStudentFullName(student),
+          email: student.email,
+          phone: student.phone,
           planExpirationDate,
           daysUntilExpiration
         }
@@ -141,7 +111,7 @@ export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansMod
                     onClick={onClose}
                     className="block"
                   >
-                    <div className="border rounded-lg p-4 bg-card hover:bg-accent/50 transition-colors cursor-pointer">
+                    <div className="border rounded-lg p-4 bg-card hover:shadow-md transition-shadow cursor-pointer">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4 text-muted-foreground" />
