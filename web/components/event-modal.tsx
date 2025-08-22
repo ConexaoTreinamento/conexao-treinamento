@@ -24,7 +24,6 @@ interface EventFormData {
   endTime: string
   location: string
   description: string
-  maxParticipants: string
   instructor: string
   students: string[]
   attendance?: Record<string, boolean>
@@ -56,7 +55,6 @@ export default function EventModal({
     endTime: "",
     location: "",
     description: "",
-    maxParticipants: "20",
     instructor: "",
     students: [],
     attendance: {},
@@ -72,7 +70,6 @@ export default function EventModal({
         endTime: initialData.endTime || "",
         location: initialData.location || "",
         description: initialData.description || "",
-        maxParticipants: initialData.maxParticipants || "20",
         instructor: initialData.instructor || "",
         students: initialData.students || [],
         attendance: initialData.attendance || {},
@@ -86,7 +83,6 @@ export default function EventModal({
         endTime: "",
         location: "",
         description: "",
-        maxParticipants: "20",
         instructor: "",
         students: [],
         attendance: {},
@@ -114,8 +110,7 @@ export default function EventModal({
   }
 
   const handleAddStudent = (student: string) => {
-    const maxParticipants = parseInt(formData.maxParticipants) || 20
-    if (formData.students.length < maxParticipants && !formData.students.includes(student)) {
+    if (!formData.students.includes(student)) {
       setFormData(prev => ({
         ...prev,
         students: [...prev.students, student],
@@ -163,19 +158,7 @@ export default function EventModal({
            formData.instructor
   }
 
-  const getStatus = () => {
-    const maxParticipants = parseInt(formData.maxParticipants) || 20
-    const currentParticipants = formData.students.length
-
-    if (currentParticipants >= maxParticipants) {
-      return "Lotado"
-    }
-    return "Aberto"
-  }
-
-  const maxParticipants = parseInt(formData.maxParticipants) || 20
   const currentParticipants = formData.students.length
-  const isAtCapacity = currentParticipants >= maxParticipants
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -238,15 +221,15 @@ export default function EventModal({
           </div>
 
           {/* Location and Instructor */}
-            <div className="space-y-2">
-              <Label htmlFor="eventLocation">Local *</Label>
-              <Input
-                id="eventLocation"
-                value={formData.location}
-                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                placeholder="Ex: Parque Ibirapuera"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="eventLocation">Local *</Label>
+            <Input
+              id="eventLocation"
+              value={formData.location}
+              onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+              placeholder="Ex: Parque Ibirapuera"
+            />
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="eventInstructor">Instrutor *</Label>
@@ -266,19 +249,6 @@ export default function EventModal({
                 </SelectContent>
               </Select>
             </div>
-            {/* Max Participants */}
-            <div className="space-y-2">
-              <Label htmlFor="eventMaxParticipants">Máximo de Participantes *</Label>
-              <Input
-                id="eventMaxParticipants"
-                type="number"
-                min="1"
-                max="100"
-                value={formData.maxParticipants}
-                onChange={(e) => setFormData(prev => ({ ...prev, maxParticipants: e.target.value }))}
-                placeholder="20"
-              />
-            </div>
           </div>
 
           {/* Description */}
@@ -297,21 +267,14 @@ export default function EventModal({
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
               <Label>
-                Participantes ({currentParticipants}/{maxParticipants}) - Status: {getStatus()}
+                Participantes ({currentParticipants})
               </Label>
               <AddStudentDialog
                 students={availableStudents}
                 onAddStudent={handleAddStudent}
                 excludeStudents={formData.students}
-                disabled={isAtCapacity}
               />
             </div>
-
-            {isAtCapacity && (
-              <p className="text-sm text-amber-600">
-                ⚠️ Limite de participantes atingido
-              </p>
-            )}
 
             {formData.students.length > 0 && (
               <div className="border rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
