@@ -1,10 +1,10 @@
 package org.conexaotreinamento.conexaotreinamentobackend.service;
 
-import org.conexaotreinamento.conexaotreinamentobackend.api.dto.request.ExerciseRequestDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.api.dto.request.PatchExerciseRequestDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.api.dto.response.ExerciseResponseDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.entity.Exercise;
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.repository.ExerciseRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.ExerciseRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchExerciseRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ExerciseResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.Exercise;
+import org.conexaotreinamento.conexaotreinamentobackend.repository.ExerciseRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -1,7 +1,7 @@
-package org.conexaotreinamento.conexaotreinamentobackend.api.dto.response;
+package org.conexaotreinamento.conexaotreinamentobackend.dto.response;
 
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.entity.Trainer;
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.entity.enums.CompensationType;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.enums.CompensationType;
 
 import java.time.Instant;
 import java.util.List;

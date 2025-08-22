@@ -1,30 +1,25 @@
-package org.conexaotreinamento.conexaotreinamentobackend.persistence.entity;
+package org.conexaotreinamento.conexaotreinamentobackend.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import lombok.AccessLevel;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import org.conexaotreinamento.conexaotreinamentobackend.entity.enums.CompensationType;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "exercises")
+@Table(name = "trainers")
 @EntityListeners(AuditingEntityListener.class)
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Exercise {
+@NoArgsConstructor
+public class Trainer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -36,24 +31,33 @@ public class Exercise {
 
     @Column(length = 255)
     @Setter
-    private String description;
+    private String email;
+
+    @Column(length = 255)
+    @Setter
+    private String phone;
+
+    @Column(name = "specialties")
+    @Setter
+    private List<String> specialties;
+
+    @Column(name = "compensation_type")
+    @Setter
+    private CompensationType compensationType;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
+    @Setter
     private Instant createdAt;
 
     @LastModifiedDate
     @Column(name = "updated_at")
+    @Setter
     private Instant updatedAt;
 
     @Column(name = "deleted_at")
     @Setter
     private Instant deletedAt;
-
-    public Exercise(String name, String description) {
-        this.name = name;
-        this.description = description;
-    }
 
     public boolean isActive() {
         return deletedAt == null;

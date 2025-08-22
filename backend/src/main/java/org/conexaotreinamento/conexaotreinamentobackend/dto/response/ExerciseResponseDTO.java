@@ -1,6 +1,6 @@
-package org.conexaotreinamento.conexaotreinamentobackend.api.dto.response;
+package org.conexaotreinamento.conexaotreinamentobackend.dto.response;
 
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.entity.Exercise;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.Exercise;
 
 import java.time.Instant;
 import java.util.UUID;

@@ -2,10 +2,10 @@ package org.conexaotreinamento.conexaotreinamentobackend.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.conexaotreinamento.conexaotreinamentobackend.api.dto.request.CreateTrainerDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.api.dto.response.TrainerResponseDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.entity.Trainer;
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.repository.TrainerRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateTrainerDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
+import org.conexaotreinamento.conexaotreinamentobackend.repository.TrainerRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;

@@ -1,7 +1,7 @@
-package org.conexaotreinamento.conexaotreinamentobackend.persistence.repository;
+package org.conexaotreinamento.conexaotreinamentobackend.repository;
 
-import org.conexaotreinamento.conexaotreinamentobackend.api.dto.response.TrainerResponseDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.entity.Trainer;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 

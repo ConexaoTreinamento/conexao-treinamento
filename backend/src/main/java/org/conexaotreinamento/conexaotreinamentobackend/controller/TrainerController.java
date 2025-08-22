@@ -1,9 +1,9 @@
-package org.conexaotreinamento.conexaotreinamentobackend.api.controller;
+package org.conexaotreinamento.conexaotreinamentobackend.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.conexaotreinamento.conexaotreinamentobackend.api.dto.request.CreateTrainerDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.api.dto.response.TrainerResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateTrainerDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.service.TrainerService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

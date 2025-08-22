@@ -1,10 +1,10 @@
 package org.conexaotreinamento.conexaotreinamentobackend.api.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.conexaotreinamento.conexaotreinamentobackend.api.dto.request.ExerciseRequestDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.api.dto.request.PatchExerciseRequestDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.entity.Exercise;
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.repository.ExerciseRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.ExerciseRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchExerciseRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.Exercise;
+import org.conexaotreinamento.conexaotreinamentobackend.repository.ExerciseRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
