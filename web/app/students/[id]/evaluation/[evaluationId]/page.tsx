@@ -142,7 +142,7 @@ export default function EvaluationDetailPage() {
               <Calendar className="w-3 h-3" />
               {new Date(evaluation.date).toLocaleDateString("pt-BR")}
             </Badge>
-            <Button size="sm" variant="outline">
+            <Button size="sm" variant="outline" onClick={() => router.push(`/students/${params.id}/evaluation/${evaluation.id}/edit`)}>
               <Edit className="w-4 h-4 mr-2" />
               Editar
             </Button>
