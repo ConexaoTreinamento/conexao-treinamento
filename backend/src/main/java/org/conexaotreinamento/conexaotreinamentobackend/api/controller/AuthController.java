@@ -3,14 +3,8 @@ package org.conexaotreinamento.conexaotreinamentobackend.api.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.conexaotreinamento.conexaotreinamentobackend.api.dto.request.LoginRequestDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.api.dto.request.RegisterRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.api.dto.response.JwtResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.config.security.user.UserDetailsImpl;
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.entity.Role;
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.entity.User;
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.enums.RoleName;
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.repository.RoleRepository;
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.repository.UserRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.config.security.jwt.JwtService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,15 +12,9 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
-import java.util.stream.Collectors;
-
 /**
  * Controller responsável pelos endpoints de autenticação
  * Usa OAuth2 Resource Server para geração e validação de tokens
