@@ -21,7 +21,7 @@ import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X } from "lucide
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import StudentForm from "@/components/student-form"
-import { getStudentPlanExpirationDate, calculateDaysUntilExpiration, getExpiringPlanBadge, isPlanExpiring } from "@/lib/expiring-plans"
+import {getStudentCurrentStatus, getStudentPlanExpirationDate, getUnifiedStatusBadge} from "@/lib/expiring-plans"
 import { STUDENTS, getStudentFullName } from "@/lib/students-data"
 
 export default function StudentsPage() {
@@ -53,7 +53,9 @@ export default function StudentsPage() {
       student.profession.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.phone.includes(searchTerm)
 
-    const matchesStatus = filters.status === "all" || student.status === filters.status
+    // Use dynamic status based on plan expiration
+    const currentStatus = getStudentCurrentStatus(student.id)
+    const matchesStatus = filters.status === "all" || currentStatus === filters.status
     const matchesPlan = filters.plan === "all" || student.plan === filters.plan
 
     const age = new Date().getFullYear() - new Date(student.birthDate).getFullYear()
@@ -331,10 +333,8 @@ export default function StudentsPage() {
             const fullName = `${student.name} ${student.surname}`
             const initials = `${student.name.charAt(0)}${student.surname.charAt(0)}`.toUpperCase()
 
-            // Get expiring plan data
+            // Get plan expiration date for unified status
             const planExpirationDate = getStudentPlanExpirationDate(student.id)
-            const daysUntilExpiration = calculateDaysUntilExpiration(planExpirationDate)
-            const expiringPlanBadge = getExpiringPlanBadge(daysUntilExpiration)
 
             return (
               <Card
@@ -355,10 +355,7 @@ export default function StudentsPage() {
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-base leading-tight">{fullName}</h3>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            <Badge className={`${getStatusColor(student.status)} text-xs`}>
-                              {student.status}
-                            </Badge>
-                            {expiringPlanBadge}
+                            {getUnifiedStatusBadge(planExpirationDate)}
                           </div>
                         </div>
                       </div>
@@ -414,8 +411,7 @@ export default function StudentsPage() {
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-lg flex-1 min-w-0 truncate">{fullName}</h3>
                           <div className="flex gap-2 flex-shrink-0">
-                            <Badge className={`${getStatusColor(student.status)}`}>{student.status}</Badge>
-                            {expiringPlanBadge}
+                            {getUnifiedStatusBadge(planExpirationDate)}
                           </div>
                         </div>
                       </div>

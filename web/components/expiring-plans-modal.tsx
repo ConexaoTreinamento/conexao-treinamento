@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle, Calendar, User, Phone, Mail } from "lucide-react"
 import Link from "next/link"
-import { getStudentPlanExpirationDate, calculateDaysUntilExpiration, getExpiringPlanBadge } from "@/lib/expiring-plans"
+import { getStudentPlanExpirationDate, calculateDaysUntilExpiration, getUnifiedStatusBadge } from "@/lib/expiring-plans"
 import { STUDENTS, getStudentFullName } from "@/lib/students-data"
 
 interface Student {
@@ -43,21 +43,17 @@ export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansMod
         }
       })
 
-      // Filter students whose plans expire within 7 days
+      // Filter students whose plans expire within 7 days or are already expired
       const expiring = studentsWithExpiration.filter(student =>
         student.daysUntilExpiration <= 7
       )
 
-      // Sort by expiration date - earliest first
+      // Sort by expiration date - earliest first (expired plans first)
       expiring.sort((a, b) => a.daysUntilExpiration - b.daysUntilExpiration)
 
       setExpiringStudents(expiring)
     }
   }, [isOpen])
-
-  const getStatusBadge = (daysUntilExpiration: number) => {
-    return getExpiringPlanBadge(daysUntilExpiration)
-  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("pt-BR")
@@ -119,7 +115,7 @@ export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansMod
                             {student.name}
                           </span>
                         </div>
-                        {getStatusBadge(student.daysUntilExpiration)}
+                        {getUnifiedStatusBadge(student.planExpirationDate)}
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground mb-3">
