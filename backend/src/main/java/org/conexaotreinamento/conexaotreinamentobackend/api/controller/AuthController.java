@@ -49,7 +49,7 @@ public class AuthController {
             // Autentica o usuário usando email e senha
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            loginRequest.email(),
+                            loginRequest.username(),
                             loginRequest.password()));
 
             // Define a autenticação no contexto de segurança

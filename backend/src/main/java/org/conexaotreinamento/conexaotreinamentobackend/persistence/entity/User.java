@@ -36,7 +36,7 @@ public class User {
     private UUID id;
 
     @Column(nullable = false, length = 120, unique = true)
-    private String email;
+    private String username;
 
     @Column(nullable = false, length = 120)
     private String password;
@@ -56,8 +56,8 @@ public class User {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
-    public User(String email, String password) {
-        this.email = email;
+    public User(String username, String password) {
+        this.username = username;
         this.password = password;
     }
 

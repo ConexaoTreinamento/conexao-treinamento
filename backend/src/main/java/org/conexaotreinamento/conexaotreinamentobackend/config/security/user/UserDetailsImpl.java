@@ -15,13 +15,13 @@ import lombok.Getter;
 public class UserDetailsImpl implements UserDetails {
 
     private UUID id;
-    private String email;
+    private String username;
     private String password;
     private User user; // Mantemos a referência para acessar roles
 
     public UserDetailsImpl(User user) {
         this.id = user.getId();
-        this.email = user.getEmail();
+        this.username = user.getUsername();
         this.password = user.getPassword();
         this.user = user;
     }
@@ -48,7 +48,7 @@ public class UserDetailsImpl implements UserDetails {
 
     @Override
     public String getUsername() {
-        return email;
+        return username;
     }
 
     @Override
