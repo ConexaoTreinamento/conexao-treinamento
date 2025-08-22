@@ -9,7 +9,7 @@ import { useRouter, useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Layout from "@/components/layout"
 import { getStudentPlanExpirationDate, calculateDaysUntilExpiration, getExpiringPlanBadge } from "@/lib/expiring-plans"
-import { STUDENT_PROFILES, getStudentProfileById } from "@/lib/students-data"
+import { STUDENT_PROFILES, getStudentProfileById, getStudentFullName } from "@/lib/students-data"
 
 // Type definitions
 interface MedicalData {
@@ -250,14 +250,14 @@ export default function StudentProfilePage() {
             <CardHeader className="text-center pb-4">
               <Avatar className="w-20 h-20 mx-auto">
                 <AvatarFallback className="text-xl select-none">
-                  {studentData.name
+                  {getStudentFullName(studentData)
                     .split(" ")
                     .map((n) => n[0])
                     .join("")}
                 </AvatarFallback>
               </Avatar>
               <div className="space-y-2">
-                <CardTitle className="text-lg">{studentData.name}</CardTitle>
+                <CardTitle className="text-lg">{getStudentFullName(studentData)}</CardTitle>
                 <div className="flex flex-wrap justify-center gap-2">
                   <Badge className={getStatusColor(studentData.status)}>{studentData.status}</Badge>
                   <Badge variant="outline">Plano {studentData.plan}</Badge>
