@@ -5,19 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Calendar, Clock, Plus, MapPin, User, CheckCircle, XCircle, CalendarDays, X, ChevronLeft, ChevronRight } from "lucide-react"
+import { Calendar, Clock, Plus, User, CheckCircle, XCircle, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import ClassModal from "@/components/class-modal"
@@ -28,14 +16,6 @@ export default function SchedulePage() {
   const [userRole, setUserRole] = useState<string>("")
   const [isNewClassOpen, setIsNewClassOpen] = useState(false)
   const [modalInitialData, setModalInitialData] = useState({
-    name: "",
-    instructor: "",
-    maxStudents: "2",
-    description: "",
-    weekDays: [] as string[],
-    times: [] as { day: string; startTime: string; endTime: string }[],
-  })
-  const [newClassForm, setNewClassForm] = useState({
     name: "",
     instructor: "",
     maxStudents: "2",
@@ -116,15 +96,6 @@ export default function SchedulePage() {
   ])
 
   const teachers = ["Prof. Ana", "Prof. Marina", "Prof. Roberto", "Prof. Carlos"]
-  const weekDays = [
-    { value: "monday", label: "Segunda" },
-    { value: "tuesday", label: "Terça" },
-    { value: "wednesday", label: "Quarta" },
-    { value: "thursday", label: "Quinta" },
-    { value: "friday", label: "Sexta" },
-    { value: "saturday", label: "Sábado" },
-    { value: "sunday", label: "Domingo" },
-  ]
 
   // Generate dates for horizontal scroll based on current month (14 days around middle of month)
   const getScrollDates = () => {
@@ -198,58 +169,6 @@ export default function SchedulePage() {
     if (percentage >= 90) return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
     if (percentage >= 70) return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
     return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-  }
-
-  const handleWeekDayToggle = (dayValue: string, dayLabel: string) => {
-    setNewClassForm((prev) => {
-      const isSelected = prev.weekDays.includes(dayValue)
-
-      if (isSelected) {
-        // Remove day and its time
-        return {
-          ...prev,
-          weekDays: prev.weekDays.filter((d) => d !== dayValue),
-          times: prev.times.filter((t) => t.day !== dayValue),
-        }
-      } else {
-        // Add day and copy time from first day if exists
-        const firstTime = prev.times[0]
-        const newTime = firstTime
-          ? { day: dayValue, startTime: firstTime.startTime, endTime: firstTime.endTime }
-          : { day: dayValue, startTime: "", endTime: "" }
-
-        return {
-          ...prev,
-          weekDays: [...prev.weekDays, dayValue],
-          times: [...prev.times, newTime],
-        }
-      }
-    })
-  }
-
-  const handleTimeChange = (dayValue: string, field: "startTime" | "endTime", value: string) => {
-    setNewClassForm((prev) => ({
-      ...prev,
-      times: prev.times.map((t) => {
-        if (t.day === dayValue) {
-          const updatedTime = { ...t, [field]: value }
-
-          // Validate times
-          if (updatedTime.startTime && updatedTime.endTime) {
-            const start = new Date(`2000-01-01T${updatedTime.startTime}`)
-            const end = new Date(`2000-01-01T${updatedTime.endTime}`)
-
-            if (end < start) {
-              // If end time is earlier than start time, set end time to start time
-              updatedTime.endTime = updatedTime.startTime
-            }
-          }
-
-          return updatedTime
-        }
-        return t
-      }),
-    }))
   }
 
   const handleCreateClass = (formData: any) => {
