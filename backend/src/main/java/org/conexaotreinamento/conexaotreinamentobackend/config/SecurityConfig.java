@@ -30,28 +30,16 @@ public class SecurityConfig {
     @Value("${app.jwt.secret:mySecretKeyForJWTTokenGeneration123456789}")
     private String jwtSecret;
 
-    /**
-     * Configuração do encoder de senhas usando BCrypt
-     * BCrypt é um algoritmo de hash seguro para senhas
-     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    /**
-     * Bean do AuthenticationManager necessário para autenticação manual
-     * Usado no AuthController para validar credenciais de login
-     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
 
-    /**
-     * Configuração do JwtEncoder para geração de tokens JWT
-     * Usa a biblioteca Nimbus JOSE + JWT do Spring Security OAuth2
-     */
     @Bean
     public JwtEncoder jwtEncoder() {
         // Cria uma chave secreta a partir da string configurada
@@ -59,11 +47,7 @@ public class SecurityConfig {
         // Retorna o encoder usando a chave secreta imutável
         return new NimbusJwtEncoder(new ImmutableSecret<>(secretKey));
     }
-
-    /**
-     * Configuração do JwtDecoder para validação de tokens JWT
-     * Usado automaticamente pelo OAuth2 Resource Server
-     */
+ 
     @Bean
     public JwtDecoder jwtDecoder() {
         // Cria uma chave secreta a partir da string configurada
@@ -72,9 +56,6 @@ public class SecurityConfig {
         return NimbusJwtDecoder.withSecretKey(secretKey).build();
     }
 
-    /**
-     * Configuração principal da cadeia de filtros de segurança
-     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
@@ -114,10 +95,6 @@ public class SecurityConfig {
                 .build();
     }
 
-    /**
-     * Conversor personalizado para extrair roles do JWT e converter em authorities
-     * Mapeia as roles do token JWT para o formato esperado pelo Spring Security
-     */
     @Bean
     public org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter jwtAuthenticationConverter() {
         var converter = new org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter();
