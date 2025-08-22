@@ -451,7 +451,7 @@ export default function StudentsPage() {
                         variant="outline"
                         onClick={(e) => {
                           e.stopPropagation()
-                          router.push(`/students/${student.id}/evaluation`)
+                          router.push(`/students/${student.id}/evaluation/new`)
                         }}
                         className="bg-transparent text-xs px-2 py-1 h-8 flex-shrink-0"
                       >
@@ -530,7 +530,7 @@ export default function StudentsPage() {
                         variant="outline"
                         onClick={(e) => {
                           e.stopPropagation()
-                          router.push(`/students/${student.id}/evaluation`)
+                          router.push(`/students/${student.id}/evaluation/new`)
                         }}
                         className="bg-transparent text-xs px-2 py-1 h-8"
                       >

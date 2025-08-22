@@ -37,11 +37,37 @@ interface MedicalData {
 }
 
 interface Evaluation {
+  id: string
   date: string
   weight: number
-  bodyFat: number
-  muscleMass: number
+  height: number
   bmi: number
+  circumferences: {
+    rightArmRelaxed: number
+    leftArmRelaxed: number
+    rightArmFlexed: number
+    leftArmFlexed: number
+    waist: number
+    abdomen: number
+    hip: number
+    rightThigh: number
+    leftThigh: number
+    rightCalf: number
+    leftCalf: number
+  }
+  subcutaneousFolds: {
+    triceps: number
+    thorax: number
+    subaxillary: number
+    subscapular: number
+    abdominal: number
+    suprailiac: number
+    thigh: number
+  }
+  diameters: {
+    umerus: number
+    femur: number
+  }
 }
 
 interface ClassItem {
@@ -142,18 +168,70 @@ export default function StudentProfilePage() {
       objectives: ["Perder 5kg", "Melhorar condicionamento cardiovascular", "Fortalecer músculos das pernas"],
       evaluations: [
         {
+          id: "1",
           date: "2024-07-15",
           weight: 68.5,
-          bodyFat: 16.8,
-          muscleMass: 46.2,
+          height: 1.65,
           bmi: 22.5,
+          circumferences: {
+            rightArmRelaxed: 28,
+            leftArmRelaxed: 27,
+            rightArmFlexed: 32,
+            leftArmFlexed: 31,
+            waist: 80,
+            abdomen: 90,
+            hip: 100,
+            rightThigh: 55,
+            leftThigh: 54,
+            rightCalf: 35,
+            leftCalf: 34,
+          },
+          subcutaneousFolds: {
+            triceps: 12,
+            thorax: 10,
+            subaxillary: 14,
+            subscapular: 16,
+            abdominal: 18,
+            suprailiac: 20,
+            thigh: 22,
+          },
+          diameters: {
+            umerus: 12,
+            femur: 14,
+          },
         },
         {
+          id: "2",
           date: "2024-06-15",
           weight: 70.0,
-          bodyFat: 18.2,
-          muscleMass: 45.1,
+          height: 1.65,
           bmi: 23.0,
+          circumferences: {
+            rightArmRelaxed: 29,
+            leftArmRelaxed: 28,
+            rightArmFlexed: 33,
+            leftArmFlexed: 32,
+            waist: 82,
+            abdomen: 92,
+            hip: 102,
+            rightThigh: 56,
+            leftThigh: 55,
+            rightCalf: 36,
+            leftCalf: 35,
+          },
+          subcutaneousFolds: {
+            triceps: 13,
+            thorax: 11,
+            subaxillary: 15,
+            subscapular: 17,
+            abdominal: 19,
+            suprailiac: 21,
+            thigh: 23,
+          },
+          diameters: {
+            umerus: 13,
+            femur: 15,
+          },
         },
       ],
       recentClasses: [
@@ -211,18 +289,70 @@ export default function StudentProfilePage() {
       objectives: ["Ganhar 8kg de massa muscular", "Aumentar força"],
       evaluations: [
         {
+          id: "3",
           date: "2024-07-20",
           weight: 75.2,
-          bodyFat: 12.3,
-          muscleMass: 58.1,
+          height: 1.78,
           bmi: 24.1,
+          circumferences: {
+            rightArmRelaxed: 30,
+            leftArmRelaxed: 29,
+            rightArmFlexed: 34,
+            leftArmFlexed: 33,
+            waist: 84,
+            abdomen: 94,
+            hip: 104,
+            rightThigh: 57,
+            leftThigh: 56,
+            rightCalf: 37,
+            leftCalf: 36,
+          },
+          subcutaneousFolds: {
+            triceps: 14,
+            thorax: 12,
+            subaxillary: 16,
+            subscapular: 18,
+            abdominal: 20,
+            suprailiac: 22,
+            thigh: 24,
+          },
+          diameters: {
+            umerus: 14,
+            femur: 16,
+          },
         },
         {
+          id: "4",
           date: "2024-06-20",
           weight: 73.8,
-          bodyFat: 13.1,
-          muscleMass: 56.9,
+          height: 1.78,
           bmi: 23.6,
+          circumferences: {
+            rightArmRelaxed: 31,
+            leftArmRelaxed: 30,
+            rightArmFlexed: 35,
+            leftArmFlexed: 34,
+            waist: 86,
+            abdomen: 96,
+            hip: 106,
+            rightThigh: 58,
+            leftThigh: 57,
+            rightCalf: 38,
+            leftCalf: 37,
+          },
+          subcutaneousFolds: {
+            triceps: 15,
+            thorax: 13,
+            subaxillary: 17,
+            subscapular: 19,
+            abdominal: 21,
+            suprailiac: 23,
+            thigh: 25,
+          },
+          diameters: {
+            umerus: 15,
+            femur: 17,
+          },
         },
       ],
       recentClasses: [
@@ -281,18 +411,70 @@ export default function StudentProfilePage() {
       objectives: ["Manter peso atual", "Reduzir stress", "Melhorar flexibilidade"],
       evaluations: [
         {
+          id: "5",
           date: "2024-06-15",
           weight: 62.0,
-          bodyFat: 22.1,
-          muscleMass: 41.5,
+          height: 1.70,
           bmi: 23.8,
+          circumferences: {
+            rightArmRelaxed: 27,
+            leftArmRelaxed: 26,
+            rightArmFlexed: 31,
+            leftArmFlexed: 30,
+            waist: 78,
+            abdomen: 88,
+            hip: 98,
+            rightThigh: 54,
+            leftThigh: 53,
+            rightCalf: 33,
+            leftCalf: 32,
+          },
+          subcutaneousFolds: {
+            triceps: 11,
+            thorax: 9,
+            subaxillary: 13,
+            subscapular: 15,
+            abdominal: 17,
+            suprailiac: 19,
+            thigh: 21,
+          },
+          diameters: {
+            umerus: 11,
+            femur: 13,
+          },
         },
         {
+          id: "6",
           date: "2024-03-15",
           weight: 63.2,
-          bodyFat: 23.5,
-          muscleMass: 40.8,
+          height: 1.70,
           bmi: 24.2,
+          circumferences: {
+            rightArmRelaxed: 28,
+            leftArmRelaxed: 27,
+            rightArmFlexed: 32,
+            leftArmFlexed: 31,
+            waist: 80,
+            abdomen: 90,
+            hip: 100,
+            rightThigh: 55,
+            leftThigh: 54,
+            rightCalf: 34,
+            leftCalf: 33,
+          },
+          subcutaneousFolds: {
+            triceps: 12,
+            thorax: 10,
+            subaxillary: 14,
+            subscapular: 16,
+            abdominal: 18,
+            suprailiac: 20,
+            thigh: 22,
+          },
+          diameters: {
+            umerus: 12,
+            femur: 14,
+          },
         },
       ],
       recentClasses: [
@@ -474,7 +656,7 @@ export default function StudentProfilePage() {
                   <Edit className="w-4 h-4 mr-2" />
                   Editar
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => router.push(`/students/${params.id}/evaluation`)}>
+                <Button size="sm" variant="outline" onClick={() => router.push(`/students/${params.id}/evaluation/new`)}>
                   <Activity className="w-4 h-4 mr-2" />
                   Avaliação
                 </Button>
@@ -558,31 +740,74 @@ export default function StudentProfilePage() {
                 <CardContent>
                   <div className="space-y-4">
                     {studentData.evaluations.map((evaluation: Evaluation, index: number) => (
-                      <div key={index} className="p-4 rounded-lg border bg-muted/50">
+                      <div
+                        key={evaluation.id}
+                        className="p-4 rounded-lg border bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors"
+                        onClick={() => router.push(`/students/${params.id}/evaluation/${evaluation.id}`)}
+                      >
                         <div className="flex justify-between items-center mb-3">
                           <span className="font-medium">{new Date(evaluation.date).toLocaleDateString("pt-BR")}</span>
-                          <Badge variant="outline">Avaliação {index + 1}</Badge>
+                          <Badge variant="outline">Avaliação {studentData.evaluations.length - index}</Badge>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+
+                        {/* Most relevant fields in a clean grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                           <div>
                             <span className="text-muted-foreground">Peso:</span>
                             <p className="font-medium">{evaluation.weight}kg</p>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">Gordura:</span>
-                            <p className="font-medium">{evaluation.bodyFat}%</p>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Músculo:</span>
-                            <p className="font-medium">{evaluation.muscleMass}kg</p>
-                          </div>
-                          <div>
                             <span className="text-muted-foreground">IMC:</span>
                             <p className="font-medium">{evaluation.bmi}</p>
                           </div>
+                          <div>
+                            <span className="text-muted-foreground">Cintura:</span>
+                            <p className="font-medium">{evaluation.circumferences.waist}cm</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Quadril:</span>
+                            <p className="font-medium">{evaluation.circumferences.hip}cm</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Braço Dir.:</span>
+                            <p className="font-medium">{evaluation.circumferences.rightArmFlexed}cm</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Coxa Dir.:</span>
+                            <p className="font-medium">{evaluation.circumferences.rightThigh}cm</p>
+                          </div>
+                        </div>
+
+                        {/* Summary of key measurements */}
+                        <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                          <p>
+                            Dobras: Tríceps {evaluation.subcutaneousFolds.triceps}mm •
+                            Abdominal {evaluation.subcutaneousFolds.abdominal}mm •
+                            Coxa {evaluation.subcutaneousFolds.thigh}mm
+                          </p>
+                        </div>
+
+                        {/* Click indicator */}
+                        <div className="flex justify-end mt-2">
+                          <span className="text-xs text-primary">Clique para ver detalhes →</span>
                         </div>
                       </div>
                     ))}
+
+                    {studentData.evaluations.length === 0 && (
+                      <div className="text-center py-8">
+                        <Activity className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-muted-foreground">Nenhuma avaliação encontrada</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => router.push(`/students/${params.id}/evaluation/new`)}
+                        >
+                          Criar primeira avaliação
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
