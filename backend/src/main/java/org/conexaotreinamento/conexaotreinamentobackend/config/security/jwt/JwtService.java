@@ -51,6 +51,23 @@ public class JwtService {
         return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
     }
 
+    public String generateRefreshToken(Authentication authentication) {
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        
+        Instant now = Instant.now();
+        Instant expiration = now.plus(7, ChronoUnit.DAYS); // 7 dias
+        
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuer("conexao-treinamento")
+                .issuedAt(now)
+                .expiresAt(expiration)
+                .subject(userDetails.getUsername())
+                .claim("type", "refresh")
+                .build();
+                
+        return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
+    }
+
     public String extractUsername(String token) {
         Jwt jwt = jwtDecoder.decode(token);
         return jwt.getSubject();
