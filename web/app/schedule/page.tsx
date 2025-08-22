@@ -30,7 +30,6 @@ export default function SchedulePage() {
   const [modalInitialData, setModalInitialData] = useState({
     name: "",
     instructor: "",
-    room: "",
     maxStudents: "2",
     description: "",
     weekDays: [] as string[],
@@ -39,7 +38,6 @@ export default function SchedulePage() {
   const [newClassForm, setNewClassForm] = useState({
     name: "",
     instructor: "",
-    room: "",
     maxStudents: "2",
     description: "",
     weekDays: [] as string[],
@@ -58,7 +56,6 @@ export default function SchedulePage() {
       id: 1,
       name: "Pilates Iniciante",
       instructor: "Prof. Ana",
-      room: "Sala 1",
       time: "09:00",
       duration: 60,
       maxStudents: 10,
@@ -82,7 +79,6 @@ export default function SchedulePage() {
       id: 2,
       name: "Yoga Avançado",
       instructor: "Prof. Marina",
-      room: "Sala 2",
       time: "18:00",
       duration: 60,
       maxStudents: 12,
@@ -102,7 +98,6 @@ export default function SchedulePage() {
       id: 3,
       name: "CrossFit",
       instructor: "Prof. Roberto",
-      room: "Sala 3",
       time: "07:00",
       duration: 60,
       maxStudents: 8,
@@ -121,7 +116,6 @@ export default function SchedulePage() {
   ])
 
   const teachers = ["Prof. Ana", "Prof. Marina", "Prof. Roberto", "Prof. Carlos"]
-  const rooms = ["Sala 1", "Sala 2", "Sala 3", "Área Externa"]
   const weekDays = [
     { value: "monday", label: "Segunda" },
     { value: "tuesday", label: "Terça" },
@@ -264,7 +258,6 @@ export default function SchedulePage() {
         id: Date.now() + Math.random(),
         name: formData.name,
         instructor: formData.instructor,
-        room: formData.room,
         duration: 60,
         maxStudents: Number.parseInt(formData.maxStudents) || 10,
         currentStudents: 0,
@@ -289,7 +282,6 @@ export default function SchedulePage() {
     const initialData = {
       name: "",
       instructor: "",
-      room: "",
       maxStudents: "2",
       description: "",
       weekDays: [selectedDayOfWeek], // Pre-select current day
@@ -451,10 +443,6 @@ export default function SchedulePage() {
                           <span>{classItem.time}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          <span>{classItem.room}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
                           <User className="w-3 h-3" />
                           <span>{classItem.instructor}</span>
                         </div>
@@ -528,7 +516,6 @@ export default function SchedulePage() {
           onClose={handleCloseClassModal}
           onSubmitData={handleCreateClass}
           teachers={teachers}
-          rooms={rooms}
         />
       </div>
     </Layout>

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, Save, Calendar, Clock, MapPin, User } from "lucide-react"
+import { ArrowLeft, Save, Calendar, Clock, User } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
 
@@ -38,7 +38,6 @@ export default function ClassSchedulePage() {
           time: "09:00",
           duration: 60,
           instructor: "Prof. Ana",
-          room: "Sala 1",
           maxStudents: 10,
           currentStudents: 8,
           available: true,
@@ -49,10 +48,9 @@ export default function ClassSchedulePage() {
           time: "18:00",
           duration: 60,
           instructor: "Prof. Roberto",
-          room: "Sala 3",
           maxStudents: 8,
-          currentStudents: 8,
-          available: false,
+          currentStudents: 6,
+          available: true,
         },
       ],
     },
@@ -62,21 +60,19 @@ export default function ClassSchedulePage() {
         {
           id: "3",
           name: "Yoga Avançado",
-          time: "07:00",
+          time: "14:00",
           duration: 60,
           instructor: "Prof. Marina",
-          room: "Sala 2",
           maxStudents: 12,
-          currentStudents: 6,
+          currentStudents: 10,
           available: true,
         },
         {
           id: "4",
           name: "Musculação",
-          time: "19:00",
+          time: "16:00",
           duration: 90,
           instructor: "Prof. Carlos",
-          room: "Área de Musculação",
           maxStudents: 15,
           currentStudents: 12,
           available: true,
@@ -88,13 +84,22 @@ export default function ClassSchedulePage() {
       classes: [
         {
           id: "5",
-          name: "Pilates Avançado",
-          time: "10:00",
+          name: "Pilates Iniciante",
+          time: "09:00",
           duration: 60,
           instructor: "Prof. Ana",
-          room: "Sala 1",
-          maxStudents: 8,
-          currentStudents: 5,
+          maxStudents: 10,
+          currentStudents: 8,
+          available: true,
+        },
+        {
+          id: "6",
+          name: "Zumba",
+          time: "19:00",
+          duration: 60,
+          instructor: "Prof. Carla",
+          maxStudents: 20,
+          currentStudents: 15,
           available: true,
         },
       ],
@@ -103,15 +108,24 @@ export default function ClassSchedulePage() {
       day: "Quinta-feira",
       classes: [
         {
-          id: "6",
-          name: "Dança",
-          time: "20:00",
+          id: "7",
+          name: "Yoga Avançado",
+          time: "14:00",
           duration: 60,
           instructor: "Prof. Marina",
-          room: "Sala 2",
-          maxStudents: 15,
+          maxStudents: 12,
           currentStudents: 10,
           available: true,
+        },
+        {
+          id: "8",
+          name: "CrossFit",
+          time: "20:00",
+          duration: 60,
+          instructor: "Prof. Roberto",
+          maxStudents: 8,
+          currentStudents: 8,
+          available: false,
         },
       ],
     },
@@ -124,7 +138,6 @@ export default function ClassSchedulePage() {
           time: "17:00",
           duration: 60,
           instructor: "Prof. Roberto",
-          room: "Sala 3",
           maxStudents: 10,
           currentStudents: 7,
           available: true,
@@ -140,7 +153,6 @@ export default function ClassSchedulePage() {
           time: "09:00",
           duration: 90,
           instructor: "Prof. Marina",
-          room: "Sala 2",
           maxStudents: 20,
           currentStudents: 15,
           available: true,
@@ -354,10 +366,6 @@ export default function ClassSchedulePage() {
                                 <div className="flex items-center gap-1">
                                   <User className="w-3 h-3" />
                                   <span>{classItem.instructor}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <MapPin className="w-3 h-3" />
-                                  <span>{classItem.room}</span>
                                 </div>
                               </div>
                             </div>
