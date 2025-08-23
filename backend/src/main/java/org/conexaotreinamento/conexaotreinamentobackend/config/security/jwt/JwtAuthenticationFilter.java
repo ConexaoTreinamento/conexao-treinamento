@@ -20,7 +20,7 @@ import jakarta.servlet.http.HttpServletResponse;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
-    private JwtService jwtService; // Use JwtService em vez de JwtUtils
+    private JwtService jwtService;
 
     @Autowired
     private UserDetailsService userDetailsService;
@@ -38,7 +38,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
         } catch (JwtException e) {
-            // Só retorna erro se a URL requer autenticação
             String requestURI = request.getRequestURI();
             if (isSecuredUrl(requestURI)) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -47,7 +46,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
         } catch (Exception e) {
-            // Só retorna erro se a URL requer autenticação
             String requestURI = request.getRequestURI();
             if (isSecuredUrl(requestURI)) {
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
@@ -67,7 +65,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isSecuredUrl(String requestURI) {
-        // URLs que requerem autenticação
         return requestURI.startsWith("/api/") || requestURI.startsWith("/auth/");
     }
 }

@@ -14,5 +14,5 @@ public record CreateUserRequestDTO(
     @Size(min = 6, message = "Senha deve ter pelo menos 6 caracteres")
     String password,
     
-    String role // "ADMIN" ou "TRAINER" (opcional, padrão será TRAINER)
+    String role
 ) {}

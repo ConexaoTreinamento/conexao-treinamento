@@ -15,10 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-/**
- * Controller responsável pelos endpoints de autenticação
- * Usa OAuth2 Resource Server para geração e validação de tokens
- */
+
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -27,10 +24,6 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
-    /**
-     * Endpoint de login
-     * Autentica o usuário e retorna um token JWT
-     */
     @PostMapping("/login")
     public ResponseEntity<JwtResponseDTO> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
         System.out.println("[DEBUG] Iniciando processo de login para: " + loginRequest.email());
@@ -62,17 +55,10 @@ public class AuthController {
         }
     }
 
-    /**
-     * Endpoint de logout
-     * Limpa o contexto de segurança (o token continua válido até expirar)
-     */
     @PostMapping("/logout")
     public ResponseEntity<String> logout() {
-        // Limpa o contexto de segurança
         SecurityContextHolder.clearContext();
 
-        // Nota: Com JWT stateless, o token continua válido até expirar
-        // Para invalidação real, seria necessário uma blacklist de tokens
         return ResponseEntity.ok("Logout realizado com sucesso!");
     }
 }

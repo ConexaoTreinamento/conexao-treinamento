@@ -14,10 +14,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Controller responsável pelo gerenciamento de usuários
- * Delega toda a lógica de negócio para o UserService
- */
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor

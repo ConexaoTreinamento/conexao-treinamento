@@ -53,9 +53,7 @@ public class SecurityConfig {
 
     @Bean
     public JwtEncoder jwtEncoder() {
-        // Usar uma chave mais robusta para o JWT
         byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
-        // Garantir que a chave tenha pelo menos 256 bits (32 bytes)
         if (keyBytes.length < 32) {
             byte[] paddedKey = new byte[32];
             System.arraycopy(keyBytes, 0, paddedKey, 0, Math.min(keyBytes.length, 32));
@@ -66,15 +64,12 @@ public class SecurityConfig {
                 .algorithm(JWSAlgorithm.HS256)
                 .build();
 
-        // Usa um JWKSet imutável como fonte de chaves para o encoder
         return new NimbusJwtEncoder(new ImmutableJWKSet<SecurityContext>(new JWKSet(jwk)));
     }
 
     @Bean
     public JwtDecoder jwtDecoder() {
-        // Usar a mesma lógica do JwtEncoder para garantir compatibilidade
         byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
-        // Garantir que a chave tenha pelo menos 256 bits (32 bytes)
         if (keyBytes.length < 32) {
             byte[] paddedKey = new byte[32];
             System.arraycopy(keyBytes, 0, paddedKey, 0, Math.min(keyBytes.length, 32));
@@ -88,7 +83,6 @@ public class SecurityConfig {
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(jwt -> {
-            // Mudança: usar "role" (singular) em vez de "roles" (plural)
             var role = jwt.getClaimAsString("role");
             if (role != null) {
                 return List.of(new SimpleGrantedAuthority(role));

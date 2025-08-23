@@ -56,7 +56,6 @@ public class JwtService {
                         .orElse("ROLE_TRAINER"))
                 .build();
 
-        // Cabeçalho JWS com HS256 + key id compatível com o JWK do encoder
         JwsHeader jwsHeader = JwsHeader.with(MacAlgorithm.HS256)
                 .keyId("app-key")
                 .build();
@@ -78,7 +77,6 @@ public class JwtService {
                 .claim("type", "refresh")
                 .build();
 
-        // Cabeçalho JWS com HS256 + key id compatível com o JWK do encoder
         JwsHeader jwsHeader = JwsHeader.with(MacAlgorithm.HS256)
                 .keyId("app-key")
                 .build();
