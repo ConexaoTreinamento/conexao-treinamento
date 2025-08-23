@@ -1,21 +1,35 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { Search, Filter, Plus, User, Phone, Mail, Calendar, Activity, X } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
+import StudentForm from "@/components/student-form"
+import {getStudentCurrentStatus, getStudentPlanExpirationDate, getUnifiedStatusBadge} from "@/lib/expiring-plans"
+import { STUDENTS, getStudentFullName } from "@/lib/students-data"
 
 export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [userRole, setUserRole] = useState<string>("")
   const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
   const [filters, setFilters] = useState({
     status: "all",
     plan: "all",
@@ -31,100 +45,34 @@ export default function StudentsPage() {
     setUserRole(role)
   }, [])
 
-  // Mock students data
-  const students = [
-    {
-      id: 1,
-      name: "Maria Silva",
-      email: "maria@email.com",
-      phone: "(11) 99999-9999",
-      plan: "Mensal",
-      status: "Ativo",
-      joinDate: "15/01/2024",
-      lastRenewal: "15/07/2024",
-      avatar: "/placeholder.svg?height=40&width=40",
-      age: 28,
-      profession: "Designer",
-      gender: "Feminino",
-    },
-    {
-      id: 2,
-      name: "João Santos",
-      email: "joao@email.com",
-      phone: "(11) 88888-8888",
-      plan: "Trimestral",
-      status: "Ativo",
-      joinDate: "03/02/2024",
-      lastRenewal: "03/05/2024",
-      avatar: "/placeholder.svg?height=40&width=40",
-      age: 35,
-      profession: "Engenheiro",
-      gender: "Masculino",
-    },
-    {
-      id: 3,
-      name: "Ana Costa",
-      email: "ana@email.com",
-      phone: "(11) 77777-7777",
-      plan: "Mensal",
-      status: "Vencido",
-      joinDate: "20/12/2023",
-      lastRenewal: "20/06/2024",
-      avatar: "/placeholder.svg?height=40&width=40",
-      age: 42,
-      profession: "Médica",
-      gender: "Feminino",
-    },
-    {
-      id: 4,
-      name: "Carlos Lima",
-      email: "carlos@email.com",
-      phone: "(11) 66666-6666",
-      plan: "Semestral",
-      status: "Ativo",
-      joinDate: "10/03/2024",
-      lastRenewal: "10/03/2024",
-      avatar: "/placeholder.svg?height=40&width=40",
-      age: 31,
-      profession: "Advogado",
-      gender: "Masculino",
-    },
-    {
-      id: 5,
-      name: "Lucia Ferreira",
-      email: "lucia@email.com",
-      phone: "(11) 55555-5555",
-      plan: "Mensal",
-      status: "Ativo",
-      joinDate: "25/04/2024",
-      lastRenewal: "25/07/2024",
-      avatar: "/placeholder.svg?height=40&width=40",
-      age: 29,
-      profession: "Enfermeira",
-      gender: "Feminino",
-    },
-  ]
-
-  const filteredStudents = students.filter((student) => {
+  const filteredStudents = STUDENTS.filter((student) => {
+    const fullName = getStudentFullName(student)
     const matchesSearch =
-      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.profession.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.phone.includes(searchTerm)
 
-    const matchesStatus = filters.status === "all" || student.status === filters.status
+    // Use dynamic status based on plan expiration
+    const currentStatus = getStudentCurrentStatus(student.id)
+    const matchesStatus = filters.status === "all" || currentStatus === filters.status
     const matchesPlan = filters.plan === "all" || student.plan === filters.plan
+
+    const age = new Date().getFullYear() - new Date(student.birthDate).getFullYear()
     const matchesAge =
       filters.ageRange === "all" ||
-      (filters.ageRange === "18-25" && student.age >= 18 && student.age <= 25) ||
-      (filters.ageRange === "26-35" && student.age >= 26 && student.age <= 35) ||
-      (filters.ageRange === "36-45" && student.age >= 36 && student.age <= 45) ||
-      (filters.ageRange === "46+" && student.age >= 46)
-    const matchesProfession = filters.profession === "all" || student.profession === filters.profession
-    const matchesGender = filters.gender === "all" || student.gender === filters.gender
+      (filters.ageRange === "18-25" && age >= 18 && age <= 25) ||
+      (filters.ageRange === "26-35" && age >= 26 && age <= 35) ||
+      (filters.ageRange === "36-45" && age >= 36 && age <= 45) ||
+      (filters.ageRange === "46+" && age >= 46)
 
-    const joinYear = new Date(student.joinDate.split("/").reverse().join("-")).getFullYear()
-    const currentYear = new Date().getFullYear()
+    const matchesProfession = filters.profession === "all" || student.profession === filters.profession
+    const matchesGender =
+      filters.gender === "all" ||
+      (filters.gender === "Masculino" && student.sex === "M") ||
+      (filters.gender === "Feminino" && student.sex === "F")
+
+    const joinYear = new Date(student.registrationDate).getFullYear()
     const matchesJoinPeriod =
       filters.joinPeriod === "all" ||
       (filters.joinPeriod === "2024" && joinYear === 2024) ||
@@ -167,7 +115,22 @@ export default function StudentsPage() {
   }
 
   const hasActiveFilters = Object.values(filters).some((filter) => filter !== "all")
-  const uniqueProfessions = [...new Set(students.map((s) => s.profession))]
+  const uniqueProfessions = [...new Set(STUDENTS.map((s) => s.profession))]
+
+  const handleCreateStudent = async (formData: any) => {
+    setIsCreating(true)
+
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+
+    setIsCreating(false)
+    setIsCreateOpen(false)
+    // In real app, would create student and refresh list
+  }
+
+  const handleCancelCreate = () => {
+    setIsCreateOpen(false)
+  }
 
   return (
     <Layout>
@@ -178,10 +141,30 @@ export default function StudentsPage() {
             <h1 className="text-2xl font-bold">Alunos</h1>
             <p className="text-muted-foreground">Gerencie todos os alunos da academia</p>
           </div>
-          <Button onClick={() => router.push("/students/new")} className="bg-green-600 hover:bg-green-700">
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Aluno
-          </Button>
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Aluno
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Cadastrar Novo Aluno</DialogTitle>
+                <DialogDescription>
+                  Preencha as informações do aluno e a ficha de anamnese
+                </DialogDescription>
+              </DialogHeader>
+
+              <StudentForm
+                onSubmit={handleCreateStudent}
+                onCancel={handleCancelCreate}
+                submitLabel="Cadastrar Aluno"
+                isLoading={isCreating}
+                mode="create"
+              />
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Search and Filters */}
@@ -198,7 +181,7 @@ export default function StudentsPage() {
 
           <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
             <SheetTrigger asChild>
-              <Button variant="outline" className="relative bg-transparent">
+              <Button variant="outline" className="relative bg-transparent w-full sm:w-auto">
                 <Filter className="w-4 h-4 mr-2" />
                 Filtros
                 {hasActiveFilters && (
@@ -339,88 +322,157 @@ export default function StudentsPage() {
         {/* Results Summary */}
         {(searchTerm || hasActiveFilters) && (
           <div className="text-sm text-muted-foreground">
-            Mostrando {filteredStudents.length} de {students.length} alunos
+            Mostrando {filteredStudents.length} de {STUDENTS.length} alunos
           </div>
         )}
 
         {/* Students List */}
         <div className="space-y-3">
-          {filteredStudents.map((student) => (
-            <Card
-              key={student.id}
-              className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => router.push(`/students/${student.id}`)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                  <Avatar className="w-12 h-12">
-                    <AvatarImage src={student.avatar || "/placeholder.svg"} />
-                    <AvatarFallback>
-                      <User className="w-6 h-6" />
-                    </AvatarFallback>
-                  </Avatar>
+          {filteredStudents.map((student) => {
+            const age = new Date().getFullYear() - new Date(student.birthDate).getFullYear()
+            const fullName = `${student.name} ${student.surname}`
+            const initials = `${student.name.charAt(0)}${student.surname.charAt(0)}`.toUpperCase()
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-lg truncate">{student.name}</h3>
-                      <Badge className={getStatusColor(student.status)}>{student.status}</Badge>
+            // Get plan expiration date for unified status
+            const planExpirationDate = getStudentPlanExpirationDate(student.id)
+
+            return (
+              <Card
+                key={student.id}
+                className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => router.push(`/students/${student.id}`)}
+              >
+                <CardContent className="p-4">
+                  {/* Mobile Layout */}
+                  <div className="flex flex-col gap-3 sm:hidden">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
+                            {initials}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-base leading-tight">{fullName}</h3>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {getUnifiedStatusBadge(planExpirationDate)}
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          router.push(`/students/${student.id}/evaluation/new`)
+                        }}
+                        className="bg-transparent text-xs px-2 py-1 h-8 flex-shrink-0"
+                      >
+                        <Activity className="w-3 h-3 mr-1" />
+                        Avaliação
+                      </Button>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Mail className="w-3 h-3" />
-                        <span className="truncate">{student.email}</span>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate flex-1">{student.email}</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Phone className="w-3 h-3" />
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-3 h-3 flex-shrink-0" />
                         <span>{student.phone}</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-3 h-3 flex-shrink-0" />
                         <span>Plano {student.plan}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                      <span>
-                        {student.age} anos • {student.profession} • {student.gender}
-                      </span>
-                      <span>Ingresso: {student.joinDate}</span>
-                      <span>Renovação: {student.lastRenewal}</span>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <div>
+                        {age} anos • {student.profession} •{" "}
+                        {student.sex === "M" ? "Masculino" : "Feminino"}
+                      </div>
+                      <div>
+                        Ingresso:{" "}
+                        {new Date(student.registrationDate).toLocaleDateString("pt-BR")}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        router.push(`/students/${student.id}/evaluation`)
-                      }}
-                      className="bg-transparent"
-                    >
-                      <Activity className="w-3 h-3 mr-1" />
-                      Avaliação
-                    </Button>
+                  {/* Desktop Layout */}
+                  <div className="hidden sm:flex items-center gap-4">
+                    <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-green-700 dark:text-green-300 font-semibold select-none">{initials}</span>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col gap-2 mb-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-lg flex-1 min-w-0 truncate">{fullName}</h3>
+                          <div className="flex gap-2 flex-shrink-0">
+                            {getUnifiedStatusBadge(planExpirationDate)}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1 min-w-0">
+                          <Mail className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{student.email}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Phone className="w-3 h-3 flex-shrink-0" />
+                          <span>{student.phone}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3 flex-shrink-0" />
+                          <span>Plano {student.plan}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
+                        <span>
+                          {age} anos • {student.profession} • {student.sex === "M" ? "Masculino" : "Feminino"}
+                        </span>
+                        <span>Ingresso: {new Date(student.registrationDate).toLocaleDateString("pt-BR")}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2 flex-shrink-0">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          router.push(`/students/${student.id}/evaluation/new`)
+                        }}
+                        className="bg-transparent text-xs px-2 py-1 h-8"
+                      >
+                        <Activity className="w-3 h-3 mr-1" />
+                        Avaliação
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
 
         {filteredStudents.length === 0 && (
           <Card>
             <CardContent className="text-center py-12">
-              <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-green-700 dark:text-green-300 font-semibold text-lg select-none">?</span>
+              </div>
               <h3 className="text-lg font-semibold mb-2">Nenhum aluno encontrado</h3>
               <p className="text-muted-foreground mb-4">
                 {searchTerm || hasActiveFilters
                   ? "Tente ajustar os filtros ou termo de busca."
                   : "Comece adicionando o primeiro aluno."}
               </p>
-              <Button className="bg-green-600 hover:bg-green-700" onClick={() => router.push("/students/new")}>
+              <Button className="bg-green-600 hover:bg-green-700" onClick={() => setIsCreateOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Adicionar Primeiro Aluno
               </Button>

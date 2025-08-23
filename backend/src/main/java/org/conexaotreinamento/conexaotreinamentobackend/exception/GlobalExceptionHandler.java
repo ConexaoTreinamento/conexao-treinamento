@@ -7,6 +7,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpServerErrorException.InternalServerError;
+
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
@@ -56,8 +57,7 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Erro interno do servidor", req, fields);
     }
 
-    private ResponseEntity<ApiError> build(HttpStatus status, String message, HttpServletRequest req,
-            Map<String, String> fieldErrors) {
+    private ResponseEntity<ApiError> build(HttpStatus status, String message, HttpServletRequest req, Map<String, String> fieldErrors) {
         ApiError body = new ApiError(
                 Instant.now(),
                 status.value(),
