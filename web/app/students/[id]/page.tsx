@@ -8,6 +8,8 @@ import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, Edit, Calenda
 import { useRouter, useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Layout from "@/components/layout"
+import { getStudentPlanExpirationDate, getUnifiedStatusBadge } from "@/lib/expiring-plans"
+import { STUDENT_PROFILES, getStudentProfileById, getStudentFullName } from "@/lib/students-data"
 
 // Type definitions
 interface MedicalData {
@@ -37,11 +39,37 @@ interface MedicalData {
 }
 
 interface Evaluation {
+  id: string
   date: string
   weight: number
-  bodyFat: number
-  muscleMass: number
+  height: number
   bmi: number
+  circumferences: {
+    rightArmRelaxed: number
+    leftArmRelaxed: number
+    rightArmFlexed: number
+    leftArmFlexed: number
+    waist: number
+    abdomen: number
+    hip: number
+    rightThigh: number
+    leftThigh: number
+    rightCalf: number
+    leftCalf: number
+  }
+  subcutaneousFolds: {
+    triceps: number
+    thorax: number
+    subaxillary: number
+    subscapular: number
+    abdominal: number
+    suprailiac: number
+    thigh: number
+  }
+  diameters: {
+    umerus: number
+    femur: number
+  }
 }
 
 interface ClassItem {
@@ -61,6 +89,23 @@ interface ScheduleClass {
 interface ClassSchedule {
   daysPerWeek: number
   selectedClasses: ScheduleClass[]
+}
+
+interface Exercise {
+  id: string
+  name: string
+  sets: number
+  reps: string
+  weight?: string
+  duration?: string
+  notes?: string
+}
+
+interface ClassExercise {
+  classDate: string
+  className: string
+  instructor: string
+  exercises: Exercise[]
 }
 
 interface StudentData {
@@ -85,243 +130,22 @@ interface StudentData {
   evaluations: Evaluation[]
   recentClasses: ClassItem[]
   classSchedule: ClassSchedule
+  exercises: ClassExercise[]
 }
 
 export default function StudentProfilePage() {
   const router = useRouter()
   const params = useParams()
-  const [studentData, setStudentData] = useState<StudentData | null>(null)
+  const [studentData, setStudentData] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
-
-  // Mock students data - this should eventually be replaced with API calls
-  const mockStudents: StudentData[] = [
-    {
-      id: 1,
-      name: "Maria Silva",
-      email: "maria@email.com",
-      phone: "(11) 99999-9999",
-      address: "Rua das Flores, 123 - Vila Madalena, São Paulo",
-      birthDate: "1995-03-15",
-      plan: "Mensal",
-      status: "Ativo",
-      joinDate: "2024-01-15",
-      lastRenewal: "2024-07-15",
-      avatar: "/placeholder.svg?height=100&width=100",
-      emergencyContact: "João Silva",
-      emergencyPhone: "(11) 88888-8888",
-      profession: "Designer",
-      goals: "Perda de peso e condicionamento físico",
-      medicalConditions: "Nenhuma",
-      medicalData: {
-        medication: ["Vitamina D", "Ômega 3"],
-        isDoctorAwareOfPhysicalActivity: true,
-        favoritePhysicalActivity: "Corrida",
-        hasInsomnia: "Às vezes",
-        isOnADiet: {orientedBy: "Nutricionista"},
-        cardiacProblems: ["Arritmia"],
-        hasHypertension: true,
-        chronicDiseases: ["Diabetes tipo 2"],
-        difficultiesInPhysicalActivities: ["Dor no joelho direito"],
-        medicalOrientationsToAvoidPhysicalActivity: ["Evitar exercícios de alto impacto"],
-        surgeriesInTheLast12Months: ["Cirurgia de menisco"],
-        respiratoryProblems: [],
-        jointMuscularBackPain: ["Dor lombar crônica"],
-        spinalDiscProblems: ["Hérnia de disco L4-L5"],
-        diabetes: "Tipo 2, controlada com medicação",
-        smokingDuration: "",
-        alteredCholesterol: false,
-        osteoporosisLocation: "",
-        physicalImpairments: [
-          {
-            type: "motor",
-            name: "Limitação no joelho direito",
-            observations: "Devido à cirurgia de menisco recente"
-          }
-        ]
-      },
-      objectives: ["Perder 5kg", "Melhorar condicionamento cardiovascular", "Fortalecer músculos das pernas"],
-      evaluations: [
-        {
-          date: "2024-07-15",
-          weight: 68.5,
-          bodyFat: 16.8,
-          muscleMass: 46.2,
-          bmi: 22.5,
-        },
-        {
-          date: "2024-06-15",
-          weight: 70.0,
-          bodyFat: 18.2,
-          muscleMass: 45.1,
-          bmi: 23.0,
-        },
-      ],
-      recentClasses: [
-        { name: "Pilates Iniciante", date: "2024-07-20", instructor: "Prof. Ana", status: "Presente" },
-        { name: "Yoga", date: "2024-07-18", instructor: "Prof. Marina", status: "Presente" },
-        { name: "Pilates Iniciante", date: "2024-07-15", instructor: "Prof. Ana", status: "Ausente" },
-      ],
-      classSchedule: {
-        daysPerWeek: 3,
-        selectedClasses: [
-          { day: "Segunda", time: "09:00", class: "Pilates Iniciante", instructor: "Prof. Ana" },
-          { day: "Quarta", time: "18:00", class: "Yoga", instructor: "Prof. Marina" },
-          { day: "Sexta", time: "17:00", class: "CrossFit Iniciante", instructor: "Prof. Roberto" },
-        ],
-      },
-    },
-    {
-      id: 2,
-      name: "João Santos",
-      email: "joao@email.com",
-      phone: "(11) 88888-8888",
-      address: "Av. Paulista, 456 - Bela Vista, São Paulo",
-      birthDate: "1989-07-22",
-      plan: "Trimestral",
-      status: "Ativo",
-      joinDate: "2024-02-03",
-      lastRenewal: "2024-08-03",
-      avatar: "/placeholder.svg?height=100&width=100",
-      emergencyContact: "Maria Santos",
-      emergencyPhone: "(11) 77777-7777",
-      profession: "Engenheiro",
-      goals: "Ganho de massa muscular",
-      medicalConditions: "Nenhuma",
-      medicalData: {
-        medication: [],
-        isDoctorAwareOfPhysicalActivity: true,
-        favoritePhysicalActivity: "Musculação",
-        hasInsomnia: "Não",
-        isOnADiet: {orientedBy: "Nutricionista"},
-        cardiacProblems: [],
-        hasHypertension: false,
-        chronicDiseases: [],
-        difficultiesInPhysicalActivities: [],
-        medicalOrientationsToAvoidPhysicalActivity: [],
-        surgeriesInTheLast12Months: [],
-        respiratoryProblems: [],
-        jointMuscularBackPain: [],
-        spinalDiscProblems: [],
-        diabetes: "",
-        smokingDuration: "",
-        alteredCholesterol: false,
-        osteoporosisLocation: "",
-        physicalImpairments: []
-      },
-      objectives: ["Ganhar 8kg de massa muscular", "Aumentar força"],
-      evaluations: [
-        {
-          date: "2024-07-20",
-          weight: 75.2,
-          bodyFat: 12.3,
-          muscleMass: 58.1,
-          bmi: 24.1,
-        },
-        {
-          date: "2024-06-20",
-          weight: 73.8,
-          bodyFat: 13.1,
-          muscleMass: 56.9,
-          bmi: 23.6,
-        },
-      ],
-      recentClasses: [
-        { name: "Musculação Avançada", date: "2024-07-22", instructor: "Prof. Carlos", status: "Presente" },
-        { name: "CrossFit", date: "2024-07-20", instructor: "Prof. Roberto", status: "Presente" },
-        { name: "Musculação Avançada", date: "2024-07-17", instructor: "Prof. Carlos", status: "Presente" },
-      ],
-      classSchedule: {
-        daysPerWeek: 4,
-        selectedClasses: [
-          { day: "Segunda", time: "18:00", class: "Musculação Avançada", instructor: "Prof. Carlos" },
-          { day: "Terça", time: "19:00", class: "CrossFit", instructor: "Prof. Roberto" },
-          { day: "Quinta", time: "18:00", class: "Musculação Avançada", instructor: "Prof. Carlos" },
-          { day: "Sexta", time: "19:00", class: "CrossFit", instructor: "Prof. Roberto" },
-        ],
-      },
-    },
-    {
-      id: 3,
-      name: "Ana Costa",
-      email: "ana@email.com",
-      phone: "(11) 77777-7777",
-      address: "Rua das Palmeiras, 789 - Jardins, São Paulo",
-      birthDate: "1980-06-20",
-      plan: "Mensal",
-      status: "Vencido",
-      joinDate: "2023-12-20",
-      lastRenewal: "2024-06-20",
-      avatar: "/placeholder.svg?height=100&width=100",
-      emergencyContact: "Pedro Costa",
-      emergencyPhone: "(11) 66666-6666",
-      profession: "Médica",
-      goals: "Manutenção da saúde e bem-estar",
-      medicalConditions: "Hipertensão controlada",
-      medicalData: {
-        medication: ["Losartana", "Hidroclorotiazida"],
-        isDoctorAwareOfPhysicalActivity: true,
-        favoritePhysicalActivity: "Yoga",
-        hasInsomnia: "Raramente",
-        isOnADiet: {orientedBy: "Endocrinologista"},
-        cardiacProblems: [],
-        hasHypertension: true,
-        chronicDiseases: ["Hipertensão"],
-        difficultiesInPhysicalActivities: [],
-        medicalOrientationsToAvoidPhysicalActivity: ["Evitar exercícios muito intensos"],
-        surgeriesInTheLast12Months: [],
-        respiratoryProblems: [],
-        jointMuscularBackPain: [],
-        spinalDiscProblems: [],
-        diabetes: "",
-        smokingDuration: "",
-        alteredCholesterol: true,
-        osteoporosisLocation: "",
-        physicalImpairments: []
-      },
-      objectives: ["Manter peso atual", "Reduzir stress", "Melhorar flexibilidade"],
-      evaluations: [
-        {
-          date: "2024-06-15",
-          weight: 62.0,
-          bodyFat: 22.1,
-          muscleMass: 41.5,
-          bmi: 23.8,
-        },
-        {
-          date: "2024-03-15",
-          weight: 63.2,
-          bodyFat: 23.5,
-          muscleMass: 40.8,
-          bmi: 24.2,
-        },
-      ],
-      recentClasses: [
-        { name: "Yoga", date: "2024-06-18", instructor: "Prof. Marina", status: "Presente" },
-        { name: "Pilates Intermediário", date: "2024-06-16", instructor: "Prof. Ana", status: "Ausente" },
-        { name: "Yoga", date: "2024-06-14", instructor: "Prof. Marina", status: "Presente" },
-      ],
-      classSchedule: {
-        daysPerWeek: 2,
-        selectedClasses: [
-          { day: "Terça", time: "17:00", class: "Yoga", instructor: "Prof. Marina" },
-          { day: "Quinta", time: "17:00", class: "Pilates Intermediário", instructor: "Prof. Ana" },
-        ],
-      },
-    },
-  ]
 
   useEffect(() => {
     // Simulate fetching student data based on ID
     const fetchStudentData = async () => {
       setLoading(true)
       try {
-        // In a real application, this would be an API call
-        // const response = await fetch(`/api/students/${params.id}`)
-        // const data = await response.json()
-
-        // For now, find the student from mock data
         const studentId = parseInt(params.id as string)
-        const student = mockStudents.find(s => s.id === studentId)
+        const student = getStudentProfileById(studentId)
 
         if (student) {
           setStudentData(student)
@@ -426,16 +250,16 @@ export default function StudentProfilePage() {
             <CardHeader className="text-center pb-4">
               <Avatar className="w-20 h-20 mx-auto">
                 <AvatarFallback className="text-xl select-none">
-                  {studentData.name
+                  {getStudentFullName(studentData)
                     .split(" ")
                     .map((n) => n[0])
                     .join("")}
                 </AvatarFallback>
               </Avatar>
               <div className="space-y-2">
-                <CardTitle className="text-lg">{studentData.name}</CardTitle>
+                <CardTitle className="text-lg">{getStudentFullName(studentData)}</CardTitle>
                 <div className="flex flex-wrap justify-center gap-2">
-                  <Badge className={getStatusColor(studentData.status)}>{studentData.status}</Badge>
+                  {getUnifiedStatusBadge(getStudentPlanExpirationDate(studentData.id))}
                   <Badge variant="outline">Plano {studentData.plan}</Badge>
                 </div>
               </div>
@@ -474,7 +298,7 @@ export default function StudentProfilePage() {
                   <Edit className="w-4 h-4 mr-2" />
                   Editar
                 </Button>
-                <Button size="sm" variant="outline" onClick={() => router.push(`/students/${params.id}/evaluation`)}>
+                <Button size="sm" variant="outline" onClick={() => router.push(`/students/${params.id}/evaluation/new`)}>
                   <Activity className="w-4 h-4 mr-2" />
                   Avaliação
                 </Button>
@@ -492,21 +316,18 @@ export default function StudentProfilePage() {
 
           {/* Content Tabs */}
           <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-5 h-auto">
+            <TabsList className="grid w-full grid-cols-4 h-auto">
               <TabsTrigger value="overview" className="text-xs px-2 py-2">
                 Geral
               </TabsTrigger>
               <TabsTrigger value="evaluations" className="text-xs px-2 py-2">
                 Avaliações
               </TabsTrigger>
-              <TabsTrigger value="classes" className="text-xs px-2 py-2">
-                Aulas
+              <TabsTrigger value="exercises" className="text-xs px-2 py-2">
+                Exercícios
               </TabsTrigger>
               <TabsTrigger value="details" className="text-xs px-2 py-2">
                 Detalhes
-              </TabsTrigger>
-              <TabsTrigger value="anamnesis" className="text-xs px-2 py-2">
-                Anamnese
               </TabsTrigger>
             </TabsList>
 
@@ -547,48 +368,7 @@ export default function StudentProfilePage() {
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
 
-            <TabsContent value="evaluations" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Histórico de Avaliações</CardTitle>
-                  <CardDescription>Acompanhe a evolução das medidas corporais</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {studentData.evaluations.map((evaluation: Evaluation, index: number) => (
-                      <div key={index} className="p-4 rounded-lg border bg-muted/50">
-                        <div className="flex justify-between items-center mb-3">
-                          <span className="font-medium">{new Date(evaluation.date).toLocaleDateString("pt-BR")}</span>
-                          <Badge variant="outline">Avaliação {index + 1}</Badge>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">Peso:</span>
-                            <p className="font-medium">{evaluation.weight}kg</p>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Gordura:</span>
-                            <p className="font-medium">{evaluation.bodyFat}%</p>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Músculo:</span>
-                            <p className="font-medium">{evaluation.muscleMass}kg</p>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">IMC:</span>
-                            <p className="font-medium">{evaluation.bmi}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="classes" className="space-y-4">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Aulas Recentes</CardTitle>
@@ -605,6 +385,136 @@ export default function StudentProfilePage() {
                           </p>
                         </div>
                         <Badge className={getAttendanceColor(classItem.status)}>{classItem.status}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="evaluations" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Histórico de Avaliações</CardTitle>
+                  <CardDescription>Acompanhe a evolução das medidas corporais</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {studentData.evaluations.map((evaluation: Evaluation, index: number) => (
+                      <div
+                        key={evaluation.id}
+                        className="p-4 rounded-lg border bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors"
+                        onClick={() => router.push(`/students/${params.id}/evaluation/${evaluation.id}`)}
+                      >
+                        <div className="flex justify-between items-center mb-3">
+                          <span className="font-medium">{new Date(evaluation.date).toLocaleDateString("pt-BR")}</span>
+                          <Badge variant="outline">Avaliação {evaluation.id}</Badge>
+                        </div>
+
+                        {/* Most relevant fields in a clean grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">Peso:</span>
+                            <p className="font-medium">{evaluation.weight}kg</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">IMC:</span>
+                            <p className="font-medium">{evaluation.bmi}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Cintura:</span>
+                            <p className="font-medium">{evaluation.circumferences.waist}cm</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Quadril:</span>
+                            <p className="font-medium">{evaluation.circumferences.hip}cm</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Braço Dir.:</span>
+                            <p className="font-medium">{evaluation.circumferences.rightArmFlexed}cm</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Coxa Dir.:</span>
+                            <p className="font-medium">{evaluation.circumferences.rightThigh}cm</p>
+                          </div>
+                        </div>
+
+                        {/* Summary of key measurements */}
+                        <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                          <p>
+                            Dobras: Tríceps {evaluation.subcutaneousFolds.triceps}mm •
+                            Abdominal {evaluation.subcutaneousFolds.abdominal}mm •
+                            Coxa {evaluation.subcutaneousFolds.thigh}mm
+                          </p>
+                        </div>
+
+                        {/* Click indicator */}
+                        <div className="flex justify-end mt-2">
+                          <span className="text-xs text-primary">Clique para ver detalhes →</span>
+                        </div>
+                      </div>
+                    ))}
+
+                    {studentData.evaluations.length === 0 && (
+                      <div className="text-center py-8">
+                        <Activity className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-muted-foreground">Nenhuma avaliação encontrada</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => router.push(`/students/${params.id}/evaluation/new`)}
+                        >
+                          Criar primeira avaliação
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="exercises" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Exercícios Realizados</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {studentData.exercises.length === 0 && (
+                      <div className="text-center py-8">
+                        <Activity className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-muted-foreground">Nenhum exercício encontrado</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => router.push(`/students/${params.id}/exercise/new`)}
+                        >
+                          Atribuir primeiro exercício
+                        </Button>
+                      </div>
+                    )}
+
+                    {studentData.exercises.map((exerciseItem, index) => (
+                      <div key={index} className="p-4 rounded-lg border bg-muted/50">
+                        <div className="mb-3">
+                          <h3 className="font-medium">{exerciseItem.className} - {exerciseItem.instructor}</h3>
+                          <p className="text-xs text-muted-foreground">{new Date(exerciseItem.classDate).toLocaleDateString("pt-BR")}</p>
+                        </div>
+
+                        <div className="space-y-2">
+                          {exerciseItem.exercises.map((exercise: Exercise) => (
+                            <div key={exercise.id} className="text-sm">
+                              <div>
+                                <span className="text-muted-foreground">{exercise.name}</span>
+                                <p className="text-xs text-muted-foreground">
+                                  {exercise.sets}x{exercise.reps} {exercise.weight ? `• ${exercise.weight}` : ""} {exercise.duration ? `• ${exercise.duration}` : ""}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -669,11 +579,7 @@ export default function StudentProfilePage() {
                     </div>
                   </CardContent>
                 </Card>
-              </div>
-            </TabsContent>
 
-            <TabsContent value="anamnesis" className="space-y-4">
-              <div className="space-y-4">
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Ficha de Anamnese</CardTitle>
@@ -681,7 +587,7 @@ export default function StudentProfilePage() {
                   <CardContent className="space-y-3">
                     <div>
                       <span className="text-sm text-muted-foreground">Medicações em uso:</span>
-                      <p>{studentData.medicalData.medication.length > 0 ? studentData.medicalData.medication.join(", ") : "Não"}</p>
+                      <p>{studentData.medicalData.medication.length > 0 ? studentData.medicalData.medication.join(", ") : "Nenhuma"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Médico ciente da prática de atividade física?</span>
@@ -701,7 +607,7 @@ export default function StudentProfilePage() {
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Problemas cardíacos:</span>
-                      <p>{studentData.medicalData.cardiacProblems.join(", ")}</p>
+                      <p>{studentData.medicalData.cardiacProblems.length > 0 ? studentData.medicalData.cardiacProblems.join(", ") : "Nenhum"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Hipertensão:</span>
@@ -709,19 +615,19 @@ export default function StudentProfilePage() {
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Doenças crônicas:</span>
-                      <p>{studentData.medicalData.chronicDiseases.join(", ")}</p>
+                      <p>{studentData.medicalData.chronicDiseases.length > 0 ? studentData.medicalData.chronicDiseases.join(", ") : "Nenhuma"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Dificuldades para realização de exercícios físicos?</span>
-                      <p>{studentData.medicalData.difficultiesInPhysicalActivities.join(", ")}</p>
+                      <p>{studentData.medicalData.difficultiesInPhysicalActivities.length > 0 ? studentData.medicalData.difficultiesInPhysicalActivities.join(", ") : "Nenhuma"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Orientação médica impeditiva de alguma atividade física?</span>
-                      <p>{studentData.medicalData.medicalOrientationsToAvoidPhysicalActivity.join(", ")}</p>
+                      <p>{studentData.medicalData.medicalOrientationsToAvoidPhysicalActivity.length > 0 ? studentData.medicalData.medicalOrientationsToAvoidPhysicalActivity.join(", ") : "Nenhuma"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Cirurgias nos últimos 12 meses:</span>
-                      <p>{studentData.medicalData.surgeriesInTheLast12Months.join(", ")}</p>
+                      <p>{studentData.medicalData.surgeriesInTheLast12Months.length > 0 ? studentData.medicalData.surgeriesInTheLast12Months.join(", ") : "Nenhuma"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Problemas respiratórios:</span>
@@ -729,11 +635,11 @@ export default function StudentProfilePage() {
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Dor muscular/articular/dorsal:</span>
-                      <p>{studentData.medicalData.jointMuscularBackPain.join(", ")}</p>
+                      <p>{studentData.medicalData.jointMuscularBackPain.length > 0 ? studentData.medicalData.jointMuscularBackPain.join(", ") : "Nenhuma"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Problemas de disco espinhal:</span>
-                      <p>{studentData.medicalData.spinalDiscProblems.join(", ")}</p>
+                      <p>{studentData.medicalData.spinalDiscProblems.length > 0 ? studentData.medicalData.spinalDiscProblems.join(", ") : "Nenhum"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Diabetes:</span>
@@ -749,7 +655,7 @@ export default function StudentProfilePage() {
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Osteoporose (localização):</span>
-                      <p>{studentData.medicalData.osteoporosisLocation}</p>
+                      <p>{studentData.medicalData.osteoporosisLocation || "Não"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Impedimentos físicos:</span>

@@ -18,7 +18,6 @@ import { X } from "lucide-react"
 interface ClassModalData {
   name: string
   instructor: string
-  room: string
   maxStudents: string
   description: string
   weekDays: string[]
@@ -30,7 +29,6 @@ interface ClassModalProps {
   mode: "create" | "edit"
   initialData?: ClassModalData
   teachers: string[]
-  rooms: string[]
   onClose: () => void
   onSubmitData: (data: ClassModalData) => void
 }
@@ -40,14 +38,12 @@ export default function ClassModal({
   mode,
   initialData,
   teachers,
-  rooms,
   onClose,
   onSubmitData,
 }: ClassModalProps) {
   const [form, setForm] = useState<ClassModalData>({
     name: "",
     instructor: "",
-    room: "",
     maxStudents: "2",
     description: "",
     weekDays: [],
@@ -72,7 +68,6 @@ export default function ClassModal({
       setForm({
         name: "",
         instructor: "",
-        room: "",
         maxStudents: "2",
         description: "",
         weekDays: [],
@@ -140,7 +135,6 @@ export default function ClassModal({
         setForm({
           name: "",
           instructor: "",
-          room: "",
           maxStudents: "2",
           description: "",
           weekDays: [],
@@ -188,24 +182,6 @@ export default function ClassModal({
                   {teachers.map((teacher) => (
                     <SelectItem key={teacher} value={teacher}>
                       {teacher}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="room">Sala</Label>
-              <Select
-                value={form.room}
-                onValueChange={(value) => setForm((prev) => ({ ...prev, room: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {rooms.map((room) => (
-                    <SelectItem key={room} value={room}>
-                      {room}
                     </SelectItem>
                   ))}
                 </SelectContent>
