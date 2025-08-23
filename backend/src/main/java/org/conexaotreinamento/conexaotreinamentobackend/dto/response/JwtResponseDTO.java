@@ -1,4 +1,4 @@
-package org.conexaotreinamento.conexaotreinamentobackend.api.dto.response;
+package org.conexaotreinamento.conexaotreinamentobackend.dto.response;
 
 import java.util.UUID;
 

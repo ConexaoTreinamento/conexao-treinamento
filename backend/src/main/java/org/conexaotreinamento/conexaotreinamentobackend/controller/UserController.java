@@ -1,9 +1,9 @@
-package org.conexaotreinamento.conexaotreinamentobackend.api.controller;
+package org.conexaotreinamento.conexaotreinamentobackend.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.conexaotreinamento.conexaotreinamentobackend.api.dto.request.CreateUserRequestDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.api.dto.response.UserResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +25,7 @@ public class UserController {
 
     private final UserService userService;
 
-    //Delete and create task
+    // Delete and create task
     @PostMapping
     public ResponseEntity<UserResponseDTO> createUser(@Valid @RequestBody CreateUserRequestDTO createUserRequest) {
         try {
@@ -39,7 +39,7 @@ public class UserController {
         }
     }
 
-    //Delete and create task
+    // Delete and create task
     @GetMapping
     public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
         try {
@@ -51,7 +51,7 @@ public class UserController {
         }
     }
 
-    //Delete and create task + return correct errors
+    // Delete and create task + return correct errors
     @GetMapping("/search/{email}")
     public ResponseEntity<UserResponseDTO> getUserByEmail(@PathVariable String email) {
         try {
@@ -66,7 +66,7 @@ public class UserController {
         }
     }
 
-    //Delete and create task + return correct errors
+    // Delete and create task + return correct errors
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteUser(@PathVariable String id) {
         try {

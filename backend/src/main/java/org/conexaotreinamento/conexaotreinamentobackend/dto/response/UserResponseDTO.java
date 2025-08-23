@@ -1,8 +1,8 @@
-package org.conexaotreinamento.conexaotreinamentobackend.api.dto.response;
+package org.conexaotreinamento.conexaotreinamentobackend.dto.response;
 
 import java.util.UUID;
 
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.entity.User;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
 
 public record UserResponseDTO(
         UUID id,

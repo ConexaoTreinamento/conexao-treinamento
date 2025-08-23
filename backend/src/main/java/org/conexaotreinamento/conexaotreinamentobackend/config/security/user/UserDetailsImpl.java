@@ -3,9 +3,8 @@ package org.conexaotreinamento.conexaotreinamentobackend.config.security.user;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.entity.User;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

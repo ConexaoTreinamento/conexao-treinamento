@@ -2,10 +2,10 @@ package org.conexaotreinamento.conexaotreinamentobackend.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.conexaotreinamento.conexaotreinamentobackend.api.dto.request.CreateUserRequestDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.api.dto.response.UserResponseDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.entity.User;
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.repository.UserRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
+import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

@@ -1,4 +1,4 @@
-package org.conexaotreinamento.conexaotreinamentobackend.api.exception;
+package org.conexaotreinamento.conexaotreinamentobackend.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;

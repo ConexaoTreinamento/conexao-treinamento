@@ -1,4 +1,4 @@
-package org.conexaotreinamento.conexaotreinamentobackend.api.exception;
+package org.conexaotreinamento.conexaotreinamentobackend.exception;
 
 import java.time.Instant;
 import java.util.Map;

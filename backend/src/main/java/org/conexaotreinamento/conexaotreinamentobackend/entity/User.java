@@ -1,7 +1,6 @@
-package org.conexaotreinamento.conexaotreinamentobackend.persistence.entity;
+package org.conexaotreinamento.conexaotreinamentobackend.entity;
 
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 

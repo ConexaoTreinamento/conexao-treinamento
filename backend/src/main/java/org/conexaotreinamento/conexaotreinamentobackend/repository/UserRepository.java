@@ -1,6 +1,6 @@
-package org.conexaotreinamento.conexaotreinamentobackend.persistence.repository;
+package org.conexaotreinamento.conexaotreinamentobackend.repository;
 
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.entity.User;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -1,7 +1,7 @@
 package org.conexaotreinamento.conexaotreinamentobackend.config.security.user;
 
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.entity.User;
-import org.conexaotreinamento.conexaotreinamentobackend.persistence.repository.UserRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
+import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
