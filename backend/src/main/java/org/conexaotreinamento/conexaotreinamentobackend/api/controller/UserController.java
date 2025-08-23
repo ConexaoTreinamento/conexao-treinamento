@@ -25,9 +25,7 @@ public class UserController {
 
     private final UserService userService;
 
-    /**
-     * Endpoint para criar um novo usuário
-     */
+    //Delete and create task
     @PostMapping
     public ResponseEntity<UserResponseDTO> createUser(@Valid @RequestBody CreateUserRequestDTO createUserRequest) {
         try {
@@ -41,9 +39,7 @@ public class UserController {
         }
     }
 
-    /**
-     * Lista todos os usuários
-     */
+    //Delete and create task
     @GetMapping
     public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
         try {
@@ -55,9 +51,7 @@ public class UserController {
         }
     }
 
-    /**
-     * Busca usuário por email
-     */
+    //Delete and create task + return correct errors
     @GetMapping("/search/{email}")
     public ResponseEntity<UserResponseDTO> getUserByEmail(@PathVariable String email) {
         try {
@@ -72,9 +66,7 @@ public class UserController {
         }
     }
 
-    /**
-     * Deleta usuário por ID
-     */
+    //Delete and create task + return correct errors
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteUser(@PathVariable String id) {
         try {

@@ -25,6 +25,7 @@ public class UserService {
 
     private static final Set<String> VALID_ROLES = Set.of("ROLE_ADMIN", "ROLE_TRAINER");
 
+    //Task for validation
     @Transactional
     public UserResponseDTO createUser(CreateUserRequestDTO registerRequest) {
         if (userRepository.findByEmail(registerRequest.email()).isPresent()) {
@@ -43,6 +44,8 @@ public class UserService {
         return UserResponseDTO.fromEntity(savedUser, roleInput);
     }
 
+    //Task for validation
+    @Transactional
     public List<UserResponseDTO> getAllUsers() {
         List<User> users = userRepository.findAll();
         return users.stream()
@@ -52,7 +55,7 @@ public class UserService {
                 })
                 .collect(Collectors.toList());
     }
-
+    //Delete and create task
     public Optional<UserResponseDTO> getUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .map(user -> {
@@ -60,7 +63,7 @@ public class UserService {
                     return UserResponseDTO.fromEntity(user, role);
                 });
     }
-
+    //Delete and create task
     @Transactional
     public void deleteUser(UUID userId) {
         if (!userRepository.existsById(userId)) {
