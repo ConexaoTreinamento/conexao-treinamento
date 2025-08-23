@@ -128,7 +128,11 @@ public class SecurityConfig {
                                 .decoder(jwtDecoder())
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter())))
                 .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().permitAll());
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/users/**").hasRole("ROLE_ADMIN")
+                        .requestMatchers("/api/trainers/**").hasRole("ROLE_TRAINER")
+                        .requestMatchers("/api/exercises/**").hasRole("ROLE_TRAINER")
+                        .anyRequest().authenticated());
 
         return http.build();
     }
@@ -139,8 +143,7 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().permitAll()
-                );
+                        .anyRequest().permitAll());
 
         return http.build();
     }
