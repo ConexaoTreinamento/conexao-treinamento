@@ -9,7 +9,6 @@ public record LoginRequestDTO(
     @NotBlank(message = "Email é obrigatório")
     @Size(max = 120)
     @Email(message = "Email deve ter formato válido")
-
     String email,
     
     @NotBlank(message = "Senha é obrigatória")

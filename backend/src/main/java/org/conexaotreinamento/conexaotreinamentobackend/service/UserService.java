@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
+import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,7 +14,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -23,47 +23,40 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    private static final Set<String> VALID_ROLES = Set.of("ROLE_ADMIN", "ROLE_TRAINER");
-
-    //Task for validation
-    @Transactional
     public UserResponseDTO createUser(CreateUserRequestDTO registerRequest) {
         if (userRepository.findByEmail(registerRequest.email()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já está em uso");
         }
-
-        String roleInput = registerRequest.role() != null ? registerRequest.role().toUpperCase() : "ROLE_TRAINER";
-        if (!VALID_ROLES.contains(roleInput)) {
+        Role role;
+        try {
+            if (registerRequest.role() == null || registerRequest.role().isBlank()) {
+                role = Role.ROLE_TRAINER;
+            } else {
+                role = Role.valueOf(registerRequest.role().toUpperCase());
+            }
+        } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Role inválido. Valores aceitos: ROLE_ADMIN, ROLE_TRAINER");
         }
 
-        User user = new User(registerRequest.email(), passwordEncoder.encode(registerRequest.password()), roleInput);
+        User user = new User(registerRequest.email(), passwordEncoder.encode(registerRequest.password()), role);
         User savedUser = userRepository.save(user);
 
-        return UserResponseDTO.fromEntity(savedUser, roleInput);
+        return UserResponseDTO.fromEntity(savedUser);
     }
 
-    //Task for validation
-    @Transactional
     public List<UserResponseDTO> getAllUsers() {
         List<User> users = userRepository.findAll();
         return users.stream()
-                .map(user -> {
-                    String role = determineUserRole(user);
-                    return UserResponseDTO.fromEntity(user, role);
-                })
+                .map(UserResponseDTO::fromEntity)
                 .collect(Collectors.toList());
     }
-    //Delete and create task
+
     public Optional<UserResponseDTO> getUserByEmail(String email) {
         return userRepository.findByEmail(email)
-                .map(user -> {
-                    String role = determineUserRole(user);
-                    return UserResponseDTO.fromEntity(user, role);
-                });
+                .map(UserResponseDTO::fromEntity);
     }
-    //Delete and create task
+
     @Transactional
     public void deleteUser(UUID userId) {
         if (!userRepository.existsById(userId)) {
@@ -71,9 +64,5 @@ public class UserService {
         }
 
         userRepository.deleteById(userId);
-    }
-
-    private String determineUserRole(User user) {
-        return user.getRole();
     }
 }

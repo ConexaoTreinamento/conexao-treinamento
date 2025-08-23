@@ -3,15 +3,16 @@ package org.conexaotreinamento.conexaotreinamentobackend.dto.response;
 import java.util.UUID;
 
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
+import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 
 public record UserResponseDTO(
         UUID id,
         String email,
-        String role) {
-    public static UserResponseDTO fromEntity(User savedUser, String roleInput) {
+        Role role) {
+    public static UserResponseDTO fromEntity(User user) {
         return new UserResponseDTO(
-                savedUser.getId(),
-                savedUser.getEmail(),
-                roleInput);
+                user.getId(),
+                user.getEmail(),
+                user.getRole());
     }
 }

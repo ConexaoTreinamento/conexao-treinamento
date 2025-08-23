@@ -1,22 +1,23 @@
 package org.conexaotreinamento.conexaotreinamentobackend.controller;
 
+import jakarta.persistence.EntityListeners;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.service.UserService;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/users")
-@RequiredArgsConstructor
+@EntityListeners(AuditingEntityListener.class)@RequiredArgsConstructor
 public class UserController {
 
     private final UserService userService;

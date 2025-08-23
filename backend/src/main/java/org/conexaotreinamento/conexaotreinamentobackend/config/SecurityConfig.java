@@ -2,6 +2,7 @@ package org.conexaotreinamento.conexaotreinamentobackend.config;
 
 import org.conexaotreinamento.conexaotreinamentobackend.config.security.jwt.JwtAuthEntryPoint;
 import org.conexaotreinamento.conexaotreinamentobackend.config.security.jwt.JwtAuthenticationFilter;
+import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -30,7 +31,6 @@ import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.OctetSequenceKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
-import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.nimbusds.jose.proc.SecurityContext;
 
 import java.nio.charset.StandardCharsets;
@@ -84,9 +84,14 @@ public class SecurityConfig {
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(jwt -> {
-            var role = jwt.getClaimAsString("role");
-            if (role != null) {
-                return List.of(new SimpleGrantedAuthority(role));
+            var roleString = jwt.getClaimAsString("role");
+            if (roleString != null) {
+                try {
+                    Role role = Role.valueOf(roleString);
+                    return List.of(new SimpleGrantedAuthority(role.name()));
+                } catch (IllegalArgumentException e) {
+                    return List.of();
+                }
             }
             return List.of();
         });
@@ -128,10 +133,10 @@ public class SecurityConfig {
                                 .decoder(jwtDecoder())
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter())))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/users/**").hasRole("ROLE_ADMIN")
-                        .requestMatchers("/api/trainers/**").hasRole("ROLE_TRAINER")
-                        .requestMatchers("/api/exercises/**").hasRole("ROLE_TRAINER")
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/users/**").permitAll()
+                        .requestMatchers("/trainers/**").hasAuthority("ROLE_TRAINER")
+                        .requestMatchers("/exercises/**").hasAnyAuthority("ROLE_TRAINER", "ROLE_ADMIN")
                         .anyRequest().authenticated());
 
         return http.build();

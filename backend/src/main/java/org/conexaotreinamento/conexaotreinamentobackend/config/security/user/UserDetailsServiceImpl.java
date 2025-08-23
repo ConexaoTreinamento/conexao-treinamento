@@ -22,11 +22,4 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + email));
         return new UserDetailsImpl(user);
     }
-
-    /*
-     * O método loadUserByUsername() é um método da interface UserDetailsService, 
-     * é usado para carregar os detalhes do usuário com base no nome de usuário fornecido. 
-     * Esse método é chamado automaticamente pelo Spring durante o processo de autenticação,
-     * é responsável por retornar um UserDetails com base no nome de usuário fornecido.
-     */
 }

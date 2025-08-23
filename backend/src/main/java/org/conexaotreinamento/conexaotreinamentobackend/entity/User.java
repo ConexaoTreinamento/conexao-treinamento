@@ -1,9 +1,9 @@
 package org.conexaotreinamento.conexaotreinamentobackend.entity;
 
 import java.time.Instant;
-import java.util.Set;
 import java.util.UUID;
 
+import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -11,6 +11,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -35,8 +37,9 @@ public class User {
     @Column(nullable = false, length = 120)
     private String password;
 
-    @Column(name = "role", nullable = false, length = 50)
-    private String role;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 20)
+    private Role role;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -49,13 +52,9 @@ public class User {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
-    public User(String email, String password, String role) {
+    public User(String email, String password, Role role) {
         this.email = email;
         this.password = password;
         this.role = role;
-    }
-
-    public Set<String> getRoleNames() {
-        return Set.of(this.role);
     }
 }
