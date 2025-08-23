@@ -16,7 +16,7 @@ import lombok.Getter;
 public class UserDetailsImpl implements UserDetails {
 
     private UUID id;
-    private User user; // Mantemos a referência para acessar roles
+    private User user;
 
     public UserDetailsImpl(User user) {
         this.id = user.getId();
@@ -25,7 +25,6 @@ public class UserDetailsImpl implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Usar a role simples do usuário
         return List.of(new SimpleGrantedAuthority(user.getRole()));
     }
 
