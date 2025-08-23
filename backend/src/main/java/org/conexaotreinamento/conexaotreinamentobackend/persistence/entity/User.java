@@ -9,23 +9,18 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
-import jakarta.persistence.JoinColumn;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Entity(name = "User")
+@Entity
 @Table(name = "users")
 @EntityListeners(AuditingEntityListener.class)
 @Getter
@@ -36,14 +31,13 @@ public class User {
     private UUID id;
 
     @Column(nullable = false, length = 120, unique = true)
-    private String username;
+    private String email;
 
     @Column(nullable = false, length = 120)
     private String password;
 
-    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.PERSIST)
-    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"))
-    private Set<Role> roles = new HashSet<>();
+    @Column(name = "role", nullable = false, length = 50)
+    private String role;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -56,9 +50,13 @@ public class User {
     @Column(name = "deleted_at")
     private Instant deletedAt;
 
-    public User(String username, String password) {
-        this.username = username;
+    public User(String email, String password, String role) {
+        this.email = email;
         this.password = password;
+        this.role = role;
     }
 
+    public Set<String> getRoleNames() {
+        return Set.of(this.role);
+    }
 }
