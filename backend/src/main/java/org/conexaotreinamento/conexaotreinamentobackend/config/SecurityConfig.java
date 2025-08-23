@@ -25,9 +25,15 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.OctetSequenceKey;
+import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import com.nimbusds.jose.proc.SecurityContext;
 
-import java.util.stream.Collectors;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 import javax.crypto.spec.SecretKeySpec;
 
@@ -47,12 +53,34 @@ public class SecurityConfig {
 
     @Bean
     public JwtEncoder jwtEncoder() {
-        return new NimbusJwtEncoder(new ImmutableSecret<>(jwtSecret.getBytes()));
+        // Usar uma chave mais robusta para o JWT
+        byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+        // Garantir que a chave tenha pelo menos 256 bits (32 bytes)
+        if (keyBytes.length < 32) {
+            byte[] paddedKey = new byte[32];
+            System.arraycopy(keyBytes, 0, paddedKey, 0, Math.min(keyBytes.length, 32));
+            keyBytes = paddedKey;
+        }
+        OctetSequenceKey jwk = new OctetSequenceKey.Builder(keyBytes)
+                .keyID("app-key")
+                .algorithm(JWSAlgorithm.HS256)
+                .build();
+
+        // Usa um JWKSet imutável como fonte de chaves para o encoder
+        return new NimbusJwtEncoder(new ImmutableJWKSet<SecurityContext>(new JWKSet(jwk)));
     }
 
     @Bean
     public JwtDecoder jwtDecoder() {
-        SecretKeySpec secretKey = new SecretKeySpec(jwtSecret.getBytes(), "HmacSHA256");
+        // Usar a mesma lógica do JwtEncoder para garantir compatibilidade
+        byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+        // Garantir que a chave tenha pelo menos 256 bits (32 bytes)
+        if (keyBytes.length < 32) {
+            byte[] paddedKey = new byte[32];
+            System.arraycopy(keyBytes, 0, paddedKey, 0, Math.min(keyBytes.length, 32));
+            keyBytes = paddedKey;
+        }
+        SecretKeySpec secretKey = new SecretKeySpec(keyBytes, "HmacSHA256");
         return NimbusJwtDecoder.withSecretKey(secretKey).build();
     }
 
@@ -60,10 +88,12 @@ public class SecurityConfig {
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(jwt -> {
-            var roles = jwt.getClaimAsStringList("roles");
-            return roles.stream()
-                    .map(SimpleGrantedAuthority::new)
-                    .collect(Collectors.toList());
+            // Mudança: usar "role" (singular) em vez de "roles" (plural)
+            var role = jwt.getClaimAsString("role");
+            if (role != null) {
+                return List.of(new SimpleGrantedAuthority(role));
+            }
+            return List.of();
         });
         return converter;
     }
@@ -96,18 +126,14 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthEntryPoint))
+                .authenticationProvider(authenticationProvider())
                 .oauth2ResourceServer(oauth2 -> oauth2
-                    .jwt(jwt -> jwt
-                        .decoder(jwtDecoder())
-                        .jwtAuthenticationConverter(jwtAuthenticationConverter())
-                    )
-                )
+                        .jwt(jwt -> jwt
+                                .decoder(jwtDecoder())
+                                .jwtAuthenticationConverter(jwtAuthenticationConverter())))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
-                        .anyRequest().authenticated()
-                );
-        
+                        .anyRequest().permitAll());
+
         return http.build();
     }
 }

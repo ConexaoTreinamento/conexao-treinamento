@@ -33,27 +33,31 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<JwtResponseDTO> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
+        System.out.println("[DEBUG] Iniciando processo de login para: " + loginRequest.email());
+        
         try {
-            // Autentica o usuário usando email e senha
+            System.out.println("[DEBUG] Tentando autenticar usuário...");
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            loginRequest.username(),
-                            loginRequest.password()));
-
-            // Define a autenticação no contexto de segurança
+                    new UsernamePasswordAuthenticationToken(loginRequest.email(), loginRequest.password())
+            );
+            System.out.println("[DEBUG] Autenticação bem-sucedida!");
+            
             SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            // Gera o token JWT usando o serviço OAuth2
-            String jwt = jwtService.generateToken(authentication);
-
-            // Extrai informações do usuário autenticado
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-
-            // Retorna o token e informações do usuário
-            return ResponseEntity.ok(new JwtResponseDTO(userDetails.getId(), jwt));
-        } catch (BadCredentialsException ex) {
+            System.out.println("[DEBUG] UserDetails obtido: " + userDetails.getUsername());
+            System.out.println("[DEBUG] Authorities: " + userDetails.getAuthorities());
+            
+            System.out.println("[DEBUG] Gerando token JWT...");
+            String token = jwtService.generateToken(authentication);
+            System.out.println("[DEBUG] Token gerado com sucesso! Tamanho: " + token.length());
+            
+            return ResponseEntity.ok(new JwtResponseDTO(userDetails.getId(), token));
+        } catch (BadCredentialsException e) {
+            System.out.println("[DEBUG] Erro de credenciais: " + e.getMessage());
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciais inválidas");
-        } catch (Exception ex) {
+        } catch (Exception e) {
+            System.out.println("[DEBUG] Erro interno: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+            e.printStackTrace();
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro interno do servidor");
         }
     }
