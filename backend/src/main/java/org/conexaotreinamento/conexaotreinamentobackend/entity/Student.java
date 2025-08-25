@@ -90,10 +90,6 @@ public class Student {
     @Setter
     private String objectives;
 
-    @Column(columnDefinition = "TEXT")
-    @Setter
-    private String observations;
-
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

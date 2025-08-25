@@ -24,7 +24,7 @@ public class PhysicalImpairment {
     private Student student;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, name = "impairment_type")
     @Setter
     private PhysicalImpairmentType impairmentType;
 
@@ -44,6 +44,6 @@ public class PhysicalImpairment {
     }
 
     public enum PhysicalImpairmentType {
-        VISUAL, AUDITORY, MOTOR, INTELLECTUAL, MULTIPLE
+        VISUAL, AUDITORY, MOTOR, INTELLECTUAL, OTHER
     }
 }

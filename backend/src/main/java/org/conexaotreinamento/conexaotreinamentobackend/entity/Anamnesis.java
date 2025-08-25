@@ -24,9 +24,9 @@ public class Anamnesis {
     @Setter
     private Student student;
 
-    @Column(columnDefinition = "TEXT[]")
+    @Column()
     @Setter
-    private String[] medication;
+    private String medication;
 
     @Column(name = "is_doctor_aware_of_physical_activity")
     @Setter
@@ -45,41 +45,41 @@ public class Anamnesis {
     @Setter
     private String dietOrientedBy;
 
-    @Column(name = "cardiac_problems", columnDefinition = "TEXT[]")
+    @Column(name = "cardiac_problems")
     @Setter
-    private String[] cardiacProblems;
+    private String cardiacProblems;
 
     @Column(name = "has_hypertension")
     @Setter
     private Boolean hasHypertension;
 
-    @Column(name = "chronic_diseases", columnDefinition = "TEXT[]")
+    @Column(name = "chronic_diseases")
     @Setter
-    private String[] chronicDiseases;
+    private String chronicDiseases;
 
-    @Column(name = "difficulties_in_physical_activities", columnDefinition = "TEXT[]")
+    @Column(name = "difficulties_in_physical_activities")
     @Setter
-    private String[] difficultiesInPhysicalActivities;
+    private String difficultiesInPhysicalActivities;
 
-    @Column(name = "medical_orientations_to_avoid_physical_activity", columnDefinition = "TEXT[]")
+    @Column(name = "medical_orientations_to_avoid_physical_activity")
     @Setter
-    private String[] medicalOrientationsToAvoidPhysicalActivity;
+    private String medicalOrientationsToAvoidPhysicalActivity;
 
-    @Column(name = "surgeries_in_the_last_12_months", columnDefinition = "TEXT[]")
+    @Column(name = "surgeries_in_the_last_12_months")
     @Setter
-    private String[] surgeriesInTheLast12Months;
+    private String surgeriesInTheLast12Months;
 
-    @Column(name = "respiratory_problems", columnDefinition = "TEXT[]")
+    @Column(name = "respiratory_problems")
     @Setter
-    private String[] respiratoryProblems;
+    private String respiratoryProblems;
 
-    @Column(name = "joint_muscular_back_pain", columnDefinition = "TEXT[]")
+    @Column(name = "joint_muscular_back_pain")
     @Setter
-    private String[] jointMuscularBackPain;
+    private String jointMuscularBackPain;
 
-    @Column(name = "spinal_disc_problems", columnDefinition = "TEXT[]")
+    @Column(name = "spinal_disc_problems")
     @Setter
-    private String[] spinalDiscProblems;
+    private String spinalDiscProblems;
 
     @Column(length = 255)
     @Setter
