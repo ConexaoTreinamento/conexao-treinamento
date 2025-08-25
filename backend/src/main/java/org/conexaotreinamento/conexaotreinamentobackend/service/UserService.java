@@ -23,6 +23,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
+    
     public UserResponseDTO createUser(CreateUserRequestDTO registerRequest) {
         if (userRepository.findByEmail(registerRequest.email()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já está em uso");

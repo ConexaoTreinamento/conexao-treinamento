@@ -40,12 +40,12 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({ BadCredentialsException.class })
     public ResponseEntity<ApiError> handleUnauthorized(Exception ex, HttpServletRequest req) {
-        // Você pode adicionar fields específicos para erros de autenticação
+        // You can add specific fields for authentication errors
         Map<String, String> fields = new LinkedHashMap<>();
-        fields.put("email", "Credenciais inválidas");
-        fields.put("password", "Verifique seu email e senha");
-
-        return build(HttpStatus.UNAUTHORIZED, "Acesso não autorizado", req, fields);
+        fields.put("email", "Invalid credentials");
+        fields.put("password", "Please check your email and password");
+    
+        return build(HttpStatus.UNAUTHORIZED, "Unauthorized access", req, fields);
     }
 
     @ExceptionHandler(InternalServerError.class)
@@ -54,7 +54,7 @@ public class GlobalExceptionHandler {
         fields.put("error_type", ex.getClass().getSimpleName());
         fields.put("timestamp", Instant.now().toString());
         
-        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Erro interno do servidor", req, fields);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", req, fields);
     }
 
     private ResponseEntity<ApiError> build(HttpStatus status, String message, HttpServletRequest req, Map<String, String> fieldErrors) {
