@@ -124,7 +124,6 @@ interface StudentData {
   emergencyPhone: string
   profession: string
   goals: string
-  medicalConditions: string
   medicalData: MedicalData
   objectives: string[]
   evaluations: Evaluation[]
@@ -564,10 +563,6 @@ export default function StudentProfilePage() {
                     <div>
                       <span className="text-sm text-muted-foreground">Objetivos:</span>
                       <p>{studentData.goals}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-muted-foreground">Condições Médicas:</span>
-                      <p>{studentData.medicalConditions}</p>
                     </div>
                   </CardContent>
                 </Card>
