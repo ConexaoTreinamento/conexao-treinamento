@@ -4,10 +4,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.*;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpServerErrorException.InternalServerError;
-
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
@@ -38,26 +38,17 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "Validation failed", req, fields);
     }
 
-    @ExceptionHandler({ BadCredentialsException.class })
-    public ResponseEntity<ApiError> handleUnauthorized(Exception ex, HttpServletRequest req) {
-        // You can add specific fields for authentication errors
-        Map<String, String> fields = new LinkedHashMap<>();
-        fields.put("email", "Invalid credentials");
-        fields.put("password", "Please check your email and password");
-    
-        return build(HttpStatus.UNAUTHORIZED, "Unauthorized access", req, fields);
-    }
-
     @ExceptionHandler(InternalServerError.class)
     public ResponseEntity<ApiError> handleInternalError(Exception ex, HttpServletRequest req) {
         Map<String, String> fields = new LinkedHashMap<>();
         fields.put("error_type", ex.getClass().getSimpleName());
         fields.put("timestamp", Instant.now().toString());
-        
+
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", req, fields);
     }
 
-    private ResponseEntity<ApiError> build(HttpStatus status, String message, HttpServletRequest req, Map<String, String> fieldErrors) {
+    private ResponseEntity<ApiError> build(HttpStatus status, String message, HttpServletRequest req,
+            Map<String, String> fieldErrors) {
         ApiError body = new ApiError(
                 Instant.now(),
                 status.value(),

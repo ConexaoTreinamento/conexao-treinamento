@@ -35,7 +35,7 @@ public class AuthService {
 
         log.debug("Generating JWT token...");
         String token = jwtService.generateToken(authentication);
-        log.debug("Token generated successfully! Size: {}", token.length());
+        log.debug("Token generated successfully!");
 
         return new JwtResponseDTO(userDetails.getId(), token);
     }

@@ -1,13 +1,15 @@
 package org.conexaotreinamento.conexaotreinamentobackend.config.security.jwt;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.time.Instant;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import org.conexaotreinamento.conexaotreinamentobackend.exception.ApiError;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -16,6 +18,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class JwtAuthEntryPoint implements AuthenticationEntryPoint {
 
+    private static final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
+
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
             AuthenticationException authException) throws IOException, ServletException {
@@ -23,12 +28,14 @@ public class JwtAuthEntryPoint implements AuthenticationEntryPoint {
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 
-        final Map<String, Object> body = new HashMap<>();
-        body.put("error", "Unauthorized");
-        body.put("message", "You may login and try again!");
+        ApiError apiError = new ApiError(
+                Instant.now(),
+                HttpServletResponse.SC_UNAUTHORIZED,
+                "Unauthorized",
+                "You may login and try again!",
+                request.getRequestURI(),
+                null);
 
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.writeValue(response.getOutputStream(), body);
-
+        objectMapper.writeValue(response.getOutputStream(), apiError);
     }
 }

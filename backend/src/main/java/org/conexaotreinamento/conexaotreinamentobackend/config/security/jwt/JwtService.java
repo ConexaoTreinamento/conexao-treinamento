@@ -85,11 +85,17 @@ public class JwtService {
     }
 
     public String extractUsername(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            throw new JwtException("Token cannot be null or empty");
+        }
         Jwt jwt = jwtDecoder.decode(token);
         return jwt.getSubject();
     }
 
     public boolean isTokenValid(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            throw new JwtException("Token cannot be null or empty");
+        }
         try {
             jwtDecoder.decode(token);
             return true;
