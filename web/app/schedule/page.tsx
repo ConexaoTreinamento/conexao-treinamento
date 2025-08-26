@@ -5,19 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Calendar, Clock, Plus, MapPin, User, CheckCircle, XCircle, CalendarDays, X, ChevronLeft, ChevronRight } from "lucide-react"
+import { Calendar, Clock, Plus, User, CheckCircle, XCircle, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import ClassModal from "@/components/class-modal"
@@ -30,16 +18,6 @@ export default function SchedulePage() {
   const [modalInitialData, setModalInitialData] = useState({
     name: "",
     instructor: "",
-    room: "",
-    maxStudents: "2",
-    description: "",
-    weekDays: [] as string[],
-    times: [] as { day: string; startTime: string; endTime: string }[],
-  })
-  const [newClassForm, setNewClassForm] = useState({
-    name: "",
-    instructor: "",
-    room: "",
     maxStudents: "2",
     description: "",
     weekDays: [] as string[],
@@ -58,7 +36,6 @@ export default function SchedulePage() {
       id: 1,
       name: "Pilates Iniciante",
       instructor: "Prof. Ana",
-      room: "Sala 1",
       time: "09:00",
       duration: 60,
       maxStudents: 10,
@@ -82,7 +59,6 @@ export default function SchedulePage() {
       id: 2,
       name: "Yoga Avançado",
       instructor: "Prof. Marina",
-      room: "Sala 2",
       time: "18:00",
       duration: 60,
       maxStudents: 12,
@@ -102,7 +78,6 @@ export default function SchedulePage() {
       id: 3,
       name: "CrossFit",
       instructor: "Prof. Roberto",
-      room: "Sala 3",
       time: "07:00",
       duration: 60,
       maxStudents: 8,
@@ -121,16 +96,6 @@ export default function SchedulePage() {
   ])
 
   const teachers = ["Prof. Ana", "Prof. Marina", "Prof. Roberto", "Prof. Carlos"]
-  const rooms = ["Sala 1", "Sala 2", "Sala 3", "Área Externa"]
-  const weekDays = [
-    { value: "monday", label: "Segunda" },
-    { value: "tuesday", label: "Terça" },
-    { value: "wednesday", label: "Quarta" },
-    { value: "thursday", label: "Quinta" },
-    { value: "friday", label: "Sexta" },
-    { value: "saturday", label: "Sábado" },
-    { value: "sunday", label: "Domingo" },
-  ]
 
   // Generate dates for horizontal scroll based on current month (14 days around middle of month)
   const getScrollDates = () => {
@@ -206,65 +171,12 @@ export default function SchedulePage() {
     return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
   }
 
-  const handleWeekDayToggle = (dayValue: string, dayLabel: string) => {
-    setNewClassForm((prev) => {
-      const isSelected = prev.weekDays.includes(dayValue)
-
-      if (isSelected) {
-        // Remove day and its time
-        return {
-          ...prev,
-          weekDays: prev.weekDays.filter((d) => d !== dayValue),
-          times: prev.times.filter((t) => t.day !== dayValue),
-        }
-      } else {
-        // Add day and copy time from first day if exists
-        const firstTime = prev.times[0]
-        const newTime = firstTime
-          ? { day: dayValue, startTime: firstTime.startTime, endTime: firstTime.endTime }
-          : { day: dayValue, startTime: "", endTime: "" }
-
-        return {
-          ...prev,
-          weekDays: [...prev.weekDays, dayValue],
-          times: [...prev.times, newTime],
-        }
-      }
-    })
-  }
-
-  const handleTimeChange = (dayValue: string, field: "startTime" | "endTime", value: string) => {
-    setNewClassForm((prev) => ({
-      ...prev,
-      times: prev.times.map((t) => {
-        if (t.day === dayValue) {
-          const updatedTime = { ...t, [field]: value }
-
-          // Validate times
-          if (updatedTime.startTime && updatedTime.endTime) {
-            const start = new Date(`2000-01-01T${updatedTime.startTime}`)
-            const end = new Date(`2000-01-01T${updatedTime.endTime}`)
-
-            if (end < start) {
-              // If end time is earlier than start time, set end time to start time
-              updatedTime.endTime = updatedTime.startTime
-            }
-          }
-
-          return updatedTime
-        }
-        return t
-      }),
-    }))
-  }
-
   const handleCreateClass = (formData: any) => {
     if (formData.name && formData.instructor && formData.weekDays.length > 0) {
       const newClass = {
         id: Date.now() + Math.random(),
         name: formData.name,
         instructor: formData.instructor,
-        room: formData.room,
         duration: 60,
         maxStudents: Number.parseInt(formData.maxStudents) || 10,
         currentStudents: 0,
@@ -289,7 +201,6 @@ export default function SchedulePage() {
     const initialData = {
       name: "",
       instructor: "",
-      room: "",
       maxStudents: "2",
       description: "",
       weekDays: [selectedDayOfWeek], // Pre-select current day
@@ -451,10 +362,6 @@ export default function SchedulePage() {
                           <span>{classItem.time}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          <span>{classItem.room}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
                           <User className="w-3 h-3" />
                           <span>{classItem.instructor}</span>
                         </div>
@@ -528,7 +435,6 @@ export default function SchedulePage() {
           onClose={handleCloseClassModal}
           onSubmitData={handleCreateClass}
           teachers={teachers}
-          rooms={rooms}
         />
       </div>
     </Layout>

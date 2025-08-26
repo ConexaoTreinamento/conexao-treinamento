@@ -53,7 +53,6 @@ interface ClassData {
   id: number
   name: string
   instructor: string
-  room: string
   time: string
   date: string
   maxStudents: number
@@ -97,8 +96,7 @@ export default function ClassDetailPage() {
 
   // Edit form state - initialize with empty values first
   const [editForm, setEditForm] = useState({
-    instructor: "",
-    room: ""
+    instructor: ""
   })
 
   const [availableExercises, setAvailableExercises] = useState([
@@ -136,7 +134,6 @@ export default function ClassDetailPage() {
       id: 1,
       name: "Pilates Iniciante",
       instructor: "Prof. Ana Silva",
-      room: "Sala 1",
       time: "09:00 - 10:00",
       date: "Segunda-feira",
       maxStudents: 10,
@@ -193,7 +190,6 @@ export default function ClassDetailPage() {
       id: 2,
       name: "Yoga Avançado",
       instructor: "Prof. Marina Costa",
-      room: "Sala 2",
       time: "18:00 - 19:00",
       date: "Terça-feira",
       maxStudents: 12,
@@ -229,7 +225,6 @@ export default function ClassDetailPage() {
       id: 3,
       name: "CrossFit",
       instructor: "Prof. Roberto Lima",
-      room: "Sala 3",
       time: "07:00 - 08:00",
       date: "Segunda a Sexta",
       maxStudents: 8,
@@ -265,7 +260,6 @@ export default function ClassDetailPage() {
           // Update edit form with the loaded class data
           setEditForm({
             instructor: foundClass.instructor,
-            room: foundClass.room
           })
         } else {
           // Handle class not found
@@ -325,15 +319,6 @@ export default function ClassDetailPage() {
     "Prof. Lucia Ferreira"
   ]
 
-  const availableRooms = [
-    "Sala 1",
-    "Sala 2",
-    "Sala 3",
-    "Área Externa",
-    "Sala de Yoga",
-    "Studio Principal"
-  ]
-
   const availableStudents = [
     "Carlos Lima",
     "Lucia Ferreira",
@@ -350,7 +335,6 @@ export default function ClassDetailPage() {
       return {
         ...prev,
         instructor: editForm.instructor,
-        room: editForm.room
       }
     })
     setIsEditClassOpen(false)
@@ -364,7 +348,6 @@ export default function ClassDetailPage() {
         ...prev,
         name: formData.name,
         instructor: formData.instructor,
-        room: formData.room,
         weekDays: formData.weekDays, // Update weekdays
         times: formData.times, // Update times
         description: formData.description,
@@ -382,7 +365,6 @@ export default function ClassDetailPage() {
   const openEditDialog = () => {
     setEditForm({
       instructor: classData.instructor,
-      room: classData.room
     })
     setIsEditClassOpen(true)
   }
@@ -530,10 +512,6 @@ export default function ClassDetailPage() {
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="w-4 h-4 text-muted-foreground" />
                   <span>{classData.time}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="w-4 h-4 text-muted-foreground" />
-                  <span>{classData.room}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Users className="w-4 h-4 text-muted-foreground" />
@@ -864,7 +842,7 @@ export default function ClassDetailPage() {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Editar Aula</DialogTitle>
-              <DialogDescription>Altere o professor e sala desta aula</DialogDescription>
+              <DialogDescription>Altere o professor desta aula</DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
@@ -905,25 +883,6 @@ export default function ClassDetailPage() {
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="editRoom">Sala</Label>
-                <Select
-                  value={editForm.room}
-                  onValueChange={(value) => setEditForm(prev => ({ ...prev, room: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecionar sala..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableRooms.map((room) => (
-                      <SelectItem key={room} value={room}>
-                        {room}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
 
             <DialogFooter className="gap-y-2">
@@ -945,7 +904,6 @@ export default function ClassDetailPage() {
           initialData={{
             name: classData.name,
             instructor: classData.instructor,
-            room: classData.room,
             maxStudents: classData.maxStudents.toString(),
             description: classData.description,
             weekDays: classData.weekDays || [], // Pass existing weekdays
@@ -954,7 +912,6 @@ export default function ClassDetailPage() {
           onClose={handleCloseModalityModal}
           onSubmitData={handleEditModality}
           teachers={availableTeachers}
-          rooms={availableRooms}
         />
       </div>
     </Layout>

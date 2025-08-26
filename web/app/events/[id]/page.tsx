@@ -31,7 +31,6 @@ interface EventData {
   description: string
   instructor: string
   participants: EventParticipant[]
-  maxParticipants: number // Made required instead of optional
 }
 
 export default function EventDetailPage() {
@@ -46,20 +45,6 @@ export default function EventDetailPage() {
   // Add search state for participants - moved to correct position to fix hook order
   const [participantSearchTerm, setParticipantSearchTerm] = useState("")
 
-  // Function to derive status from participants and max participants
-  const deriveStatus = (currentParticipants: number, maxParticipants: number) => {
-    if (currentParticipants >= maxParticipants) {
-      return "Lotado"
-    }
-    return "Aberto"
-  }
-
-  // Update event data with derived status
-  const updateEventWithDerivedStatus = (event: EventData) => {
-    const newStatus = deriveStatus(event.participants.length, event.maxParticipants)
-    return { ...event, status: newStatus }
-  }
-
   // Mock events data - this should eventually be replaced with API calls
   const mockEvents: EventData[] = [
     {
@@ -72,7 +57,6 @@ export default function EventDetailPage() {
       status: "Aberto",
       description: "Corrida matinal de 5km no parque para todos os níveis. Venha participar desta atividade ao ar livre e conhecer outros alunos da academia!",
       instructor: "Prof. Carlos Santos",
-      maxParticipants: 20,
       participants: [
         { id: 1, name: "Maria Silva", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-20", present: true },
         { id: 2, name: "João Santos", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-21", present: false },
@@ -86,10 +70,9 @@ export default function EventDetailPage() {
       startTime: "14:00",
       endTime: "16:00",
       location: "Studio Principal",
-      status: "Lotado",
+      status: "Aberto",
       description: "Workshop intensivo de Yoga com técnicas avançadas de respiração e posturas. Aprenda com especialistas e aprofunde sua prática.",
       instructor: "Prof. Marina Costa",
-      maxParticipants: 15,
       participants: [
         { id: 4, name: "Patricia Oliveira", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-15", present: true },
         { id: 5, name: "Roberto Silva", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-16", present: true },
@@ -106,7 +89,6 @@ export default function EventDetailPage() {
       status: "Aberto",
       description: "Competição amistosa de CrossFit com diferentes categorias. Venha testar seus limites e se divertir com outros atletas!",
       instructor: "Prof. Roberto Lima",
-      maxParticipants: 30,
       participants: [
         { id: 7, name: "Carlos Lima", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-18", present: true },
         { id: 8, name: "Lucia Ferreira", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-19", present: false },
@@ -140,9 +122,7 @@ export default function EventDetailPage() {
         const event = mockEvents.find(e => e.id === eventId)
 
         if (event) {
-          // Apply dynamic status computation to the loaded event
-          const eventWithComputedStatus = updateEventWithDerivedStatus(event)
-          setEventData(eventWithComputedStatus)
+          setEventData(event)
           // Initialize form with event data
           setEventForm({
             name: event.name,
@@ -285,7 +265,7 @@ export default function EventDetailPage() {
           p.name === participantName ? { ...p, present: !p.present } : p
         )
       }
-      return updateEventWithDerivedStatus(updated)
+      return updated
     })
   }
 
@@ -298,7 +278,7 @@ export default function EventDetailPage() {
         ...prev,
         participants: prev.participants.filter(p => p.name !== studentName)
       }
-      return updateEventWithDerivedStatus(updated)
+      return updated
     })
   }
 
@@ -365,13 +345,10 @@ export default function EventDetailPage() {
       location: formData.location,
       description: formData.description,
       instructor: formData.instructor,
-      maxParticipants: parseInt(formData.maxParticipants) || 20,
       participants: updatedParticipants
     }
 
-    // Update with derived status
-    const eventWithStatus = updateEventWithDerivedStatus(updatedEvent)
-    setEventData(eventWithStatus)
+    setEventData(updatedEvent)
   }
 
   return (
@@ -421,7 +398,7 @@ export default function EventDetailPage() {
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Users className="w-4 h-4 text-muted-foreground"/>
-                  <span>{eventData.participants.length}/{eventData.maxParticipants} participantes</span>
+                  <span>{eventData.participants.length} participantes</span>
                 </div>
               </div>
 
@@ -530,7 +507,6 @@ export default function EventDetailPage() {
             endTime: eventData.endTime,
             location: eventData.location,
             description: eventData.description,
-            maxParticipants: eventData.maxParticipants.toString(),
             instructor: eventData.instructor,
             students: eventData.participants.map(p => p.name),
             attendance: eventData.participants.reduce((acc, p) => ({ ...acc, [p.name]: p.present }), {})

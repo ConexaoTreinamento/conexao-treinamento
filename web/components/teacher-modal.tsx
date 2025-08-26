@@ -26,6 +26,7 @@ interface TeacherFormData {
   specialties: string[]
   compensation: string
   status: string
+  newPassword?: string
 }
 
 interface TeacherModalProps {
@@ -52,6 +53,7 @@ export default function TeacherModal({
     specialties: [],
     compensation: "Horista",
     status: "Ativo",
+    newPassword: "",
   })
 
   // Available specialties for suggestions
@@ -85,6 +87,7 @@ export default function TeacherModal({
         specialties: initialData.specialties || [],
         compensation: initialData.compensation || "Horista",
         status: initialData.status || "Ativo",
+        newPassword: "",
       })
     } else {
       // Reset form for create mode
@@ -97,6 +100,7 @@ export default function TeacherModal({
         specialties: [],
         compensation: "Horista",
         status: "Ativo",
+        newPassword: "",
       })
     }
   }, [initialData, open])
@@ -123,13 +127,21 @@ export default function TeacherModal({
   }
 
   const isFormValid = () => {
-    return formData.name.trim() &&
+    const baseValidation = formData.name.trim() &&
            formData.email.trim() &&
            formData.phone.trim() &&
            formData.address.trim() &&
            formData.birthDate &&
            formData.compensation &&
            formData.status
+
+    // For create mode, password is required
+    if (mode === "create") {
+      return baseValidation && formData.newPassword && formData.newPassword.trim()
+    }
+
+    // For edit mode, password is optional
+    return baseValidation
   }
 
   return (
@@ -295,6 +307,24 @@ export default function TeacherModal({
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Password field - show for both create and edit modes */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-medium">Acesso</h4>
+
+            <div className="space-y-2">
+              <Label htmlFor="teacherPassword">
+                {mode === "create" ? "Senha *" : "Nova Senha"}
+              </Label>
+              <Input
+                id="teacherPassword"
+                type="password"
+                value={formData.newPassword || ""}
+                onChange={(e) => setFormData(prev => ({ ...prev, newPassword: e.target.value }))}
+                placeholder={mode === "create" ? "Digite a senha" : "Deixe vazio para manter a senha atual"}
+              />
+            </div>
           </div>
         </div>
 

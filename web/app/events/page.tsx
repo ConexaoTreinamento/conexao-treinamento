@@ -30,7 +30,6 @@ interface EventData {
   description: string
   instructor: string
   participants: EventParticipant[]
-  maxParticipants: number
 }
 
 export default function EventsPage() {
@@ -48,7 +47,6 @@ export default function EventsPage() {
       status: "Aberto",
       description: "Corrida matinal de 5km no parque para todos os níveis.",
       instructor: "Prof. Carlos Santos",
-      maxParticipants: 20,
       participants: [
         { id: 1, name: "Maria Silva", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-20", present: true },
         { id: 2, name: "João Santos", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-21", present: false },
@@ -62,10 +60,9 @@ export default function EventsPage() {
       startTime: "14:00",
       endTime: "16:00",
       location: "Studio Principal",
-      status: "Lotado",
+      status: "Aberto",
       description: "Workshop intensivo de Yoga com técnicas avançadas de respiração e posturas.",
       instructor: "Prof. Marina Costa",
-      maxParticipants: 15,
       participants: [
         { id: 4, name: "Patricia Oliveira", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-15", present: true },
         { id: 5, name: "Roberto Silva", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-16", present: true },
@@ -82,7 +79,6 @@ export default function EventsPage() {
       status: "Aberto",
       description: "Competição amistosa de CrossFit com diferentes categorias.",
       instructor: "Prof. Roberto Lima",
-      maxParticipants: 30,
       participants: [
         { id: 7, name: "Carlos Lima", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-18", present: true },
         { id: 8, name: "Lucia Ferreira", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-19", present: false },
@@ -114,20 +110,6 @@ export default function EventsPage() {
     "Prof. João Pedro"
   ]
 
-  // Function to derive status from participants and max participants
-  const deriveStatus = (currentParticipants: number, maxParticipants: number) => {
-    if (currentParticipants >= maxParticipants) {
-      return "Lotado"
-    }
-    return "Aberto"
-  }
-
-  // Compute status for each event dynamically
-  const eventsWithComputedStatus = events.map(event => ({
-    ...event,
-    status: deriveStatus(event.participants.length, event.maxParticipants)
-  }))
-
   // Handle creating new event
   const handleCreateEvent = (formData: any) => {
     // Convert form participants to EventParticipant objects
@@ -148,12 +130,11 @@ export default function EventsPage() {
       location: formData.location,
       description: formData.description,
       instructor: formData.instructor,
-      maxParticipants: parseInt(formData.maxParticipants) || 20,
       participants: participants,
-      status: deriveStatus(participants.length, parseInt(formData.maxParticipants) || 20)
+      status: "Aberto",
     }
 
-    setEvents(prev => [newEvent, ...prev])
+    setEvents(prev => [...prev, newEvent])
   }
 
   const getStatusColor = (status: string) => {
@@ -179,7 +160,7 @@ export default function EventsPage() {
   }
 
   // Filter events based on search term
-  const filteredEvents = eventsWithComputedStatus.filter(event =>
+  const filteredEvents = events.filter(event =>
     event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     event.location.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -245,7 +226,7 @@ export default function EventsPage() {
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Users className="w-4 h-4 text-muted-foreground" />
-                    <span>{event.participants.length}/{event.maxParticipants} participantes</span>
+                    <span>{event.participants.length} participantes</span>
                   </div>
                 </div>
 

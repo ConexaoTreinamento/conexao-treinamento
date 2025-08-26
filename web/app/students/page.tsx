@@ -21,6 +21,8 @@ import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X } from "lucide
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import StudentForm from "@/components/student-form"
+import {getStudentCurrentStatus, getStudentPlanExpirationDate, getUnifiedStatusBadge} from "@/lib/expiring-plans"
+import { STUDENTS, getStudentFullName } from "@/lib/students-data"
 
 export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -43,109 +45,17 @@ export default function StudentsPage() {
     setUserRole(role)
   }, [])
 
-  // Mock students data with updated fields
-  const students = [
-    {
-      id: 1,
-      name: "Maria",
-      surname: "Silva",
-      email: "maria@email.com",
-      phone: "(11) 99999-9999",
-      sex: "F",
-      birthDate: "1996-03-15",
-      profession: "Designer",
-      street: "Rua das Flores",
-      number: "123",
-      complement: "Apto 45",
-      neighborhood: "Centro",
-      cep: "01234-567",
-      registrationDate: "2024-01-15",
-      status: "Ativo",
-      plan: "Mensal",
-    },
-    {
-      id: 2,
-      name: "João",
-      surname: "Santos",
-      email: "joao@email.com",
-      phone: "(11) 88888-8888",
-      sex: "M",
-      birthDate: "1989-07-22",
-      profession: "Engenheiro",
-      street: "Av. Paulista",
-      number: "456",
-      complement: "",
-      neighborhood: "Bela Vista",
-      cep: "01310-100",
-      registrationDate: "2024-02-03",
-      status: "Ativo",
-      plan: "Trimestral",
-    },
-    {
-      id: 3,
-      name: "Ana",
-      surname: "Costa",
-      email: "ana@email.com",
-      phone: "(11) 77777-7777",
-      sex: "F",
-      birthDate: "1980-06-20",
-      profession: "Médica",
-      street: "Rua das Palmeiras",
-      number: "789",
-      complement: "",
-      neighborhood: "Jardins",
-      cep: "01410-000",
-      registrationDate: "2023-12-20",
-      status: "Vencido",
-      plan: "Mensal",
-    },
-    {
-      id: 4,
-      name: "Carlos",
-      surname: "Lima",
-      email: "carlos@email.com",
-      phone: "(11) 66666-6666",
-      sex: "M",
-      birthDate: "1993-03-10",
-      profession: "Advogado",
-      street: "Rua dos Pinheiros",
-      number: "101",
-      complement: "Casa 2",
-      neighborhood: "Pinheiros",
-      cep: "01510-000",
-      registrationDate: "2024-03-10",
-      status: "Ativo",
-      plan: "Semestral",
-    },
-    {
-      id: 5,
-      name: "Lucia",
-      surname: "Ferreira",
-      email: "lucia@email.com",
-      phone: "(11) 55555-5555",
-      sex: "F",
-      birthDate: "1995-04-25",
-      profession: "Enfermeira",
-      street: "Rua dos Cedros",
-      number: "202",
-      complement: "",
-      neighborhood: "Cedros",
-      cep: "01610-000",
-      registrationDate: "2024-04-25",
-      status: "Ativo",
-      plan: "Mensal",
-    },
-  ]
-
-  const filteredStudents = students.filter((student) => {
-    const fullName = `${student.name} ${student.surname}`
+  const filteredStudents = STUDENTS.filter((student) => {
+    const fullName = getStudentFullName(student)
     const matchesSearch =
       fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.profession.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.phone.includes(searchTerm)
 
-    const matchesStatus = filters.status === "all" || student.status === filters.status
+    // Use dynamic status based on plan expiration
+    const currentStatus = getStudentCurrentStatus(student.id)
+    const matchesStatus = filters.status === "all" || currentStatus === filters.status
     const matchesPlan = filters.plan === "all" || student.plan === filters.plan
 
     const age = new Date().getFullYear() - new Date(student.birthDate).getFullYear()
@@ -205,7 +115,7 @@ export default function StudentsPage() {
   }
 
   const hasActiveFilters = Object.values(filters).some((filter) => filter !== "all")
-  const uniqueProfessions = [...new Set(students.map((s) => s.profession))]
+  const uniqueProfessions = [...new Set(STUDENTS.map((s) => s.profession))]
 
   const handleCreateStudent = async (formData: any) => {
     setIsCreating(true)
@@ -412,7 +322,7 @@ export default function StudentsPage() {
         {/* Results Summary */}
         {(searchTerm || hasActiveFilters) && (
           <div className="text-sm text-muted-foreground">
-            Mostrando {filteredStudents.length} de {students.length} alunos
+            Mostrando {filteredStudents.length} de {STUDENTS.length} alunos
           </div>
         )}
 
@@ -422,6 +332,9 @@ export default function StudentsPage() {
             const age = new Date().getFullYear() - new Date(student.birthDate).getFullYear()
             const fullName = `${student.name} ${student.surname}`
             const initials = `${student.name.charAt(0)}${student.surname.charAt(0)}`.toUpperCase()
+
+            // Get plan expiration date for unified status
+            const planExpirationDate = getStudentPlanExpirationDate(student.id)
 
             return (
               <Card
@@ -441,9 +354,9 @@ export default function StudentsPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-base leading-tight">{fullName}</h3>
-                          <Badge className={`${getStatusColor(student.status)} text-xs mt-1`}>
-                            {student.status}
-                          </Badge>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {getUnifiedStatusBadge(planExpirationDate)}
+                          </div>
                         </div>
                       </div>
                       <Button
@@ -451,7 +364,7 @@ export default function StudentsPage() {
                         variant="outline"
                         onClick={(e) => {
                           e.stopPropagation()
-                          router.push(`/students/${student.id}/evaluation`)
+                          router.push(`/students/${student.id}/evaluation/new`)
                         }}
                         className="bg-transparent text-xs px-2 py-1 h-8 flex-shrink-0"
                       >
@@ -497,7 +410,9 @@ export default function StudentsPage() {
                       <div className="flex flex-col gap-2 mb-1">
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-lg flex-1 min-w-0 truncate">{fullName}</h3>
-                          <Badge className={`${getStatusColor(student.status)} flex-shrink-0`}>{student.status}</Badge>
+                          <div className="flex gap-2 flex-shrink-0">
+                            {getUnifiedStatusBadge(planExpirationDate)}
+                          </div>
                         </div>
                       </div>
 
@@ -530,7 +445,7 @@ export default function StudentsPage() {
                         variant="outline"
                         onClick={(e) => {
                           e.stopPropagation()
-                          router.push(`/students/${student.id}/evaluation`)
+                          router.push(`/students/${student.id}/evaluation/new`)
                         }}
                         className="bg-transparent text-xs px-2 py-1 h-8"
                       >

@@ -11,6 +11,7 @@ import { Menu, BarChart3, Users, Calendar, UserCheck, Dumbbell, User, Sun, Moon,
 import { useTheme } from "next-themes"
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import Image from "next/image"
+import ExpiringPlansModal from "@/components/expiring-plans-modal"
 
 const navigation = [
 	{ name: "Agenda", href: "/schedule", icon: Calendar },
@@ -29,6 +30,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 	const [userRole, setUserRole] = useState<string>("")
 	const [userName, setUserName] = useState<string>("")
 	const [mounted, setMounted] = useState(false)
+	const [showExpiringPlansModal, setShowExpiringPlansModal] = useState(false)
 
 	useEffect(() => {
 		setMounted(true)
@@ -36,6 +38,27 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 		const name = localStorage.getItem("userName") || "Professor"
 		setUserRole(role)
 		setUserName(name)
+	}, [])
+
+	// Global keyboard listener for debugging shortcuts
+	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			// Only trigger if the user is not typing in an input field
+			if (event.target instanceof HTMLInputElement ||
+				event.target instanceof HTMLTextAreaElement ||
+				event.target instanceof HTMLSelectElement) {
+				return
+			}
+
+			// Check for "E" key to open expiring plans modal
+			if (event.key.toLowerCase() === 'e' && !event.ctrlKey && !event.altKey && !event.metaKey) {
+				event.preventDefault()
+				setShowExpiringPlansModal(true)
+			}
+		}
+
+		document.addEventListener('keydown', handleKeyDown)
+		return () => document.removeEventListener('keydown', handleKeyDown)
 	}, [])
 
 	const handleLogout = () => {
@@ -208,6 +231,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 					{children}
 				</main>
 			</div>
+
+			{/* Expiring Plans Modal */}
+			<ExpiringPlansModal
+				isOpen={showExpiringPlansModal}
+				onClose={() => setShowExpiringPlansModal(false)}
+			/>
 		</div>
 	)
 }
