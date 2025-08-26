@@ -35,9 +35,9 @@ public class TrainerController {
     }
 
 
-    @PatchMapping("/{id}")
-    public ResponseEntity<TrainerResponseDTO> patch(@PathVariable UUID id, @RequestBody @Valid CreateTrainerDTO request) {
-        return ResponseEntity.ok(trainerService.patch(id, request));
+    @PutMapping("/{id}")
+    public ResponseEntity<TrainerResponseDTO> update(@PathVariable UUID id, @RequestBody @Valid CreateTrainerDTO request) {
+        return ResponseEntity.ok(trainerService.put(id, request));
     }
 
     @DeleteMapping("/{id}")

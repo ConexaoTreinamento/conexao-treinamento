@@ -11,9 +11,9 @@ import java.util.UUID;
 
 public interface TrainerRepository extends JpaRepository<Trainer, UUID> {
 
-    @Query(" SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END " +
+    @Query(" SELECT (COUNT(t) > 0)" +
             " FROM Trainer t INNER JOIN User u ON t.id = u.id" +
-            " WHERE u.deletedAt IS NULL")
+            " WHERE u.deletedAt IS NULL AND LOWER(t.email) = LOWER(:email)")
     boolean existsByEmailIgnoreCaseAndDeletedAtIsNull(String email);
 
     @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainersDTO(" +

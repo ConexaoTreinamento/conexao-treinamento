@@ -8,10 +8,7 @@ import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainer
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
-import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
-import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.TrainerRepository;
-import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -51,32 +48,19 @@ public class TrainerService {
     }
 
     @Transactional
-    public TrainerResponseDTO patch(UUID id, CreateTrainerDTO request) {
+    public TrainerResponseDTO put(UUID id, CreateTrainerDTO request) {
         Trainer trainer = trainerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trainer not found"));
 
-        if (request.name() != null) {
-            trainer.setName(request.name());
-        }
-        
-        if (request.email() != null) {
-            if (!trainer.getEmail().equalsIgnoreCase(request.email()) &&
-                trainerRepository.existsByEmailIgnoreCaseAndDeletedAtIsNull(request.email())) {
+        if (!request.email().equalsIgnoreCase(trainer.getEmail())
+            && trainerRepository.existsByEmailIgnoreCaseAndDeletedAtIsNull(request.email())) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Trainer with this email already exists");
-            }
-            trainer.setEmail(request.email());
-        }
-        
-        if (request.phone() != null) {
-            trainer.setPhone(request.phone());
-        }
-        
-        if (request.specialties() != null) {
-            trainer.setSpecialties(request.specialties());
         }
 
+        Trainer savedTrainer = trainerRepository.save(trainer);
+
         //Skipped patching compensationType to avoid extra complexity in hour calculation logic
-        return TrainerResponseDTO.fromEntity(trainer);
+        return TrainerResponseDTO.fromEntity(savedTrainer);
     }
 
     @Transactional
