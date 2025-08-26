@@ -13,10 +13,7 @@ public record TrainerResponseDTO(
         String email,
         String phone,
         List<String> specialties,
-        CompensationType compensationType,
-        Instant createdAt,
-        Instant updatedAt,
-        boolean active
+        CompensationType compensationType
 ) {
 
     public static TrainerResponseDTO fromEntity(Trainer trainer) {
@@ -26,10 +23,7 @@ public record TrainerResponseDTO(
                 trainer.getEmail(),
                 trainer.getPhone(),
                 trainer.getSpecialties(),
-                trainer.getCompensationType(),
-                trainer.getCreatedAt(),
-                trainer.getUpdatedAt(),
-                trainer.isActive()
+                trainer.getCompensationType()
         );
     }
 }
