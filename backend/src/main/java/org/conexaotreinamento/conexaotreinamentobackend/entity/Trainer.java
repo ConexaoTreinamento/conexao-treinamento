@@ -22,7 +22,6 @@ import java.util.UUID;
 public class Trainer {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(nullable = false, length = 120)

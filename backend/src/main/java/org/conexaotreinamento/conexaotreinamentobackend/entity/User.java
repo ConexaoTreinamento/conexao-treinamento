@@ -57,4 +57,8 @@ public class User {
         this.password = password;
         this.role = role;
     }
+
+    public boolean isActive() {
+        return this.deletedAt == null;
+    }
 }
