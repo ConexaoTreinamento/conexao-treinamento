@@ -3,6 +3,7 @@ package org.conexaotreinamento.conexaotreinamentobackend.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateTrainerDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainersDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.service.TrainerService;
 import org.springframework.http.HttpStatus;
@@ -24,12 +25,12 @@ public class TrainerController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TrainerResponseDTO> findById(@PathVariable UUID id) {
+    public ResponseEntity<ListTrainersDTO> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(trainerService.findById(id));
     }
 
     @GetMapping
-    public ResponseEntity<List<TrainerResponseDTO>> findAll() {
+    public ResponseEntity<List<ListTrainersDTO>> findAll() {
         return ResponseEntity.ok(trainerService.findAll());
     }
 
