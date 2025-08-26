@@ -1,6 +1,6 @@
 package org.conexaotreinamento.conexaotreinamentobackend.repository;
 
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainersDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -11,14 +11,22 @@ import java.util.UUID;
 
 public interface TrainerRepository extends JpaRepository<Trainer, UUID> {
 
+    @Query(" SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END " +
+            " FROM Trainer t INNER JOIN User u ON t.id = u.id" +
+            " WHERE u.deletedAt IS NULL")
     boolean existsByEmailIgnoreCaseAndDeletedAtIsNull(String email);
-    
-    Optional<Trainer> findByIdAndDeletedAtIsNull(UUID id);
+
+    @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainersDTO(" +
+            "t.id, t.name, t.email, t.phone, t.specialties, t.compensationType, (u.deletedAt IS NULL)) " +
+            " FROM Trainer t INNER JOIN User u ON t.id = u.id" +
+            " WHERE u.deletedAt IS NOT NULL")
+    Optional<ListTrainersDTO> findActiveTrainerProfileById(UUID id);
 
 
-    @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.api.dto.response.TrainerResponseDTO(" +
-            "t.id, t.name, t.email, t.phone, t.specialties, t.compensationType, t.createdAt, t.updatedAt, (t.deletedAt IS NULL)) " +
-            "FROM Trainer t WHERE t.deletedAt IS NULL")
-    List<TrainerResponseDTO> findAllParsed();
+    @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainersDTO(" +
+            "t.id, t.name, t.email, t.phone, t.specialties, t.compensationType, (u.deletedAt IS NULL)) " +
+            " FROM Trainer t INNER JOIN User u ON t.id = u.id" +
+            " WHERE (:includeInactive = true OR u.deletedAt IS NULL)")
+    List<ListTrainersDTO> findAllTrainerProfiles(Boolean includeInactive);
 
 }
