@@ -3,9 +3,15 @@ package org.conexaotreinamento.conexaotreinamentobackend.service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateTrainerDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainersDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
+import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.TrainerRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -19,34 +25,34 @@ public class TrainerService {
 
     private final TrainerRepository trainerRepository;
 
+    private final UserService userService;
+
     @Transactional
     public TrainerResponseDTO create(CreateTrainerDTO request) {
         if (trainerRepository.existsByEmailIgnoreCaseAndDeletedAtIsNull(request.email())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Trainer with this email already exists");
         }
-        
-        Trainer trainer = request.toEntity();
+
+        UserResponseDTO savedUser = userService.createUser(new CreateUserRequestDTO(request.email(), request.password(), "ROLE_TRAINER"));
+
+        Trainer trainer = request.toEntity(savedUser.id());
         Trainer savedTrainer = trainerRepository.save(trainer);
-        //create user entity
-        //save user entity
 
         return TrainerResponseDTO.fromEntity(savedTrainer);
     }
 
-    public TrainerResponseDTO findById(UUID id) {
-        Trainer trainer = trainerRepository.findByIdAndDeletedAtIsNull(id)
+    public ListTrainersDTO findById(UUID id) {
+        return trainerRepository.findActiveTrainerProfileById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trainer not found"));
-
-        return TrainerResponseDTO.fromEntity(trainer);
     }
 
-    public List<TrainerResponseDTO> findAll() {
-        return trainerRepository.findAllParsed();
+    public List<ListTrainersDTO> findAll() {
+        return trainerRepository.findAllTrainerProfiles(true);
     }
 
     @Transactional
     public TrainerResponseDTO patch(UUID id, CreateTrainerDTO request) {
-        Trainer trainer = trainerRepository.findByIdAndDeletedAtIsNull(id)
+        Trainer trainer = trainerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trainer not found"));
 
         if (request.name() != null) {
@@ -75,11 +81,6 @@ public class TrainerService {
 
     @Transactional
     public void delete(UUID id) {
-        Trainer trainer = trainerRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trainer not found"));
-
-        //getUser().deactivate();
-        //trainer.deactivate();
-        trainerRepository.save(trainer);
+        userService.deleteUser(id);
     }
 }
