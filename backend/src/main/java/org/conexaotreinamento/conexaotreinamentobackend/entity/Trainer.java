@@ -44,34 +44,4 @@ public class Trainer {
     @Column(name = "compensation_type")
     @Setter
     private CompensationType compensationType;
-
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    @Setter
-    private Instant createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    @Setter
-    private Instant updatedAt;
-
-    @Column(name = "deleted_at")
-    @Setter
-    private Instant deletedAt;
-
-    public boolean isActive() {
-        return deletedAt == null;
-    }
-
-    public boolean isInactive() {
-        return deletedAt != null;
-    }
-
-    public void activate() {
-        this.deletedAt = null;
-    }
-
-    public void deactivate() {
-        this.deletedAt = Instant.now();
-    }
 }

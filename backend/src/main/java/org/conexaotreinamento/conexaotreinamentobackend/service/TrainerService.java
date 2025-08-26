@@ -27,6 +27,8 @@ public class TrainerService {
         
         Trainer trainer = request.toEntity();
         Trainer savedTrainer = trainerRepository.save(trainer);
+        //create user entity
+        //save user entity
 
         return TrainerResponseDTO.fromEntity(savedTrainer);
     }
@@ -76,7 +78,8 @@ public class TrainerService {
         Trainer trainer = trainerRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trainer not found"));
 
-        trainer.deactivate();
+        //getUser().deactivate();
+        //trainer.deactivate();
         trainerRepository.save(trainer);
     }
 }
