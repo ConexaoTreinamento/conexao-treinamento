@@ -4,6 +4,7 @@ import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.enums.CompensationType;
 
 import java.util.List;
+import java.util.UUID;
 
 public record CreateTrainerDTO(
     String name,
@@ -14,7 +15,7 @@ public record CreateTrainerDTO(
     CompensationType compensationType
 ) {
 
-    public Trainer toEntity() {
+    public Trainer toEntity(UUID userId) {
         Trainer trainer = new Trainer();
         trainer.setName(name);
         trainer.setEmail(email);
