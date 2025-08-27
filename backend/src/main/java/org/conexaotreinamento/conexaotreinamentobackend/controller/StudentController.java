@@ -13,6 +13,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
@@ -36,13 +37,43 @@ public class StudentController {
     @GetMapping
     public ResponseEntity<Page<StudentResponseDTO>> findAll(
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) Student.Gender gender,
+            @RequestParam(required = false) String gender,
             @RequestParam(required = false) String profession,
             @RequestParam(required = false) String ageRange,
             @RequestParam(required = false) String joinPeriod,
             @RequestParam(required = false, defaultValue = "false") boolean includeInactive,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(studentService.findAll(search, gender, profession, ageRange, joinPeriod, includeInactive, pageable));
+        
+        Student.Gender genderEnum = null;
+        if (gender != null && !gender.isBlank() && !"all".equals(gender)) {
+            try {
+                genderEnum = Student.Gender.valueOf(gender.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid gender value: %s. Valid values are: M, F, O".formatted(gender)
+                );
+            }
+        }
+        
+        // Validate age range
+        if (ageRange != null && !ageRange.isBlank() && !"all".equals(ageRange)) {
+            if (!ageRange.matches("18-25|26-35|36-45|46\\+")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid age range: %s. Valid values are: 18-25, 26-35, 36-45, 46+".formatted(ageRange)
+                );
+            }
+        }
+        
+        // Validate join period
+        if (joinPeriod != null && !joinPeriod.isBlank() && !"all".equals(joinPeriod)) {
+            if (!joinPeriod.matches("2024|2023|older")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid join period: %s. Valid values are: 2024, 2023, older".formatted(joinPeriod)
+                );
+            }
+        }
+        
+        return ResponseEntity.ok(studentService.findAll(search, genderEnum, profession, ageRange, joinPeriod, includeInactive, pageable));
     }
 
     @PutMapping("/{id}")

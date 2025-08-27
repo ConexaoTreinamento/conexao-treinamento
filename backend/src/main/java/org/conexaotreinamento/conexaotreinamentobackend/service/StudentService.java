@@ -8,17 +8,16 @@ import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.AnamnesisRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.PhysicalImpairmentRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.specification.StudentSpecifications;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.UUID;
 
 @Service
@@ -59,71 +58,11 @@ public class StudentService {
                                     Sort.by("createdAt").descending());
         }
         
-        // Process search term
-        String searchTerm = null;
-        if (search != null && !search.isBlank()) {
-            searchTerm = "%" + search.toLowerCase() + "%";
-        }
+        // Use specifications for dynamic filtering
+        Specification<Student> spec = StudentSpecifications.withFilters(
+            search, gender, profession, ageRange, joinPeriod, includeInactive);
         
-        // Process profession filter
-        String professionFilter = null;
-        if (profession != null && !profession.isBlank() && !"all".equals(profession)) {
-            professionFilter = "%" + profession.toLowerCase() + "%";
-        }
-        
-        // Process age range filter
-        Integer minAge = null;
-        Integer maxAge = null;
-        if (ageRange != null && !"all".equals(ageRange)) {
-            switch (ageRange) {
-                case "18-25":
-                    minAge = 18;
-                    maxAge = 25;
-                    break;
-                case "26-35":
-                    minAge = 26;
-                    maxAge = 35;
-                    break;
-                case "36-45":
-                    minAge = 36;
-                    maxAge = 45;
-                    break;
-                case "46+":
-                    minAge = 46;
-                    break;
-            }
-        }
-        
-        // Process join period filter
-        Instant joinedAfter = null;
-        Instant joinedBefore = null;
-        if (joinPeriod != null && !"all".equals(joinPeriod)) {
-            switch (joinPeriod) {
-                case "2024":
-                    joinedAfter = LocalDate.of(2024, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC);
-                    joinedBefore = LocalDate.of(2024, 12, 31).plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC);
-                    break;
-                case "2023":
-                    joinedAfter = LocalDate.of(2023, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC);
-                    joinedBefore = LocalDate.of(2023, 12, 31).plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC);
-                    break;
-                case "older":
-                    joinedBefore = LocalDate.of(2023, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC);
-                    break;
-            }
-        }
-        
-        Page<Student> students = studentRepository.findWithFilters(
-                searchTerm,
-                gender,
-                professionFilter,
-                minAge,
-                maxAge,
-                joinedAfter,
-                joinedBefore,
-                includeInactive,
-                pageable
-        );
+        Page<Student> students = studentRepository.findAll(spec, pageable);
         
         return students.map(StudentResponseDTO::fromEntity);
     }
