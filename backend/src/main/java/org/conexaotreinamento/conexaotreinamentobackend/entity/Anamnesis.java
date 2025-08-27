@@ -99,7 +99,7 @@ public class Anamnesis {
 
     public Anamnesis(Student student) {
         this.student = student;
-        this.studentId = student.getId();
+        studentId = student.getId();
     }
 
     public enum InsomniaFrequency {

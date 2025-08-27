@@ -119,11 +119,11 @@ public class Student {
     }
 
     public void activate() {
-        this.deletedAt = null;
+        deletedAt = null;
     }
 
     public void deactivate() {
-        this.deletedAt = Instant.now();
+        deletedAt = Instant.now();
     }
 
     public enum Gender {
