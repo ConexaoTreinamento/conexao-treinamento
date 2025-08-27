@@ -6,12 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import org.conexaotreinamento.conexaotreinamentobackend.entity.enums.CompensationType;
-import org.hibernate.annotations.JdbcType;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,11 +33,12 @@ public class Trainer {
     @Setter
     private String phone;
 
-    @Column(name = "specialties")
+    @Column(name = "specialties", columnDefinition = "text[]")
     @Setter
     private List<String> specialties;
 
     @Column(name = "compensation_type")
+    @Enumerated(EnumType.STRING)
     @Setter
     private CompensationType compensationType;
 }
