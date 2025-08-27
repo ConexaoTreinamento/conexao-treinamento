@@ -103,6 +103,6 @@ public class Anamnesis {
     }
 
     public enum InsomniaFrequency {
-        NEVER, RARELY, SOMETIMES, OFTEN, ALWAYS
+        YES, NO, SOMETIMES
     }
 }
