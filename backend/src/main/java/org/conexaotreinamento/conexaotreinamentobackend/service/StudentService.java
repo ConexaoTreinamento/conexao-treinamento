@@ -2,7 +2,6 @@ package org.conexaotreinamento.conexaotreinamentobackend.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchStudentRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.StudentRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
