@@ -33,6 +33,30 @@ public record StudentResponseDTO(
         List<PhysicalImpairmentResponseDTO> physicalImpairments
 ) {
     public static StudentResponseDTO fromEntity(Student student) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return new StudentResponseDTO(
+                student.getId(),
+                student.getEmail(),
+                student.getName(),
+                student.getSurname(),
+                student.getGender(),
+                student.getBirthDate(),
+                student.getPhone(),
+                student.getProfession(),
+                student.getStreet(),
+                student.getNumber(),
+                student.getComplement(),
+                student.getNeighborhood(),
+                student.getCep(),
+                student.getEmergencyContactName(),
+                student.getEmergencyContactPhone(),
+                student.getEmergencyContactRelationship(),
+                student.getObjectives(),
+                null, // observations - not implemented in entity yet
+                student.getCreatedAt(),
+                student.getUpdatedAt(),
+                student.getDeletedAt(),
+                null, // anamnesis - will be loaded separately if needed
+                List.of() // physicalImpairments - will be loaded separately if needed
+        );
     }
 }

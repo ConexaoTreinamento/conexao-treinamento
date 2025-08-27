@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.StudentRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
 import org.conexaotreinamento.conexaotreinamentobackend.service.StudentService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,9 +36,13 @@ public class StudentController {
     @GetMapping
     public ResponseEntity<Page<StudentResponseDTO>> findAll(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) Student.Gender gender,
+            @RequestParam(required = false) String profession,
+            @RequestParam(required = false) String ageRange,
+            @RequestParam(required = false) String joinPeriod,
             @RequestParam(required = false, defaultValue = "false") boolean includeInactive,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return ResponseEntity.ok(studentService.findAll(search, pageable, includeInactive));
+        return ResponseEntity.ok(studentService.findAll(search, gender, profession, ageRange, joinPeriod, includeInactive, pageable));
     }
 
     @PutMapping("/{id}")
