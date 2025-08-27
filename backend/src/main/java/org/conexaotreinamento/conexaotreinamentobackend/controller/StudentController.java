@@ -46,11 +46,6 @@ public class StudentController {
         return ResponseEntity.ok(studentService.update(id, request));
     }
 
-    @PatchMapping("/{id}")
-    public ResponseEntity<StudentResponseDTO> patch(@PathVariable UUID id, @RequestBody @Valid PatchStudentRequestDTO request) {
-        return ResponseEntity.ok(studentService.patch(id, request));
-    }
-
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         studentService.delete(id);

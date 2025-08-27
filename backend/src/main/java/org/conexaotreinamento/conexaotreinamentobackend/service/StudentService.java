@@ -80,21 +80,6 @@ public class StudentService {
     }
 
     @Transactional
-    public StudentResponseDTO patch(UUID id, PatchStudentRequestDTO request) {
-        Student student = studentRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
-
-        if (request.email() != null) {
-            if (!student.getEmail().equalsIgnoreCase(request.email()) && 
-                studentRepository.existsByEmailIgnoringCaseAndDeletedAtIsNull(request.email())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Student with this email already exists");
-            }
-        }
-        
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Transactional
     public void delete(UUID id) {
         Student student = studentRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
