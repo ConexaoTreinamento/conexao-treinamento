@@ -4,12 +4,12 @@ import org.conexaotreinamento.conexaotreinamentobackend.entity.Anamnesis;
 
 public record AnamnesisResponseDTO(
         String medication,
-        Boolean isDoctorAwareOfPhysicalActivity,
+        boolean isDoctorAwareOfPhysicalActivity,
         String favoritePhysicalActivity,
         Anamnesis.InsomniaFrequency hasInsomnia,
         String dietOrientedBy,
         String cardiacProblems,
-        Boolean hasHypertension,
+        boolean hasHypertension,
         String chronicDiseases,
         String difficultiesInPhysicalActivities,
         String medicalOrientationsToAvoidPhysicalActivity,
@@ -19,7 +19,7 @@ public record AnamnesisResponseDTO(
         String spinalDiscProblems,
         String diabetes,
         String smokingDuration,
-        Boolean alteredCholesterol,
+        boolean alteredCholesterol,
         String osteoporosisLocation
 ) {
     public static AnamnesisResponseDTO fromEntity(Anamnesis anamnesis) {
