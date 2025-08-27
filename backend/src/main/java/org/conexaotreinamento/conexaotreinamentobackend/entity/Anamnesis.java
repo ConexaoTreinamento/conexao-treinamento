@@ -30,7 +30,7 @@ public class Anamnesis {
 
     @Column(name = "is_doctor_aware_of_physical_activity")
     @Setter
-    private Boolean isDoctorAwareOfPhysicalActivity;
+    private boolean isDoctorAwareOfPhysicalActivity;
 
     @Column(name = "favorite_physical_activity", length = 255)
     @Setter
@@ -51,7 +51,7 @@ public class Anamnesis {
 
     @Column(name = "has_hypertension")
     @Setter
-    private Boolean hasHypertension;
+    private boolean hasHypertension;
 
     @Column(name = "chronic_diseases")
     @Setter
@@ -91,7 +91,7 @@ public class Anamnesis {
 
     @Column(name = "altered_cholesterol")
     @Setter
-    private Boolean alteredCholesterol;
+    private boolean alteredCholesterol;
 
     @Column(name = "osteoporosis_location", length = 255)
     @Setter
