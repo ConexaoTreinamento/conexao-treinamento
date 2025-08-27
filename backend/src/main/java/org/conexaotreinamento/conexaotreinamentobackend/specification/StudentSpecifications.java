@@ -16,8 +16,10 @@ public class StudentSpecifications {
             String search,
             Student.Gender gender,
             String profession,
-            String ageRange,
-            String joinPeriod,
+            Integer minAge,
+            Integer maxAge,
+            LocalDate registrationMinDate,
+            LocalDate registrationMaxDate,
             boolean includeInactive) {
 
         return (root, query, criteriaBuilder) -> {
@@ -48,7 +50,7 @@ public class StudentSpecifications {
             }
 
             // Profession filter
-            if (profession != null && !profession.isBlank() && !"all".equals(profession)) {
+            if (profession != null && !profession.isBlank()) {
                 String professionTerm = "%" + profession.toLowerCase() + "%";
                 predicates.add(criteriaBuilder.like(
                     criteriaBuilder.lower(criteriaBuilder.coalesce(root.get("profession"), "")),
@@ -56,13 +58,13 @@ public class StudentSpecifications {
             }
 
             // Age range filter
-            if (ageRange != null && !"all".equals(ageRange)) {
-                addAgeRangePredicate(predicates, root, query, criteriaBuilder, ageRange);
+            if (minAge != null || maxAge != null) {
+                addAgeRangePredicate(predicates, root, query, criteriaBuilder, minAge, maxAge);
             }
 
-            // Join period filter
-            if (joinPeriod != null && !"all".equals(joinPeriod)) {
-                addJoinPeriodPredicate(predicates, root, query, criteriaBuilder, joinPeriod);
+            // Date range filter
+            if (registrationMinDate != null || registrationMaxDate != null) {
+                addDateRangePredicate(predicates, root, query, criteriaBuilder, registrationMinDate, registrationMaxDate);
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
@@ -73,57 +75,37 @@ public class StudentSpecifications {
                                            jakarta.persistence.criteria.Root<Student> root,
                                            jakarta.persistence.criteria.CriteriaQuery<?> query,
                                            jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder,
-                                           String ageRange) {
+                                           Integer minAge,
+                                           Integer maxAge) {
         
         LocalDate currentDate = LocalDate.now();
-        LocalDate minBirthDate = null;
-        LocalDate maxBirthDate = null;
         
-        switch (ageRange) {
-            case "18-25":
-                minBirthDate = currentDate.minusYears(25).minusDays(1); // born after this date
-                maxBirthDate = currentDate.minusYears(18); // born before or on this date
-                break;
-            case "26-35":
-                minBirthDate = currentDate.minusYears(35).minusDays(1);
-                maxBirthDate = currentDate.minusYears(26);
-                break;
-            case "36-45":
-                minBirthDate = currentDate.minusYears(45).minusDays(1);
-                maxBirthDate = currentDate.minusYears(36);
-                break;
-            case "46+":
-                maxBirthDate = currentDate.minusYears(46);
-                break;
+        if (maxAge != null) {
+            LocalDate minBirthDate = currentDate.minusYears(maxAge).minusDays(1);
+            predicates.add(criteriaBuilder.greaterThan(root.get("birthDate"), minBirthDate));
         }
         
-        if (minBirthDate != null && maxBirthDate != null) {
-            predicates.add(criteriaBuilder.between(root.get("birthDate"), minBirthDate, maxBirthDate));
-        } else if (maxBirthDate != null) {
+        if (minAge != null) {
+            LocalDate maxBirthDate = currentDate.minusYears(minAge);
             predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("birthDate"), maxBirthDate));
         }
     }
 
-    private static void addJoinPeriodPredicate(List<Predicate> predicates,
-                                             jakarta.persistence.criteria.Root<Student> root,
-                                             jakarta.persistence.criteria.CriteriaQuery<?> query,
-                                             jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder,
-                                             String joinPeriod) {
-        switch (joinPeriod) {
-            case "2024":
-                Instant start2024 = LocalDate.of(2024, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC);
-                Instant end2024 = LocalDate.of(2025, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC);
-                predicates.add(criteriaBuilder.between(root.get("createdAt"), start2024, end2024));
-                break;
-            case "2023":
-                Instant start2023 = LocalDate.of(2023, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC);
-                Instant end2023 = LocalDate.of(2024, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC);
-                predicates.add(criteriaBuilder.between(root.get("createdAt"), start2023, end2023));
-                break;
-            case "older":
-                Instant before2023 = LocalDate.of(2023, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC);
-                predicates.add(criteriaBuilder.lessThan(root.get("createdAt"), before2023));
-                break;
+    private static void addDateRangePredicate(List<Predicate> predicates,
+                                            jakarta.persistence.criteria.Root<Student> root,
+                                            jakarta.persistence.criteria.CriteriaQuery<?> query,
+                                            jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder,
+                                            LocalDate startDate,
+                                            LocalDate endDate) {
+        
+        if (startDate != null) {
+            Instant startInstant = startDate.atStartOfDay().toInstant(ZoneOffset.UTC);
+            predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("registrationDate"), startInstant));
+        }
+        
+        if (endDate != null) {
+            Instant endInstant = endDate.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC);
+            predicates.add(criteriaBuilder.lessThan(root.get("registrationDate"), endInstant));
         }
     }
 }

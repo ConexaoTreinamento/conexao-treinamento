@@ -90,6 +90,11 @@ public class Student {
     @Setter
     private String objectives;
 
+    @Column(name = "registration_date", nullable = false, updatable = false)
+    @Getter
+    @Setter
+    private LocalDate registrationDate;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

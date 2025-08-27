@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Service
@@ -48,8 +49,10 @@ public class StudentService {
             String search, 
             Student.Gender gender, 
             String profession, 
-            String ageRange, 
-            String joinPeriod, 
+            Integer minAge,
+            Integer maxAge,
+            LocalDate startDate,
+            LocalDate endDate,
             boolean includeInactive, 
             Pageable pageable) {
         
@@ -60,7 +63,7 @@ public class StudentService {
         
         // Use specifications for dynamic filtering
         Specification<Student> spec = StudentSpecifications.withFilters(
-            search, gender, profession, ageRange, joinPeriod, includeInactive);
+            search, gender, profession, minAge, maxAge, startDate, endDate, includeInactive);
         
         Page<Student> students = studentRepository.findAll(spec, pageable);
         
