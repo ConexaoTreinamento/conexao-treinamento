@@ -1,9 +1,12 @@
 "use client"
 
-import type React from "react"
-
+import React from "react"
 import { useState, useEffect } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
+import { findAll } from "@/lib/api-client/sdk.gen"
+import type { StudentResponseDto, PagedModelStudentResponseDto, StudentRequestDto } from "@/lib/api-client/types.gen"
+import {getStudentCurrentStatus, getStudentPlanExpirationDate, UnifiedStatusBadge} from "@/lib/expiring-plans"
+import { STUDENTS, getStudentFullName } from "@/lib/students-data"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,10 +25,47 @@ import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X } from "lucide
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import StudentForm, {StudentFormData} from "@/components/student-form"
-import { findAll } from "@/lib/api-client/sdk.gen"
-import type { StudentResponseDto, PagedModelStudentResponseDto, StudentRequestDto } from "@/lib/api-client/types.gen"
-import {getStudentCurrentStatus, getStudentPlanExpirationDate, UnifiedStatusBadge} from "@/lib/expiring-plans"
-import { STUDENTS, getStudentFullName } from "@/lib/students-data"
+
+// Type-safe filter interface
+interface StudentFilters {
+  status: string
+  plan: string
+  minAge: number | null
+  maxAge: number | null
+  profession: string
+  gender: string
+  startDate: string
+  endDate: string
+  includeInactive: boolean
+}
+
+// Default filter values
+const DEFAULT_FILTERS: StudentFilters = {
+  status: "all",
+  plan: "all",
+  minAge: null,
+  maxAge: null,
+  profession: "all",
+  gender: "all",
+  startDate: "",
+  endDate: "",
+  includeInactive: true,
+}
+
+// Helper function to count active filters
+const countActiveFilters = (filters: StudentFilters): number => {
+  let count = 0
+  if (filters.status !== DEFAULT_FILTERS.status) count++
+  if (filters.plan !== DEFAULT_FILTERS.plan) count++
+  if (filters.minAge !== DEFAULT_FILTERS.minAge) count++
+  if (filters.maxAge !== DEFAULT_FILTERS.maxAge) count++
+  if (filters.profession !== DEFAULT_FILTERS.profession) count++
+  if (filters.gender !== DEFAULT_FILTERS.gender) count++
+  if (filters.startDate !== DEFAULT_FILTERS.startDate) count++
+  if (filters.endDate !== DEFAULT_FILTERS.endDate) count++
+  if (filters.includeInactive !== DEFAULT_FILTERS.includeInactive) count++
+  return count
+}
 
 export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -38,18 +78,8 @@ export default function StudentsPage() {
   const [currentPage, setCurrentPage] = useState(0)
   const [pageSize, setPageSize] = useState(20)
   
-  // Updated filters to match backend API
-  const [filters, setFilters] = useState({
-    status: "all",
-    plan: "all",
-    minAge: null as number | null,
-    maxAge: null as number | null,
-    profession: "all",
-    gender: "all",
-    startDate: "",
-    endDate: "",
-    includeInactive: true,
-  })
+  // Type-safe filters using the interface
+  const [filters, setFilters] = useState<StudentFilters>(DEFAULT_FILTERS)
   const router = useRouter()
 
   useEffect(() => {
@@ -98,11 +128,12 @@ export default function StudentsPage() {
       }
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
+    placeholderData: keepPreviousData
   })
 
-  const students = (studentsData as PagedModelStudentResponseDto)?.content || []
-  const totalPages = (studentsData as PagedModelStudentResponseDto)?.page?.totalPages || 0
-  const totalElements = (studentsData as PagedModelStudentResponseDto)?.page?.totalElements || 0
+  // Helper data extraction with proper typing
+  const totalPages = studentsData?.page?.totalPages || 0
+  const totalElements = studentsData?.page?.totalElements || 0
 
   // Helper function to get student age from birth date
   const getStudentAge = (birthDate: string): number => {
@@ -123,8 +154,8 @@ export default function StudentsPage() {
     return `${student.name || ""} ${student.surname || ""}`.trim()
   }
 
-  // Update filter change handler
-  const handleFilterChange = <K extends keyof typeof filters>(key: K, value: typeof filters[K]) => {
+  // Type-safe filter change handler
+  const handleFilterChange = <K extends keyof StudentFilters>(key: K, value: StudentFilters[K]) => {
     setFilters(prev => ({ ...prev, [key]: value }))
     setCurrentPage(0) // Reset to first page when filters change
   }
@@ -143,29 +174,14 @@ export default function StudentsPage() {
   }
 
   const clearFilters = () => {
-    setFilters({
-      status: "all",
-      plan: "all",
-      minAge: null,
-      maxAge: null,
-      profession: "all",
-      gender: "all",
-      startDate: "",
-      endDate: "",
-      includeInactive: true,
-    })
+    setFilters(DEFAULT_FILTERS)
     setCurrentPage(0)
   }
 
-  const hasActiveFilters = Object.entries(filters).some(([key, value]) => {
-    if (key === 'includeInactive') return value !== true
-    if (key === 'minAge' || key === 'maxAge') return value !== null
-    if (key === 'startDate' || key === 'endDate') return value !== ""
-    return value !== "all"
-  })
+  const hasActiveFilters = countActiveFilters(filters) > 0
 
   // Get unique professions from API data for filter dropdown
-  const uniqueProfessions = students.map(s => s.profession).filter((p, i, arr) => p && arr.indexOf(p) === i)
+  const uniqueProfessions = (studentsData?.content || []).map(s => s.profession).filter((p, i, arr) => p && arr.indexOf(p) === i)
 
   const handleCreateStudent = async (formData: StudentFormData) => {
     setIsCreating(true)
@@ -236,7 +252,7 @@ export default function StudentsPage() {
                 Filtros
                 {hasActiveFilters && (
                   <Badge className="ml-2 bg-green-600 text-white text-xs px-1 py-0">
-                    {Object.values(filters).filter((f) => f !== "all").length}
+                    {countActiveFilters(filters)}
                   </Badge>
                 )}
               </Button>
@@ -378,7 +394,7 @@ export default function StudentsPage() {
         {/* Results Summary */}
         {!isLoading && !error && (
           <div className="text-sm text-muted-foreground">
-            Mostrando {students.length} de {totalElements} alunos
+            Mostrando {(studentsData?.content || []).length} de {totalElements} alunos
             {hasActiveFilters && " (filtrados)"}
           </div>
         )}
@@ -417,7 +433,7 @@ export default function StudentsPage() {
 
         {/* Students List */}
         <div className="space-y-3">
-          {!isLoading && !error && students.map((student: StudentResponseDto) => {
+          {!isLoading && !error && (studentsData?.content || []).map((student: StudentResponseDto) => {
             const age = getStudentAge(student.birthDate || "")
             const fullName = getStudentFullName(student)
             const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase()
@@ -555,7 +571,7 @@ export default function StudentsPage() {
           })}
         </div>
 
-        {!isLoading && !error && students.length === 0 && (
+        {!isLoading && !error && (studentsData?.content || []).length === 0 && (
           <Card>
             <CardContent className="text-center py-12">
               <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -576,7 +592,7 @@ export default function StudentsPage() {
         )}
 
         {/* Pagination */}
-        {!isLoading && !error && students.length > 0 && totalPages > 1 && (
+        {!isLoading && !error && (studentsData?.content || []).length > 0 && totalPages > 1 && (
           <div className="flex items-center justify-between mt-6 pt-4 border-t">
             <div className="text-sm text-muted-foreground">
               Página {currentPage + 1} de {totalPages}
