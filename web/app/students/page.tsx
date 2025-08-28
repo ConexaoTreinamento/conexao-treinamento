@@ -57,29 +57,45 @@ export default function StudentsPage() {
     setUserRole(role)
   }, [])
 
+  // Helper function to map frontend gender values to backend values
+  const mapGenderToBackend = (frontendGender: string): string | undefined => {
+    switch (frontendGender) {
+      case "Masculino": return "M"
+      case "Feminino": return "F"
+      case "Outro": return "O"
+      case "all": return undefined
+      default: return undefined
+    }
+  }
+
   // Fetch students using React Query with backend API
   const { data: studentsData, isLoading, error } = useQuery({
     queryKey: ['students', searchTerm, filters, currentPage, pageSize],
     queryFn: async () => {
-      const { data } = await findAll({
-        query: {
-          ...(searchTerm && { search: searchTerm }),
-          ...(filters.gender !== "all" && { gender: filters.gender }),
-          ...(filters.profession !== "all" && { profession: filters.profession }),
-          ...(filters.minAge && { minAge: filters.minAge }),
-          ...(filters.maxAge && { maxAge: filters.maxAge }),
-          ...(filters.startDate && { registrationPeriodMinDate: filters.startDate }),
-          ...(filters.endDate && { registrationPeriodMaxDate: filters.endDate }),
-          includeInactive: filters.includeInactive,
-          pageable: {
-            page: currentPage,
-            size: pageSize,
-            sort: ["name,ASC"]
-          }
-        },
-        client: (await import('@/lib/client')).apiClient
-      })
-      return data
+      try {
+        const { data } = await findAll({
+          query: {
+            ...(searchTerm && { search: searchTerm }),
+            ...(filters.gender !== "all" && { gender: mapGenderToBackend(filters.gender) }),
+            ...(filters.profession !== "all" && { profession: filters.profession }),
+            ...(filters.minAge && { minAge: filters.minAge }),
+            ...(filters.maxAge && { maxAge: filters.maxAge }),
+            ...(filters.startDate && { registrationPeriodMinDate: filters.startDate }),
+            ...(filters.endDate && { registrationPeriodMaxDate: filters.endDate }),
+            includeInactive: filters.includeInactive,
+            pageable: {
+              page: currentPage,
+              size: pageSize,
+              sort: ["name,ASC"]
+            }
+          },
+          client: (await import('@/lib/client')).apiClient
+        })
+        return data || { content: [], page: { totalPages: 0, totalElements: 0 } }
+      } catch (error) {
+        console.error('Error fetching students:', error)
+        return { content: [], page: { totalPages: 0, totalElements: 0 } }
+      }
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
   })
@@ -305,6 +321,7 @@ export default function StudentsPage() {
                       <SelectItem value="all">Todos</SelectItem>
                       <SelectItem value="Masculino">Masculino</SelectItem>
                       <SelectItem value="Feminino">Feminino</SelectItem>
+                      <SelectItem value="Outro">Outro</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
