@@ -22,7 +22,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Layout from "@/components/layout"
 import StudentForm, {StudentFormData} from "@/components/student-form"
 
@@ -74,13 +74,34 @@ export default function StudentsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(0)
+  // Pagination state with query params
   const [pageSize, setPageSize] = useState(20)
   
   // Type-safe filters using the interface
   const [filters, setFilters] = useState<StudentFilters>(DEFAULT_FILTERS)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  
+  // Get current page from URL query params or default to 0
+  // This allows users to share URLs with specific page numbers and maintains page state on refresh
+  const currentPage = parseInt(searchParams.get('page') || '0', 10)
+
+  // Function to update URL with new page
+  const updatePageInURL = (newPage: number) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (newPage > 0) {
+      params.set('page', newPage.toString())
+    } else {
+      // Remove page param when on first page to keep URL clean
+      params.delete('page')
+    }
+    router.replace(`?${params.toString()}`, { scroll: false })
+  }
+
+  // Function to set page and update URL
+  const setCurrentPage = (newPage: number) => {
+    updatePageInURL(newPage)
+  }
 
   useEffect(() => {
     const role = localStorage.getItem("userRole") || "professor"
@@ -147,6 +168,12 @@ export default function StudentsPage() {
       age--
     }
     return age
+  }
+
+  // Handle search term change and reset page
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value)
+    setCurrentPage(0) // Reset to first page when search changes
   }
 
   // Helper function to get student full name
@@ -240,7 +267,7 @@ export default function StudentsPage() {
             <Input
               placeholder="Buscar alunos por nome, email, telefone ou profissão..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="pl-10"
             />
           </div>
