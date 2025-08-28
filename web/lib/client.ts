@@ -4,22 +4,24 @@ import type { ClientOptions } from './api-client/types.gen'
 // Create a custom client with query serializer for nested objects
 export const apiClient = createClient(createConfig<ClientOptions>({
     baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
-    querySerializer: (params) => {
+    querySerializer: (params: Record<string, unknown>) => {
         const searchParams = new URLSearchParams();
         
-        const flattenObject = (obj: any, prefix = '') => {
+        const flattenObject = (obj: Record<string, unknown>, prefix = '') => {
             for (const key in obj) {
                 if (obj[key] != null) {
                     const paramKey = prefix ? `${prefix}.${key}` : key;
-                    if (typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
+                    const value = obj[key];
+                    
+                    if (typeof value === 'object' && !Array.isArray(value)) {
                         // Special handling for pageable object - flatten to root level
-                        flattenObject(obj[key], paramKey === 'pageable' ? '' : paramKey);
-                    } else if (Array.isArray(obj[key])) {
-                        obj[key].forEach((item: any) => {
-                            searchParams.append(paramKey, item.toString());
+                        flattenObject(value as Record<string, unknown>, paramKey === 'pageable' ? '' : paramKey);
+                    } else if (Array.isArray(value)) {
+                        value.forEach((item: unknown) => {
+                            searchParams.append(paramKey, String(item));
                         });
                     } else {
-                        searchParams.append(paramKey, obj[key].toString());
+                        searchParams.append(paramKey, String(value));
                     }
                 }
             }
