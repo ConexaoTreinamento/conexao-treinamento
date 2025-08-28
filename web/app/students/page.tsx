@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,6 +22,8 @@ import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X } from "lucide
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import StudentForm from "@/components/student-form"
+import { findAll } from "@/lib/api-client/sdk.gen"
+import type { StudentResponseDto, PagedModelStudentResponseDto } from "@/lib/api-client/types.gen"
 import {getStudentCurrentStatus, getStudentPlanExpirationDate, getUnifiedStatusBadge} from "@/lib/expiring-plans"
 import { STUDENTS, getStudentFullName } from "@/lib/students-data"
 
@@ -30,13 +33,22 @@ export default function StudentsPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(0)
+  const [pageSize, setPageSize] = useState(20)
+  
+  // Updated filters to match backend API
   const [filters, setFilters] = useState({
     status: "all",
     plan: "all",
-    ageRange: "all",
+    minAge: null as number | null,
+    maxAge: null as number | null,
     profession: "all",
     gender: "all",
-    joinPeriod: "all",
+    startDate: "",
+    endDate: "",
+    includeInactive: true,
   })
   const router = useRouter()
 
@@ -45,50 +57,61 @@ export default function StudentsPage() {
     setUserRole(role)
   }, [])
 
-  const filteredStudents = STUDENTS.filter((student) => {
-    const fullName = getStudentFullName(student)
-    const matchesSearch =
-      fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.profession.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.phone.includes(searchTerm)
-
-    // Use dynamic status based on plan expiration
-    const currentStatus = getStudentCurrentStatus(student.id)
-    const matchesStatus = filters.status === "all" || currentStatus === filters.status
-    const matchesPlan = filters.plan === "all" || student.plan === filters.plan
-
-    const age = new Date().getFullYear() - new Date(student.birthDate).getFullYear()
-    const matchesAge =
-      filters.ageRange === "all" ||
-      (filters.ageRange === "18-25" && age >= 18 && age <= 25) ||
-      (filters.ageRange === "26-35" && age >= 26 && age <= 35) ||
-      (filters.ageRange === "36-45" && age >= 36 && age <= 45) ||
-      (filters.ageRange === "46+" && age >= 46)
-
-    const matchesProfession = filters.profession === "all" || student.profession === filters.profession
-    const matchesGender =
-      filters.gender === "all" ||
-      (filters.gender === "Masculino" && student.sex === "M") ||
-      (filters.gender === "Feminino" && student.sex === "F")
-
-    const joinYear = new Date(student.registrationDate).getFullYear()
-    const matchesJoinPeriod =
-      filters.joinPeriod === "all" ||
-      (filters.joinPeriod === "2024" && joinYear === 2024) ||
-      (filters.joinPeriod === "2023" && joinYear === 2023) ||
-      (filters.joinPeriod === "older" && joinYear < 2023)
-
-    return (
-      matchesSearch &&
-      matchesStatus &&
-      matchesPlan &&
-      matchesAge &&
-      matchesProfession &&
-      matchesGender &&
-      matchesJoinPeriod
-    )
+  // Fetch students using React Query with backend API
+  const { data: studentsData, isLoading, error } = useQuery({
+    queryKey: ['students', searchTerm, filters, currentPage, pageSize],
+    queryFn: async () => {
+      const { data } = await findAll({
+        query: {
+          ...(searchTerm && { search: searchTerm }),
+          ...(filters.gender !== "all" && { gender: filters.gender }),
+          ...(filters.profession !== "all" && { profession: filters.profession }),
+          ...(filters.minAge && { minAge: filters.minAge }),
+          ...(filters.maxAge && { maxAge: filters.maxAge }),
+          ...(filters.startDate && { registrationPeriodMinDate: filters.startDate }),
+          ...(filters.endDate && { registrationPeriodMaxDate: filters.endDate }),
+          includeInactive: filters.includeInactive,
+          pageable: {
+            page: currentPage,
+            size: pageSize,
+            sort: ["name,ASC"]
+          }
+        },
+        client: (await import('@/lib/client')).apiClient
+      })
+      return data
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
   })
+
+  const students = (studentsData as PagedModelStudentResponseDto)?.content || []
+  const totalPages = (studentsData as PagedModelStudentResponseDto)?.page?.totalPages || 0
+  const totalElements = (studentsData as PagedModelStudentResponseDto)?.page?.totalElements || 0
+
+  // Helper function to get student age from birth date
+  const getStudentAge = (birthDate: string): number => {
+    if (!birthDate) return 0
+    const today = new Date()
+    const birth = new Date(birthDate)
+    let age = today.getFullYear() - birth.getFullYear()
+    const monthDiff = today.getMonth() - birth.getMonth()
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--
+    }
+    return age
+  }
+
+  // Helper function to get student full name
+  const getStudentFullName = (student: StudentResponseDto): string => {
+    return `${student.name || ""} ${student.surname || ""}`.trim()
+  }
+
+  // Update filter change handler
+  const handleFilterChange = <K extends keyof typeof filters>(key: K, value: typeof filters[K]) => {
+    setFilters(prev => ({ ...prev, [key]: value }))
+    setCurrentPage(0) // Reset to first page when filters change
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -107,15 +130,26 @@ export default function StudentsPage() {
     setFilters({
       status: "all",
       plan: "all",
-      ageRange: "all",
+      minAge: null,
+      maxAge: null,
       profession: "all",
       gender: "all",
-      joinPeriod: "all",
+      startDate: "",
+      endDate: "",
+      includeInactive: true,
     })
+    setCurrentPage(0)
   }
 
-  const hasActiveFilters = Object.values(filters).some((filter) => filter !== "all")
-  const uniqueProfessions = [...new Set(STUDENTS.map((s) => s.profession))]
+  const hasActiveFilters = Object.entries(filters).some(([key, value]) => {
+    if (key === 'includeInactive') return value !== true
+    if (key === 'minAge' || key === 'maxAge') return value !== null
+    if (key === 'startDate' || key === 'endDate') return value !== ""
+    return value !== "all"
+  })
+
+  // Get unique professions from API data for filter dropdown
+  const uniqueProfessions = students.map(s => s.profession).filter((p, i, arr) => p && arr.indexOf(p) === i)
 
   const handleCreateStudent = async (formData: any) => {
     setIsCreating(true)
@@ -235,22 +269,27 @@ export default function StudentsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Faixa Etária</label>
-                  <Select
-                    value={filters.ageRange}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, ageRange: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas</SelectItem>
-                      <SelectItem value="18-25">18-25 anos</SelectItem>
-                      <SelectItem value="26-35">26-35 anos</SelectItem>
-                      <SelectItem value="36-45">36-45 anos</SelectItem>
-                      <SelectItem value="46+">46+ anos</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <label className="text-sm font-medium">Idade Mínima</label>
+                  <Input
+                    type="number"
+                    placeholder="Ex: 18"
+                    value={filters.minAge || ""}
+                    onChange={(e) => handleFilterChange("minAge", e.target.value ? parseInt(e.target.value) : null)}
+                    min={0}
+                    max={150}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Idade Máxima</label>
+                  <Input
+                    type="number"
+                    placeholder="Ex: 65"
+                    value={filters.maxAge || ""}
+                    onChange={(e) => handleFilterChange("maxAge", e.target.value ? parseInt(e.target.value) : null)}
+                    min={0}
+                    max={150}
+                  />
                 </div>
 
                 <div className="space-y-2">
@@ -282,7 +321,7 @@ export default function StudentsPage() {
                     <SelectContent>
                       <SelectItem value="all">Todas</SelectItem>
                       {uniqueProfessions.map((profession) => (
-                        <SelectItem key={profession} value={profession}>
+                        <SelectItem key={profession} value={profession!}>
                           {profession}
                         </SelectItem>
                       ))}
@@ -291,21 +330,21 @@ export default function StudentsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Período de Ingresso</label>
-                  <Select
-                    value={filters.joinPeriod}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, joinPeriod: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="2024">2024</SelectItem>
-                      <SelectItem value="2023">2023</SelectItem>
-                      <SelectItem value="older">Anterior a 2023</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <label className="text-sm font-medium">Data de Ingresso (De)</label>
+                  <Input
+                    type="date"
+                    value={filters.startDate}
+                    onChange={(e) => handleFilterChange("startDate", e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Data de Ingresso (Até)</label>
+                  <Input
+                    type="date"
+                    value={filters.endDate}
+                    onChange={(e) => handleFilterChange("endDate", e.target.value)}
+                  />
                 </div>
 
                 {hasActiveFilters && (
@@ -320,21 +359,56 @@ export default function StudentsPage() {
         </div>
 
         {/* Results Summary */}
-        {(searchTerm || hasActiveFilters) && (
+        {!isLoading && !error && (
           <div className="text-sm text-muted-foreground">
-            Mostrando {filteredStudents.length} de {STUDENTS.length} alunos
+            Mostrando {students.length} de {totalElements} alunos
+            {hasActiveFilters && " (filtrados)"}
           </div>
+        )}
+
+        {/* Loading State */}
+        {isLoading && (
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <Card>
+            <CardContent className="text-center py-12">
+              <div className="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-red-700 dark:text-red-300 font-semibold text-lg">!</span>
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Erro ao carregar alunos</h3>
+              <p className="text-muted-foreground">Tente recarregar a página</p>
+            </CardContent>
+          </Card>
         )}
 
         {/* Students List */}
         <div className="space-y-3">
-          {filteredStudents.map((student) => {
-            const age = new Date().getFullYear() - new Date(student.birthDate).getFullYear()
-            const fullName = `${student.name} ${student.surname}`
-            const initials = `${student.name.charAt(0)}${student.surname.charAt(0)}`.toUpperCase()
+          {!isLoading && !error && students.map((student: StudentResponseDto) => {
+            const age = getStudentAge(student.birthDate || "")
+            const fullName = getStudentFullName(student)
+            const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase()
 
-            // Get plan expiration date for unified status
-            const planExpirationDate = getStudentPlanExpirationDate(student.id)
+            // For now, use mock plan expiration since backend doesn't have this yet
+            // In real implementation, this would come from the backend
+            const planExpirationDate = new Date()
+            planExpirationDate.setDate(planExpirationDate.getDate() + 30)
 
             return (
               <Card
@@ -355,7 +429,7 @@ export default function StudentsPage() {
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-base leading-tight">{fullName}</h3>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {getUnifiedStatusBadge(planExpirationDate)}
+                            <Badge className="bg-green-100 text-green-800">Ativo</Badge>
                           </div>
                         </div>
                       </div>
@@ -384,18 +458,18 @@ export default function StudentsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="w-3 h-3 flex-shrink-0" />
-                        <span>Plano {student.plan}</span>
+                        <span>Plano Mensal</span>
                       </div>
                     </div>
 
                     <div className="text-xs text-muted-foreground space-y-1">
                       <div>
-                        {age} anos • {student.profession} •{" "}
-                        {student.sex === "M" ? "Masculino" : "Feminino"}
+                        {age} anos • {student.profession || "Profissão não informada"} •{" "}
+                        {student.gender === "M" ? "Masculino" : student.gender === "F" ? "Feminino" : "Outro"}
                       </div>
                       <div>
                         Ingresso:{" "}
-                        {new Date(student.registrationDate).toLocaleDateString("pt-BR")}
+                        {student.registrationDate ? new Date(student.registrationDate).toLocaleDateString("pt-BR") : "Data não informada"}
                       </div>
                     </div>
                   </div>
@@ -411,7 +485,7 @@ export default function StudentsPage() {
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-lg flex-1 min-w-0 truncate">{fullName}</h3>
                           <div className="flex gap-2 flex-shrink-0">
-                            {getUnifiedStatusBadge(planExpirationDate)}
+                            <Badge className="bg-green-100 text-green-800">Ativo</Badge>
                           </div>
                         </div>
                       </div>
@@ -427,15 +501,15 @@ export default function StudentsPage() {
                         </div>
                         <div className="flex items-center gap-1">
                           <Calendar className="w-3 h-3 flex-shrink-0" />
-                          <span>Plano {student.plan}</span>
+                          <span>Plano Mensal</span>
                         </div>
                       </div>
 
                       <div className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
                         <span>
-                          {age} anos • {student.profession} • {student.sex === "M" ? "Masculino" : "Feminino"}
+                          {age} anos • {student.profession || "Profissão não informada"} • {student.gender === "M" ? "Masculino" : student.gender === "F" ? "Feminino" : "Outro"}
                         </span>
-                        <span>Ingresso: {new Date(student.registrationDate).toLocaleDateString("pt-BR")}</span>
+                        <span>Ingresso: {student.registrationDate ? new Date(student.registrationDate).toLocaleDateString("pt-BR") : "Data não informada"}</span>
                       </div>
                     </div>
 
@@ -460,7 +534,7 @@ export default function StudentsPage() {
           })}
         </div>
 
-        {filteredStudents.length === 0 && (
+        {!isLoading && !error && students.length === 0 && (
           <Card>
             <CardContent className="text-center py-12">
               <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -478,6 +552,33 @@ export default function StudentsPage() {
               </Button>
             </CardContent>
           </Card>
+        )}
+
+        {/* Pagination */}
+        {!isLoading && !error && students.length > 0 && totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6 pt-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              Página {currentPage + 1} de {totalPages}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                disabled={currentPage === 0}
+              >
+                Anterior
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                disabled={currentPage >= totalPages - 1}
+              >
+                Próxima
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </Layout>

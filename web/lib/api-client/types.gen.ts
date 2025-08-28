@@ -96,6 +96,7 @@ export type StudentResponseDto = {
     emergencyContactRelationship?: string;
     objectives?: string;
     observations?: string;
+    registrationDate?: string;
     createdAt?: string;
     updatedAt?: string;
     deletedAt?: string;

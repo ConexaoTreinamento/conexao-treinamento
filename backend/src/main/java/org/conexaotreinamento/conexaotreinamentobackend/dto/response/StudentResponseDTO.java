@@ -26,6 +26,7 @@ public record StudentResponseDTO(
         String emergencyContactRelationship,
         String objectives,
         String observations,
+        LocalDate registrationDate,
         Instant createdAt,
         Instant updatedAt,
         Instant deletedAt,
@@ -52,6 +53,7 @@ public record StudentResponseDTO(
                 student.getEmergencyContactRelationship(),
                 student.getObjectives(),
                 null, // observations - not implemented in entity yet
+                student.getRegistrationDate(),
                 student.getCreatedAt(),
                 student.getUpdatedAt(),
                 student.getDeletedAt(),
