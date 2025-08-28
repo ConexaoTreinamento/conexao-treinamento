@@ -8,7 +8,7 @@ import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, Edit, Calenda
 import { useRouter, useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Layout from "@/components/layout"
-import { getStudentPlanExpirationDate, getUnifiedStatusBadge } from "@/lib/expiring-plans"
+import { getStudentPlanExpirationDate, UnifiedStatusBadge } from "@/lib/expiring-plans"
 import { STUDENT_PROFILES, getStudentProfileById, getStudentFullName } from "@/lib/students-data"
 
 // Type definitions
@@ -258,7 +258,7 @@ export default function StudentProfilePage() {
               <div className="space-y-2">
                 <CardTitle className="text-lg">{getStudentFullName(studentData)}</CardTitle>
                 <div className="flex flex-wrap justify-center gap-2">
-                  {getUnifiedStatusBadge(getStudentPlanExpirationDate(studentData.id))}
+                  {UnifiedStatusBadge(getStudentPlanExpirationDate(studentData.id))}
                   <Badge variant="outline">Plano {studentData.plan}</Badge>
                 </div>
               </div>

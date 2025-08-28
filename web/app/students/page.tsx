@@ -21,10 +21,10 @@ import {
 import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
-import StudentForm from "@/components/student-form"
+import StudentForm, {StudentFormData} from "@/components/student-form"
 import { findAll } from "@/lib/api-client/sdk.gen"
-import type { StudentResponseDto, PagedModelStudentResponseDto } from "@/lib/api-client/types.gen"
-import {getStudentCurrentStatus, getStudentPlanExpirationDate, getUnifiedStatusBadge} from "@/lib/expiring-plans"
+import type { StudentResponseDto, PagedModelStudentResponseDto, StudentRequestDto } from "@/lib/api-client/types.gen"
+import {getStudentCurrentStatus, getStudentPlanExpirationDate, UnifiedStatusBadge} from "@/lib/expiring-plans"
 import { STUDENTS, getStudentFullName } from "@/lib/students-data"
 
 export default function StudentsPage() {
@@ -151,7 +151,7 @@ export default function StudentsPage() {
   // Get unique professions from API data for filter dropdown
   const uniqueProfessions = students.map(s => s.profession).filter((p, i, arr) => p && arr.indexOf(p) === i)
 
-  const handleCreateStudent = async (formData: any) => {
+  const handleCreateStudent = async (formData: StudentFormData) => {
     setIsCreating(true)
 
     // Simulate API call
@@ -410,7 +410,11 @@ export default function StudentsPage() {
             const planExpirationDate = new Date()
             planExpirationDate.setDate(planExpirationDate.getDate() + 30)
 
-            return (
+              const expirationDate = new Date(student.registrationDate!);
+              expirationDate.setFullYear(expirationDate.getFullYear() + 2);
+              expirationDate.setMonth(expirationDate.getMonth() + 5);
+              expirationDate.setDate(expirationDate.getDate() + 20);
+              return (
               <Card
                 key={student.id}
                 className="hover:shadow-md transition-shadow cursor-pointer"
@@ -429,7 +433,7 @@ export default function StudentsPage() {
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold text-base leading-tight">{fullName}</h3>
                           <div className="flex flex-wrap gap-1 mt-1">
-                            <Badge className="bg-green-100 text-green-800">Ativo</Badge>
+                            <UnifiedStatusBadge expirationDate={expirationDate.toISOString()}/>
                           </div>
                         </div>
                       </div>
@@ -485,7 +489,7 @@ export default function StudentsPage() {
                         <div className="flex items-center gap-2">
                           <h3 className="font-semibold text-lg flex-1 min-w-0 truncate">{fullName}</h3>
                           <div className="flex gap-2 flex-shrink-0">
-                            <Badge className="bg-green-100 text-green-800">Ativo</Badge>
+                            <UnifiedStatusBadge expirationDate={expirationDate.toISOString()}/>
                           </div>
                         </div>
                       </div>
