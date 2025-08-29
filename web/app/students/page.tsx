@@ -25,6 +25,13 @@ import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X } from "lucide
 import { useRouter, useSearchParams } from "next/navigation"
 import Layout from "@/components/layout"
 import StudentForm from "@/components/student-form"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+} from "@/components/ui/pagination"
 
 // Type-safe filter interface
 interface StudentFilters {
@@ -88,10 +95,13 @@ export default function StudentsPage() {
     if (newPage > 0) {
       params.set('page', newPage.toString())
     } else {
-      // Remove page param when on first page to keep URL clean
+      // Remove page param quando na primeira página para manter URL limpa
       params.delete('page')
     }
-    router.replace(`?${params.toString()}`, { scroll: false })
+    router.replace(`?${params.toString()}`)
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
   }
 
   // Function to set page and update URL
@@ -169,6 +179,24 @@ export default function StudentsPage() {
   const handleFilterChange = <K extends keyof StudentFilters>(key: K, value: StudentFilters[K]) => {
     setFilters(prev => ({ ...prev, [key]: value }))
     setCurrentPage(0) // Reset to first page when filters change
+  }
+
+  // Monta a lista de páginas (1-based) com elipses
+  const getPageList = (current: number, total: number): Array<number | "ellipsis"> => {
+    const curr = current + 1 // para 1-based
+    const pages: Array<number | "ellipsis"> = []
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) pages.push(i)
+      return pages
+    }
+    pages.push(1)
+    const start = Math.max(2, curr - 2)
+    const end = Math.min(total - 1, curr + 2)
+    if (start > 2) pages.push("ellipsis")
+    for (let i = start; i <= end; i++) pages.push(i)
+    if (end < total - 1) pages.push("ellipsis")
+    pages.push(total)
+    return pages
   }
 
   const clearFilters = () => {
@@ -591,30 +619,74 @@ export default function StudentsPage() {
 
         {/* Pagination */}
         {!isLoading && !error && (studentsData?.content || []).length > 0 && totalPages > 1 && (
-          <div className="flex items-center justify-between mt-6 pt-4 border-t">
-            <div className="text-sm text-muted-foreground">
-              Página {currentPage + 1} de {totalPages}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                disabled={currentPage === 0}
-              >
-                Anterior
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
-                disabled={currentPage >= totalPages - 1}
-              >
-                Próxima
-              </Button>
-            </div>
-          </div>
+          <Pagination className="mt-6 pt-4 border-t">
+            <PaginationContent>
+              {/* First */}
+              <PaginationItem>
+                <PaginationLink
+                  href="#"
+                  aria-label="Primeira página"
+                  className={currentPage === 0 ? "pointer-events-none opacity-50" : ""}
+                  onClick={(e) => { e.preventDefault(); if (currentPage > 0) setCurrentPage(0) }}
+                >
+                  «
+                </PaginationLink>
+              </PaginationItem>
+              {/* Prev */}
+              <PaginationItem>
+                <PaginationLink
+                  href="#"
+                  aria-label="Página anterior"
+                  className={currentPage === 0 ? "pointer-events-none opacity-50" : ""}
+                  onClick={(e) => { e.preventDefault(); if (currentPage > 0) setCurrentPage(currentPage - 1) }}
+                >
+                  ‹
+                </PaginationLink>
+              </PaginationItem>
+
+              {/* Pages */}
+              {getPageList(currentPage, totalPages).map((p, idx) => (
+                <PaginationItem key={`${p}-${idx}`}>
+                  {p === "ellipsis" ? (
+                    <PaginationEllipsis />
+                  ) : (
+                    <PaginationLink
+                      href="#"
+                      isActive={p === currentPage + 1}
+                      onClick={(e) => { e.preventDefault(); setCurrentPage(p - 1) }}
+                    >
+                      {p}
+                    </PaginationLink>
+                  )}
+                </PaginationItem>
+              ))}
+
+              {/* Next */}
+              <PaginationItem>
+                <PaginationLink
+                  href="#"
+                  aria-label="Próxima página"
+                  className={currentPage >= totalPages - 1 ? "pointer-events-none opacity-50" : ""}
+                  onClick={(e) => { e.preventDefault(); if (currentPage < totalPages - 1) setCurrentPage(currentPage + 1) }}
+                >
+                  ›
+                </PaginationLink>
+              </PaginationItem>
+              {/* Last */}
+              <PaginationItem>
+                <PaginationLink
+                  href="#"
+                  aria-label="Última página"
+                  className={currentPage >= totalPages - 1 ? "pointer-events-none opacity-50" : ""}
+                  onClick={(e) => { e.preventDefault(); if (currentPage < totalPages - 1) setCurrentPage(totalPages - 1) }}
+                >
+                  »
+                </PaginationLink>
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         )}
+
       </div>
     </Layout>
   )
