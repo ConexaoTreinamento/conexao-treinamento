@@ -120,16 +120,18 @@ export default function StudentsPage() {
   const debouncedSearchTerm = useDebounce(searchTerm, 400)
   const debouncedFilters = useDebounce(filters, 400)
 
+  // Flags de validação (string ISO YYYY-MM-DD pode ser comparada lexicograficamente)
+  const hasInvalidDateRange = Boolean(filters.startDate && filters.endDate && filters.startDate > filters.endDate)
+  const debouncedInvalidDateRange = Boolean(debouncedFilters.startDate && debouncedFilters.endDate && debouncedFilters.startDate > debouncedFilters.endDate)
+
+  // Reset para página 0 quando filtros/busca mudarem (após debounce)
   React.useEffect(() => {
     if (currentPage !== 0) {
       setCurrentPage(0)
     }
-
-    // Because we only want to run this when debounced values change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchTerm, debouncedFilters])
 
-  // Fetch students using React Query com valores debounced
+  // Fetch students using React Query com valores debounced (evita enviar datas inválidas)
   const { data: studentsData, isLoading, error } = useQuery({
     ...findAllOptions({
       query: {
@@ -138,8 +140,8 @@ export default function StudentsPage() {
         ...(debouncedFilters.profession !== "all" && { profession: debouncedFilters.profession }),
         ...(debouncedFilters.minAge && { minAge: debouncedFilters.minAge }),
         ...(debouncedFilters.maxAge && { maxAge: debouncedFilters.maxAge }),
-        ...(debouncedFilters.startDate && { registrationPeriodMinDate: debouncedFilters.startDate }),
-        ...(debouncedFilters.endDate && { registrationPeriodMaxDate: debouncedFilters.endDate }),
+        ...(!debouncedInvalidDateRange && debouncedFilters.startDate && { registrationPeriodMinDate: debouncedFilters.startDate }),
+        ...(!debouncedInvalidDateRange && debouncedFilters.endDate && { registrationPeriodMaxDate: debouncedFilters.endDate }),
         includeInactive: debouncedFilters.includeInactive,
         pageable: {
           page: currentPage,
@@ -149,7 +151,7 @@ export default function StudentsPage() {
       },
       client: apiClient
     }),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5,
     placeholderData: keepPreviousData
   })
 
@@ -386,7 +388,8 @@ export default function StudentsPage() {
                   <Input
                     type="date"
                     value={filters.startDate}
-                    onChange={e => handleFilterChange("startDate", e.target.value)}
+                    onChange={(e) => handleFilterChange("startDate", e.target.value)}
+                    className={hasInvalidDateRange ? "border-red-500 focus-visible:ring-red-500" : undefined}
                   />
                 </div>
 
@@ -395,8 +398,12 @@ export default function StudentsPage() {
                   <Input
                     type="date"
                     value={filters.endDate}
-                    onChange={e => handleFilterChange("endDate", e.target.value)}
+                    onChange={(e) => handleFilterChange("endDate", e.target.value)}
+                    className={hasInvalidDateRange ? "border-red-500 focus-visible:ring-red-500" : undefined}
                   />
+                  {hasInvalidDateRange && (
+                    <p className="text-xs text-red-600">A data inicial não pode ser posterior à data final.</p>
+                  )}
                 </div>
 
                 {hasActiveFilters && (
