@@ -26,15 +26,16 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Layout from "@/components/layout"
 import StudentForm from "@/components/student-form"
 import PageSelector from "@/components/ui/page-selector"
+import useDebounce from "@/hooks/use-debounce"
 
 // Type-safe filter interface
 interface StudentFilters {
-  status: string
-  plan: string
+  status: "all" | "Ativo" | "Vencido" | "Inativo"
+  plan: "all" | "Mensal" | "Trimestral" | "Semestral" | "Anual"
   minAge: number | null
   maxAge: number | null
   profession: string
-  gender: string
+  gender: "all" | "Masculino" | "Feminino" | "Outro"
   startDate: string
   endDate: string
   includeInactive: boolean
@@ -116,18 +117,31 @@ export default function StudentsPage() {
 
   const pageSize = 20;
 
-  // Fetch students using React Query with backend API via generated options helper
+  // Debounced inputs
+  const debouncedSearchTerm = useDebounce(searchTerm, 400)
+  const debouncedFilters = useDebounce(filters, 400)
+
+  React.useEffect(() => {
+    if (currentPage !== 0) {
+      setCurrentPage(0)
+    }
+
+    // Because we only want to run this when debounced values change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchTerm, debouncedFilters])
+
+  // Fetch students using React Query com valores debounced
   const { data: studentsData, isLoading, error } = useQuery({
     ...findAllOptions({
       query: {
-        ...(searchTerm && { search: searchTerm }),
-        ...(filters.gender !== "all" && { gender: mapGenderToBackend(filters.gender) }),
-        ...(filters.profession !== "all" && { profession: filters.profession }),
-        ...(filters.minAge && { minAge: filters.minAge }),
-        ...(filters.maxAge && { maxAge: filters.maxAge }),
-        ...(filters.startDate && { registrationPeriodMinDate: filters.startDate }),
-        ...(filters.endDate && { registrationPeriodMaxDate: filters.endDate }),
-        includeInactive: filters.includeInactive,
+        ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
+        ...(debouncedFilters.gender !== "all" && { gender: mapGenderToBackend(debouncedFilters.gender) }),
+        ...(debouncedFilters.profession !== "all" && { profession: debouncedFilters.profession }),
+        ...(debouncedFilters.minAge && { minAge: debouncedFilters.minAge }),
+        ...(debouncedFilters.maxAge && { maxAge: debouncedFilters.maxAge }),
+        ...(debouncedFilters.startDate && { registrationPeriodMinDate: debouncedFilters.startDate }),
+        ...(debouncedFilters.endDate && { registrationPeriodMaxDate: debouncedFilters.endDate }),
+        includeInactive: debouncedFilters.includeInactive,
         pageable: {
           page: currentPage,
           size: pageSize,
@@ -155,6 +169,7 @@ export default function StudentsPage() {
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
       age--
     }
+
     return age
   }
 
@@ -269,7 +284,7 @@ export default function StudentsPage() {
                   <label className="text-sm font-medium">Status</label>
                   <Select
                     value={filters.status}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, status: value }))}
+                    onValueChange={(value) => setFilters(prev => ({ ...prev, status: value as StudentFilters["status"] }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -287,7 +302,7 @@ export default function StudentsPage() {
                   <label className="text-sm font-medium">Plano</label>
                   <Select
                     value={filters.plan}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, plan: value }))}
+                    onValueChange={value => setFilters((prev) => ({ ...prev, plan: value as StudentFilters["plan"] }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -308,7 +323,7 @@ export default function StudentsPage() {
                     type="number"
                     placeholder="Ex: 18"
                     value={filters.minAge || ""}
-                    onChange={(e) => handleFilterChange("minAge", e.target.value ? parseInt(e.target.value) : null)}
+                    onChange={e => handleFilterChange("minAge", e.target.value ? parseInt(e.target.value) : null)}
                     min={0}
                     max={150}
                   />
@@ -320,7 +335,7 @@ export default function StudentsPage() {
                     type="number"
                     placeholder="Ex: 65"
                     value={filters.maxAge || ""}
-                    onChange={(e) => handleFilterChange("maxAge", e.target.value ? parseInt(e.target.value) : null)}
+                    onChange={e => handleFilterChange("maxAge", e.target.value ? parseInt(e.target.value) : null)}
                     min={0}
                     max={150}
                   />
@@ -330,7 +345,7 @@ export default function StudentsPage() {
                   <label className="text-sm font-medium">Gênero</label>
                   <Select
                     value={filters.gender}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, gender: value }))}
+                    onValueChange={value => setFilters((prev) => ({ ...prev, gender: value as StudentFilters["gender"] }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -348,7 +363,7 @@ export default function StudentsPage() {
                   <label className="text-sm font-medium">Profissão</label>
                   <Select
                     value={filters.profession}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, profession: value }))}
+                    onValueChange={value => setFilters((prev) => ({ ...prev, profession: value }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -369,7 +384,7 @@ export default function StudentsPage() {
                   <Input
                     type="date"
                     value={filters.startDate}
-                    onChange={(e) => handleFilterChange("startDate", e.target.value)}
+                    onChange={e => handleFilterChange("startDate", e.target.value)}
                   />
                 </div>
 
@@ -378,7 +393,7 @@ export default function StudentsPage() {
                   <Input
                     type="date"
                     value={filters.endDate}
-                    onChange={(e) => handleFilterChange("endDate", e.target.value)}
+                    onChange={e => handleFilterChange("endDate", e.target.value)}
                   />
                 </div>
 
