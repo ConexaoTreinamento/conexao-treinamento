@@ -27,6 +27,8 @@ import Layout from "@/components/layout"
 import StudentForm from "@/components/student-form"
 import PageSelector from "@/components/ui/page-selector"
 import useDebounce from "@/hooks/use-debounce"
+import { useForm } from "react-hook-form"
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form"
 
 // Type-safe filter interface
 interface StudentFilters {
@@ -75,7 +77,12 @@ export default function StudentsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   
-  const [filters, setFilters] = useState<StudentFilters>(DEFAULT_FILTERS)
+  const form = useForm<StudentFilters>({
+    defaultValues: DEFAULT_FILTERS,
+    mode: "onChange",
+  })
+  const watchedFilters = form.watch()
+
   const router = useRouter()
   const searchParams = useSearchParams()
   
@@ -118,17 +125,20 @@ export default function StudentsPage() {
 
   // Debounced inputs
   const debouncedSearchTerm = useDebounce(searchTerm, 400)
-  const debouncedFilters = useDebounce(filters, 400)
+  const debouncedFilters = useDebounce(watchedFilters, 400)
 
   // Flags de validação (string ISO YYYY-MM-DD pode ser comparada lexicograficamente)
-  const hasInvalidDateRange = Boolean(filters.startDate && filters.endDate && filters.startDate > filters.endDate)
+  const hasInvalidDateRange = Boolean(watchedFilters.startDate && watchedFilters.endDate && watchedFilters.startDate > watchedFilters.endDate)
   const debouncedInvalidDateRange = Boolean(debouncedFilters.startDate && debouncedFilters.endDate && debouncedFilters.startDate > debouncedFilters.endDate)
 
   // Reset para página 0 quando filtros/busca mudarem (após debounce)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     if (currentPage !== 0) {
       setCurrentPage(0)
     }
+    //We want to reset page only when debounced values change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchTerm, debouncedFilters])
 
   // Fetch students using React Query com valores debounced (evita enviar datas inválidas)
@@ -188,18 +198,13 @@ export default function StudentsPage() {
     return `${student.name || ""} ${student.surname || ""}`.trim()
   }
 
-  // Type-safe filter change handler
-  const handleFilterChange = <K extends keyof StudentFilters>(key: K, value: StudentFilters[K]) => {
-    setFilters(prev => ({ ...prev, [key]: value }))
-    setCurrentPage(0) // Reset to first page when filters change
-  }
-
+  // Clear filters via RHF
   const clearFilters = () => {
-    setFilters(DEFAULT_FILTERS)
+    form.reset(DEFAULT_FILTERS)
     setCurrentPage(0)
   }
 
-  const hasActiveFilters = countActiveFilters(filters) > 0
+  const hasActiveFilters = countActiveFilters(watchedFilters) > 0
 
   // Get unique professions from API data for filter dropdown
   const uniqueProfessions = (studentsData?.content || []).map(s => s.profession).filter((p, i, arr) => p && arr.indexOf(p) === i)
@@ -273,7 +278,7 @@ export default function StudentsPage() {
                 Filtros
                 {hasActiveFilters && (
                   <Badge className="ml-2 bg-green-600 text-white text-xs px-1 py-0">
-                    {countActiveFilters(filters)}
+                    {countActiveFilters(watchedFilters)}
                   </Badge>
                 )}
               </Button>
@@ -284,134 +289,190 @@ export default function StudentsPage() {
                 <SheetDescription>Refine sua busca por alunos</SheetDescription>
               </SheetHeader>
               <div className="space-y-4 mt-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Status</label>
-                  <Select
-                    value={filters.status}
-                    onValueChange={(value) => setFilters(prev => ({ ...prev, status: value as StudentFilters["status"] }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="Ativo">Ativo</SelectItem>
-                      <SelectItem value="Vencido">Vencido</SelectItem>
-                      <SelectItem value="Inativo">Inativo</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Form {...form}>
+                  <form className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Status</FormLabel>
+                          <FormControl>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">Todos</SelectItem>
+                                <SelectItem value="Ativo">Ativo</SelectItem>
+                                <SelectItem value="Vencido">Vencido</SelectItem>
+                                <SelectItem value="Inativo">Inativo</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Plano</label>
-                  <Select
-                    value={filters.plan}
-                    onValueChange={value => setFilters(prev => ({ ...prev, plan: value as StudentFilters["plan"] }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="Mensal">Mensal</SelectItem>
-                      <SelectItem value="Trimestral">Trimestral</SelectItem>
-                      <SelectItem value="Semestral">Semestral</SelectItem>
-                      <SelectItem value="Anual">Anual</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="plan"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Plano</FormLabel>
+                          <FormControl>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">Todos</SelectItem>
+                                <SelectItem value="Mensal">Mensal</SelectItem>
+                                <SelectItem value="Trimestral">Trimestral</SelectItem>
+                                <SelectItem value="Semestral">Semestral</SelectItem>
+                                <SelectItem value="Anual">Anual</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Idade Mínima</label>
-                  <Input
-                    type="number"
-                    placeholder="Ex: 18"
-                    value={filters.minAge || ""}
-                    onChange={e => handleFilterChange("minAge", e.target.value ? parseInt(e.target.value) : null)}
-                    min={0}
-                    max={150}
-                  />
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="minAge"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Idade Mínima</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="Ex: 18"
+                              value={field.value ?? ""}
+                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                              min={0}
+                              max={150}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Idade Máxima</label>
-                  <Input
-                    type="number"
-                    placeholder="Ex: 65"
-                    value={filters.maxAge || ""}
-                    onChange={e => handleFilterChange("maxAge", e.target.value ? parseInt(e.target.value) : null)}
-                    min={0}
-                    max={150}
-                  />
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="maxAge"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Idade Máxima</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="Ex: 65"
+                              value={field.value ?? ""}
+                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                              min={0}
+                              max={150}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Gênero</label>
-                  <Select
-                    value={filters.gender}
-                    onValueChange={value => setFilters(prev => ({ ...prev, gender: value as StudentFilters["gender"] }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="Masculino">Masculino</SelectItem>
-                      <SelectItem value="Feminino">Feminino</SelectItem>
-                      <SelectItem value="Outro">Outro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="gender"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Gênero</FormLabel>
+                          <FormControl>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">Todos</SelectItem>
+                                <SelectItem value="Masculino">Masculino</SelectItem>
+                                <SelectItem value="Feminino">Feminino</SelectItem>
+                                <SelectItem value="Outro">Outro</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Profissão</label>
-                  <Select
-                    value={filters.profession}
-                    onValueChange={value => setFilters(prev => ({ ...prev, profession: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas</SelectItem>
-                      {uniqueProfessions.map((profession) => (
-                        <SelectItem key={profession} value={profession!}>
-                          {profession}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="profession"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Profissão</FormLabel>
+                          <FormControl>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">Todas</SelectItem>
+                                {uniqueProfessions.map((profession) => (
+                                  <SelectItem key={profession} value={profession!}>
+                                    {profession}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Data de Ingresso (De)</label>
-                  <Input
-                    type="date"
-                    value={filters.startDate}
-                    onChange={(e) => handleFilterChange("startDate", e.target.value)}
-                    className={hasInvalidDateRange ? "border-red-500 focus-visible:ring-red-500" : undefined}
-                  />
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="startDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Data de Ingresso (De)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="date"
+                              value={field.value}
+                              onChange={field.onChange}
+                              className={hasInvalidDateRange ? "border-red-500 focus-visible:ring-red-500" : undefined}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Data de Ingresso (Até)</label>
-                  <Input
-                    type="date"
-                    value={filters.endDate}
-                    onChange={(e) => handleFilterChange("endDate", e.target.value)}
-                    className={hasInvalidDateRange ? "border-red-500 focus-visible:ring-red-500" : undefined}
-                  />
-                  {hasInvalidDateRange && (
-                    <p className="text-xs text-red-600">A data inicial não pode ser posterior à data final.</p>
-                  )}
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="endDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Data de Ingresso (Até)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="date"
+                              value={field.value}
+                              onChange={field.onChange}
+                              className={hasInvalidDateRange ? "border-red-500 focus-visible:ring-red-500" : undefined}
+                            />
+                          </FormControl>
+                          {hasInvalidDateRange && (
+                            <p className="text-xs text-red-600">A data inicial não pode ser posterior à data final.</p>
+                          )}
+                        </FormItem>
+                      )}
+                    />
 
-                {hasActiveFilters && (
-                  <Button variant="outline" onClick={clearFilters} className="w-full bg-transparent">
-                    <X className="w-4 h-4 mr-2" />
-                    Limpar Filtros
-                  </Button>
-                )}
+                    {hasActiveFilters && (
+                      <Button type="button" variant="outline" onClick={clearFilters} className="w-full bg-transparent">
+                        <X className="w-4 h-4 mr-2" />
+                        Limpar Filtros
+                      </Button>
+                    )}
+                  </form>
+                </Form>
               </div>
             </SheetContent>
           </Sheet>
