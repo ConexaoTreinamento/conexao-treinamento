@@ -25,13 +25,7 @@ import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X } from "lucide
 import { useRouter, useSearchParams } from "next/navigation"
 import Layout from "@/components/layout"
 import StudentForm from "@/components/student-form"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-} from "@/components/ui/pagination"
+import PageSelector from "@/components/ui/page-selector"
 
 // Type-safe filter interface
 interface StudentFilters {
@@ -179,24 +173,6 @@ export default function StudentsPage() {
   const handleFilterChange = <K extends keyof StudentFilters>(key: K, value: StudentFilters[K]) => {
     setFilters(prev => ({ ...prev, [key]: value }))
     setCurrentPage(0) // Reset to first page when filters change
-  }
-
-  // Monta a lista de páginas (1-based) com elipses
-  const getPageList = (current: number, total: number): Array<number | "ellipsis"> => {
-    const curr = current + 1 // para 1-based
-    const pages: Array<number | "ellipsis"> = []
-    if (total <= 7) {
-      for (let i = 1; i <= total; i++) pages.push(i)
-      return pages
-    }
-    pages.push(1)
-    const start = Math.max(2, curr - 2)
-    const end = Math.min(total - 1, curr + 2)
-    if (start > 2) pages.push("ellipsis")
-    for (let i = start; i <= end; i++) pages.push(i)
-    if (end < total - 1) pages.push("ellipsis")
-    pages.push(total)
-    return pages
   }
 
   const clearFilters = () => {
@@ -619,72 +595,11 @@ export default function StudentsPage() {
 
         {/* Pagination */}
         {!isLoading && !error && (studentsData?.content || []).length > 0 && totalPages > 1 && (
-          <Pagination className="mt-6 pt-4 border-t">
-            <PaginationContent>
-              {/* First */}
-              <PaginationItem>
-                <PaginationLink
-                  href="#"
-                  aria-label="Primeira página"
-                  className={currentPage === 0 ? "pointer-events-none opacity-50" : ""}
-                  onClick={(e) => { e.preventDefault(); if (currentPage > 0) setCurrentPage(0) }}
-                >
-                  «
-                </PaginationLink>
-              </PaginationItem>
-              {/* Prev */}
-              <PaginationItem>
-                <PaginationLink
-                  href="#"
-                  aria-label="Página anterior"
-                  className={currentPage === 0 ? "pointer-events-none opacity-50" : ""}
-                  onClick={(e) => { e.preventDefault(); if (currentPage > 0) setCurrentPage(currentPage - 1) }}
-                >
-                  ‹
-                </PaginationLink>
-              </PaginationItem>
-
-              {/* Pages */}
-              {getPageList(currentPage, totalPages).map((p, idx) => (
-                <PaginationItem key={`${p}-${idx}`}>
-                  {p === "ellipsis" ? (
-                    <PaginationEllipsis />
-                  ) : (
-                    <PaginationLink
-                      href="#"
-                      isActive={p === currentPage + 1}
-                      onClick={(e) => { e.preventDefault(); setCurrentPage(p - 1) }}
-                    >
-                      {p}
-                    </PaginationLink>
-                  )}
-                </PaginationItem>
-              ))}
-
-              {/* Next */}
-              <PaginationItem>
-                <PaginationLink
-                  href="#"
-                  aria-label="Próxima página"
-                  className={currentPage >= totalPages - 1 ? "pointer-events-none opacity-50" : ""}
-                  onClick={(e) => { e.preventDefault(); if (currentPage < totalPages - 1) setCurrentPage(currentPage + 1) }}
-                >
-                  ›
-                </PaginationLink>
-              </PaginationItem>
-              {/* Last */}
-              <PaginationItem>
-                <PaginationLink
-                  href="#"
-                  aria-label="Última página"
-                  className={currentPage >= totalPages - 1 ? "pointer-events-none opacity-50" : ""}
-                  onClick={(e) => { e.preventDefault(); if (currentPage < totalPages - 1) setCurrentPage(totalPages - 1) }}
-                >
-                  »
-                </PaginationLink>
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+          <PageSelector
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         )}
 
       </div>
