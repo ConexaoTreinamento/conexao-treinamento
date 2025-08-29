@@ -18,11 +18,12 @@ public interface ExerciseRepository extends JpaRepository<Exercise, UUID> {
     Page<Exercise> findByDeletedAtIsNull(Pageable pageable);
     
     @Query("SELECT e FROM Exercise e WHERE e.deletedAt IS NULL " +
-           "AND (LOWER(e.name) LIKE :search " +
-           "OR LOWER(e.description) LIKE :search)")
+           "AND (similarity(LOWER(e.name), :search) > 0.5 " +
+           "OR similarity(LOWER(e.description), :search) > 0.5)")
     Page<Exercise> findBySearchTermAndDeletedAtIsNull(@Param("search") String search, Pageable pageable);
     
     @Query("SELECT e FROM Exercise e WHERE " +
-           "(LOWER(e.name) LIKE :search OR LOWER(e.description) LIKE :search)")
+           "(similarity(LOWER(e.name), :search) > 0.5 " +
+           "OR similarity(LOWER(e.description), :search) > 0.5)")
     Page<Exercise> findBySearchTermIncludingInactive(@Param("search") String search, Pageable pageable);
 }
