@@ -26,13 +26,18 @@ const buildPages = (
 ): Array<number | "ellipsis"> => {
   const curr = currentPage + 1 // 1-based
   const pages: Array<number | "ellipsis"> = []
-  if (totalPages <= 0) return pages
+  if (totalPages <= 0) {
+    return pages
+  }
 
   const totalNumbers = siblingCount * 2 + 1
   const totalBlocks = totalNumbers + boundaryCount * 2
 
   if (totalPages <= totalBlocks) {
-    for (let i = 1; i <= totalPages; i++) pages.push(i)
+    for (let i = 1; i <= totalPages; i++) {
+      pages.push(i)
+    }
+
     return pages
   }
 
@@ -43,31 +48,43 @@ const buildPages = (
   const showRightEllipsis = rightSiblingIndex < totalPages - boundaryCount - 1
 
   // Left boundary
-  for (let i = 1; i <= boundaryCount; i++) pages.push(i)
+  for (let i = 1; i <= boundaryCount; i++) {
+    pages.push(i)
+  }
 
-  if (showLeftEllipsis) pages.push("ellipsis")
+  if (showLeftEllipsis) {
+    pages.push("ellipsis")
+  }
   else {
     // Fill the gap if it's exactly one off
     const start = boundaryCount + 1
-    for (let i = start; i < leftSiblingIndex; i++) pages.push(i)
+    for (let i = start; i < leftSiblingIndex; i++) {
+      pages.push(i)
+    }
   }
 
   // Middle range
-  for (let i = leftSiblingIndex; i <= rightSiblingIndex; i++) pages.push(i)
+  for (let i = leftSiblingIndex; i <= rightSiblingIndex; i++) {
+    pages.push(i)
+  }
 
   if (showRightEllipsis) pages.push("ellipsis")
   else {
     const end = totalPages - boundaryCount
-    for (let i = rightSiblingIndex + 1; i <= end; i++) pages.push(i)
+    for (let i = rightSiblingIndex + 1; i <= end; i++) {
+      pages.push(i)
+    }
   }
 
   // Right boundary
-  for (let i = totalPages - boundaryCount + 1; i <= totalPages; i++) pages.push(i)
+  for (let i = totalPages - boundaryCount + 1; i <= totalPages; i++) {
+    pages.push(i)
+  }
 
   return pages
 }
 
-export function PageSelector({
+export const PageSelector = ({
   currentPage,
   totalPages,
   onPageChange,
@@ -75,17 +92,24 @@ export function PageSelector({
   siblingCount = 2,
   boundaryCount = 1,
   disabled = false,
-}: PageSelectorProps) {
+}: PageSelectorProps) => {
   const atStart = currentPage <= 0
   const atEnd = currentPage >= totalPages - 1
 
   const pages = buildPages(currentPage, totalPages, siblingCount, boundaryCount)
-  if (!Number.isFinite(totalPages) || totalPages <= 1 || pages.length === 0) return null
+  if (!Number.isFinite(totalPages) || totalPages <= 1 || pages.length === 0) {
+    return null
+  }
 
   const onNav = (page: number) => {
-    if (disabled) return
+    if (disabled) {
+      return
+    }
+
     const clamped = Math.max(0, Math.min(totalPages - 1, page))
-    if (clamped !== currentPage) onPageChange(clamped)
+    if (clamped !== currentPage) {
+      onPageChange(clamped)
+    }
   }
 
   return (
@@ -123,7 +147,7 @@ export function PageSelector({
                 href="#"
                 isActive={p === currentPage + 1}
                 className={disabled ? "pointer-events-none opacity-50" : ""}
-                onClick={(e) => { e.preventDefault(); onNav(p - 1) }}
+                onClick={e => { e.preventDefault(); onNav(p - 1) }}
               >
                 {p}
               </PaginationLink>
@@ -137,7 +161,7 @@ export function PageSelector({
             href="#"
             aria-label="Próxima página"
             className={atEnd || disabled ? "pointer-events-none opacity-50" : ""}
-            onClick={(e) => { e.preventDefault(); onNav(currentPage + 1) }}
+            onClick={e => { e.preventDefault(); onNav(currentPage + 1) }}
           >
             ›
           </PaginationLink>
@@ -148,7 +172,7 @@ export function PageSelector({
             href="#"
             aria-label="Última página"
             className={atEnd || disabled ? "pointer-events-none opacity-50" : ""}
-            onClick={(e) => { e.preventDefault(); onNav(totalPages - 1) }}
+            onClick={e => { e.preventDefault(); onNav(totalPages - 1) }}
           >
             »
           </PaginationLink>
@@ -156,6 +180,6 @@ export function PageSelector({
       </PaginationContent>
     </Pagination>
   )
-}
+};
 
 export default PageSelector
