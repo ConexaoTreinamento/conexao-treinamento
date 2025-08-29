@@ -75,7 +75,6 @@ export default function StudentsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   
-  // Type-safe filters using the interface
   const [filters, setFilters] = useState<StudentFilters>(DEFAULT_FILTERS)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -160,7 +159,10 @@ export default function StudentsPage() {
 
   // Helper function to get student age from birth date
   const getStudentAge = (birthDate: string): number => {
-    if (!birthDate) return 0
+    if (!birthDate) {
+      return 0
+    }
+
     const today = new Date()
     const birth = new Date(birthDate)
     let age = today.getFullYear() - birth.getFullYear()
@@ -257,7 +259,7 @@ export default function StudentsPage() {
             <Input
               placeholder="Buscar alunos por nome, email, telefone ou profissão..."
               value={searchTerm}
-              onChange={(e) => handleSearchChange(e.target.value)}
+              onChange={e => handleSearchChange(e.target.value)}
               className="pl-10"
             />
           </div>
@@ -302,7 +304,7 @@ export default function StudentsPage() {
                   <label className="text-sm font-medium">Plano</label>
                   <Select
                     value={filters.plan}
-                    onValueChange={value => setFilters((prev) => ({ ...prev, plan: value as StudentFilters["plan"] }))}
+                    onValueChange={value => setFilters(prev => ({ ...prev, plan: value as StudentFilters["plan"] }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -345,7 +347,7 @@ export default function StudentsPage() {
                   <label className="text-sm font-medium">Gênero</label>
                   <Select
                     value={filters.gender}
-                    onValueChange={value => setFilters((prev) => ({ ...prev, gender: value as StudentFilters["gender"] }))}
+                    onValueChange={value => setFilters(prev => ({ ...prev, gender: value as StudentFilters["gender"] }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -363,7 +365,7 @@ export default function StudentsPage() {
                   <label className="text-sm font-medium">Profissão</label>
                   <Select
                     value={filters.profession}
-                    onValueChange={value => setFilters((prev) => ({ ...prev, profession: value }))}
+                    onValueChange={value => setFilters(prev => ({ ...prev, profession: value }))}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -460,11 +462,11 @@ export default function StudentsPage() {
             const planExpirationDate = new Date()
             planExpirationDate.setDate(planExpirationDate.getDate() + 30)
 
-              const expirationDate = new Date(student.registrationDate!);
-              expirationDate.setFullYear(expirationDate.getFullYear() + 2);
-              expirationDate.setMonth(expirationDate.getMonth() + 5);
-              expirationDate.setDate(expirationDate.getDate() + 20);
-              return (
+            const expirationDate = new Date(student.registrationDate!)
+            expirationDate.setFullYear(expirationDate.getFullYear() + 2)
+            expirationDate.setMonth(expirationDate.getMonth() + 5)
+            expirationDate.setDate(expirationDate.getDate() + 20)
+            return (
               <Card
                 key={student.id}
                 className="hover:shadow-md transition-shadow cursor-pointer"
