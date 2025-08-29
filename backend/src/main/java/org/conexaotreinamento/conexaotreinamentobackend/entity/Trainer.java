@@ -15,6 +15,7 @@ import java.util.UUID;
 @Table(name = "trainers")
 @EntityListeners(AuditingEntityListener.class)
 @Getter
+@Setter
 @NoArgsConstructor
 public class Trainer {
 

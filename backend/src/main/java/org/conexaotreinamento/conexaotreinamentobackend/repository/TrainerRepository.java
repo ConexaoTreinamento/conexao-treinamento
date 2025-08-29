@@ -19,7 +19,7 @@ public interface TrainerRepository extends JpaRepository<Trainer, UUID> {
     @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainersDTO(" +
             "t.id, t.name, t.email, t.phone, t.specialties, t.compensationType, (u.deletedAt IS NULL)) " +
             " FROM Trainer t INNER JOIN User u ON t.id = u.id" +
-            " WHERE u.deletedAt IS NOT NULL")
+            " WHERE t.id = :id AND u.deletedAt IS NULL")
     Optional<ListTrainersDTO> findActiveTrainerProfileById(UUID id);
 
 
