@@ -57,13 +57,24 @@ public class StudentService {
             Pageable pageable) {
         
         if (pageable.getSort().isUnsorted()) {
-            pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), 
-                                    Sort.by("createdAt").descending());
+            pageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by("createdAt").descending()
+            );
         }
         
         // Use specifications for dynamic filtering
         Specification<Student> spec = StudentSpecifications.withFilters(
-            search, gender, profession, minAge, maxAge, startDate, endDate, includeInactive);
+            search,
+            gender,
+            profession,
+            minAge,
+            maxAge,
+            startDate,
+            endDate,
+            includeInactive
+        );
         
         Page<Student> students = studentRepository.findAll(spec, pageable);
         

@@ -13,15 +13,15 @@ import java.util.List;
 public class StudentSpecifications {
 
     public static Specification<Student> withFilters(
-            String search,
-            Student.Gender gender,
-            String profession,
-            Integer minAge,
-            Integer maxAge,
-            LocalDate registrationMinDate,
-            LocalDate registrationMaxDate,
-            boolean includeInactive) {
-
+        String search,
+        Student.Gender gender,
+        String profession,
+        Integer minAge,
+        Integer maxAge,
+        LocalDate registrationMinDate,
+        LocalDate registrationMaxDate,
+        boolean includeInactive
+    ) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -38,9 +38,10 @@ public class StudentSpecifications {
                     criteriaBuilder.like(criteriaBuilder.lower(root.get("surname")), searchTerm),
                     criteriaBuilder.like(criteriaBuilder.lower(root.get("email")), searchTerm),
                     criteriaBuilder.like(criteriaBuilder.lower(root.get("phone")), searchTerm),
-                    criteriaBuilder.like(criteriaBuilder.lower(
-                        criteriaBuilder.coalesce(root.get("profession"), "")), searchTerm)
+                    criteriaBuilder.like(criteriaBuilder.lower(criteriaBuilder.coalesce(root.get("profession"), "")), searchTerm
+                    )
                 );
+
                 predicates.add(searchPredicate);
             }
 
@@ -59,12 +60,12 @@ public class StudentSpecifications {
 
             // Age range filter
             if (minAge != null || maxAge != null) {
-                addAgeRangePredicate(predicates, root, query, criteriaBuilder, minAge, maxAge);
+                addAgeRangePredicate(predicates, root, criteriaBuilder, minAge, maxAge);
             }
 
             // Date range filter
             if (registrationMinDate != null || registrationMaxDate != null) {
-                addDateRangePredicate(predicates, root, query, criteriaBuilder, registrationMinDate, registrationMaxDate);
+                addDateRangePredicate(predicates, root, criteriaBuilder, registrationMinDate, registrationMaxDate);
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
@@ -73,8 +74,7 @@ public class StudentSpecifications {
 
     private static void addAgeRangePredicate(List<Predicate> predicates,
                                            jakarta.persistence.criteria.Root<Student> root,
-                                           jakarta.persistence.criteria.CriteriaQuery<?> query,
-                                           jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder,
+                                             jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder,
                                            Integer minAge,
                                            Integer maxAge) {
         
@@ -93,8 +93,7 @@ public class StudentSpecifications {
 
     private static void addDateRangePredicate(List<Predicate> predicates,
                                             jakarta.persistence.criteria.Root<Student> root,
-                                            jakarta.persistence.criteria.CriteriaQuery<?> query,
-                                            jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder,
+                                              jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder,
                                             LocalDate startDate,
                                             LocalDate endDate) {
         
