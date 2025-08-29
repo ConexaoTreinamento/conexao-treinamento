@@ -26,8 +26,7 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-resources/**",
                                 "/swagger-ui.html",
-                                "/webjars/**",
-                                "/administrators/**"
+                                "/webjars/**"
                         ).permitAll()
                         // Require authentication for all other endpoints
                         .anyRequest().authenticated()
