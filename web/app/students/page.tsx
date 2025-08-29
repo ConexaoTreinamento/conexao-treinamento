@@ -1,12 +1,12 @@
 "use client"
 
 import React from "react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { keepPreviousData, useQuery } from "@tanstack/react-query"
-import { findAll } from "@/lib/api-client/sdk.gen"
-import type { StudentResponseDto, PagedModelStudentResponseDto, StudentRequestDto } from "@/lib/api-client/types.gen"
-import {getStudentCurrentStatus, getStudentPlanExpirationDate, UnifiedStatusBadge} from "@/lib/expiring-plans"
-import { STUDENTS, getStudentFullName } from "@/lib/students-data"
+import { findAllOptions } from "@/lib/api-client/@tanstack/react-query.gen"
+import { apiClient } from "@/lib/client"
+import type { StudentResponseDto } from "@/lib/api-client/types.gen"
+import { UnifiedStatusBadge} from "@/lib/expiring-plans"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,7 +24,7 @@ import {
 import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Layout from "@/components/layout"
-import StudentForm, {StudentFormData} from "@/components/student-form"
+import StudentForm from "@/components/student-form"
 
 // Type-safe filter interface
 interface StudentFilters {
@@ -69,13 +69,9 @@ const countActiveFilters = (filters: StudentFilters): number => {
 
 export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [userRole, setUserRole] = useState<string>("")
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
-  
-  // Pagination state with query params
-  const [pageSize, setPageSize] = useState(20)
   
   // Type-safe filters using the interface
   const [filters, setFilters] = useState<StudentFilters>(DEFAULT_FILTERS)
@@ -103,11 +99,6 @@ export default function StudentsPage() {
     updatePageInURL(newPage)
   }
 
-  useEffect(() => {
-    const role = localStorage.getItem("userRole") || "professor"
-    setUserRole(role)
-  }, [])
-
   // Helper function to map frontend gender values to backend values
   const mapGenderToBackend = (frontendGender: string): string | undefined => {
     switch (frontendGender) {
@@ -119,35 +110,28 @@ export default function StudentsPage() {
     }
   }
 
-  // Fetch students using React Query with backend API
+  const pageSize = 20;
+
+  // Fetch students using React Query with backend API via generated options helper
   const { data: studentsData, isLoading, error } = useQuery({
-    queryKey: ['students', searchTerm, filters, currentPage, pageSize],
-    queryFn: async () => {
-      try {
-        const { data } = await findAll({
-          query: {
-            ...(searchTerm && { search: searchTerm }),
-            ...(filters.gender !== "all" && { gender: mapGenderToBackend(filters.gender) }),
-            ...(filters.profession !== "all" && { profession: filters.profession }),
-            ...(filters.minAge && { minAge: filters.minAge }),
-            ...(filters.maxAge && { maxAge: filters.maxAge }),
-            ...(filters.startDate && { registrationPeriodMinDate: filters.startDate }),
-            ...(filters.endDate && { registrationPeriodMaxDate: filters.endDate }),
-            includeInactive: filters.includeInactive,
-            pageable: {
-              page: currentPage,
-              size: pageSize,
-              sort: ["name,ASC"]
-            }
-          },
-          client: (await import('@/lib/client')).apiClient
-        })
-        return data || { content: [], page: { totalPages: 0, totalElements: 0 } }
-      } catch (error) {
-        console.error('Error fetching students:', error)
-        return { content: [], page: { totalPages: 0, totalElements: 0 } }
-      }
-    },
+    ...findAllOptions({
+      query: {
+        ...(searchTerm && { search: searchTerm }),
+        ...(filters.gender !== "all" && { gender: mapGenderToBackend(filters.gender) }),
+        ...(filters.profession !== "all" && { profession: filters.profession }),
+        ...(filters.minAge && { minAge: filters.minAge }),
+        ...(filters.maxAge && { maxAge: filters.maxAge }),
+        ...(filters.startDate && { registrationPeriodMinDate: filters.startDate }),
+        ...(filters.endDate && { registrationPeriodMaxDate: filters.endDate }),
+        includeInactive: filters.includeInactive,
+        pageable: {
+          page: currentPage,
+          size: pageSize,
+          sort: ["name,ASC"]
+        }
+      },
+      client: apiClient
+    }),
     staleTime: 1000 * 60 * 5, // 5 minutes
     placeholderData: keepPreviousData
   })
@@ -187,19 +171,6 @@ export default function StudentsPage() {
     setCurrentPage(0) // Reset to first page when filters change
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Ativo":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      case "Vencido":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-      case "Inativo":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-    }
-  }
-
   const clearFilters = () => {
     setFilters(DEFAULT_FILTERS)
     setCurrentPage(0)
@@ -210,7 +181,7 @@ export default function StudentsPage() {
   // Get unique professions from API data for filter dropdown
   const uniqueProfessions = (studentsData?.content || []).map(s => s.profession).filter((p, i, arr) => p && arr.indexOf(p) === i)
 
-  const handleCreateStudent = async (formData: StudentFormData) => {
+  const handleCreateStudent = async () => {
     setIsCreating(true)
 
     // Simulate API call
