@@ -18,14 +18,18 @@ public interface ExerciseRepository extends JpaRepository<Exercise, UUID> {
     Page<Exercise> findByDeletedAtIsNull(Pageable pageable);
     
     @Query(value = "SELECT e.*, e.created_at as createdAt FROM exercises e WHERE e.deleted_at IS NULL " +
-           "AND (word_similarity(unaccent(LOWER(e.name)), unaccent(LOWER(:search))) > 0.4 " +
-           "OR word_similarity(unaccent(LOWER(e.description)), unaccent(LOWER(:search))) > 0.4)",
+           "AND (unaccent(LOWER(e.name)) LIKE '%' || unaccent(LOWER(:search)) || '%' " +
+           "OR unaccent(LOWER(e.description)) LIKE '%' || unaccent(LOWER(:search)) || '%' " +
+           "OR word_similarity(unaccent(LOWER(e.name)), unaccent(LOWER(:search))) > 0.3 " +
+           "OR word_similarity(unaccent(LOWER(e.description)), unaccent(LOWER(:search))) > 0.3)",
            nativeQuery = true)
     Page<Exercise> findBySearchTermAndDeletedAtIsNull(@Param("search") String search, Pageable pageable);
     
     @Query(value = "SELECT e.*, e.created_at as createdAt FROM exercises e WHERE " +
-           "(word_similarity(unaccent(LOWER(e.name)), unaccent(LOWER(:search))) > 0.4 " +
-           "OR word_similarity(unaccent(LOWER(e.description)), unaccent(LOWER(:search))) > 0.4)",
+           "(unaccent(LOWER(e.name)) LIKE '%' || unaccent(LOWER(:search)) || '%' " +
+           "OR unaccent(LOWER(e.description)) LIKE '%' || unaccent(LOWER(:search)) || '%' " +
+           "OR word_similarity(unaccent(LOWER(e.name)), unaccent(LOWER(:search))) > 0.3 " +
+           "OR word_similarity(unaccent(LOWER(e.description)), unaccent(LOWER(:search))) > 0.3)",
            nativeQuery = true)
     Page<Exercise> findBySearchTermIncludingInactive(@Param("search") String search, Pageable pageable);
 }
