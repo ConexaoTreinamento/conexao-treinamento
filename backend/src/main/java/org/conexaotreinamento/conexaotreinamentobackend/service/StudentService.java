@@ -102,6 +102,8 @@ public class StudentService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
 
         student.deactivate();
+
+        studentRepository.save(student);
     }
 
     @Transactional
@@ -114,6 +116,9 @@ public class StudentService {
         }
 
         student.activate();
+
+        studentRepository.save(student);
+
         return StudentResponseDTO.fromEntity(student);
     }
 }
