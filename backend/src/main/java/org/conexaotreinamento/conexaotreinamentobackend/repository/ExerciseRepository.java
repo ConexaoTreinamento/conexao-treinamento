@@ -18,14 +18,14 @@ public interface ExerciseRepository extends JpaRepository<Exercise, UUID> {
     Page<Exercise> findByDeletedAtIsNull(Pageable pageable);
     
     @Query(value = "SELECT e.*, e.created_at as createdAt FROM exercises e WHERE e.deleted_at IS NULL " +
-           "AND (word_similarity(LOWER(e.name), LOWER(:search)) > 0.4 " +
-           "OR word_similarity(LOWER(e.description), LOWER(:search)) > 0.4)",
+           "AND (word_similarity(unaccent(LOWER(e.name)), unaccent(LOWER(:search))) > 0.4 " +
+           "OR word_similarity(unaccent(LOWER(e.description)), unaccent(LOWER(:search))) > 0.4)",
            nativeQuery = true)
     Page<Exercise> findBySearchTermAndDeletedAtIsNull(@Param("search") String search, Pageable pageable);
     
-    @Query(value = "SELECT * FROM exercises e WHERE " +
-           "(word_similarity(LOWER(e.name), LOWER(:search)) > 0.4 " +
-           "OR word_similarity(LOWER(e.description), LOWER(:search)) > 0.4) ",
+    @Query(value = "SELECT e.*, e.created_at as createdAt FROM exercises e WHERE " +
+           "(word_similarity(unaccent(LOWER(e.name)), unaccent(LOWER(:search))) > 0.4 " +
+           "OR word_similarity(unaccent(LOWER(e.description)), unaccent(LOWER(:search))) > 0.4)",
            nativeQuery = true)
     Page<Exercise> findBySearchTermIncludingInactive(@Param("search") String search, Pageable pageable);
 }
