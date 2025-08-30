@@ -348,7 +348,7 @@ export default function StudentsPage() {
                               type="number"
                               placeholder="Ex: 18"
                               value={field.value ?? ""}
-                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                              onChange={e => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
                               min={0}
                               max={150}
                             />
@@ -368,7 +368,7 @@ export default function StudentsPage() {
                               type="number"
                               placeholder="Ex: 65"
                               value={field.value ?? ""}
-                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                              onChange={e => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
                               min={0}
                               max={150}
                             />
@@ -559,7 +559,7 @@ export default function StudentsPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={(e) => {
+                        onClick={e => {
                           e.stopPropagation()
                           router.push(`/students/${student.id}/evaluation/new`)
                         }}
@@ -640,7 +640,7 @@ export default function StudentsPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={(e) => {
+                        onClick={e => {
                           e.stopPropagation()
                           router.push(`/students/${student.id}/evaluation/new`)
                         }}
