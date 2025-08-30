@@ -35,7 +35,7 @@ public class SecurityConfig {
                                 "/webjars/**"
                         ).permitAll()
                         // Require authentication for all other endpoints
-                        .anyRequest().permitAll()
+                        .anyRequest().authenticated()
                 );
         // .httpBasic(withDefaults()); // Or .formLogin(withDefaults()); depending on your auth type
 
