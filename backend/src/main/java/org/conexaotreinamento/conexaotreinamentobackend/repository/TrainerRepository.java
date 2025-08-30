@@ -12,20 +12,20 @@ import java.util.UUID;
 public interface TrainerRepository extends JpaRepository<Trainer, UUID> {
 
     @Query(" SELECT (COUNT(t) > 0)" +
-            " FROM Trainer t INNER JOIN User u ON t.id = u.id" +
-            " WHERE u.deletedAt IS NULL AND LOWER(t.email) = LOWER(:email)")
+            " FROM Trainer t INNER JOIN User u ON t.userId = u.id" +
+            " WHERE u.deletedAt IS NULL AND LOWER(u.email) = LOWER(:email)")
     boolean existsByEmailIgnoreCaseAndDeletedAtIsNull(String email);
 
     @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainersDTO(" +
-            "t.id, t.name, t.email, t.phone, t.specialties, t.compensationType, (u.deletedAt IS NULL)) " +
-            " FROM Trainer t INNER JOIN User u ON t.id = u.id" +
+            "t.id, t.name, u.email, t.phone, t.specialties, t.compensationType, (u.deletedAt IS NULL)) " +
+            " FROM Trainer t INNER JOIN User u ON t.userId = u.id" +
             " WHERE t.id = :id AND u.deletedAt IS NULL")
     Optional<ListTrainersDTO> findActiveTrainerProfileById(UUID id);
 
 
     @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainersDTO(" +
-            "t.id, t.name, t.email, t.phone, t.specialties, t.compensationType, (u.deletedAt IS NULL)) " +
-            " FROM Trainer t INNER JOIN User u ON t.id = u.id" +
+            "t.id, t.name, u.email, t.phone, t.specialties, t.compensationType, (u.deletedAt IS NULL)) " +
+            " FROM Trainer t INNER JOIN User u ON t.userId = u.id" +
             " WHERE (:includeInactive = true OR u.deletedAt IS NULL)")
     List<ListTrainersDTO> findAllTrainerProfiles(Boolean includeInactive);
 
