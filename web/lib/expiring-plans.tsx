@@ -39,7 +39,7 @@ export const isPlanExpiring = (expirationDate: string, daysThreshold: number = 7
 }
 
 // Get unified status badge that combines status and expiration information
-export const getUnifiedStatusBadge = (expirationDate: string) => {
+export const UnifiedStatusBadge = ({expirationDate}: {expirationDate: string}) => {
   const daysUntilExpiration = calculateDaysUntilExpiration(expirationDate)
 
   if (daysUntilExpiration < 0) {
