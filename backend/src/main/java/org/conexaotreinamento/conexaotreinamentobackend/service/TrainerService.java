@@ -8,6 +8,7 @@ import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainer
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.TrainerRepository;
 import org.springframework.http.HttpStatus;
@@ -36,7 +37,7 @@ public class TrainerService {
         Trainer trainer = request.toEntity(savedUser.id());
         Trainer savedTrainer = trainerRepository.save(trainer);
 
-        return TrainerResponseDTO.fromEntity(savedTrainer);
+        return TrainerResponseDTO.fromEntity(savedTrainer, request.email());
     }
 
     public ListTrainersDTO findById(UUID id) {
@@ -53,15 +54,22 @@ public class TrainerService {
         Trainer trainer = trainerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trainer not found"));
 
-        if (!request.email().equalsIgnoreCase(trainer.getEmail())
-            && trainerRepository.existsByEmailIgnoreCaseAndDeletedAtIsNull(request.email())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Trainer with this email already exists");
+        UserResponseDTO user = userService.getUserByEmail(request.email())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Associated user not found"));
+
+        if (!user.id().equals(trainer.getUserId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "User with this email already exists");
         }
+
+        trainer.setName(request.name());
+        trainer.setPhone(request.phone());
+        trainer.setSpecialties(request.specialties());
+        trainer.setCompensationType(request.compensationType());
 
         Trainer savedTrainer = trainerRepository.save(trainer);
 
         //Skipped patching compensationType to avoid extra complexity in hour calculation logic
-        return TrainerResponseDTO.fromEntity(savedTrainer);
+        return TrainerResponseDTO.fromEntity(savedTrainer, request.email());
     }
 
     @Transactional

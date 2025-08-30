@@ -16,11 +16,11 @@ public record TrainerResponseDTO(
         CompensationType compensationType
 ) {
 
-    public static TrainerResponseDTO fromEntity(Trainer trainer) {
+    public static TrainerResponseDTO fromEntity(Trainer trainer, String email) {
         return new TrainerResponseDTO(
                 trainer.getId(),
                 trainer.getName(),
-                trainer.getEmail(),
+                email,
                 trainer.getPhone(),
                 trainer.getSpecialties(),
                 trainer.getCompensationType()
