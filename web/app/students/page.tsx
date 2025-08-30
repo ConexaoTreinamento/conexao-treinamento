@@ -96,7 +96,6 @@ export default function StudentsPage() {
     if (newPage > 0) {
       params.set('page', newPage.toString())
     } else {
-      // Remove page param quando na primeira página para manter URL limpa
       params.delete('page')
     }
     router.replace(`?${params.toString()}`)
