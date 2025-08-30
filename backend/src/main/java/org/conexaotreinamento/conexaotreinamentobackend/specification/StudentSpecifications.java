@@ -38,8 +38,7 @@ public class StudentSpecifications {
                     criteriaBuilder.like(criteriaBuilder.lower(root.get("surname")), searchTerm),
                     criteriaBuilder.like(criteriaBuilder.lower(root.get("email")), searchTerm),
                     criteriaBuilder.like(criteriaBuilder.lower(root.get("phone")), searchTerm),
-                    criteriaBuilder.like(criteriaBuilder.lower(criteriaBuilder.coalesce(root.get("profession"), "")), searchTerm
-                    )
+                    criteriaBuilder.like(criteriaBuilder.lower(criteriaBuilder.coalesce(root.get("profession"), "")), searchTerm)
                 );
 
                 predicates.add(searchPredicate);
