@@ -269,7 +269,7 @@ class ExerciseControllerIntegrationTest {
 
         // When & Then
         mockMvc.perform(get("/exercises")
-                        .param("search", "teste"))
+                        .param("search", "anything"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(0)))
                 .andExpect(jsonPath("$.totalElements").value(0));
