@@ -17,9 +17,8 @@ public record CreateTrainerDTO(
 
     public Trainer toEntity(UUID userId) {
         Trainer trainer = new Trainer();
-        trainer.setId(userId);
+        trainer.setUserId(userId);
         trainer.setName(name);
-        trainer.setEmail(email);
         trainer.setPhone(phone);
         trainer.setSpecialties(specialties);
         trainer.setCompensationType(compensationType);

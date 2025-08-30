@@ -20,15 +20,16 @@ import java.util.UUID;
 public class Trainer {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @Column(name = "user_id", nullable = false)
+    @Setter
+    private UUID userId;
 
     @Column(nullable = false, length = 120)
     @Setter
     private String name;
-
-    @Column(length = 255)
-    @Setter
-    private String email;
 
     @Column(length = 255)
     @Setter
