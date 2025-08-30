@@ -3,6 +3,7 @@ package org.conexaotreinamento.conexaotreinamentobackend.entity;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.Setter;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -60,5 +61,9 @@ public class User {
 
     public boolean isActive() {
         return this.deletedAt == null;
+    }
+
+    public void disable(){
+        this.deletedAt = Instant.now();
     }
 }

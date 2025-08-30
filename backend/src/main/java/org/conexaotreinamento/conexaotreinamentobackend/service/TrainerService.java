@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -73,7 +74,8 @@ public class TrainerService {
     }
 
     @Transactional
-    public void delete(UUID id) {
-        userService.deleteUser(id);
+    public void delete(UUID trainerId) {
+        Optional<Trainer> trainer = trainerRepository.findById(trainerId);
+        trainer.ifPresent(value -> userService.deleteUser(value.getUserId()));
     }
 }
