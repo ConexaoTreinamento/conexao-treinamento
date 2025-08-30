@@ -34,7 +34,7 @@ public class UserService {
         return UserResponseDTO.fromEntity(savedUser);
     }
 
-    public List<UserResponseDTO> getAllUsers() {
+    public List<UserResponseDTO> findAll() {
         List<User> users = userRepository.findAll();
         return users.stream()
                 .map(UserResponseDTO::fromEntity)
@@ -45,13 +45,11 @@ public class UserService {
         return userRepository.findByEmail(email)
                 .map(UserResponseDTO::fromEntity);
     }
-
+    
     @Transactional
-    public void deleteUser(UUID userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado");
-        }
-
-        userRepository.deleteById(userId);
+    public void delete(UUID id) {
+        User user = userRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        user.deactivate();
     }
 }
