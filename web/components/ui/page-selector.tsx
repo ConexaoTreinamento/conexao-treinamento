@@ -68,7 +68,9 @@ const buildPages = (
     pages.push(i)
   }
 
-  if (showRightEllipsis) pages.push("ellipsis")
+  if (showRightEllipsis) {
+    pages.push("ellipsis")
+  }
   else {
     const end = totalPages - boundaryCount
     for (let i = rightSiblingIndex + 1; i <= end; i++) {
