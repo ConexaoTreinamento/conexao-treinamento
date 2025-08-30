@@ -44,7 +44,7 @@ public class ExerciseService {
     public Page<ExerciseResponseDTO> findAll(String search, Pageable pageable, boolean includeInactive) {
         if (pageable.getSort().isUnsorted()) {
             pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
-                                    Sort.by("created_at").descending());
+                                    Sort.by("createdAt").descending());
         }
 
         Page<Exercise> exercises;
