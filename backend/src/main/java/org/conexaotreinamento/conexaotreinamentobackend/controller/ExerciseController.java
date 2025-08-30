@@ -36,7 +36,7 @@ public class ExerciseController {
     public ResponseEntity<Page<ExerciseResponseDTO>> findAll(
             @RequestParam(required = false) String search,
             @RequestParam(required = false, defaultValue = "false") boolean includeInactive,
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+            @PageableDefault(size = 20, sort = "created_at", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(exerciseService.findAll(search, pageable, includeInactive));
     }
 
