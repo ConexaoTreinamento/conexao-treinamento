@@ -135,7 +135,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/users/**").permitAll()
-                        .requestMatchers("/trainers/**").hasAuthority("ROLE_TRAINER")
+                        .requestMatchers("/trainers/**").authenticated()
                         .requestMatchers("/exercises/**").hasAnyAuthority("ROLE_TRAINER", "ROLE_ADMIN")
                         .anyRequest().authenticated());
 

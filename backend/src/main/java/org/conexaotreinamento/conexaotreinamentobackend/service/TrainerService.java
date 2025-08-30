@@ -8,6 +8,7 @@ import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainer
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
+import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.TrainerRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -30,7 +31,7 @@ public class TrainerService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Trainer with this email already exists");
         }
 
-        UserResponseDTO savedUser = userService.createUser(new CreateUserRequestDTO(request.email(), request.password(), "ROLE_TRAINER"));
+        UserResponseDTO savedUser = userService.createUser(new CreateUserRequestDTO(request.email(), request.password(), Role.ROLE_TRAINER));
 
         Trainer trainer = request.toEntity(savedUser.id());
         Trainer savedTrainer = trainerRepository.save(trainer);
