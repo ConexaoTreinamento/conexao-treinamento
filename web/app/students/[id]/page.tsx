@@ -258,7 +258,7 @@ export default function StudentProfilePage() {
               <div className="space-y-2">
                 <CardTitle className="text-lg">{getStudentFullName(studentData)}</CardTitle>
                 <div className="flex flex-wrap justify-center gap-2">
-                  {UnifiedStatusBadge(getStudentPlanExpirationDate(studentData.id))}
+                  <UnifiedStatusBadge expirationDate={getStudentPlanExpirationDate(studentData)} />
                   <Badge variant="outline">Plano {studentData.plan}</Badge>
                 </div>
               </div>
