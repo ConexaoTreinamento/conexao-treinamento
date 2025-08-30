@@ -71,12 +71,13 @@ public class StudentSpecifications {
         };
     }
 
-    private static void addAgeRangePredicate(List<Predicate> predicates,
-                                           jakarta.persistence.criteria.Root<Student> root,
-                                             jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder,
-                                           Integer minAge,
-                                           Integer maxAge) {
-        
+    private static void addAgeRangePredicate(
+        List<Predicate> predicates,
+        jakarta.persistence.criteria.Root<Student> root,
+        jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder,
+        Integer minAge,
+        Integer maxAge
+    ) {
         LocalDate currentDate = LocalDate.now();
         
         if (maxAge != null) {
@@ -90,11 +91,13 @@ public class StudentSpecifications {
         }
     }
 
-    private static void addDateRangePredicate(List<Predicate> predicates,
-                                            jakarta.persistence.criteria.Root<Student> root,
-                                              jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder,
-                                            LocalDate startDate,
-                                            LocalDate endDate) {
+    private static void addDateRangePredicate(
+        List<Predicate> predicates,
+        jakarta.persistence.criteria.Root<Student> root,
+        jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder,
+        LocalDate startDate,
+        LocalDate endDate
+    ) {
         
         if (startDate != null) {
             Instant startInstant = startDate.atStartOfDay().toInstant(ZoneOffset.UTC);
