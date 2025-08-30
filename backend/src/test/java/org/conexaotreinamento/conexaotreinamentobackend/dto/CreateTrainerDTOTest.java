@@ -70,9 +70,8 @@ class CreateTrainerDTOTest {
         Trainer trainer = dto.toEntity(userId);
 
         // Then
-        assertThat(trainer.getId()).isEqualTo(userId);
+        assertThat(trainer.getUserId()).isEqualTo(userId);
         assertThat(trainer.getName()).isEqualTo("Maria Santos");
-        assertThat(trainer.getEmail()).isEqualTo("maria@test.com");
         assertThat(trainer.getPhone()).isEqualTo("+5511888888888");
         assertThat(trainer.getSpecialties()).containsExactlyInAnyOrder("Yoga", "Pilates");
         assertThat(trainer.getCompensationType()).isEqualTo(CompensationType.MONTHLY);
@@ -96,7 +95,7 @@ class CreateTrainerDTOTest {
         Trainer trainer = dto.toEntity(userId);
 
         // Then
-        assertThat(trainer.getId()).isEqualTo(userId);
+        assertThat(trainer.getUserId()).isEqualTo(userId);
         assertThat(trainer.getSpecialties()).isEmpty();
     }
 
@@ -118,7 +117,7 @@ class CreateTrainerDTOTest {
         Trainer trainer = dto.toEntity(userId);
 
         // Then
-        assertThat(trainer.getId()).isEqualTo(userId);
+        assertThat(trainer.getUserId()).isEqualTo(userId);
         assertThat(trainer.getSpecialties()).hasSize(1);
         assertThat(trainer.getSpecialties()).contains("Natação");
     }
@@ -142,7 +141,7 @@ class CreateTrainerDTOTest {
         Trainer trainer = dto.toEntity(userId);
 
         // Then
-        assertThat(trainer.getId()).isEqualTo(userId);
+        assertThat(trainer.getUserId()).isEqualTo(userId);
         assertThat(trainer.getSpecialties()).hasSize(5);
         assertThat(trainer.getSpecialties()).containsExactlyInAnyOrderElementsOf(specialties);
     }
@@ -200,9 +199,8 @@ class CreateTrainerDTOTest {
         Trainer trainer = dto.toEntity(userId);
 
         // Then
-        assertThat(trainer.getId()).isEqualTo(userId);
+        assertThat(trainer.getUserId()).isEqualTo(userId);
         assertThat(trainer.getName()).isEqualTo(name);
-        assertThat(trainer.getEmail()).isEqualTo(email);
         assertThat(trainer.getPhone()).isEqualTo(phone);
         assertThat(trainer.getSpecialties()).isEqualTo(specialties);
         assertThat(trainer.getCompensationType()).isEqualTo(compensationType);
@@ -228,13 +226,12 @@ class CreateTrainerDTOTest {
         Trainer trainer2 = dto.toEntity(userId2);
 
         // Then
-        assertThat(trainer1.getId()).isEqualTo(userId1);
-        assertThat(trainer2.getId()).isEqualTo(userId2);
-        assertThat(trainer1.getId()).isNotEqualTo(trainer2.getId());
+        assertThat(trainer1.getUserId()).isEqualTo(userId1);
+        assertThat(trainer2.getUserId()).isEqualTo(userId2);
+        assertThat(trainer1.getUserId()).isNotEqualTo(trainer2.getUserId());
         
         // Other fields should be the same
         assertThat(trainer1.getName()).isEqualTo(trainer2.getName());
-        assertThat(trainer1.getEmail()).isEqualTo(trainer2.getEmail());
         assertThat(trainer1.getPhone()).isEqualTo(trainer2.getPhone());
         assertThat(trainer1.getSpecialties()).isEqualTo(trainer2.getSpecialties());
         assertThat(trainer1.getCompensationType()).isEqualTo(trainer2.getCompensationType());

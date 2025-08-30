@@ -67,8 +67,8 @@ class TrainerServiceTest {
         
         trainer = new Trainer();
         trainer.setId(trainerId);
+        trainer.setUserId(userId); // Now uses userId instead of email
         trainer.setName("John Trainer");
-        trainer.setEmail("john@example.com");
         trainer.setPhone("+1234567890");
         trainer.setSpecialties(Arrays.asList("Strength Training", "Cardio"));
         trainer.setCompensationType(CompensationType.HOURLY);
@@ -97,7 +97,8 @@ class TrainerServiceTest {
     @DisplayName("Should create trainer successfully")
     void shouldCreateTrainerSuccessfully() {
         // Given
-        UUID userId = UUID.randomUUID();
+        UUID newUserId = UUID.randomUUID();
+        UUID newTrainerId = UUID.randomUUID();
         CreateTrainerDTO request = new CreateTrainerDTO(
             "João Silva",
             "joao@test.com",
@@ -107,17 +108,16 @@ class TrainerServiceTest {
             CompensationType.HOURLY
         );
 
-        UserResponseDTO userResponse = new UserResponseDTO(userId, "joao@test.com", Role.ROLE_TRAINER);
+        UserResponseDTO userResponse = new UserResponseDTO(newUserId, "joao@test.com", Role.ROLE_TRAINER);
         
         Trainer savedTrainer = new Trainer();
-        savedTrainer.setId(userId);
+        savedTrainer.setId(newTrainerId);
+        savedTrainer.setUserId(newUserId); // Use userId instead of email
         savedTrainer.setName("João Silva");
-        savedTrainer.setEmail("joao@test.com");
         savedTrainer.setPhone("+5511999999999");
         savedTrainer.setSpecialties(List.of("Musculação", "Crossfit"));
         savedTrainer.setCompensationType(CompensationType.HOURLY);
 
-        when(trainerRepository.existsByEmailIgnoreCaseAndDeletedAtIsNull("joao@test.com")).thenReturn(false);
         when(userService.createUser(any())).thenReturn(userResponse);
         when(trainerRepository.save(any(Trainer.class))).thenReturn(savedTrainer);
 
@@ -126,33 +126,31 @@ class TrainerServiceTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(userId);
+        assertThat(result.id()).isEqualTo(newTrainerId);
         assertThat(result.name()).isEqualTo("João Silva");
         assertThat(result.email()).isEqualTo("joao@test.com");
         assertThat(result.phone()).isEqualTo("+5511999999999");
         assertThat(result.specialties()).containsExactlyInAnyOrder("Musculação", "Crossfit");
         assertThat(result.compensationType()).isEqualTo(CompensationType.HOURLY);
 
-        verify(trainerRepository).existsByEmailIgnoreCaseAndDeletedAtIsNull("joao@test.com");
         verify(userService).createUser(any());
         verify(trainerRepository).save(any(Trainer.class));
     }
 
     @Test
-    @DisplayName("Should throw conflict when trainer email already exists")
-    void shouldThrowConflictWhenTrainerEmailAlreadyExists() {
+    @DisplayName("Should throw conflict when user email already exists")
+    void shouldThrowConflictWhenUserEmailAlreadyExists() {
         // Given
-        when(trainerRepository.existsByEmailIgnoreCaseAndDeletedAtIsNull("john@example.com")).thenReturn(true);
+        when(userService.createUser(any())).thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "User with this email already exists"));
 
         // When & Then
         assertThatThrownBy(() -> trainerService.create(createTrainerDTO))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Trainer with this email already exists")
+                .hasMessageContaining("User with this email already exists")
                 .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
                 .isEqualTo(HttpStatus.CONFLICT);
 
-        verify(trainerRepository).existsByEmailIgnoreCaseAndDeletedAtIsNull("john@example.com");
-        verify(userService, never()).createUser(any());
+        verify(userService).createUser(any());
         verify(trainerRepository, never()).save(any());
     }
 
@@ -229,7 +227,10 @@ class TrainerServiceTest {
     @DisplayName("Should update trainer successfully")
     void shouldUpdateTrainerSuccessfully() {
         // Given
+        UserResponseDTO userResponse = new UserResponseDTO(userId, "john@example.com", Role.ROLE_TRAINER);
+        
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        when(userService.getUserByEmail("john@example.com")).thenReturn(Optional.of(userResponse));
         when(trainerRepository.save(trainer)).thenReturn(trainer);
 
         // When
@@ -238,8 +239,10 @@ class TrainerServiceTest {
         // Then
         assertThat(result).isNotNull();
         assertThat(result.id()).isEqualTo(trainerId);
+        assertThat(result.email()).isEqualTo("john@example.com");
 
         verify(trainerRepository).findById(trainerId);
+        verify(userService).getUserByEmail("john@example.com");
         verify(trainerRepository).save(trainer);
     }
 
@@ -264,6 +267,7 @@ class TrainerServiceTest {
     @DisplayName("Should throw conflict when updating to existing email")
     void shouldThrowConflictWhenUpdatingToExistingEmail() {
         // Given
+        UUID differentUserId = UUID.randomUUID();
         CreateTrainerDTO updateDTO = new CreateTrainerDTO(
             "John Trainer",
             "existing@example.com",
@@ -273,18 +277,20 @@ class TrainerServiceTest {
             CompensationType.HOURLY
         );
         
+        UserResponseDTO existingUserResponse = new UserResponseDTO(differentUserId, "existing@example.com", Role.ROLE_TRAINER);
+        
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
-        when(trainerRepository.existsByEmailIgnoreCaseAndDeletedAtIsNull("existing@example.com")).thenReturn(true);
+        when(userService.getUserByEmail("existing@example.com")).thenReturn(Optional.of(existingUserResponse));
 
         // When & Then
         assertThatThrownBy(() -> trainerService.put(trainerId, updateDTO))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Trainer with this email already exists")
+                .hasMessageContaining("User with this email already exists")
                 .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
                 .isEqualTo(HttpStatus.CONFLICT);
 
         verify(trainerRepository).findById(trainerId);
-        verify(trainerRepository).existsByEmailIgnoreCaseAndDeletedAtIsNull("existing@example.com");
+        verify(userService).getUserByEmail("existing@example.com");
         verify(trainerRepository, never()).save(any());
     }
 
@@ -292,7 +298,10 @@ class TrainerServiceTest {
     @DisplayName("Should allow updating trainer with same email")
     void shouldAllowUpdatingTrainerWithSameEmail() {
         // Given
+        UserResponseDTO userResponse = new UserResponseDTO(userId, "john@example.com", Role.ROLE_TRAINER);
+        
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        when(userService.getUserByEmail("john@example.com")).thenReturn(Optional.of(userResponse));
         when(trainerRepository.save(trainer)).thenReturn(trainer);
 
         // When
@@ -300,9 +309,10 @@ class TrainerServiceTest {
 
         // Then
         assertThat(result).isNotNull();
+        assertThat(result.email()).isEqualTo("john@example.com");
 
         verify(trainerRepository).findById(trainerId);
-        verify(trainerRepository, never()).existsByEmailIgnoreCaseAndDeletedAtIsNull(any());
+        verify(userService).getUserByEmail("john@example.com");
         verify(trainerRepository).save(trainer);
     }
 
@@ -310,27 +320,31 @@ class TrainerServiceTest {
     @DisplayName("Should delete trainer successfully")
     void shouldDeleteTrainerSuccessfully() {
         // Given
-        doNothing().when(userService).deleteUser(trainerId);
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        doNothing().when(userService).deleteUser(userId);
 
         // When
         trainerService.delete(trainerId);
 
         // Then
-        verify(userService).deleteUser(trainerId);
+        verify(trainerRepository).findById(trainerId);
+        verify(userService).deleteUser(userId);
     }
 
     @Test
     @DisplayName("Should handle user service exception during delete")
     void shouldHandleUserServiceExceptionDuringDelete() {
         // Given
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
         doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"))
-                .when(userService).deleteUser(trainerId);
+                .when(userService).deleteUser(userId);
 
         // When & Then
         assertThatThrownBy(() -> trainerService.delete(trainerId))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("User not found");
 
-        verify(userService).deleteUser(trainerId);
+        verify(trainerRepository).findById(trainerId);
+        verify(userService).deleteUser(userId);
     }
 }

@@ -104,7 +104,6 @@ class TrainerControllerIntegrationTest {
         assertThat(trainerRepository.count()).isEqualTo(1);
         Trainer savedTrainer = trainerRepository.findById(authenticatedUserId).orElseThrow();
         assertThat(savedTrainer.getName()).isEqualTo("João Silva");
-        assertThat(savedTrainer.getEmail()).isEqualTo("joao@test.com");
         assertThat(savedTrainer.getSpecialties()).containsExactlyInAnyOrder("Musculação", "Crossfit");
     }
 
@@ -138,7 +137,6 @@ class TrainerControllerIntegrationTest {
         Trainer existingTrainer = new Trainer();
         existingTrainer.setId(authenticatedUserId);
         existingTrainer.setName("Existing Trainer");
-        existingTrainer.setEmail("existing@test.com");
         existingTrainer.setPhone("+5511888888888");
         existingTrainer.setSpecialties(List.of("Yoga"));
         existingTrainer.setCompensationType(CompensationType.MONTHLY);
@@ -171,7 +169,6 @@ class TrainerControllerIntegrationTest {
         Trainer trainer = new Trainer();
         trainer.setId(authenticatedUserId);
         trainer.setName("Maria Santos");
-        trainer.setEmail("maria@test.com");
         trainer.setPhone("+5511666666666");
         trainer.setSpecialties(List.of("Natação", "Hidroginástica"));
         trainer.setCompensationType(CompensationType.MONTHLY);
@@ -215,7 +212,6 @@ class TrainerControllerIntegrationTest {
         Trainer trainer1 = new Trainer();
         trainer1.setId(user1.getId());
         trainer1.setName("Trainer One");
-        trainer1.setEmail("trainer1@test.com");
         trainer1.setPhone("+5511111111111");
         trainer1.setSpecialties(List.of("Musculação"));
         trainer1.setCompensationType(CompensationType.HOURLY);
@@ -224,7 +220,6 @@ class TrainerControllerIntegrationTest {
         Trainer trainer2 = new Trainer();
         trainer2.setId(user2.getId());
         trainer2.setName("Trainer Two");
-        trainer2.setEmail("trainer2@test.com");
         trainer2.setPhone("+5511222222222");
         trainer2.setSpecialties(List.of("Yoga", "Pilates"));
         trainer2.setCompensationType(CompensationType.MONTHLY);
@@ -256,7 +251,6 @@ class TrainerControllerIntegrationTest {
         Trainer existingTrainer = new Trainer();
         existingTrainer.setId(authenticatedUserId);
         existingTrainer.setName("Old Name");
-        existingTrainer.setEmail("old@test.com");
         existingTrainer.setPhone("+5511000000000");
         existingTrainer.setSpecialties(List.of("Old Specialty"));
         existingTrainer.setCompensationType(CompensationType.HOURLY);
@@ -287,7 +281,6 @@ class TrainerControllerIntegrationTest {
         // Verify in database
         Trainer updatedTrainer = trainerRepository.findById(authenticatedUserId).orElseThrow();
         assertThat(updatedTrainer.getName()).isEqualTo("Updated Name");
-        assertThat(updatedTrainer.getEmail()).isEqualTo("updated@test.com");
         assertThat(updatedTrainer.getCompensationType()).isEqualTo(CompensationType.MONTHLY);
     }
 
@@ -320,7 +313,6 @@ class TrainerControllerIntegrationTest {
         Trainer trainer = new Trainer();
         trainer.setId(authenticatedUserId);
         trainer.setName("To Delete");
-        trainer.setEmail("delete@test.com");
         trainer.setPhone("+5511555555555");
         trainer.setSpecialties(List.of("Specialty"));
         trainer.setCompensationType(CompensationType.HOURLY);
