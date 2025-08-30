@@ -10,6 +10,8 @@ import { useState, useEffect } from "react"
 import Layout from "@/components/layout"
 import { getStudentPlanExpirationDate, UnifiedStatusBadge } from "@/lib/expiring-plans"
 import { STUDENT_PROFILES, getStudentProfileById, getStudentFullName } from "@/lib/students-data"
+import {StudentResponseDto} from "../../../lib/api-client";
+import {StudentProfile} from "../../../lib/students-data";
 
 // Type definitions
 interface MedicalData {
@@ -135,7 +137,7 @@ interface StudentData {
 export default function StudentProfilePage() {
   const router = useRouter()
   const params = useParams()
-  const [studentData, setStudentData] = useState<any | null>(null)
+  const [studentData, setStudentData] = useState<StudentProfile | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -258,7 +260,7 @@ export default function StudentProfilePage() {
               <div className="space-y-2">
                 <CardTitle className="text-lg">{getStudentFullName(studentData)}</CardTitle>
                 <div className="flex flex-wrap justify-center gap-2">
-                  <UnifiedStatusBadge expirationDate={getStudentPlanExpirationDate(studentData)} />
+                  <UnifiedStatusBadge expirationDate={getStudentPlanExpirationDate(studentData.id)} />
                   <Badge variant="outline">Plano {studentData.plan}</Badge>
                 </div>
               </div>
