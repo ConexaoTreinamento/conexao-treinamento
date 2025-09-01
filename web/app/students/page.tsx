@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, {MouseEventHandler} from "react"
 import { useState } from "react"
 import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { findAllOptions } from "@/lib/api-client/@tanstack/react-query.gen"
@@ -74,6 +74,190 @@ const countActiveFilters = (filters: StudentFilters): number => {
   if (filters.includeInactive !== DEFAULT_FILTERS.includeInactive) count++
   return count
 }
+
+const StudentCard = (props: {
+  student: StudentResponseDto,
+  onClick: () => void,
+  initials: string,
+  fullName: string,
+  expirationDate: Date,
+  onNewEvaluationClicked: MouseEventHandler<HTMLButtonElement>,
+  onClick2: MouseEventHandler<HTMLButtonElement>,
+  isRestoring: boolean,
+  onConfirm: () => Promise<void>,
+  isDeleting: boolean,
+  age: number,
+  onDeleteClicked: () => void
+}) => (
+    <Card
+
+    className={`hover:shadow-md transition-shadow cursor-pointer ${props.student.deletedAt ? "bg-muted/60 border-dashed" : ""}`}
+    onClick={props.onClick}
+>
+    <CardContent className="p-4">
+        {/* Mobile Layout */}
+        <div className="flex flex-col gap-3 sm:hidden">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div
+                        className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
+                            {props.initials}
+                          </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-base leading-tight">{props.fullName}</h3>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                            <UnifiedStatusBadge expirationDate={props.expirationDate.toISOString()}/>
+                            {props.student.deletedAt && (
+                                <Badge variant="outline" className="border-red-300 text-red-700">Inativo</Badge>
+                            )}
+                        </div>
+                    </div>
+                </div>
+                <div className="flex items-center gap-1">
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={props.onNewEvaluationClicked}
+                        className="bg-transparent text-xs px-2 py-1 h-8 flex-shrink-0"
+                    >
+                        <Activity className="w-3 h-3 mr-1"/>
+                        Avaliação
+                    </Button>
+                    {props.student.deletedAt ? (
+                        <Button
+                            size="icon"
+                            variant="outline"
+                            onClick={props.onClick2}
+                            className="h-8 w-8"
+                            disabled={props.isRestoring}
+                            aria-label="Reativar aluno"
+                        >
+                            <RotateCcw className="w-3 h-3"/>
+                        </Button>
+                    ) : (
+                        <ConfirmDeleteButton
+                            onConfirm={props.onConfirm}
+                            disabled={props.isDeleting}
+                            title="Excluir Aluno"
+                            description={`Tem certeza que deseja excluir ${props.fullName}? Ele será marcado como inativo e poderá ser restaurado.`}
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8"
+                        >
+                            <Trash2 className="w-3 h-3"/>
+                        </ConfirmDeleteButton>
+                    )}
+                </div>
+            </div>
+
+            <div className="space-y-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                    <Mail className="w-3 h-3 flex-shrink-0"/>
+                    <span className="truncate flex-1">{props.student.email}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Phone className="w-3 h-3 flex-shrink-0"/>
+                    <span>{props.student.phone}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Calendar className="w-3 h-3 flex-shrink-0"/>
+                    <span>Plano Mensal</span>
+                </div>
+            </div>
+
+            <div className="text-xs text-muted-foreground space-y-1">
+                <div>
+                    {props.age} anos • {props.student.profession || "Profissão não informada"} •{" "}
+                    {props.student.gender === "M" ? "Masculino" : props.student.gender === "F" ? "Feminino" : "Outro"}
+                </div>
+                <div>
+                    Ingresso:{" "}
+                    {props.student.registrationDate ? new Date(props.student.registrationDate).toLocaleDateString("pt-BR") : "Data não informada"}
+                </div>
+            </div>
+        </div>
+
+        {/* Desktop Layout */}
+        <div className="hidden sm:flex items-center gap-4">
+            <div
+                className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span
+                        className="text-green-700 dark:text-green-300 font-semibold select-none">{props.initials}</span>
+            </div>
+
+            <div className="flex-1 min-w-0">
+                <div className="flex flex-col gap-2 mb-1">
+                    <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-lg flex-1 min-w-0 truncate">{props.fullName}</h3>
+                        <div className="flex gap-2 flex-shrink-0">
+                            <UnifiedStatusBadge expirationDate={props.expirationDate.toISOString()}/>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1 min-w-0">
+                        <Mail className="w-3 h-3 flex-shrink-0"/>
+                        <span className="truncate">{props.student.email}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <Phone className="w-3 h-3 flex-shrink-0"/>
+                        <span>{props.student.phone}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3 flex-shrink-0"/>
+                        <span>Plano Mensal</span>
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
+                        <span>
+                          {props.age} anos • {props.student.profession || "Profissão não informada"} • {props.student.gender === "M" ? "Masculino" : props.student.gender === "F" ? "Feminino" : "Outro"}
+                        </span>
+                    <span>Ingresso: {props.student.registrationDate ? new Date(props.student.registrationDate).toLocaleDateString("pt-BR") : "Data não informada"}</span>
+                </div>
+            </div>
+
+            <div className="flex flex-col gap-2 flex-shrink-0">
+                <div className="flex gap-2 flex-wrap">
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={props.onNewEvaluationClicked}
+                        className="bg-transparent text-xs px-2 py-1 h-8"
+                    >
+                        <Activity className="w-3 h-3 mr-1"/>
+                        Avaliação
+                    </Button>
+                    {props.student.deletedAt ? (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={props.onClick2}
+                            disabled={props.isRestoring}
+                        >
+                            <RotateCcw className="w-3 h-3 mr-1"/> Reativar
+                        </Button>
+                    ) : (
+                        <ConfirmDeleteButton
+                            onConfirm={props.onDeleteClicked}
+                            disabled={props.isDeleting}
+                            title="Excluir Aluno"
+                            description={`Tem certeza que deseja excluir ${props.fullName}? Ele será marcado como inativo e poderá ser restaurado.`}
+                            size="sm"
+                            variant="outline"
+                        >
+                            <Trash2 className="w-3 h-3 mr-1"/> Excluir
+                        </ConfirmDeleteButton>
+                    )}
+                </div>
+            </div>
+        </div>
+    </CardContent>
+</Card>
+);
 
 export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -235,7 +419,7 @@ export default function StudentsPage() {
     await deleteStudent({ path: { id }, client: apiClient })
     // Invalidate any students list queries
     queryClient.invalidateQueries({
-      predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey[0] as any)?._id === 'findAll'
+      predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAll'
     })
     toast({ title: "Aluno excluído", description: "O aluno foi marcado como inativo.", duration: 3000 })
   }
@@ -243,7 +427,7 @@ export default function StudentsPage() {
   const handleRestore = async (id: string) => {
     await restoreStudent({ path: { id }, client: apiClient })
     queryClient.invalidateQueries({
-      predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey[0] as any)?._id === 'findAll'
+      predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAll'
     })
     toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
   }
@@ -559,177 +743,18 @@ export default function StudentsPage() {
             expirationDate.setMonth(expirationDate.getMonth() + 5)
             expirationDate.setDate(expirationDate.getDate() + 20)
             return (
-              <Card
-                key={student.id}
-                className={`hover:shadow-md transition-shadow cursor-pointer ${student.deletedAt ? 'bg-muted/60 border-dashed' : ''}`}
-                onClick={() => router.push(`/students/${student.id}`)}
-              >
-                <CardContent className="p-4">
-                  {/* Mobile Layout */}
-                  <div className="flex flex-col gap-3 sm:hidden">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
-                            {initials}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-base leading-tight">{fullName}</h3>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            <UnifiedStatusBadge expirationDate={expirationDate.toISOString()}/>
-                            {student.deletedAt && (
-                              <Badge variant="outline" className="border-red-300 text-red-700">Inativo</Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={e => {
-                            e.stopPropagation()
-                            router.push(`/students/${student.id}/evaluation/new`)
-                          }}
-                          className="bg-transparent text-xs px-2 py-1 h-8 flex-shrink-0"
-                        >
-                          <Activity className="w-3 h-3 mr-1" />
-                          Avaliação
-                        </Button>
-                        {student.deletedAt ? (
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            onClick={e => { e.stopPropagation(); handleRestore(student.id!) }}
-                            className="h-8 w-8"
-                            disabled={isRestoring}
-                            aria-label="Reativar aluno"
-                          >
-                            <RotateCcw className="w-3 h-3" />
-                          </Button>
-                        ) : (
-                          <ConfirmDeleteButton
-                            onConfirm={() => handleDelete(student.id!)}
-                            disabled={isDeleting}
-                            title="Excluir Aluno"
-                            description={`Tem certeza que deseja excluir ${fullName}? Ele será marcado como inativo e poderá ser restaurado.`}
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </ConfirmDeleteButton>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-3 h-3 flex-shrink-0" />
-                        <span className="truncate flex-1">{student.email}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-3 h-3 flex-shrink-0" />
-                        <span>{student.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-3 h-3 flex-shrink-0" />
-                        <span>Plano Mensal</span>
-                      </div>
-                    </div>
-
-                    <div className="text-xs text-muted-foreground space-y-1">
-                      <div>
-                        {age} anos • {student.profession || "Profissão não informada"} •{" "}
-                        {student.gender === "M" ? "Masculino" : student.gender === "F" ? "Feminino" : "Outro"}
-                      </div>
-                      <div>
-                        Ingresso:{" "}
-                        {student.registrationDate ? new Date(student.registrationDate).toLocaleDateString("pt-BR") : "Data não informada"}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Desktop Layout */}
-                  <div className="hidden sm:flex items-center gap-4">
-                    <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-green-700 dark:text-green-300 font-semibold select-none">{initials}</span>
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-col gap-2 mb-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-lg flex-1 min-w-0 truncate">{fullName}</h3>
-                          <div className="flex gap-2 flex-shrink-0">
-                            <UnifiedStatusBadge expirationDate={expirationDate.toISOString()}/>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1 min-w-0">
-                          <Mail className="w-3 h-3 flex-shrink-0" />
-                          <span className="truncate">{student.email}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Phone className="w-3 h-3 flex-shrink-0" />
-                          <span>{student.phone}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3 flex-shrink-0" />
-                          <span>Plano Mensal</span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
-                        <span>
-                          {age} anos • {student.profession || "Profissão não informada"} • {student.gender === "M" ? "Masculino" : student.gender === "F" ? "Feminino" : "Outro"}
-                        </span>
-                        <span>Ingresso: {student.registrationDate ? new Date(student.registrationDate).toLocaleDateString("pt-BR") : "Data não informada"}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2 flex-shrink-0">
-                      <div className="flex gap-2 flex-wrap">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={e => {
-                            e.stopPropagation()
-                            router.push(`/students/${student.id}/evaluation/new`)
-                          }}
-                          className="bg-transparent text-xs px-2 py-1 h-8"
-                        >
-                          <Activity className="w-3 h-3 mr-1" />
-                          Avaliação
-                        </Button>
-                        {student.deletedAt ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={e => { e.stopPropagation(); handleRestore(student.id!) }}
-                            disabled={isRestoring}
-                          >
-                            <RotateCcw className="w-3 h-3 mr-1" /> Reativar
-                          </Button>
-                        ) : (
-                          <ConfirmDeleteButton
-                            onConfirm={() => handleDelete(student.id!)}
-                            disabled={isDeleting}
-                            title="Excluir Aluno"
-                            description={`Tem certeza que deseja excluir ${fullName}? Ele será marcado como inativo e poderá ser restaurado.`}
-                            size="sm"
-                            variant="outline"
-                          >
-                            <Trash2 className="w-3 h-3 mr-1" /> Excluir
-                          </ConfirmDeleteButton>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <StudentCard key={student.id} student={student}
+                           onClick={() => router.push(`/students/${student.id}`)} initials={initials}
+                           fullName={fullName} expirationDate={expirationDate} onNewEvaluationClicked={e => {
+                  e.stopPropagation()
+                  router.push(`/students/${student.id}/evaluation/new`)
+              }} onClick2={e => {
+                  e.stopPropagation();
+                  handleRestore(student.id!)
+              }} isRestoring={isRestoring} onConfirm={() => handleDelete(student.id!)} isDeleting={isDeleting} age={age}
+                           onDeleteClicked={() => {
+                                    void handleDelete(student.id!)
+                                }}/>
             )
           })}
         </div>

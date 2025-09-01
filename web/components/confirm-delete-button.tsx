@@ -64,15 +64,15 @@ export default function ConfirmDeleteButton({
           {children ?? <Trash2 className="w-4 h-4" />}
         </Button>
       </AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent onClick={e => e.stopPropagation()} handleOverlayClicked={e => e.stopPropagation()}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel disabled={loading} onClick={e => e.stopPropagation()} >Cancelar</AlertDialogCancel>
           <AlertDialogAction
-            onClick={handleConfirm}
+            onClick={e => {e.stopPropagation(); void handleConfirm()}}
             className="bg-red-600 hover:bg-red-700"
             disabled={loading}
           >
