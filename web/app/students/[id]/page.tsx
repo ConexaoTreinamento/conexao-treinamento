@@ -157,6 +157,7 @@ export default function StudentProfilePage() {
       predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey[0])?._id === 'findAll'
     })
     toast({ title: "Aluno excluído", description: "O aluno foi marcado como inativo.", duration: 3000 })
+    router.back()
   }
 
   const handleRestore = async () => {
@@ -341,6 +342,7 @@ export default function StudentProfilePage() {
                     <CalendarDays className="w-4 h-4 mr-2" />
                     Cronograma
                   </Button>
+                  {/*TODO (Santiago Firpo): replace with deletedAt != null check*/}
                   {studentData?.status === 'Inativo' ? (
                     <Button
                       size="sm"
