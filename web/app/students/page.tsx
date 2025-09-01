@@ -109,9 +109,6 @@ const StudentCard = (props: {
                         <h3 className="font-semibold text-base leading-tight">{props.fullName}</h3>
                         <div className="flex flex-wrap gap-1 mt-1">
                             <UnifiedStatusBadge expirationDate={props.expirationDate.toISOString()}/>
-                            {props.student.deletedAt && (
-                                <Badge variant="outline" className="border-red-300 text-red-700">Inativo</Badge>
-                            )}
                         </div>
                     </div>
                 </div>
