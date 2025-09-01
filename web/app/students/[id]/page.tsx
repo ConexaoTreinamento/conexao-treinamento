@@ -4,13 +4,18 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, Edit, CalendarDays } from "lucide-react"
+import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, Edit, CalendarDays, Trash2, RotateCcw } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Layout from "@/components/layout"
 import { getStudentPlanExpirationDate, UnifiedStatusBadge } from "@/lib/expiring-plans"
 import { STUDENT_PROFILES, getStudentProfileById, getStudentFullName } from "@/lib/students-data"
 import {StudentResponseDto} from "../../../lib/api-client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { deleteMutation, restoreMutation } from "@/lib/api-client/@tanstack/react-query.gen";
+import { apiClient } from "@/lib/client";
+import ConfirmDeleteButton from "@/components/confirm-delete-button";
+import { useToast } from "@/hooks/use-toast";
 import {StudentProfile} from "../../../lib/students-data";
 
 // Type definitions
@@ -139,6 +144,28 @@ export default function StudentProfilePage() {
   const params = useParams()
   const [studentData, setStudentData] = useState<StudentProfile | null>(null)
   const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  const { mutateAsync: deleteStudent, isPending: isDeleting } = useMutation(deleteMutation())
+  const { mutateAsync: restoreStudent, isPending: isRestoring } = useMutation(restoreMutation())
+
+  const handleDelete = async () => {
+    await deleteStudent({ path: { id: String(params.id) }, client: apiClient })
+    // Invalidate any students list queries
+    await queryClient.invalidateQueries({
+      predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey[0])?._id === 'findAll'
+    })
+    toast({ title: "Aluno excluído", description: "O aluno foi marcado como inativo.", duration: 3000 })
+  }
+
+  const handleRestore = async () => {
+    await restoreStudent({ path: { id: String(params.id) }, client: apiClient })
+    await queryClient.invalidateQueries({
+      predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey[0])?._id === 'findAll'
+    })
+    toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
+  }
 
   useEffect(() => {
     // Simulate fetching student data based on ID
@@ -291,26 +318,56 @@ export default function StudentProfilePage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-4 border-t">
-                <Button
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700"
-                  onClick={() => router.push(`/students/${params.id}/edit`)}
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Editar
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => router.push(`/students/${params.id}/evaluation/new`)}>
-                  <Activity className="w-4 h-4 mr-2" />
-                  Avaliação
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => router.push(`/students/${params.id}/class-schedule`)}
-                >
-                  <CalendarDays className="w-4 h-4 mr-2" />
-                  Cronograma
-                </Button>
+              <div className="pt-4 border-t">
+                {/* Mobile-first: stack; md+: wrap into responsive row; lg+: stretch across width */}
+                <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2 lg:grid-cols-4">
+                  <Button
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 w-full"
+                    onClick={() => router.push(`/students/${params.id}/edit`)}
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Editar
+                  </Button>
+                  <Button size="sm" variant="outline" className="w-full" onClick={() => router.push(`/students/${params.id}/evaluation/new`)}>
+                    <Activity className="w-4 h-4 mr-2" />
+                    Avaliação
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => router.push(`/students/${params.id}/class-schedule`)}
+                  >
+                    <CalendarDays className="w-4 h-4 mr-2" />
+                    Cronograma
+                  </Button>
+                  {studentData?.status === 'Inativo' ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={handleRestore}
+                      disabled={isRestoring}
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Reativar
+                    </Button>
+                  ) : (
+                    <ConfirmDeleteButton
+                      onConfirm={handleDelete}
+                      disabled={isDeleting}
+                      title="Excluir Aluno"
+                      description="Tem certeza que deseja excluir este aluno? Ele será marcado como inativo e poderá ser restaurado."
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                    </ConfirmDeleteButton>
+                  )}
+                </div>
+              </div>
               </div>
             </CardContent>
           </Card>

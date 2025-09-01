@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X } from "lucide-react"
+import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X, Trash2, RotateCcw } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Layout from "@/components/layout"
 import StudentForm from "@/components/student-form"
@@ -29,6 +29,10 @@ import PageSelector from "@/components/ui/page-selector"
 import useDebounce from "@/hooks/use-debounce"
 import { useForm } from "react-hook-form"
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form"
+import ConfirmDeleteButton from "@/components/confirm-delete-button"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { deleteMutation, restoreMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { useToast } from "@/hooks/use-toast"
 
 // Type-safe filter interface
 interface StudentFilters {
@@ -85,6 +89,10 @@ export default function StudentsPage() {
 
   const router = useRouter()
   const searchParams = useSearchParams()
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { mutateAsync: deleteStudent, isPending: isDeleting } = useMutation(deleteMutation())
+  const { mutateAsync: restoreStudent, isPending: isRestoring } = useMutation(restoreMutation())
   
   // Get current page from URL query params or default to 0
   // This allows users to share URLs with specific page numbers and maintains page state on refresh
@@ -221,6 +229,23 @@ export default function StudentsPage() {
 
   const handleCancelCreate = () => {
     setIsCreateOpen(false)
+  }
+
+  const handleDelete = async (id: string) => {
+    await deleteStudent({ path: { id }, client: apiClient })
+    // Invalidate any students list queries
+    queryClient.invalidateQueries({
+      predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey[0] as any)?._id === 'findAll'
+    })
+    toast({ title: "Aluno excluído", description: "O aluno foi marcado como inativo.", duration: 3000 })
+  }
+
+  const handleRestore = async (id: string) => {
+    await restoreStudent({ path: { id }, client: apiClient })
+    queryClient.invalidateQueries({
+      predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey[0] as any)?._id === 'findAll'
+    })
+    toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
   }
 
   return (
@@ -536,7 +561,7 @@ export default function StudentsPage() {
             return (
               <Card
                 key={student.id}
-                className="hover:shadow-md transition-shadow cursor-pointer"
+                className={`hover:shadow-md transition-shadow cursor-pointer ${student.deletedAt ? 'bg-muted/60 border-dashed' : ''}`}
                 onClick={() => router.push(`/students/${student.id}`)}
               >
                 <CardContent className="p-4">
@@ -553,21 +578,50 @@ export default function StudentsPage() {
                           <h3 className="font-semibold text-base leading-tight">{fullName}</h3>
                           <div className="flex flex-wrap gap-1 mt-1">
                             <UnifiedStatusBadge expirationDate={expirationDate.toISOString()}/>
+                            {student.deletedAt && (
+                              <Badge variant="outline" className="border-red-300 text-red-700">Inativo</Badge>
+                            )}
                           </div>
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={e => {
-                          e.stopPropagation()
-                          router.push(`/students/${student.id}/evaluation/new`)
-                        }}
-                        className="bg-transparent text-xs px-2 py-1 h-8 flex-shrink-0"
-                      >
-                        <Activity className="w-3 h-3 mr-1" />
-                        Avaliação
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={e => {
+                            e.stopPropagation()
+                            router.push(`/students/${student.id}/evaluation/new`)
+                          }}
+                          className="bg-transparent text-xs px-2 py-1 h-8 flex-shrink-0"
+                        >
+                          <Activity className="w-3 h-3 mr-1" />
+                          Avaliação
+                        </Button>
+                        {student.deletedAt ? (
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            onClick={e => { e.stopPropagation(); handleRestore(student.id!) }}
+                            className="h-8 w-8"
+                            disabled={isRestoring}
+                            aria-label="Reativar aluno"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                          </Button>
+                        ) : (
+                          <ConfirmDeleteButton
+                            onConfirm={() => handleDelete(student.id!)}
+                            disabled={isDeleting}
+                            title="Excluir Aluno"
+                            description={`Tem certeza que deseja excluir ${fullName}? Ele será marcado como inativo e poderá ser restaurado.`}
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </ConfirmDeleteButton>
+                        )}
+                      </div>
                     </div>
 
                     <div className="space-y-2 text-sm text-muted-foreground">
@@ -637,18 +691,41 @@ export default function StudentsPage() {
                     </div>
 
                     <div className="flex flex-col gap-2 flex-shrink-0">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={e => {
-                          e.stopPropagation()
-                          router.push(`/students/${student.id}/evaluation/new`)
-                        }}
-                        className="bg-transparent text-xs px-2 py-1 h-8"
-                      >
-                        <Activity className="w-3 h-3 mr-1" />
-                        Avaliação
-                      </Button>
+                      <div className="flex gap-2 flex-wrap">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={e => {
+                            e.stopPropagation()
+                            router.push(`/students/${student.id}/evaluation/new`)
+                          }}
+                          className="bg-transparent text-xs px-2 py-1 h-8"
+                        >
+                          <Activity className="w-3 h-3 mr-1" />
+                          Avaliação
+                        </Button>
+                        {student.deletedAt ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={e => { e.stopPropagation(); handleRestore(student.id!) }}
+                            disabled={isRestoring}
+                          >
+                            <RotateCcw className="w-3 h-3 mr-1" /> Reativar
+                          </Button>
+                        ) : (
+                          <ConfirmDeleteButton
+                            onConfirm={() => handleDelete(student.id!)}
+                            disabled={isDeleting}
+                            title="Excluir Aluno"
+                            description={`Tem certeza que deseja excluir ${fullName}? Ele será marcado como inativo e poderá ser restaurado.`}
+                            size="sm"
+                            variant="outline"
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" /> Excluir
+                          </ConfirmDeleteButton>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
