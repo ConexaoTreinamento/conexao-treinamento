@@ -317,10 +317,9 @@ export default function StudentProfilePage() {
                 <span className="text-xs leading-relaxed">{studentData.address}</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-4 border-t">
               <div className="pt-4 border-t">
-                {/* Mobile-first: stack; md+: wrap into responsive row; lg+: stretch across width */}
-                <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2 lg:grid-cols-4">
+                {/* Mobile-first: 1 col; sm: 2 cols; md+: 4 cols, full-width buttons */}
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4">
                   <Button
                     size="sm"
                     className="bg-green-600 hover:bg-green-700 w-full"
@@ -367,7 +366,6 @@ export default function StudentProfilePage() {
                     </ConfirmDeleteButton>
                   )}
                 </div>
-              </div>
               </div>
             </CardContent>
           </Card>
