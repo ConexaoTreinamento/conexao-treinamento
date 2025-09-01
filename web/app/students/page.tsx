@@ -29,6 +29,7 @@ import PageSelector from "@/components/ui/page-selector"
 import useDebounce from "@/hooks/use-debounce"
 import { useForm } from "react-hook-form"
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form"
+import { Checkbox } from "@/components/ui/checkbox"
 import ConfirmDeleteButton from "@/components/confirm-delete-button"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { deleteMutation, restoreMutation } from "@/lib/api-client/@tanstack/react-query.gen"
@@ -57,7 +58,7 @@ const DEFAULT_FILTERS: StudentFilters = {
   gender: "all",
   startDate: "",
   endDate: "",
-  includeInactive: true,
+  includeInactive: false,
 }
 
 // Helper function to count active filters
@@ -496,6 +497,21 @@ export default function StudentsPage() {
               <div className="space-y-4 mt-6">
                 <Form {...form}>
                   <form className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="includeInactive"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                          <div className="space-y-0.5">
+                            <FormLabel>Mostrar inativos</FormLabel>
+                            <p className="text-xs text-muted-foreground">Inclui alunos marcados como inativos no resultado.</p>
+                          </div>
+                          <FormControl>
+                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
                     <FormField
                       control={form.control}
                       name="status"
