@@ -12,9 +12,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByEmail(String email);
 
     Optional<User> findByIdAndDeletedAtIsNull(UUID id);
-<<<<<<< HEAD
 
-=======
     
     List<User> findAllByDeletedAtIsNull();
     
@@ -23,5 +21,4 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     boolean existsByIdAndDeletedAtIsNull(UUID id);
     
     boolean existsByEmailAndDeletedAtIsNull(String email);
->>>>>>> 0812b4c7be288aa3b57750fc9578111260fd0922
 }

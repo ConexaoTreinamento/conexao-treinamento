@@ -57,6 +57,31 @@ public class UserService {
     @Transactional
     public UserResponseDTO patch(UUID id, PatchUserRoleRequestDTO request) {
         User user = userRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        if (request.role() != null) {
+            user.setRole(request.role());
+            return UserResponseDTO.fromEntity(user);
+        }
         return null;
     }
+/* 
+    @Transactional
+    public ExerciseResponseDTO patch(UUID id, PatchExerciseRequestDTO request) {
+        Exercise exercise = repository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Exercise not found"));
+
+        if (request.name() != null) {
+            if (!exercise.getName().equalsIgnoreCase(request.name()) && 
+                repository.existsByNameIgnoringCaseAndDeletedAtIsNull(request.name())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Exercise already exists");
+            }
+            exercise.setName(request.name());
+        }
+        
+        if (request.description() != null) {
+            exercise.setDescription(request.description());
+        }
+
+        return ExerciseResponseDTO.fromEntity(exercise);
+    }
+        */
 }
