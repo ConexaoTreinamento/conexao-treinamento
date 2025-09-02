@@ -25,30 +25,18 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    
-    public UserResponseDTO createUser(CreateUserRequestDTO registerRequest) {
-        if (userRepository.findByEmail(registerRequest.email()).isPresent()) {
+    public UserResponseDTO createUser(CreateUserRequestDTO request) {
+        if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já está em uso");
         }
-        Role role;
-        try {
-            if (registerRequest.role() == null || registerRequest.role().isBlank()) {
-                role = Role.ROLE_TRAINER;
-            } else {
-                role = Role.valueOf(registerRequest.role().toUpperCase());
-            }
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Role inválido. Valores aceitos: ROLE_ADMIN, ROLE_TRAINER");
-        }
 
-        User user = new User(registerRequest.email(), passwordEncoder.encode(registerRequest.password()), role);
+        User user = new User(request.email(), passwordEncoder.encode(request.password()), request.role());
         User savedUser = userRepository.save(user);
 
         return UserResponseDTO.fromEntity(savedUser);
     }
 
-    public List<UserResponseDTO> getAllUsers() {
+    public List<UserResponseDTO> findAll() {
         List<User> users = userRepository.findAll();
         return users.stream()
                 .map(UserResponseDTO::fromEntity)
@@ -59,14 +47,12 @@ public class UserService {
         return userRepository.findByEmail(email)
                 .map(UserResponseDTO::fromEntity);
     }
-
+    
     @Transactional
-    public void deleteUser(UUID userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado");
-        }
-
-        userRepository.deleteById(userId);
+    public void delete(UUID id) {
+        User user = userRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        user.deactivate();
     }
 
     @Transactional

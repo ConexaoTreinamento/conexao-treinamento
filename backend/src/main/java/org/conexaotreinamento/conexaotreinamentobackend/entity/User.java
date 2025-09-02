@@ -57,4 +57,20 @@ public class User {
         this.password = password;
         this.role = role;
     }
+
+    public boolean isActive() {
+        return deletedAt == null;
+    }
+
+    public boolean isInactive() {
+        return deletedAt != null;
+    }
+
+    public void activate() {
+        deletedAt = null;
+    }
+
+    public void deactivate() {
+        deletedAt = Instant.now();
+    }
 }

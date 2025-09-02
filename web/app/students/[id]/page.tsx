@@ -485,14 +485,6 @@ export default function StudentProfilePage() {
                       <div className="text-center py-8">
                         <Activity className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                         <p className="text-muted-foreground">Nenhum exercício encontrado</p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mt-2"
-                          onClick={() => router.push(`/students/${params.id}/exercise/new`)}
-                        >
-                          Atribuir primeiro exercício
-                        </Button>
                       </div>
                     )}
 

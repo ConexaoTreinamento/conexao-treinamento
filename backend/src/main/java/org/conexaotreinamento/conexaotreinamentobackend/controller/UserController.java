@@ -26,24 +26,22 @@ public class UserController {
 
     private final UserService userService;
 
+<<<<<<< HEAD
     // Delete and create task
     @PostMapping("/create")
     public ResponseEntity<UserResponseDTO> createUser(@Valid @RequestBody CreateUserRequestDTO createUserRequest) {
+=======
+    @PostMapping
+    public ResponseEntity<UserResponseDTO> createUser(@RequestBody CreateUserRequestDTO createUserRequest) {
+>>>>>>> 0812b4c7be288aa3b57750fc9578111260fd0922
         UserResponseDTO userResponse = userService.createUser(createUserRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(userResponse);
     }
 
-    // Delete and create task
     @GetMapping
     public ResponseEntity<List<UserResponseDTO>> getAllUsers() {
-        List<UserResponseDTO> users = userService.getAllUsers();
+        List<UserResponseDTO> users = userService.findAll();
         return ResponseEntity.ok(users);
 
     }
-
-    // Task
-    // Search UserbyEmail
-
-    // Task
-    // Delete User
 }
