@@ -57,10 +57,9 @@ public class UserService {
     @Transactional
     public UserResponseDTO patch(UUID id, PatchUserRoleRequestDTO request) {
         User user = userRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        if (request.role() != null) {
-            user.setRole(request.role());
-            return UserResponseDTO.fromEntity(user);
-        }
-        return null;
+      if (request.role() != null) {
+        user.setRole(request.role());
+    }
+        return UserResponseDTO.fromEntity(user);
     }
 }
