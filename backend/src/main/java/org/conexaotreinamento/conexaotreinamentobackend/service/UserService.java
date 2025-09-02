@@ -63,25 +63,4 @@ public class UserService {
         }
         return null;
     }
-/* 
-    @Transactional
-    public ExerciseResponseDTO patch(UUID id, PatchExerciseRequestDTO request) {
-        Exercise exercise = repository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Exercise not found"));
-
-        if (request.name() != null) {
-            if (!exercise.getName().equalsIgnoreCase(request.name()) && 
-                repository.existsByNameIgnoringCaseAndDeletedAtIsNull(request.name())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Exercise already exists");
-            }
-            exercise.setName(request.name());
-        }
-        
-        if (request.description() != null) {
-            exercise.setDescription(request.description());
-        }
-
-        return ExerciseResponseDTO.fromEntity(exercise);
-    }
-        */
 }
