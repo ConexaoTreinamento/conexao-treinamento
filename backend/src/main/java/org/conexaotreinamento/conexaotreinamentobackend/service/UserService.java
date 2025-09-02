@@ -1,8 +1,12 @@
 package org.conexaotreinamento.conexaotreinamentobackend.service;
 
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.UpdateUserRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
@@ -12,10 +16,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -65,5 +67,11 @@ public class UserService {
         }
 
         userRepository.deleteById(userId);
+    }
+
+    @Transactional
+    public UserResponseDTO patch(UUID id, PatchUserRequestDTO request) {
+        User user = userRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        return null;
     }
 }
