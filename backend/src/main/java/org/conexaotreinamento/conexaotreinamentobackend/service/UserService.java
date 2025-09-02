@@ -6,10 +6,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.UpdateUserRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchUserRoleRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
-import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -56,7 +55,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponseDTO patch(UUID id, PatchUserRequestDTO request) {
+    public UserResponseDTO patch(UUID id, PatchUserRoleRequestDTO request) {
         User user = userRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         return null;
     }
