@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
-import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -45,7 +44,7 @@ public class UserService {
         return userRepository.findByEmail(email)
                 .map(UserResponseDTO::fromEntity);
     }
-    
+
     @Transactional
     public void delete(UUID id) {
         User user = userRepository.findByIdAndDeletedAtIsNull(id)
