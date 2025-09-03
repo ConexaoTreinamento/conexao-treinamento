@@ -60,7 +60,19 @@ public class User {
     }
 
     public boolean isActive() {
-        return this.deletedAt == null;
+        return deletedAt == null;
+    }
+
+    public boolean isInactive() {
+        return deletedAt != null;
+    }
+
+    public void activate() {
+        deletedAt = null;
+    }
+
+    public void deactivate() {
+        deletedAt = Instant.now();
     }
 
     public void disable(){

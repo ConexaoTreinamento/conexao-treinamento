@@ -5,8 +5,9 @@ import lombok.RequiredArgsConstructor;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
-import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,11 +36,9 @@ public class UserService {
         return UserResponseDTO.fromEntity(savedUser);
     }
 
-    public List<UserResponseDTO> getAllUsers() {
-        List<User> users = userRepository.findAll();
-        return users.stream()
-                .map(UserResponseDTO::fromEntity)
-                .collect(Collectors.toList());
+    public Page<UserResponseDTO> findAll(Pageable pageable) {
+        Page<User> userPage = userRepository.findAllByDeletedAtIsNull(pageable);
+        return userPage.map(UserResponseDTO::fromEntity);
     }
 
     public Optional<UserResponseDTO> getUserByEmail(String email) {
@@ -48,9 +47,9 @@ public class UserService {
     }
 
     @Transactional
-    public void deleteUser(UUID userId) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-        user.disable();
-        userRepository.save(user);
+    public void delete(UUID id) {
+        User user = userRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        user.deactivate();
     }
 }

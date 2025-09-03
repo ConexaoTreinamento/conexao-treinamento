@@ -46,7 +46,7 @@ class ExerciseServiceTest {
     void setUp() {
         exerciseId = UUID.randomUUID();
         exercise = new Exercise("Flexão de Braço", "Exercício para peitoral");
-        
+
         exerciseRequestDTO = new ExerciseRequestDTO("Flexão de Braço", "Exercício para peitoral");
         patchRequestDTO = new PatchExerciseRequestDTO("Flexão Modificada", null);
     }
@@ -65,7 +65,7 @@ class ExerciseServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.name()).isEqualTo("Flexão de Braço");
         assertThat(result.description()).isEqualTo("Exercício para peitoral");
-        
+
         verify(repository).existsByNameIgnoringCaseAndDeletedAtIsNull("Flexão de Braço");
         verify(repository).save(any(Exercise.class));
     }
@@ -80,7 +80,7 @@ class ExerciseServiceTest {
         assertThatThrownBy(() -> exerciseService.create(exerciseRequestDTO))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Exercise already exists");
-        
+
         verify(repository).existsByNameIgnoringCaseAndDeletedAtIsNull("Flexão de Braço");
         verify(repository, never()).save(any(Exercise.class));
     }
@@ -121,7 +121,7 @@ class ExerciseServiceTest {
         Pageable pageable = PageRequest.of(0, 20);
         List<Exercise> exercises = List.of(exercise);
         Page<Exercise> page = new PageImpl<>(exercises, pageable, 1);
-        
+
         when(repository.findByDeletedAtIsNull(any(Pageable.class))).thenReturn(page);
 
         // When
@@ -131,7 +131,7 @@ class ExerciseServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).name()).isEqualTo("Flexão de Braço");
-        
+
         verify(repository).findByDeletedAtIsNull(any(Pageable.class));
     }
 
@@ -142,7 +142,7 @@ class ExerciseServiceTest {
         Pageable pageable = PageRequest.of(0, 20, Sort.by("createdAt").descending());
         List<Exercise> exercises = List.of(exercise);
         Page<Exercise> page = new PageImpl<>(exercises, pageable, 1);
-        
+
         when(repository.findBySearchTermAndDeletedAtIsNull(eq("%flexão%"), any(Pageable.class))).thenReturn(page);
 
         // When
@@ -169,7 +169,7 @@ class ExerciseServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.name()).isEqualTo("Flexão Modificada");
         assertThat(result.description()).isEqualTo("Nova descrição");
-        
+
         verify(repository).findByIdAndDeletedAtIsNull(exerciseId);
         verify(repository).existsByNameIgnoringCaseAndDeletedAtIsNull("Flexão Modificada");
     }
@@ -205,7 +205,7 @@ class ExerciseServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.name()).isEqualTo("Flexão Modificada");
         assertThat(result.description()).isEqualTo("Exercício para peitoral"); // Não mudou
-        
+
         verify(repository).findByIdAndDeletedAtIsNull(exerciseId);
     }
 
@@ -223,7 +223,7 @@ class ExerciseServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.name()).isEqualTo("Flexão de Braço"); // Não mudou
         assertThat(result.description()).isEqualTo("Nova descrição");
-        
+
         verify(repository).findByIdAndDeletedAtIsNull(exerciseId);
         verify(repository, never()).existsByNameIgnoringCaseAndDeletedAtIsNull(any());
     }
@@ -263,7 +263,7 @@ class ExerciseServiceTest {
         Pageable unsortedPageable = PageRequest.of(0, 20);
         List<Exercise> exercises = List.of(exercise);
         Page<Exercise> page = new PageImpl<>(exercises, unsortedPageable, 1);
-        
+
         when(repository.findByDeletedAtIsNull(any(Pageable.class))).thenReturn(page);
 
         // When
@@ -282,7 +282,7 @@ class ExerciseServiceTest {
         Pageable pageable = PageRequest.of(0, 20);
         List<Exercise> exercises = List.of(exercise);
         Page<Exercise> page = new PageImpl<>(exercises, pageable, 1);
-        
+
         when(repository.findByDeletedAtIsNull(any(Pageable.class))).thenReturn(page);
 
         // When
@@ -300,7 +300,7 @@ class ExerciseServiceTest {
         Pageable pageable = PageRequest.of(0, 20);
         List<Exercise> exercises = List.of(exercise);
         Page<Exercise> page = new PageImpl<>(exercises, pageable, 1);
-        
+
         when(repository.findAll(any(Pageable.class))).thenReturn(page);
 
         // When
@@ -321,7 +321,7 @@ class ExerciseServiceTest {
         Pageable pageable = PageRequest.of(0, 20);
         List<Exercise> exercises = List.of(exercise);
         Page<Exercise> page = new PageImpl<>(exercises, pageable, 1);
-        
+
         when(repository.findBySearchTermIncludingInactive(anyString(), any(Pageable.class))).thenReturn(page);
 
         // When
@@ -341,7 +341,7 @@ class ExerciseServiceTest {
         UUID exerciseId = UUID.randomUUID();
         Exercise deletedExercise = new Exercise("Push-up", "Basic push-up exercise");
         deletedExercise.deactivate(); // Mark as deleted
-        
+
         when(repository.findById(exerciseId)).thenReturn(Optional.of(deletedExercise));
         when(repository.existsByNameIgnoringCaseAndDeletedAtIsNull("Push-up")).thenReturn(false);
 
@@ -367,7 +367,7 @@ class ExerciseServiceTest {
         assertThatThrownBy(() -> exerciseService.restore(exerciseId))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Exercise not found");
-        
+
         verify(repository).findById(exerciseId);
     }
 
@@ -378,14 +378,14 @@ class ExerciseServiceTest {
         UUID exerciseId = UUID.randomUUID();
         Exercise activeExercise = new Exercise("Push-up", "Basic push-up exercise");
         // Exercise is active by default (deletedAt = null)
-        
+
         when(repository.findById(exerciseId)).thenReturn(Optional.of(activeExercise));
 
         // When & Then
         assertThatThrownBy(() -> exerciseService.restore(exerciseId))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Cannot restore exercise.");
-        
+
         verify(repository).findById(exerciseId);
     }
 
@@ -396,7 +396,7 @@ class ExerciseServiceTest {
         UUID exerciseId = UUID.randomUUID();
         Exercise deletedExercise = new Exercise("Push-up", "Basic push-up exercise");
         deletedExercise.deactivate(); // Mark as deleted
-        
+
         when(repository.findById(exerciseId)).thenReturn(Optional.of(deletedExercise));
         when(repository.existsByNameIgnoringCaseAndDeletedAtIsNull("Push-up")).thenReturn(true);
 
@@ -404,7 +404,7 @@ class ExerciseServiceTest {
         assertThatThrownBy(() -> exerciseService.restore(exerciseId))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Cannot restore exercise.");
-        
+
         verify(repository).findById(exerciseId);
         verify(repository).existsByNameIgnoringCaseAndDeletedAtIsNull("Push-up");
     }

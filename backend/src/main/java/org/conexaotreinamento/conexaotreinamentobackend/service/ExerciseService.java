@@ -43,10 +43,10 @@ public class ExerciseService {
 
     public Page<ExerciseResponseDTO> findAll(String search, Pageable pageable, boolean includeInactive) {
         if (pageable.getSort().isUnsorted()) {
-            pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), 
+            pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
                                     Sort.by("createdAt").descending());
         }
-        
+
         Page<Exercise> exercises;
         if (search == null || search.isBlank()) {
             exercises = includeInactive ? 

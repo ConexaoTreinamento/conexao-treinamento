@@ -52,7 +52,7 @@ const BooleanCheckbox: React.FC<BooleanCheckboxProps> = ({
   </div>
 )
 
-interface StudentFormData {
+export interface StudentFormData {
   // Basic info
   name: string
   surname: string
