@@ -6,6 +6,8 @@ import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRe
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -33,11 +35,9 @@ public class UserService {
         return UserResponseDTO.fromEntity(savedUser);
     }
 
-    public List<UserResponseDTO> findAll() {
-        List<User> users = userRepository.findAll();
-        return users.stream()
-                .map(UserResponseDTO::fromEntity)
-                .collect(Collectors.toList());
+    public Page<UserResponseDTO> findAll(Pageable pageable) {
+        Page<User> userPage = userRepository.findAllByDeletedAtIsNull(pageable);
+        return userPage.map(UserResponseDTO::fromEntity);
     }
 
     public Optional<UserResponseDTO> getUserByEmail(String email) {
