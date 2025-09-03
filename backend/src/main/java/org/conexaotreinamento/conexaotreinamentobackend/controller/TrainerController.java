@@ -20,28 +20,28 @@ public class TrainerController {
     private final TrainerService trainerService;
 
     @PostMapping
-    public ResponseEntity<TrainerResponseDTO> create(@RequestBody @Valid CreateTrainerDTO request) {
+    public ResponseEntity<TrainerResponseDTO> createTrainerAndUser(@RequestBody @Valid CreateTrainerDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(trainerService.create(request));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ListTrainersDTO> findById(@PathVariable UUID id) {
+    public ResponseEntity<ListTrainersDTO> findTrainerById(@PathVariable UUID id) {
         return ResponseEntity.ok(trainerService.findById(id));
     }
 
     @GetMapping
-    public ResponseEntity<List<ListTrainersDTO>> findAll() {
+    public ResponseEntity<List<ListTrainersDTO>> findAllTrainers() {
         return ResponseEntity.ok(trainerService.findAll());
     }
 
 
     @PutMapping("/{id}")
-    public ResponseEntity<TrainerResponseDTO> update(@PathVariable UUID id, @RequestBody @Valid CreateTrainerDTO request) {
+    public ResponseEntity<TrainerResponseDTO> updateTrainerAndUser(@PathVariable UUID id, @RequestBody @Valid CreateTrainerDTO request) {
         return ResponseEntity.ok(trainerService.put(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    public ResponseEntity<Void> softDeleteTrainerUser(@PathVariable UUID id) {
         trainerService.delete(id);
         return ResponseEntity.noContent().build();
     }
