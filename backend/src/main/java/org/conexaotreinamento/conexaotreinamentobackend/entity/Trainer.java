@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import org.conexaotreinamento.conexaotreinamentobackend.entity.enums.CompensationType;
+import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.util.List;
@@ -21,17 +21,18 @@ public class Trainer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
 
     @Column(name = "user_id", nullable = false)
     @Setter
     private UUID userId;
 
-    @Column(nullable = false, length = 120)
+    @Column(name = "name", nullable = false, length = 120)
     @Setter
     private String name;
 
-    @Column(length = 255)
+    @Column(name = "phone")
     @Setter
     private String phone;
 
