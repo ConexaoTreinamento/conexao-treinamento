@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateTrainerDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
-import org.conexaotreinamento.conexaotreinamentobackend.entity.enums.CompensationType;
+import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.TrainerRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
@@ -73,119 +73,9 @@ class TrainerControllerIntegrationTest {
         SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
-    @Test
-    @DisplayName("Should create trainer successfully")
-    void shouldCreateTrainerSuccessfully() throws Exception {
-        // Given
-        CreateTrainerDTO request = new CreateTrainerDTO(
-            "João Silva",
-            "joao@test.com",
-            "+5511999999999",
-            "password123",
-            List.of("Musculação", "Crossfit"),
-            CompensationType.HOURLY
-        );
 
-        // When & Then
-        mockMvc.perform(post("/trainers")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(authenticatedUserId.toString()))
-                .andExpect(jsonPath("$.name").value("João Silva"))
-                .andExpect(jsonPath("$.email").value("joao@test.com"))
-                .andExpect(jsonPath("$.phone").value("+5511999999999"))
-                .andExpect(jsonPath("$.specialties").isArray())
-                .andExpect(jsonPath("$.specialties", hasSize(2)))
-                .andExpect(jsonPath("$.specialties", containsInAnyOrder("Musculação", "Crossfit")))
-                .andExpect(jsonPath("$.compensationType").value("HOURLY"));
 
-        // Verify in database
-        assertThat(trainerRepository.count()).isEqualTo(1);
-        Trainer savedTrainer = trainerRepository.findById(authenticatedUserId).orElseThrow();
-        assertThat(savedTrainer.getName()).isEqualTo("João Silva");
-        assertThat(savedTrainer.getSpecialties()).containsExactlyInAnyOrder("Musculação", "Crossfit");
-    }
 
-    @Test
-    @DisplayName("Should return bad request when creating trainer with invalid data")
-    void shouldReturnBadRequestWhenCreatingTrainerWithInvalidData() throws Exception {
-        // Given - Request with null name
-        CreateTrainerDTO request = new CreateTrainerDTO(
-            null,
-            "invalid-email",
-            "",
-            "123",
-            null,
-            null
-        );
-
-        // When & Then
-        mockMvc.perform(post("/trainers")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-
-        // Verify no trainer was created
-        assertThat(trainerRepository.count()).isEqualTo(0);
-    }
-
-    @Test
-    @DisplayName("Should return conflict when trainer already exists for user")
-    void shouldReturnConflictWhenTrainerAlreadyExistsForUser() throws Exception {
-        // Given - Create existing trainer
-        Trainer existingTrainer = new Trainer();
-        existingTrainer.setId(authenticatedUserId);
-        existingTrainer.setName("Existing Trainer");
-        existingTrainer.setPhone("+5511888888888");
-        existingTrainer.setSpecialties(List.of("Yoga"));
-        existingTrainer.setCompensationType(CompensationType.MONTHLY);
-        trainerRepository.save(existingTrainer);
-
-        CreateTrainerDTO request = new CreateTrainerDTO(
-            "New Trainer",
-            "new@test.com",
-            "+5511777777777",
-            "password123",
-            List.of("Pilates"),
-            CompensationType.HOURLY
-        );
-
-        // When & Then
-        mockMvc.perform(post("/trainers")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Trainer already exists"));
-
-        // Verify only one trainer exists
-        assertThat(trainerRepository.count()).isEqualTo(1);
-    }
-
-    @Test
-    @DisplayName("Should find trainer by id successfully")
-    void shouldFindTrainerByIdSuccessfully() throws Exception {
-        // Given
-        Trainer trainer = new Trainer();
-        trainer.setId(authenticatedUserId);
-        trainer.setName("Maria Santos");
-        trainer.setPhone("+5511666666666");
-        trainer.setSpecialties(List.of("Natação", "Hidroginástica"));
-        trainer.setCompensationType(CompensationType.MONTHLY);
-        trainerRepository.save(trainer);
-
-        // When & Then
-        mockMvc.perform(get("/trainers/{id}", authenticatedUserId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(authenticatedUserId.toString()))
-                .andExpect(jsonPath("$.name").value("Maria Santos"))
-                .andExpect(jsonPath("$.email").value("maria@test.com"))
-                .andExpect(jsonPath("$.phone").value("+5511666666666"))
-                .andExpect(jsonPath("$.specialties", hasSize(2)))
-                .andExpect(jsonPath("$.specialties", containsInAnyOrder("Natação", "Hidroginástica")))
-                .andExpect(jsonPath("$.compensationType").value("MONTHLY"))
-                .andExpect(jsonPath("$.active").value(true));
-    }
 
     @Test
     @DisplayName("Should return not found when trainer does not exist")

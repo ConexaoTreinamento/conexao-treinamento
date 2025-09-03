@@ -1,7 +1,7 @@
 package org.conexaotreinamento.conexaotreinamentobackend.dto.request;
 
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
-import org.conexaotreinamento.conexaotreinamentobackend.entity.enums.CompensationType;
+import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;
 
 import java.util.List;
 import java.util.UUID;

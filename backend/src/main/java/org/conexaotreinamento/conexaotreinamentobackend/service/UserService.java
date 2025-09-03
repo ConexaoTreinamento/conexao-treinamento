@@ -47,6 +47,34 @@ public class UserService {
     }
 
     @Transactional
+    public UserResponseDTO updateUser(UUID userId, String newEmail, String newPassword) {
+        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        // Check if the new email is already taken by another user
+        if (!user.getEmail().equals(newEmail)) {
+            Optional<User> existingUser = userRepository.findByEmail(newEmail);
+            if (existingUser.isPresent() && !existingUser.get().getId().equals(userId)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Email já está em uso");
+            }
+            user.setEmail(newEmail);
+        }
+
+        // Update password if provided
+        if (newPassword != null && !newPassword.isEmpty()) {
+            user.setPassword(passwordEncoder.encode(newPassword));
+        }
+
+        User savedUser = userRepository.save(user);
+        return UserResponseDTO.fromEntity(savedUser);
+    }
+
+    public Optional<UserResponseDTO> getUserById(UUID id) {
+        return userRepository.findByIdAndDeletedAtIsNull(id)
+                .map(UserResponseDTO::fromEntity);
+    }
+
+    @Transactional
     public void delete(UUID id) {
         User user = userRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));

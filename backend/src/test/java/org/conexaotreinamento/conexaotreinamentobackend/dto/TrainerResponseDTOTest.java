@@ -2,7 +2,7 @@ package org.conexaotreinamento.conexaotreinamentobackend.dto;
 
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
-import org.conexaotreinamento.conexaotreinamentobackend.entity.enums.CompensationType;
+import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

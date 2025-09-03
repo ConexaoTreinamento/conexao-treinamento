@@ -55,13 +55,10 @@ public class TrainerService {
         Trainer trainer = trainerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trainer not found"));
 
-        UserResponseDTO user = userService.getUserByEmail(request.email())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Associated user not found"));
+        // Update the associated user's email and password
+        UserResponseDTO updatedUser = userService.updateUser(trainer.getUserId(), request.email(), request.password());
 
-        if (!user.id().equals(trainer.getUserId())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "User with this email already exists");
-        }
-
+        // Update trainer fields
         trainer.setName(request.name());
         trainer.setPhone(request.phone());
         trainer.setSpecialties(request.specialties());
@@ -69,13 +66,12 @@ public class TrainerService {
 
         Trainer savedTrainer = trainerRepository.save(trainer);
 
-        //Skipped patching compensationType to avoid extra complexity in hour calculation logic
-        return TrainerResponseDTO.fromEntity(savedTrainer, request.email());
+        return TrainerResponseDTO.fromEntity(savedTrainer, updatedUser.email());
     }
 
     @Transactional
     public void delete(UUID trainerId) {
         Optional<Trainer> trainer = trainerRepository.findById(trainerId);
-        trainer.ifPresent(value -> userService.deleteUser(value.getUserId()));
+        trainer.ifPresent(value -> userService.delete(value.getUserId()));
     }
 }

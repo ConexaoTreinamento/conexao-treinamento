@@ -5,7 +5,7 @@ import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainer
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
-import org.conexaotreinamento.conexaotreinamentobackend.entity.enums.CompensationType;
+import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.TrainerRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -227,10 +227,10 @@ class TrainerServiceTest {
     @DisplayName("Should update trainer successfully")
     void shouldUpdateTrainerSuccessfully() {
         // Given
-        UserResponseDTO userResponse = new UserResponseDTO(userId, "john@example.com", Role.ROLE_TRAINER);
+        UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "john@example.com", Role.ROLE_TRAINER);
         
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
-        when(userService.getUserByEmail("john@example.com")).thenReturn(Optional.of(userResponse));
+        when(userService.updateUser(userId, "john@example.com", "password123")).thenReturn(updatedUserResponse);
         when(trainerRepository.save(trainer)).thenReturn(trainer);
 
         // When
@@ -242,7 +242,7 @@ class TrainerServiceTest {
         assertThat(result.email()).isEqualTo("john@example.com");
 
         verify(trainerRepository).findById(trainerId);
-        verify(userService).getUserByEmail("john@example.com");
+        verify(userService).updateUser(userId, "john@example.com", "password123");
         verify(trainerRepository).save(trainer);
     }
 
@@ -267,7 +267,6 @@ class TrainerServiceTest {
     @DisplayName("Should throw conflict when updating to existing email")
     void shouldThrowConflictWhenUpdatingToExistingEmail() {
         // Given
-        UUID differentUserId = UUID.randomUUID();
         CreateTrainerDTO updateDTO = new CreateTrainerDTO(
             "John Trainer",
             "existing@example.com",
@@ -277,20 +276,19 @@ class TrainerServiceTest {
             CompensationType.HOURLY
         );
         
-        UserResponseDTO existingUserResponse = new UserResponseDTO(differentUserId, "existing@example.com", Role.ROLE_TRAINER);
-        
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
-        when(userService.getUserByEmail("existing@example.com")).thenReturn(Optional.of(existingUserResponse));
+        when(userService.updateUser(userId, "existing@example.com", "password123"))
+                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Email já está em uso"));
 
         // When & Then
         assertThatThrownBy(() -> trainerService.put(trainerId, updateDTO))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("User with this email already exists")
+                .hasMessageContaining("Email já está em uso")
                 .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
                 .isEqualTo(HttpStatus.CONFLICT);
 
         verify(trainerRepository).findById(trainerId);
-        verify(userService).getUserByEmail("existing@example.com");
+        verify(userService).updateUser(userId, "existing@example.com", "password123");
         verify(trainerRepository, never()).save(any());
     }
 
@@ -298,10 +296,10 @@ class TrainerServiceTest {
     @DisplayName("Should allow updating trainer with same email")
     void shouldAllowUpdatingTrainerWithSameEmail() {
         // Given
-        UserResponseDTO userResponse = new UserResponseDTO(userId, "john@example.com", Role.ROLE_TRAINER);
+        UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "john@example.com", Role.ROLE_TRAINER);
         
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
-        when(userService.getUserByEmail("john@example.com")).thenReturn(Optional.of(userResponse));
+        when(userService.updateUser(userId, "john@example.com", "password123")).thenReturn(updatedUserResponse);
         when(trainerRepository.save(trainer)).thenReturn(trainer);
 
         // When
@@ -312,7 +310,7 @@ class TrainerServiceTest {
         assertThat(result.email()).isEqualTo("john@example.com");
 
         verify(trainerRepository).findById(trainerId);
-        verify(userService).getUserByEmail("john@example.com");
+        verify(userService).updateUser(userId, "john@example.com", "password123");
         verify(trainerRepository).save(trainer);
     }
 
@@ -321,14 +319,14 @@ class TrainerServiceTest {
     void shouldDeleteTrainerSuccessfully() {
         // Given
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
-        doNothing().when(userService).deleteUser(userId);
+        doNothing().when(userService).delete(userId);
 
         // When
         trainerService.delete(trainerId);
 
         // Then
         verify(trainerRepository).findById(trainerId);
-        verify(userService).deleteUser(userId);
+        verify(userService).delete(userId);
     }
 
     @Test
@@ -337,7 +335,7 @@ class TrainerServiceTest {
         // Given
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
         doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"))
-                .when(userService).deleteUser(userId);
+                .when(userService).delete(userId);
 
         // When & Then
         assertThatThrownBy(() -> trainerService.delete(trainerId))
@@ -345,6 +343,6 @@ class TrainerServiceTest {
                 .hasMessageContaining("User not found");
 
         verify(trainerRepository).findById(trainerId);
-        verify(userService).deleteUser(userId);
+        verify(userService).delete(userId);
     }
 }
