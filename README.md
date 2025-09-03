@@ -37,6 +37,10 @@ docker compose down -v # Apaga todos os dados
 - Verifique com:
   ```bash
   java -version
+  # Deve aparecer algo como:
+  # java version "22.0.2" 2024-07-16
+  # Java(TM) SE Runtime Environment (build 22.0.2+9-70)
+  # Java HotSpot(TM) 64-Bit Server VM (build 22.0.2+9-70, mixed mode, sharing)
   ```
 
 ### Passos:
@@ -60,6 +64,16 @@ cd backend
 ### Pré-requisitos:
 - **Node.js** instalado  
 - **pnpm** instalado  
+
+- Verifique com:
+  ```bash
+  node -v
+  # Deve aparecer algo como:
+  # v22.14.0
+  pnpm -v
+  # Deve aparecer algo como:
+  # 10.15.1
+  ```
 
 ### Passos:
 ```bash
