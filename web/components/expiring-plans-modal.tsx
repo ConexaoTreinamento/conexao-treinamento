@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle, Calendar, User, Phone, Mail } from "lucide-react"
 import Link from "next/link"
-import { getStudentPlanExpirationDate, calculateDaysUntilExpiration, getUnifiedStatusBadge } from "@/lib/expiring-plans"
+import { getStudentPlanExpirationDate, calculateDaysUntilExpiration, UnifiedStatusBadge } from "@/lib/expiring-plans"
 import { STUDENTS, getStudentFullName } from "@/lib/students-data"
 
 interface Student {
@@ -115,7 +115,7 @@ export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansMod
                             {student.name}
                           </span>
                         </div>
-                        {getUnifiedStatusBadge(student.planExpirationDate)}
+                        <UnifiedStatusBadge expirationDate={student.planExpirationDate}/>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground mb-3">
