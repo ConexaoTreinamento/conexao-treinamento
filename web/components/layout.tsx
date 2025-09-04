@@ -78,6 +78,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 		return null
 	}
 
+	// @ts-ignore
+	// @ts-ignore
 	return (
 		<div className="min-h-screen bg-background">
 			{/* Mobile Header */}
