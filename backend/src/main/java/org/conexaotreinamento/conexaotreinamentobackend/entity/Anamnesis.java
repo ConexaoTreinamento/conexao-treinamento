@@ -102,6 +102,7 @@ public class Anamnesis {
         studentId = student.getId();
     }
 
+
     public enum InsomniaFrequency {
         YES, NO, SOMETIMES
     }

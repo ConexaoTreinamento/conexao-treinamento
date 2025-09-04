@@ -11,7 +11,11 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.UUID;
+
+import org.conexaotreinamento.conexaotreinamentobackend.entity.PhysicalImpairment;
 
 @Entity
 @Table(name = "students")
@@ -89,6 +93,10 @@ public class Student {
     @Column(columnDefinition = "TEXT")
     @Setter
     private String objectives;
+
+    @Column(columnDefinition = "TEXT")
+    @Setter
+    private String observations;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)

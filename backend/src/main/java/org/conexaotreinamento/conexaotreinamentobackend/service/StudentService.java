@@ -2,8 +2,14 @@ package org.conexaotreinamento.conexaotreinamentobackend.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.AnamnesisRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AnamnesisResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PhysicalImpairmentRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.StudentRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.PhysicalImpairmentResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.Anamnesis;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.PhysicalImpairment;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.AnamnesisRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.PhysicalImpairmentRepository;
@@ -16,6 +22,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -32,7 +40,92 @@ public class StudentService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Student with this email already exists");
         }
 
-        throw new UnsupportedOperationException("Not implemented yet");
+
+
+            Student student = new Student(request.email(),request.name(), request.surname(), request.gender(), request.birthDate());
+        student.setPhone(request.phone());
+        student.setProfession(request.profession());
+        student.setStreet(request.street());
+        student.setNumber(request.number());
+        student.setComplement(request.complement());
+        student.setNeighborhood(request.neighborhood());
+        student.setCep(request.cep());
+        student.setEmergencyContactName(request.emergencyContactName());
+        student.setEmergencyContactPhone(request.emergencyContactPhone());
+        student.setEmergencyContactRelationship(request.emergencyContactRelationship());
+        student.setObjectives(request.objectives());
+        student.setObservations(request.observations());
+
+        Student salvedStudent = studentRepository.save(student);
+
+        Anamnesis anamnesis = new Anamnesis(salvedStudent);
+        anamnesis.setStudent(student);
+        anamnesis.setMedication(request.anamnesis().medication());
+        anamnesis.setDoctorAwareOfPhysicalActivity(request.anamnesis().isDoctorAwareOfPhysicalActivity());
+        anamnesis.setFavoritePhysicalActivity(request.anamnesis().favoritePhysicalActivity());
+        anamnesis.setHasInsomnia(request.anamnesis().hasInsomnia());
+        anamnesis.setDietOrientedBy(request.anamnesis().dietOrientedBy());
+        anamnesis.setCardiacProblems(request.anamnesis().cardiacProblems());
+        anamnesis.setHasHypertension(request.anamnesis().hasHypertension());
+        anamnesis.setChronicDiseases(request.anamnesis().chronicDiseases());
+        anamnesis.setDifficultiesInPhysicalActivities(request.anamnesis().difficultiesInPhysicalActivities());
+        anamnesis.setMedicalOrientationsToAvoidPhysicalActivity(request.anamnesis().medicalOrientationsToAvoidPhysicalActivity());
+        anamnesis.setSurgeriesInTheLast12Months(request.anamnesis().surgeriesInTheLast12Months());
+        anamnesis.setRespiratoryProblems(request.anamnesis().respiratoryProblems());
+        anamnesis.setJointMuscularBackPain(request.anamnesis().jointMuscularBackPain());
+        anamnesis.setSpinalDiscProblems(request.anamnesis().spinalDiscProblems());
+        anamnesis.setDiabetes(request.anamnesis().diabetes());
+        anamnesis.setSmokingDuration(request.anamnesis().smokingDuration());
+        anamnesis.setAlteredCholesterol(request.anamnesis().alteredCholesterol());
+        anamnesis.setOsteoporosisLocation(request.anamnesis().osteoporosisLocation());
+
+        Anamnesis salvedAnamnesis = anamnesisRepository.save(anamnesis);
+
+        List<PhysicalImpairment> savedImpairments = new ArrayList<>();
+        if (request.physicalImpairments() != null) {
+            for (PhysicalImpairmentRequestDTO dto : request.physicalImpairments()) {
+                PhysicalImpairment impairment = new PhysicalImpairment(
+                        salvedStudent,
+                        dto.type(),
+                        dto.name(),
+                        dto.observations()
+                );
+                savedImpairments.add(physicalImpairmentRepository.save(impairment));
+            }
+        }
+
+        AnamnesisResponseDTO responseAnamnesis = AnamnesisResponseDTO.fromEntity(salvedAnamnesis);
+
+        List<PhysicalImpairmentResponseDTO> responsePhysicalImpairments = savedImpairments.stream()
+                .map(PhysicalImpairmentResponseDTO::fromEntity)
+                .toList();
+
+        return new StudentResponseDTO(
+                salvedStudent.getId(),
+                salvedStudent.getEmail(),
+                salvedStudent.getName(),
+                salvedStudent.getSurname(),
+                salvedStudent.getGender(),
+                salvedStudent.getBirthDate(),
+                salvedStudent.getPhone(),
+                salvedStudent.getProfession(),
+                salvedStudent.getStreet(),
+                salvedStudent.getNumber(),
+                salvedStudent.getComplement(),
+                salvedStudent.getNeighborhood(),
+                salvedStudent.getCep(),
+                salvedStudent.getEmergencyContactName(),
+                salvedStudent.getEmergencyContactPhone(),
+                salvedStudent.getEmergencyContactRelationship(),
+                salvedStudent.getObjectives(),
+                salvedStudent.getObservations(),
+                salvedStudent.getCreatedAt(),
+                salvedStudent.getUpdatedAt(),
+                salvedStudent.getDeletedAt(),
+                responseAnamnesis,
+                responsePhysicalImpairments
+        );
+
     }
 
     public StudentResponseDTO findById(UUID id) {

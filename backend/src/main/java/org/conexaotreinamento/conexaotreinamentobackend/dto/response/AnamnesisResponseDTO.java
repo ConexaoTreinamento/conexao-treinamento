@@ -22,7 +22,28 @@ public record AnamnesisResponseDTO(
         boolean alteredCholesterol,
         String osteoporosisLocation
 ) {
+
     public static AnamnesisResponseDTO fromEntity(Anamnesis anamnesis) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        return new AnamnesisResponseDTO(
+                anamnesis.getMedication(),
+                anamnesis.isDoctorAwareOfPhysicalActivity(),
+                anamnesis.getFavoritePhysicalActivity(),
+                anamnesis.getHasInsomnia(),
+                anamnesis.getDietOrientedBy(),
+                anamnesis.getCardiacProblems(),
+                anamnesis.isHasHypertension(),
+                anamnesis.getChronicDiseases(),
+                anamnesis.getDifficultiesInPhysicalActivities(),
+                anamnesis.getMedicalOrientationsToAvoidPhysicalActivity(),
+                anamnesis.getSurgeriesInTheLast12Months(),
+                anamnesis.getRespiratoryProblems(),
+                anamnesis.getJointMuscularBackPain(),
+                anamnesis.getSpinalDiscProblems(),
+                anamnesis.getDiabetes(),
+                anamnesis.getSmokingDuration(),
+                anamnesis.isAlteredCholesterol(),
+                anamnesis.getOsteoporosisLocation()
+        );
     }
+
 }

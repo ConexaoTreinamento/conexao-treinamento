@@ -1,5 +1,6 @@
 package org.conexaotreinamento.conexaotreinamentobackend.dto.response;
 
+import org.conexaotreinamento.conexaotreinamentobackend.entity.PhysicalImpairment;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
 
 import java.time.Instant;
@@ -32,7 +33,12 @@ public record StudentResponseDTO(
         AnamnesisResponseDTO anamnesis,
         List<PhysicalImpairmentResponseDTO> physicalImpairments
 ) {
-    public static StudentResponseDTO fromEntity(Student student) {
-        throw new UnsupportedOperationException("Not implemented yet");
+    public static PhysicalImpairmentResponseDTO fromEntity(PhysicalImpairment physicalImpairment) {
+        return new PhysicalImpairmentResponseDTO(
+                physicalImpairment.getId(),
+                physicalImpairment.getImpairmentType(),
+                physicalImpairment.getName(),
+                physicalImpairment.getObservations()
+        );
     }
 }
