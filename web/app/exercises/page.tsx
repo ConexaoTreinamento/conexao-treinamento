@@ -266,42 +266,6 @@ export default function ExercisesPage() {
               className="pl-10"
             />
           </div>
-          <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline" className="relative bg-transparent">
-                <Filter className="w-4 h-4 mr-2" />
-                Filtros
-                {hasActiveFilters && (
-                  <Badge className="ml-2 bg-green-600 text-white text-xs px-1 py-0">
-                    {Object.values(filters).filter((f) => f !== "").length}
-                  </Badge>
-                )}
-              </Button>
-            </SheetTrigger>
-            <SheetContent>
-              <SheetHeader>
-                <SheetTitle>Filtros de Exercícios</SheetTitle>
-                <SheetDescription>Refine sua busca por exercícios</SheetDescription>
-              </SheetHeader>
-              <div className="space-y-4 mt-6">
-                <div className="space-y-2">
-                  <Label>Busca por nome</Label>
-                  <Input
-                    placeholder="Digite o nome do exercício..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-
-                {hasActiveFilters && (
-                  <Button variant="outline" onClick={clearFilters} className="w-full bg-transparent">
-                    <X className="w-4 h-4 mr-2" />
-                    Limpar Filtros
-                  </Button>
-                )}
-              </div>
-            </SheetContent>
-          </Sheet>
         </div>
 
         {/* Results Summary */}
