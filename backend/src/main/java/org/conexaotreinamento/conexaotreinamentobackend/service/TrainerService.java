@@ -39,9 +39,8 @@ public class TrainerService {
         Trainer trainer = request.toEntity(savedUser.id());
         Trainer savedTrainer = trainerRepository.save(trainer);
 
-        // Buscar o trainer criado usando o método do repositório que retorna ListTrainersDTO
         return trainerRepository.findActiveTrainerProfileById(savedTrainer.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Created trainer not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Created trainer not found"));
     }
 
     public ListTrainersDTO findById(UUID id) {
@@ -58,8 +57,13 @@ public class TrainerService {
         Trainer trainer = trainerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trainer not found"));
 
-        // Update the associated user's email and password
-        UserResponseDTO updatedUser = userService.updateUser(trainer.getUserId(), request.email(), request.password());
+        // Always update the associated user's email (mandatory)
+        UserResponseDTO updatedUser = userService.updateUserEmail(trainer.getUserId(), request.email());
+
+        // Conditionally update password (optional)
+        if (request.hasPassword()) {
+            userService.updateUserPassword(trainer.getUserId(), request.password());
+        }
 
         // Update trainer fields
         trainer.setName(request.name());

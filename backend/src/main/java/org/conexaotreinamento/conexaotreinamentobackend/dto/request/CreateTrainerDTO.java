@@ -30,4 +30,8 @@ public record CreateTrainerDTO(
 
         return trainer;
     }
+
+    public boolean hasPassword() {
+        return password != null && !password.trim().isEmpty();
+    }
 }

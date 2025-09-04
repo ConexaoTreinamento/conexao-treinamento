@@ -257,18 +257,30 @@ class TrainerServiceTest {
     }
 
     @Test
-    @DisplayName("Should update trainer successfully")
-    void shouldUpdateTrainerSuccessfully() {
+    @DisplayName("Should update trainer successfully with password")
+    void shouldUpdateTrainerSuccessfullyWithPassword() {
         // Given
+        CreateTrainerDTO updateTrainerDTO = new CreateTrainerDTO(
+            "John Trainer",
+            "john@example.com",
+            "+1234567890",
+            "newpassword123",
+            "123 Main St",
+            LocalDate.of(1990, 1, 1),
+            Arrays.asList("Strength Training", "Cardio"),
+            CompensationType.HOURLY
+        );
+        
         UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "john@example.com", Role.ROLE_TRAINER);
         
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
-        when(userService.updateUser(userId, "john@example.com", "password123")).thenReturn(updatedUserResponse);
+        when(userService.updateUserEmail(userId, "john@example.com")).thenReturn(updatedUserResponse);
+        when(userService.updateUserPassword(userId, "newpassword123")).thenReturn(updatedUserResponse);
         when(trainerRepository.save(trainer)).thenReturn(trainer);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         // When
-        TrainerResponseDTO result = trainerService.put(trainerId, createTrainerDTO);
+        TrainerResponseDTO result = trainerService.put(trainerId, updateTrainerDTO);
 
         // Then
         assertThat(result).isNotNull();
@@ -278,7 +290,47 @@ class TrainerServiceTest {
         assertThat(result.birthDate()).isEqualTo(LocalDate.of(1990, 1, 1));
 
         verify(trainerRepository).findById(trainerId);
-        verify(userService).updateUser(userId, "john@example.com", "password123");
+        verify(userService).updateUserEmail(userId, "john@example.com");
+        verify(userService).updateUserPassword(userId, "newpassword123");
+        verify(trainerRepository).save(trainer);
+        verify(userRepository).findById(userId);
+    }
+
+    @Test
+    @DisplayName("Should update trainer successfully without password")
+    void shouldUpdateTrainerSuccessfullyWithoutPassword() {
+        // Given
+        CreateTrainerDTO updateTrainerDTO = new CreateTrainerDTO(
+            "John Trainer Updated",
+            "john.updated@example.com",
+            "+1234567890",
+            null, // No password provided
+            "456 New St",
+            LocalDate.of(1990, 1, 1),
+            Arrays.asList("Strength Training", "Yoga"),
+            CompensationType.MONTHLY
+        );
+        
+        UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "john.updated@example.com", Role.ROLE_TRAINER);
+        
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        when(userService.updateUserEmail(userId, "john.updated@example.com")).thenReturn(updatedUserResponse);
+        when(trainerRepository.save(trainer)).thenReturn(trainer);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        // When
+        TrainerResponseDTO result = trainerService.put(trainerId, updateTrainerDTO);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(trainerId);
+        assertThat(result.email()).isEqualTo("john.updated@example.com");
+        assertThat(result.address()).isEqualTo("456 New St");
+        assertThat(result.birthDate()).isEqualTo(LocalDate.of(1990, 1, 1));
+
+        verify(trainerRepository).findById(trainerId);
+        verify(userService).updateUserEmail(userId, "john.updated@example.com");
+        verify(userService, never()).updateUserPassword(any(), any());
         verify(trainerRepository).save(trainer);
         verify(userRepository).findById(userId);
     }
@@ -287,10 +339,21 @@ class TrainerServiceTest {
     @DisplayName("Should throw not found when updating non-existent trainer")
     void shouldThrowNotFoundWhenUpdatingNonExistentTrainer() {
         // Given
+        CreateTrainerDTO updateTrainerDTO = new CreateTrainerDTO(
+            "John Trainer",
+            "john@example.com",
+            "+1234567890",
+            "password123",
+            "123 Main St",
+            LocalDate.of(1990, 1, 1),
+            Arrays.asList("Strength Training", "Cardio"),
+            CompensationType.HOURLY
+        );
+        
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> trainerService.put(trainerId, createTrainerDTO))
+        assertThatThrownBy(() -> trainerService.put(trainerId, updateTrainerDTO))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Trainer not found")
                 .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
@@ -316,18 +379,18 @@ class TrainerServiceTest {
         );
         
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
-        when(userService.updateUser(userId, "existing@example.com", "password123"))
-                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Email já está em uso"));
+        when(userService.updateUserEmail(userId, "existing@example.com"))
+                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use"));
 
         // When & Then
         assertThatThrownBy(() -> trainerService.put(trainerId, updateDTO))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Email já está em uso")
+                .hasMessageContaining("Email already in use")
                 .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
                 .isEqualTo(HttpStatus.CONFLICT);
 
         verify(trainerRepository).findById(trainerId);
-        verify(userService).updateUser(userId, "existing@example.com", "password123");
+        verify(userService).updateUserEmail(userId, "existing@example.com");
         verify(trainerRepository, never()).save(any());
     }
 
@@ -335,22 +398,35 @@ class TrainerServiceTest {
     @DisplayName("Should allow updating trainer with same email")
     void shouldAllowUpdatingTrainerWithSameEmail() {
         // Given
+        CreateTrainerDTO updateTrainerDTO = new CreateTrainerDTO(
+            "John Trainer",
+            "john@example.com",
+            "+1234567890",
+            "password123",
+            "123 Main St",
+            LocalDate.of(1990, 1, 1),
+            Arrays.asList("Strength Training", "Cardio"),
+            CompensationType.HOURLY
+        );
+        
         UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "john@example.com", Role.ROLE_TRAINER);
         
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
-        when(userService.updateUser(userId, "john@example.com", "password123")).thenReturn(updatedUserResponse);
+        when(userService.updateUserEmail(userId, "john@example.com")).thenReturn(updatedUserResponse);
+        when(userService.updateUserPassword(userId, "password123")).thenReturn(updatedUserResponse);
         when(trainerRepository.save(trainer)).thenReturn(trainer);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         // When
-        TrainerResponseDTO result = trainerService.put(trainerId, createTrainerDTO);
+        TrainerResponseDTO result = trainerService.put(trainerId, updateTrainerDTO);
 
         // Then
         assertThat(result).isNotNull();
         assertThat(result.email()).isEqualTo("john@example.com");
 
         verify(trainerRepository).findById(trainerId);
-        verify(userService).updateUser(userId, "john@example.com", "password123");
+        verify(userService).updateUserEmail(userId, "john@example.com");
+        verify(userService).updateUserPassword(userId, "password123");
         verify(trainerRepository).save(trainer);
         verify(userRepository).findById(userId);
     }

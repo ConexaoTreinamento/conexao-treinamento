@@ -47,23 +47,36 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponseDTO updateUser(UUID userId, String newEmail, String newPassword) {
+    public UserResponseDTO updateUserEmail(UUID userId, String newEmail) {
+        if (newEmail == null || newEmail.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is required");
+        }
+
         User user = userRepository.findByIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        // Check if the new email is already taken by another user
         if (!user.getEmail().equals(newEmail)) {
             Optional<User> existingUser = userRepository.findByEmail(newEmail);
             if (existingUser.isPresent() && !existingUser.get().getId().equals(userId)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Email já está em uso");
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
             }
             user.setEmail(newEmail);
         }
 
-        // Update password if provided
-        if (newPassword != null && !newPassword.isEmpty()) {
-            user.setPassword(passwordEncoder.encode(newPassword));
+        User savedUser = userRepository.save(user);
+        return UserResponseDTO.fromEntity(savedUser);
+    }
+
+    @Transactional
+    public UserResponseDTO updateUserPassword(UUID userId, String newPassword) {
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
         }
+
+        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        user.setPassword(passwordEncoder.encode(newPassword));
 
         User savedUser = userRepository.save(user);
         return UserResponseDTO.fromEntity(savedUser);
