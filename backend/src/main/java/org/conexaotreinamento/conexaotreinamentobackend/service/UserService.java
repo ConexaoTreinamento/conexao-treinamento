@@ -1,9 +1,7 @@
 package org.conexaotreinamento.conexaotreinamentobackend.service;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchUserRoleRequestDTO;
@@ -23,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -57,9 +56,9 @@ public class UserService {
     @Transactional
     public UserResponseDTO patch(UUID id, PatchUserRoleRequestDTO request) {
         User user = userRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-      if (request.role() != null) {
-        user.setRole(request.role());
-    }
+        if (request.role() != null) {
+            user.setRole(request.role());
+        }
         return UserResponseDTO.fromEntity(user);
     }
 }
