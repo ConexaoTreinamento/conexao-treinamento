@@ -30,72 +30,55 @@ interface Exercise {
   description?: string
 }
 
+interface PaginatedExercises {
+  content: Exercise[]
+  totalPages: number
+  totalElements: number
+  pageable: {
+    pageNumber: number
+    pageSize: number
+  }
+}
+
 export default function ExercisesPage() {
+  const [page, setPage] = useState(0)
+  const [pageSize] = useState(10) // número de exercícios por página
+  const [totalPages, setTotalPages] = useState(0)
   const [searchTerm, setSearchTerm] = useState("")
   const [isNewExerciseOpen, setIsNewExerciseOpen] = useState(false)
   const [isEditExerciseOpen, setIsEditExerciseOpen] = useState(false)
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null)
-  const [filters, setFilters] = useState({
-    category: "",
-    equipment: "",
-    difficulty: "",
-    muscle: "",
-  })
   const [newExerciseForm, setNewExerciseForm] = useState({
     name: "",
     description: "",
   })
-
   const [exercises, setExercises] = useState<Exercise[]>([])
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
 
   const loadExercises = async () => {
-    // TODO: remover o mock de dentro de setExercises e chamar o fetch da api aqui e setar o estado com o retorno da api
-    // const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-    // const response = await fetch(`${apiUrl}/exercises`)
-    // const data = await response.json()
-    // setExercises(data.content || data || [])
-    
-    // Mock data - remover quando API estiver pronta
-    setExercises([
-      {
-        id: 1,
-        name: "Supino Reto",
-        description: "Exercício básico para desenvolvimento do peitoral",
-      },
-      {
-        id: 2,
-        name: "Agachamento Livre",
-        description: "Exercício fundamental para pernas e glúteos",
-      },
-      {
-        id: 3,
-        name: "Rosca Direta",
-        description: "Exercício isolado para bíceps",
-      },
-      {
-        id: 4,
-        name: "Puxada Frontal",
-        description: "Exercício para desenvolvimento das costas",
-      },
-      {
-        id: 5,
-        name: "Desenvolvimento Militar",
-        description: "Exercício composto para ombros",
-      },
-      {
-        id: 6,
-        name: "Prancha",
-        description: "Exercício isométrico para core",
-      },
-    ])
+    try {
+      const url = new URL(`${apiUrl}/exercises`)
+      url.searchParams.append("page", page.toString())
+      url.searchParams.append("size", pageSize.toString())
+      if (searchTerm) {
+        url.searchParams.append("search", searchTerm)
+      }
+
+      const response = await fetch(url.toString())
+      const data: PaginatedExercises = await response.json()
+
+      setExercises(data.content)
+      setTotalPages(data.totalPages)
+    } catch (error) {
+      console.error("Erro ao carregar exercícios:", error)
+    }
   }
 
   useEffect(() => {
     loadExercises()
-  }, [])
+  }, [page, searchTerm])
 
   const filteredExercises = exercises.filter((exercise) => {
     const matchesSearch =
