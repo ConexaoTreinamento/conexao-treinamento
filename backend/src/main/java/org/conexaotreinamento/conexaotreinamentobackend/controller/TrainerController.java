@@ -20,7 +20,7 @@ public class TrainerController {
     private final TrainerService trainerService;
 
     @PostMapping
-    public ResponseEntity<TrainerResponseDTO> createTrainerAndUser(@RequestBody @Valid CreateTrainerDTO request) {
+    public ResponseEntity<ListTrainersDTO> createTrainerAndUser(@RequestBody @Valid CreateTrainerDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(trainerService.create(request));
     }
 

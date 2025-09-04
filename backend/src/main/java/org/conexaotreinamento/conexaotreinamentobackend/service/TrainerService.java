@@ -11,6 +11,7 @@ import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.TrainerRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -24,11 +25,11 @@ import java.util.UUID;
 public class TrainerService {
 
     private final TrainerRepository trainerRepository;
-
+    private final UserRepository userRepository;
     private final UserService userService;
 
     @Transactional
-    public TrainerResponseDTO create(CreateTrainerDTO request) {
+    public ListTrainersDTO create(CreateTrainerDTO request) {
         if (trainerRepository.existsByEmailIgnoreCaseAndDeletedAtIsNull(request.email())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Trainer with this email already exists");
         }
@@ -38,7 +39,9 @@ public class TrainerService {
         Trainer trainer = request.toEntity(savedUser.id());
         Trainer savedTrainer = trainerRepository.save(trainer);
 
-        return TrainerResponseDTO.fromEntity(savedTrainer, request.email());
+        // Buscar o trainer criado usando o método do repositório que retorna ListTrainersDTO
+        return trainerRepository.findActiveTrainerProfileById(savedTrainer.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Created trainer not found"));
     }
 
     public ListTrainersDTO findById(UUID id) {
@@ -61,12 +64,17 @@ public class TrainerService {
         // Update trainer fields
         trainer.setName(request.name());
         trainer.setPhone(request.phone());
+        trainer.setAddress(request.address());
+        trainer.setBirthDate(request.birthDate());
         trainer.setSpecialties(request.specialties());
         trainer.setCompensationType(request.compensationType());
 
         Trainer savedTrainer = trainerRepository.save(trainer);
 
-        return TrainerResponseDTO.fromEntity(savedTrainer, updatedUser.email());
+        // Buscar o User para obter o createdAt (joinDate)
+        User user = userRepository.findById(trainer.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        return TrainerResponseDTO.fromEntity(savedTrainer, updatedUser.email(), user.getCreatedAt());
     }
 
     @Transactional

@@ -22,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -151,6 +152,8 @@ class TrainerControllerIntegrationTest {
             "updated@test.com",
             "+5511999999999",
             "newpassword123",
+            "Rua Atualizada, 123",
+            LocalDate.of(1985, 5, 15),
             List.of("New Specialty", "Another Specialty"),
             CompensationType.MONTHLY
         );
@@ -184,6 +187,8 @@ class TrainerControllerIntegrationTest {
             "updated@test.com",
             "+5511999999999",
             "password123",
+            "Rua Teste, 456",
+            LocalDate.of(1990, 3, 20),
             List.of("Specialty"),
             CompensationType.HOURLY
         );
@@ -245,6 +250,8 @@ class TrainerControllerIntegrationTest {
             "minimal@test.com",
             "+5511444444444",
             "password123",
+            "Rua Mínima, 789",
+            LocalDate.of(1992, 8, 10),
             List.of("Basic Training"),
             CompensationType.HOURLY
         );
@@ -268,6 +275,8 @@ class TrainerControllerIntegrationTest {
             "multi@test.com",
             "+5511333333333",
             "password123",
+            "Rua Multi, 321",
+            LocalDate.of(1988, 12, 25),
             List.of("Musculação", "Crossfit", "Yoga", "Pilates", "Natação"),
             CompensationType.MONTHLY
         );
@@ -291,6 +300,8 @@ class TrainerControllerIntegrationTest {
             "hourly@test.com",
             "+5511111111111",
             "password123",
+            "Rua Hourly, 111",
+            LocalDate.of(1987, 6, 30),
             List.of("Personal Training"),
             CompensationType.HOURLY
         );
@@ -323,6 +334,8 @@ class TrainerControllerIntegrationTest {
             "monthly@test.com",
             "+5511222222222",
             "password123",
+            "Rua Monthly, 222",
+            LocalDate.of(1989, 11, 15),
             List.of("Group Classes"),
             CompensationType.MONTHLY
         );

@@ -5,24 +5,23 @@ import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainer
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.TrainerRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -43,13 +42,7 @@ class TrainerServiceTest {
     private UserService userService;
 
     @Mock
-    private SecurityContext securityContext;
-
-    @Mock
-    private Authentication authentication;
-
-    @Mock
-    private Jwt jwt;
+    private UserRepository userRepository;
 
     @InjectMocks
     private TrainerService trainerService;
@@ -57,6 +50,7 @@ class TrainerServiceTest {
     private UUID trainerId;
     private UUID userId;
     private Trainer trainer;
+    private User user;
     private CreateTrainerDTO createTrainerDTO;
     private ListTrainersDTO listTrainersDTO;
 
@@ -67,17 +61,23 @@ class TrainerServiceTest {
         
         trainer = new Trainer();
         trainer.setId(trainerId);
-        trainer.setUserId(userId); // Now uses userId instead of email
+        trainer.setUserId(userId);
         trainer.setName("John Trainer");
         trainer.setPhone("+1234567890");
+        trainer.setAddress("123 Main St");
+        trainer.setBirthDate(LocalDate.of(1990, 1, 1));
         trainer.setSpecialties(Arrays.asList("Strength Training", "Cardio"));
         trainer.setCompensationType(CompensationType.HOURLY);
+
+        user = new User("john@example.com", "password123", Role.ROLE_TRAINER);
 
         createTrainerDTO = new CreateTrainerDTO(
             "John Trainer",
             "john@example.com",
             "+1234567890",
             "password123",
+            "123 Main St",
+            LocalDate.of(1990, 1, 1),
             Arrays.asList("Strength Training", "Cardio"),
             CompensationType.HOURLY
         );
@@ -87,9 +87,13 @@ class TrainerServiceTest {
             "John Trainer",
             "john@example.com",
             "+1234567890",
+            "123 Main St",
+            LocalDate.of(1990, 1, 1),
             Arrays.asList("Strength Training", "Cardio"),
             CompensationType.HOURLY,
-            true
+            true,
+            Instant.now(),
+            120
         );
     }
 
@@ -104,6 +108,8 @@ class TrainerServiceTest {
             "joao@test.com",
             "+5511999999999",
             "password123",
+            "Rua das Flores, 123",
+            LocalDate.of(1985, 3, 20),
             List.of("Musculação", "Crossfit"),
             CompensationType.HOURLY
         );
@@ -112,17 +118,37 @@ class TrainerServiceTest {
         
         Trainer savedTrainer = new Trainer();
         savedTrainer.setId(newTrainerId);
-        savedTrainer.setUserId(newUserId); // Use userId instead of email
+        savedTrainer.setUserId(newUserId);
         savedTrainer.setName("João Silva");
         savedTrainer.setPhone("+5511999999999");
+        savedTrainer.setAddress("Rua das Flores, 123");
+        savedTrainer.setBirthDate(LocalDate.of(1985, 3, 20));
         savedTrainer.setSpecialties(List.of("Musculação", "Crossfit"));
         savedTrainer.setCompensationType(CompensationType.HOURLY);
 
+        User savedUser = new User("joao@test.com", "password123", Role.ROLE_TRAINER);
+
+        ListTrainersDTO expectedResult = new ListTrainersDTO(
+            newTrainerId,
+            "João Silva",
+            "joao@test.com",
+            "+5511999999999",
+            "Rua das Flores, 123",
+            LocalDate.of(1985, 3, 20),
+            List.of("Musculação", "Crossfit"),
+            CompensationType.HOURLY,
+            true,
+            Instant.now(),
+            120
+        );
+
+        when(trainerRepository.existsByEmailIgnoreCaseAndDeletedAtIsNull("joao@test.com")).thenReturn(false);
         when(userService.createUser(any())).thenReturn(userResponse);
         when(trainerRepository.save(any(Trainer.class))).thenReturn(savedTrainer);
+        when(trainerRepository.findActiveTrainerProfileById(newTrainerId)).thenReturn(Optional.of(expectedResult));
 
         // When
-        TrainerResponseDTO result = trainerService.create(request);
+        ListTrainersDTO result = trainerService.create(request);
 
         // Then
         assertThat(result).isNotNull();
@@ -130,11 +156,18 @@ class TrainerServiceTest {
         assertThat(result.name()).isEqualTo("João Silva");
         assertThat(result.email()).isEqualTo("joao@test.com");
         assertThat(result.phone()).isEqualTo("+5511999999999");
+        assertThat(result.address()).isEqualTo("Rua das Flores, 123");
+        assertThat(result.birthDate()).isEqualTo(LocalDate.of(1985, 3, 20));
         assertThat(result.specialties()).containsExactlyInAnyOrder("Musculação", "Crossfit");
         assertThat(result.compensationType()).isEqualTo(CompensationType.HOURLY);
+        assertThat(result.active()).isTrue();
+        assertThat(result.joinDate()).isNotNull();
+        assertThat(result.hoursWorked()).isEqualTo(120);
 
+        verify(trainerRepository).existsByEmailIgnoreCaseAndDeletedAtIsNull("joao@test.com");
         verify(userService).createUser(any());
         verify(trainerRepository).save(any(Trainer.class));
+        verify(trainerRepository).findActiveTrainerProfileById(newTrainerId);
     }
 
     @Test
@@ -232,6 +265,7 @@ class TrainerServiceTest {
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
         when(userService.updateUser(userId, "john@example.com", "password123")).thenReturn(updatedUserResponse);
         when(trainerRepository.save(trainer)).thenReturn(trainer);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         // When
         TrainerResponseDTO result = trainerService.put(trainerId, createTrainerDTO);
@@ -240,10 +274,13 @@ class TrainerServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.id()).isEqualTo(trainerId);
         assertThat(result.email()).isEqualTo("john@example.com");
+        assertThat(result.address()).isEqualTo("123 Main St");
+        assertThat(result.birthDate()).isEqualTo(LocalDate.of(1990, 1, 1));
 
         verify(trainerRepository).findById(trainerId);
         verify(userService).updateUser(userId, "john@example.com", "password123");
         verify(trainerRepository).save(trainer);
+        verify(userRepository).findById(userId);
     }
 
     @Test
@@ -272,6 +309,8 @@ class TrainerServiceTest {
             "existing@example.com",
             "+1234567890",
             "password123",
+            "123 Main St",
+            LocalDate.of(1990, 1, 1),
             Arrays.asList("Strength Training"),
             CompensationType.HOURLY
         );
@@ -301,6 +340,7 @@ class TrainerServiceTest {
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
         when(userService.updateUser(userId, "john@example.com", "password123")).thenReturn(updatedUserResponse);
         when(trainerRepository.save(trainer)).thenReturn(trainer);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         // When
         TrainerResponseDTO result = trainerService.put(trainerId, createTrainerDTO);
@@ -312,6 +352,7 @@ class TrainerServiceTest {
         verify(trainerRepository).findById(trainerId);
         verify(userService).updateUser(userId, "john@example.com", "password123");
         verify(trainerRepository).save(trainer);
+        verify(userRepository).findById(userId);
     }
 
     @Test

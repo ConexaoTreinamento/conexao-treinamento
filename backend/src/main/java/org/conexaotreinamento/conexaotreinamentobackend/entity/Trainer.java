@@ -8,6 +8,7 @@ import lombok.Setter;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,6 +36,14 @@ public class Trainer {
     @Column(name = "phone")
     @Setter
     private String phone;
+
+    @Column(name = "address", length = 500)
+    @Setter
+    private String address;
+
+    @Column(name = "birth_date")
+    @Setter
+    private LocalDate birthDate;
 
     @Column(name = "specialties", columnDefinition = "text[]")
     @Setter

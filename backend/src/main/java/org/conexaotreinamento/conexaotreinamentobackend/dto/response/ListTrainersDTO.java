@@ -3,6 +3,8 @@ package org.conexaotreinamento.conexaotreinamentobackend.dto.response;
 
 import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -11,7 +13,11 @@ public record ListTrainersDTO(
         String name,
         String email,
         String phone,
+        String address,
+        LocalDate birthDate,
         List<String> specialties,
         CompensationType compensationType,
-        Boolean active
+        Boolean active,
+        Instant joinDate,
+        Integer hoursWorked
 ){}

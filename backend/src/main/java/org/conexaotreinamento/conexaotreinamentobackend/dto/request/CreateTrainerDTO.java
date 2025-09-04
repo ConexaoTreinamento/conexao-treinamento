@@ -3,6 +3,7 @@ package org.conexaotreinamento.conexaotreinamentobackend.dto.request;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -11,6 +12,8 @@ public record CreateTrainerDTO(
     String email,
     String phone,
     String password,
+    String address,
+    LocalDate birthDate,
     List<String> specialties,
     CompensationType compensationType
 ) {
@@ -20,6 +23,8 @@ public record CreateTrainerDTO(
         trainer.setUserId(userId);
         trainer.setName(name);
         trainer.setPhone(phone);
+        trainer.setAddress(address);
+        trainer.setBirthDate(birthDate);
         trainer.setSpecialties(specialties);
         trainer.setCompensationType(compensationType);
 
