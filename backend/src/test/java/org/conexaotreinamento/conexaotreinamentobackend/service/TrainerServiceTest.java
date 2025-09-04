@@ -142,7 +142,7 @@ class TrainerServiceTest {
             120
         );
 
-        when(trainerRepository.existsByEmailIgnoreCaseAndDeletedAtIsNull("joao@test.com")).thenReturn(false);
+        when(trainerRepository.existsByEmailIgnoreCase("joao@test.com")).thenReturn(false);
         when(userService.createUser(any())).thenReturn(userResponse);
         when(trainerRepository.save(any(Trainer.class))).thenReturn(savedTrainer);
         when(trainerRepository.findActiveTrainerProfileById(newTrainerId)).thenReturn(Optional.of(expectedResult));
@@ -164,7 +164,7 @@ class TrainerServiceTest {
         assertThat(result.joinDate()).isNotNull();
         assertThat(result.hoursWorked()).isEqualTo(120);
 
-        verify(trainerRepository).existsByEmailIgnoreCaseAndDeletedAtIsNull("joao@test.com");
+        verify(trainerRepository).existsByEmailIgnoreCase("joao@test.com");
         verify(userService).createUser(any());
         verify(trainerRepository).save(any(Trainer.class));
         verify(trainerRepository).findActiveTrainerProfileById(newTrainerId);

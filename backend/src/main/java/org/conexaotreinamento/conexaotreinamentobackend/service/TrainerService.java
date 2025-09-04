@@ -30,7 +30,7 @@ public class TrainerService {
 
     @Transactional
     public ListTrainersDTO create(CreateTrainerDTO request) {
-        if (trainerRepository.existsByEmailIgnoreCaseAndDeletedAtIsNull(request.email())) {
+        if (trainerRepository.existsByEmailIgnoreCase(request.email())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Trainer with this email already exists");
         }
 

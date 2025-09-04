@@ -13,8 +13,8 @@ public interface TrainerRepository extends JpaRepository<Trainer, UUID> {
 
     @Query(" SELECT (COUNT(t) > 0)" +
             " FROM Trainer t INNER JOIN User u ON t.userId = u.id" +
-            " WHERE u.deletedAt IS NULL AND LOWER(u.email) = LOWER(:email)")
-    boolean existsByEmailIgnoreCaseAndDeletedAtIsNull(String email);
+            " WHERE LOWER(u.email) = LOWER(:email)")
+    boolean existsByEmailIgnoreCase(String email);
 
     @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainersDTO(" +
             "t.id, t.name, u.email, t.phone, t.address, t.birthDate, t.specialties, t.compensationType, (u.deletedAt IS NULL), u.createdAt, 120) " +
