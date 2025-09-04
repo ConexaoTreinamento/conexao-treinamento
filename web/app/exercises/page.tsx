@@ -31,6 +31,7 @@ interface Exercise {
 }
 
 export default function ExercisesPage() {
+  const [page, setPage] = useState(0)
   const [searchTerm, setSearchTerm] = useState("")
   const [isNewExerciseOpen, setIsNewExerciseOpen] = useState(false)
   const [isEditExerciseOpen, setIsEditExerciseOpen] = useState(false)
@@ -52,45 +53,10 @@ export default function ExercisesPage() {
   const [exercises, setExercises] = useState<Exercise[]>([])
 
   const loadExercises = async () => {
-    // TODO: remover o mock de dentro de setExercises e chamar o fetch da api aqui e setar o estado com o retorno da api
-    // const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-    // const response = await fetch(`${apiUrl}/exercises`)
-    // const data = await response.json()
-    // setExercises(data.content || data || [])
-    
-    // Mock data - remover quando API estiver pronta
-    setExercises([
-      {
-        id: 1,
-        name: "Supino Reto",
-        description: "Exercício básico para desenvolvimento do peitoral",
-      },
-      {
-        id: 2,
-        name: "Agachamento Livre",
-        description: "Exercício fundamental para pernas e glúteos",
-      },
-      {
-        id: 3,
-        name: "Rosca Direta",
-        description: "Exercício isolado para bíceps",
-      },
-      {
-        id: 4,
-        name: "Puxada Frontal",
-        description: "Exercício para desenvolvimento das costas",
-      },
-      {
-        id: 5,
-        name: "Desenvolvimento Militar",
-        description: "Exercício composto para ombros",
-      },
-      {
-        id: 6,
-        name: "Prancha",
-        description: "Exercício isométrico para core",
-      },
-    ])
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+    const response = await fetch(`${apiUrl}/exercises?search=${searchTerm}&page=${page}`)
+    const data = await response.json()
+    setExercises(data.content || data || [])
   }
 
   useEffect(() => {
