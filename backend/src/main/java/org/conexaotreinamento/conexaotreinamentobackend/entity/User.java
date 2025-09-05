@@ -26,7 +26,6 @@ import lombok.Setter;
 @Table(name = "users")
 @EntityListeners(AuditingEntityListener.class)
 @Getter
-@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User {
     @Id
@@ -41,6 +40,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 20)
+    @Setter
     private Role role;
 
     @CreatedDate

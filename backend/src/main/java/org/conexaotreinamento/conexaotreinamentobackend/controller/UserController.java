@@ -44,7 +44,7 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
-        @PatchMapping("/{id}")
+    @PatchMapping("/{id}")
     public ResponseEntity<UserResponseDTO> patch(@PathVariable UUID id, @RequestBody @Valid PatchUserRoleRequestDTO request) {
         return ResponseEntity.ok(userService.patch(id, request));
     }
