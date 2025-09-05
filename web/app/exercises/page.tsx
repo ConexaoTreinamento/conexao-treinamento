@@ -17,6 +17,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
 import { Search, Filter, Plus, Activity, Edit, Trash2, X } from "lucide-react"
 import Layout from "@/components/layout"
@@ -31,45 +39,42 @@ interface Exercise {
 }
 
 export default function ExercisesPage() {
-  const [page, setPage] = useState(0)
   const [searchTerm, setSearchTerm] = useState("")
   const [isNewExerciseOpen, setIsNewExerciseOpen] = useState(false)
   const [isEditExerciseOpen, setIsEditExerciseOpen] = useState(false)
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null)
-  const [filters, setFilters] = useState({
-    category: "",
-    equipment: "",
-    difficulty: "",
-    muscle: "",
-  })
   const [newExerciseForm, setNewExerciseForm] = useState({
     name: "",
     description: "",
   })
 
   const [exercises, setExercises] = useState<Exercise[]>([])
+  const [totalPages, setTotalPages] = useState(0)
+  const [currentPage, setCurrentPage] = useState(0)
 
   const loadExercises = async () => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-    const response = await fetch(`${apiUrl}/exercises?search=${searchTerm}&page=${page}`)
+    const response = await fetch(`${apiUrl}/exercises?search=${searchTerm}&page=${currentPage}&size=10`)
     const data = await response.json()
     setExercises(data.content || data || [])
+    setTotalPages(data.page?.totalPages || 1)
   }
 
   useEffect(() => {
     loadExercises()
-  }, [])
+  }, [currentPage, searchTerm])
 
-  const filteredExercises = exercises.filter((exercise) => {
-    const matchesSearch =
-      exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (exercise.description || "").toLowerCase().includes(searchTerm.toLowerCase())
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value)
+    setCurrentPage(0)
+  }
 
-    return matchesSearch
-  })
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage)
+  }
+
 
   const handleCreateExercise = () => {
     if (newExerciseForm.name.trim()) {
@@ -114,17 +119,6 @@ export default function ExercisesPage() {
     setEditingExercise({ ...exercise })
     setIsEditExerciseOpen(true)
   }
-
-  const clearFilters = () => {
-    setFilters({
-      category: "",
-      equipment: "",
-      difficulty: "",
-      muscle: "",
-    })
-  }
-
-  const hasActiveFilters = Object.values(filters).some((filter) => filter !== "")
 
   return (
     <Layout>
@@ -228,51 +222,59 @@ export default function ExercisesPage() {
             <Input
               placeholder="Buscar exercícios por nome ou descrição..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="pl-10 pr-10"
             />
+            {searchTerm && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleSearchChange("")}
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         </div>
 
         {/* Results Summary */}
-        {searchTerm && (
-          <div className="text-sm text-muted-foreground">
-            Mostrando {filteredExercises.length} de {exercises.length} exercícios
-          </div>
-        )}
+        <div className="text-sm text-muted-foreground">
+          Página {currentPage + 1} de {totalPages} ({exercises.length} exercícios nesta página)
+        </div>
 
         {/* Exercises Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredExercises.map((exercise) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          {exercises.map((exercise) => (
             <Card key={exercise.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
+              <CardHeader className="pb-2 pt-3 px-3">
                 <div className="flex items-start justify-between">
-                  <div className="space-y-2 flex-1">
-                    <CardTitle className="text-lg">{exercise.name}</CardTitle>
+                  <div className="space-y-1 flex-1">
+                    <CardTitle className="text-sm font-medium leading-tight">{exercise.name}</CardTitle>
                   </div>
                   <div className="flex gap-1 ml-2">
-                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(exercise)} className="h-8 w-8">
-                      <Edit className="w-4 h-4" />
+                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(exercise)} className="h-6 w-6">
+                      <Edit className="w-3 h-3" />
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => openDeleteDialog(exercise)}
-                      className="h-8 w-8 text-red-600 hover:text-red-700"
+                      className="h-6 w-6 text-red-600 hover:text-red-700"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {exercise.description && <CardDescription>{exercise.description}</CardDescription>}
+              <CardContent className="px-3 pb-3">
+                {exercise.description && <CardDescription className="text-xs leading-relaxed">{exercise.description}</CardDescription>}
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {filteredExercises.length === 0 && (
+        {exercises.length === 0 && (
           <Card>
             <CardContent className="text-center py-12">
               <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -287,6 +289,45 @@ export default function ExercisesPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Pagination */}
+        <div className="flex justify-center mt-6">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious
+                  onClick={() => currentPage > 0 && handlePageChange(currentPage - 1)}
+                  className={currentPage === 0 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                >
+                  Anterior
+                </PaginationPrevious>
+              </PaginationItem>
+
+              {/* Generate page numbers */}
+              {Array.from({ length: totalPages }, (_, i) => (
+                <PaginationItem key={i}>
+                  <PaginationLink
+                    onClick={() => handlePageChange(i)}
+                    isActive={currentPage === i}
+                    className="cursor-pointer"
+                  >
+                    {i + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+
+
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => currentPage < totalPages - 1 && handlePageChange(currentPage + 1)}
+                  className={currentPage === totalPages - 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                >
+                  Próxima
+                </PaginationNext>
+                </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
 
         {/* Delete Exercise Dialog */}
         <DeleteExerciseDialog
