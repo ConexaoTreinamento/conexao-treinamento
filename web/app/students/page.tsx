@@ -83,7 +83,7 @@ const StudentCard = (props: {
   fullName: string,
   expirationDate: Date,
   onNewEvaluationClicked: MouseEventHandler<HTMLButtonElement>,
-  onClick2: MouseEventHandler<HTMLButtonElement>,
+  onClickedDelete: MouseEventHandler<HTMLButtonElement>,
   isRestoring: boolean,
   onConfirm: () => Promise<void>,
   isDeleting: boolean,
@@ -127,7 +127,7 @@ const StudentCard = (props: {
                         <Button
                             size="icon"
                             variant="outline"
-                            onClick={props.onClick2}
+                            onClick={props.onClickedDelete}
                             className="h-8 w-8"
                             disabled={props.isRestoring}
                             aria-label="Reativar aluno"
@@ -233,7 +233,7 @@ const StudentCard = (props: {
                         <Button
                             size="sm"
                             variant="outline"
-                            onClick={props.onClick2}
+                            onClick={props.onClickedDelete}
                             disabled={props.isRestoring}
                         >
                             <RotateCcw className="w-3 h-3 mr-1"/> Reativar
@@ -416,7 +416,7 @@ export default function StudentsPage() {
   const handleDelete = async (id: string) => {
     await deleteStudent({ path: { id }, client: apiClient })
     // Invalidate any students list queries
-    queryClient.invalidateQueries({
+    await queryClient.invalidateQueries({
       predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAll'
     })
     toast({ title: "Aluno excluído", description: "O aluno foi marcado como inativo.", duration: 3000 })
@@ -424,7 +424,7 @@ export default function StudentsPage() {
 
   const handleRestore = async (id: string) => {
     await restoreStudent({ path: { id }, client: apiClient })
-    queryClient.invalidateQueries({
+    await queryClient.invalidateQueries({
       predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAll'
     })
     toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
@@ -761,9 +761,9 @@ export default function StudentsPage() {
                            fullName={fullName} expirationDate={expirationDate} onNewEvaluationClicked={e => {
                   e.stopPropagation()
                   router.push(`/students/${student.id}/evaluation/new`)
-              }} onClick2={e => {
+              }} onClickedDelete={async e => {
                   e.stopPropagation();
-                  handleRestore(student.id!)
+                  await handleRestore(student.id!)
               }} isRestoring={isRestoring} onConfirm={() => handleDelete(student.id!)} isDeleting={isDeleting} age={age}
                            onDeleteClicked={() => {
                                     void handleDelete(student.id!)
