@@ -4,10 +4,8 @@ import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import {
   Dialog,
   DialogContent,
@@ -26,7 +24,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination"
 
-import { Search, Filter, Plus, Activity, Edit, Trash2, X } from "lucide-react"
+import { Search, Plus, Activity, Edit, Trash2, X, Eye } from "lucide-react"
 import Layout from "@/components/layout"
 import { DeleteExerciseDialog } from "@/components/exercises/delete-exercise-dialog"
 import { useEffect } from "react"
@@ -45,6 +43,8 @@ export default function ExercisesPage() {
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null)
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
+  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
   const [newExerciseForm, setNewExerciseForm] = useState({
     name: "",
     description: "",
@@ -56,7 +56,7 @@ export default function ExercisesPage() {
 
   const loadExercises = async () => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-    const response = await fetch(`${apiUrl}/exercises?search=${searchTerm}&page=${currentPage}&size=10`)
+    const response = await fetch(`${apiUrl}/exercises?search=${searchTerm}&page=${currentPage}`)
     const data = await response.json()
     setExercises(data.content || data || [])
     setTotalPages(data.page?.totalPages || 1)
@@ -120,6 +120,11 @@ export default function ExercisesPage() {
     setIsEditExerciseOpen(true)
   }
 
+  const openDetailsDialog = (exercise: Exercise) => {
+    setSelectedExercise(exercise)
+    setIsDetailsDialogOpen(true)
+  }
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -136,11 +141,9 @@ export default function ExercisesPage() {
                 Novo Exercício
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Novo Exercício</DialogTitle>
-                <DialogDescription>Adicione um novo exercício à biblioteca</DialogDescription>
-              </DialogHeader>
+            <DialogContent className="max-w-md">
+              <DialogTitle className="sr-only">Novo Exercício</DialogTitle>
+              <h2 className="text-lg font-semibold mb-4">Novo Exercício</h2>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="exerciseName">Nome do Exercício *</Label>
@@ -176,11 +179,9 @@ export default function ExercisesPage() {
 
         {/* Edit Exercise Dialog */}
         <Dialog open={isEditExerciseOpen} onOpenChange={setIsEditExerciseOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Editar Exercício</DialogTitle>
-              <DialogDescription>Modifique as informações do exercício</DialogDescription>
-            </DialogHeader>
+          <DialogContent className="max-w-md">
+            <DialogTitle className="sr-only">Editar Exercício</DialogTitle>
+            <h2 className="text-lg font-semibold mb-4">Editar Exercício</h2>
             {editingExercise && (
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -244,31 +245,79 @@ export default function ExercisesPage() {
         </div>
 
         {/* Exercises Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 gap-3">
           {exercises.map((exercise) => (
-            <Card key={exercise.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-2 pt-3 px-3">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1 flex-1">
-                    <CardTitle className="text-sm font-medium leading-tight">{exercise.name}</CardTitle>
+            <Card 
+              key={exercise.id} 
+              className="hover:shadow-md transition-shadow h-32 flex flex-col cursor-pointer" 
+              onClick={() => openDetailsDialog(exercise)}
+            >
+              <CardHeader className="pb-2 pt-3 px-3 flex-shrink-0 h-14">
+                <div className="flex items-start justify-between h-full">
+                  <div className="flex-1 min-w-0 pr-2">
+                    <CardTitle className="text-sm font-medium leading-tight break-words h-7 flex items-center">
+                      {exercise.name}
+                    </CardTitle>
                   </div>
-                  <div className="flex gap-1 ml-2">
-                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(exercise)} className="h-6 w-6">
+                  <div className="flex gap-1 flex-shrink-0">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openDetailsDialog(exercise)
+                      }} 
+                      className="h-6 w-6 text-blue-600 hover:text-white hover:bg-blue-600"
+                      title="Ver detalhes"
+                    >
+                      <Eye className="w-3 h-3" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openEditDialog(exercise)
+                      }} 
+                      className="h-6 w-6 hover:text-white hover:bg-gray-600"
+                    >
                       <Edit className="w-3 h-3" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => openDeleteDialog(exercise)}
-                      className="h-6 w-6 text-red-600 hover:text-red-700"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        openDeleteDialog(exercise)
+                      }}
+                      className="h-6 w-6 text-red-600 hover:text-white hover:bg-red-600"
                     >
                       <Trash2 className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="px-3 pb-3">
-                {exercise.description && <CardDescription className="text-xs leading-relaxed">{exercise.description}</CardDescription>}
+              <CardContent className="px-3 pb-3 flex-1 flex items-start h-14">
+                {exercise.description ? (
+                  <CardDescription 
+                    className="text-sm leading-relaxed overflow-hidden w-full" 
+                    style={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical',
+                      maxHeight: '3.6rem'
+                    }}
+                  >
+                    {exercise.description.length > 100 
+                      ? `${exercise.description.substring(0, 100)}...` 
+                      : exercise.description
+                    }
+                  </CardDescription>
+                ) : (
+                  <div className="text-xs text-muted-foreground italic w-full">
+                    Sem descrição
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -303,18 +352,27 @@ export default function ExercisesPage() {
                 </PaginationPrevious>
               </PaginationItem>
 
-              {/* Generate page numbers */}
-              {Array.from({ length: totalPages }, (_, i) => (
-                <PaginationItem key={i}>
-                  <PaginationLink
-                    onClick={() => handlePageChange(i)}
-                    isActive={currentPage === i}
-                    className="cursor-pointer"
-                  >
-                    {i + 1}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
+              {/* Generate page numbers - show only 3 pages at a time */}
+              {(() => {
+                const pages = []
+                const startPage = Math.max(0, currentPage - 1)
+                const endPage = Math.min(totalPages - 1, currentPage + 1)
+                
+                for (let i = startPage; i <= endPage; i++) {
+                  pages.push(
+                    <PaginationItem key={i}>
+                      <PaginationLink
+                        onClick={() => handlePageChange(i)}
+                        isActive={currentPage === i}
+                        className="cursor-pointer"
+                      >
+                        {i + 1}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )
+                }
+                return pages
+              })()}
 
 
               <PaginationItem>
@@ -328,6 +386,20 @@ export default function ExercisesPage() {
             </PaginationContent>
           </Pagination>
         </div>
+
+        {/* Exercise Details Dialog */}
+        <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogTitle className="sr-only">Detalhes do Exercício</DialogTitle>
+            <h2 className="text-lg font-semibold mb-4 break-words">{selectedExercise?.name}</h2>
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap mb-6">
+              {selectedExercise?.description || "Sem descrição"}
+            </p>
+            <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)} className="w-full">
+              Fechar
+            </Button>
+          </DialogContent>
+        </Dialog>
 
         {/* Delete Exercise Dialog */}
         <DeleteExerciseDialog
