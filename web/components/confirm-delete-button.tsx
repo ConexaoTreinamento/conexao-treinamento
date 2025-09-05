@@ -64,7 +64,7 @@ export default function ConfirmDeleteButton({
           {children ?? <Trash2 className="w-4 h-4" />}
         </Button>
       </AlertDialogTrigger>
-      <AlertDialogContent onClick={e => e.stopPropagation()} handleOverlayClicked={e => e.stopPropagation()}>
+      <AlertDialogContent onClick={e => e.stopPropagation()}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
