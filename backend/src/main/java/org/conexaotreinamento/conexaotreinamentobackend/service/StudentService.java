@@ -2,7 +2,6 @@ package org.conexaotreinamento.conexaotreinamentobackend.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.AnamnesisRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AnamnesisResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PhysicalImpairmentRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.StudentRequestDTO;
@@ -56,9 +55,9 @@ public class StudentService {
         student.setObjectives(request.objectives());
         student.setObservations(request.observations());
 
-        Student salvedStudent = studentRepository.save(student);
+        Student savedStudent = studentRepository.save(student);
 
-        Anamnesis anamnesis = new Anamnesis(salvedStudent);
+        Anamnesis anamnesis = new Anamnesis(savedStudent);
         anamnesis.setStudent(student);
         anamnesis.setMedication(request.anamnesis().medication());
         anamnesis.setDoctorAwareOfPhysicalActivity(request.anamnesis().isDoctorAwareOfPhysicalActivity());
@@ -85,7 +84,7 @@ public class StudentService {
         if (request.physicalImpairments() != null) {
             for (PhysicalImpairmentRequestDTO dto : request.physicalImpairments()) {
                 PhysicalImpairment impairment = new PhysicalImpairment(
-                        salvedStudent,
+                        savedStudent,
                         dto.type(),
                         dto.name(),
                         dto.observations()
@@ -100,33 +99,11 @@ public class StudentService {
                 .map(PhysicalImpairmentResponseDTO::fromEntity)
                 .toList();
 
-        return new StudentResponseDTO(
-                salvedStudent.getId(),
-                salvedStudent.getEmail(),
-                salvedStudent.getName(),
-                salvedStudent.getSurname(),
-                salvedStudent.getGender(),
-                salvedStudent.getBirthDate(),
-                salvedStudent.getPhone(),
-                salvedStudent.getProfession(),
-                salvedStudent.getStreet(),
-                salvedStudent.getNumber(),
-                salvedStudent.getComplement(),
-                salvedStudent.getNeighborhood(),
-                salvedStudent.getCep(),
-                salvedStudent.getEmergencyContactName(),
-                salvedStudent.getEmergencyContactPhone(),
-                salvedStudent.getEmergencyContactRelationship(),
-                salvedStudent.getObjectives(),
-                salvedStudent.getObservations(),
-                salvedStudent.getCreatedAt(),
-                salvedStudent.getUpdatedAt(),
-                salvedStudent.getDeletedAt(),
-                responseAnamnesis,
-                responsePhysicalImpairments
-        );
+        return StudentResponseDTO.fromEntity(savedStudent, responseAnamnesis, responsePhysicalImpairments);
 
     }
+
+
 
     public StudentResponseDTO findById(UUID id) {
         Student student = studentRepository.findByIdAndDeletedAtIsNull(id)

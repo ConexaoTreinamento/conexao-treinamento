@@ -41,4 +41,31 @@ public record StudentResponseDTO(
                 physicalImpairment.getObservations()
         );
     }
+    public static StudentResponseDTO fromEntity(Student salvedStudent, AnamnesisResponseDTO responseAnamnesis, List<PhysicalImpairmentResponseDTO> responsePhysicalImpairments) {
+        return new StudentResponseDTO(
+                salvedStudent.getId(),
+                salvedStudent.getEmail(),
+                salvedStudent.getName(),
+                salvedStudent.getSurname(),
+                salvedStudent.getGender(),
+                salvedStudent.getBirthDate(),
+                salvedStudent.getPhone(),
+                salvedStudent.getProfession(),
+                salvedStudent.getStreet(),
+                salvedStudent.getNumber(),
+                salvedStudent.getComplement(),
+                salvedStudent.getNeighborhood(),
+                salvedStudent.getCep(),
+                salvedStudent.getEmergencyContactName(),
+                salvedStudent.getEmergencyContactPhone(),
+                salvedStudent.getEmergencyContactRelationship(),
+                salvedStudent.getObjectives(),
+                salvedStudent.getObservations(),
+                salvedStudent.getCreatedAt(),
+                salvedStudent.getUpdatedAt(),
+                salvedStudent.getDeletedAt(),
+                responseAnamnesis,
+                responsePhysicalImpairments
+        );
+    }
 }
