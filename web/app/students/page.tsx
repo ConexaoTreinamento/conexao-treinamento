@@ -1,6 +1,6 @@
 "use client"
 
-import React, {MouseEventHandler} from "react"
+import React, {type MouseEventHandler} from "react"
 import { useState } from "react"
 import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { findAllOptions } from "@/lib/api-client/@tanstack/react-query.gen"
