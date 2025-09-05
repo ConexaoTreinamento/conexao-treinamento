@@ -20,6 +20,7 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "users")
@@ -39,6 +40,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", nullable = false, length = 20)
+    @Setter
     private Role role;
 
     @CreatedDate
@@ -72,17 +74,5 @@ public class User {
 
     public void deactivate() {
         deletedAt = Instant.now();
-    }
-
-    public void disable(){
-        this.deletedAt = Instant.now();
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
     }
 }
