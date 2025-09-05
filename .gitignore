@@ -3,3 +3,4 @@ web/node_modules
 web/.idea
 docs/api/openapi.json
 .idea
+.env
