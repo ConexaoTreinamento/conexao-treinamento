@@ -8,17 +8,17 @@ import { ArrowLeft, User, Phone, Mail, Calendar, Clock, Edit, MapPin } from "luc
 import { useRouter, useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Layout from "@/components/layout"
-import TeacherModal from "@/components/teacher-modal"
+import TrainerModal from "@/components/trainer-modal"
 
 // Type definitions
-interface TeacherSchedule {
+interface TrainerSchedule {
   day: string
   time: string
   class: string
   students: number
 }
 
-interface TeacherPerformance {
+interface TrainerPerformance {
   monthlyHours: number
   monthlyClasses: number
   studentsManaged: number
@@ -31,7 +31,7 @@ interface RecentClass {
   attendance: number
 }
 
-interface TeacherData {
+interface TrainerData {
   id: number
   name: string
   email: string
@@ -43,20 +43,20 @@ interface TeacherData {
   status: string
   joinDate: string
   hoursWorked: number
-  schedule: TeacherSchedule[]
-  performance: TeacherPerformance
+  schedule: TrainerSchedule[]
+  performance: TrainerPerformance
   recentClasses: RecentClass[]
 }
 
-export default function TeacherProfilePage() {
+export default function TrainerProfilePage() {
   const router = useRouter()
   const params = useParams()
-  const [teacherData, setTeacherData] = useState<TeacherData | null>(null)
+  const [trainerData, setTrainerData] = useState<TrainerData | null>(null)
   const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  // Mock teachers data - this should eventually be replaced with API calls
-  const mockTeachers: TeacherData[] = [
+  // Mock trainers data - this should eventually be replaced with API calls
+  const mockTrainers: TrainerData[] = [
     {
       id: 1,
       name: "Ana Silva",
@@ -148,35 +148,35 @@ export default function TeacherProfilePage() {
   ]
 
   useEffect(() => {
-    // Simulate fetching teacher data based on ID
-    const fetchTeacherData = async () => {
+    // Simulate fetching trainer data based on ID
+    const fetchTrainerData = async () => {
       setLoading(true)
       try {
         // In a real application, this would be an API call
-        // const response = await fetch(`/api/teachers/${params.id}`)
+        // const response = await fetch(`/api/trainers/${params.id}`)
         // const data = await response.json()
 
-        // For now, find the teacher from mock data
-        const teacherId = parseInt(params.id as string)
-        const teacher = mockTeachers.find(t => t.id === teacherId)
+        // For now, find the trainer from mock data
+        const trainerId = parseInt(params.id as string)
+        const trainer = mockTrainers.find(t => t.id === trainerId)
 
-        if (teacher) {
-          setTeacherData(teacher)
+        if (trainer) {
+          setTrainerData(trainer)
         } else {
-          // Handle teacher not found
-          console.error('Teacher not found')
-          router.push('/teachers')
+          // Handle trainer not found
+          console.error('Trainer not found')
+          router.push('/trainers')
         }
       } catch (error) {
-        console.error('Error fetching teacher data:', error)
-        router.push('/teachers')
+        console.error('Error fetching trainer data:', error)
+        router.push('/trainers')
       } finally {
         setLoading(false)
       }
     }
 
     if (params.id) {
-      fetchTeacherData()
+      fetchTrainerData()
     }
   }, [params.id, router])
 
@@ -209,25 +209,25 @@ export default function TeacherProfilePage() {
   }
 
   // Handle opening modal for editing
-  const handleEditTeacher = () => {
+  const handleEditTrainer = () => {
     setIsModalOpen(true)
   }
 
   // Handle modal submission
   const handleModalSubmit = (formData: any) => {
-    if (teacherData) {
-      // Update the teacher data with new form data
-      const updatedTeacher = { ...teacherData, ...formData }
-      setTeacherData(updatedTeacher)
+    if (trainerData) {
+      // Update the trainer data with new form data
+      const updatedTrainer = { ...trainerData, ...formData }
+      setTrainerData(updatedTrainer)
 
-      // In a real application, this would make an API call to update the teacher
-      // await fetch(`/api/teachers/${teacherData.id}`, {
+      // In a real application, this would make an API call to update the trainer
+      // await fetch(`/api/trainers/${trainerData.id}`, {
       //   method: 'PUT',
       //   headers: { 'Content-Type': 'application/json' },
       //   body: JSON.stringify(formData)
       // })
 
-      console.log('Teacher updated:', updatedTeacher)
+      console.log('Trainer updated:', updatedTrainer)
     }
     setIsModalOpen(false)
   }
@@ -245,7 +245,7 @@ export default function TeacherProfilePage() {
     )
   }
 
-  if (!teacherData) {
+  if (!trainerData) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
@@ -253,7 +253,7 @@ export default function TeacherProfilePage() {
             <p className="text-lg font-semibold">Professor não encontrado</p>
             <Button
               variant="outline"
-              onClick={() => router.push('/teachers')}
+              onClick={() => router.push('/trainers')}
               className="mt-4"
             >
               Voltar para lista de professores
@@ -285,17 +285,17 @@ export default function TeacherProfilePage() {
             <CardHeader className="text-center pb-4">
               <Avatar className="w-20 h-20 mx-auto">
                 <AvatarFallback className="text-xl select-none">
-                  {teacherData.name
+                  {trainerData.name
                     .split(" ")
                     .map((n) => n[0])
                     .join("")}
                 </AvatarFallback>
               </Avatar>
               <div className="space-y-2">
-                <CardTitle className="text-lg">{teacherData.name}</CardTitle>
+                <CardTitle className="text-lg">{trainerData.name}</CardTitle>
                 <div className="flex flex-wrap justify-center gap-2">
-                  <Badge className={getStatusColor(teacherData.status)}>{teacherData.status}</Badge>
-                  <Badge className={getCompensationColor(teacherData.compensation)}>{teacherData.compensation}</Badge>
+                  <Badge className={getStatusColor(trainerData.status)}>{trainerData.status}</Badge>
+                  <Badge className={getCompensationColor(trainerData.compensation)}>{trainerData.compensation}</Badge>
                 </div>
               </div>
             </CardHeader>
@@ -303,31 +303,31 @@ export default function TeacherProfilePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <span className="truncate">{teacherData.email}</span>
+                  <span className="truncate">{trainerData.email}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <span>{teacherData.phone}</span>
+                  <span>{trainerData.phone}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <span>{calculateAge(teacherData.birthDate)} anos</span>
+                  <span>{calculateAge(trainerData.birthDate)} anos</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <span>{teacherData.hoursWorked}h este mês</span>
+                  <span>{trainerData.hoursWorked}h este mês</span>
                 </div>
               </div>
 
               <div className="flex items-start gap-2 text-sm">
                 <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                <span className="text-xs leading-relaxed">{teacherData.address}</span>
+                <span className="text-xs leading-relaxed">{trainerData.address}</span>
               </div>
 
               <div className="space-y-2">
                 <p className="text-sm font-medium">Especialidades:</p>
                 <div className="flex flex-wrap gap-1">
-                  {teacherData.specialties.map((specialty, idx) => (
+                  {trainerData.specialties.map((specialty, idx) => (
                     <Badge key={idx} variant="outline" className="text-xs">
                       {specialty}
                     </Badge>
@@ -338,7 +338,7 @@ export default function TeacherProfilePage() {
                 <Button
                   size="sm"
                   className="bg-green-600 hover:bg-green-700 w-full"
-                  onClick={handleEditTeacher}
+                  onClick={handleEditTrainer}
                 >
                   <Edit className="w-4 h-4 mr-2" />
                   Editar Perfil
@@ -369,7 +369,7 @@ export default function TeacherProfilePage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs font-medium text-muted-foreground">Horas/Mês</p>
-                        <p className="text-xl font-bold">{teacherData.performance.monthlyHours}h</p>
+                        <p className="text-xl font-bold">{trainerData.performance.monthlyHours}h</p>
                       </div>
                       <Clock className="w-5 h-5 text-blue-600" />
                     </div>
@@ -380,7 +380,7 @@ export default function TeacherProfilePage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs font-medium text-muted-foreground">Aulas/Mês</p>
-                        <p className="text-xl font-bold">{teacherData.performance.monthlyClasses}</p>
+                        <p className="text-xl font-bold">{trainerData.performance.monthlyClasses}</p>
                       </div>
                       <Calendar className="w-5 h-5 text-green-600" />
                     </div>
@@ -391,7 +391,7 @@ export default function TeacherProfilePage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs font-medium text-muted-foreground">Alunos</p>
-                        <p className="text-xl font-bold">{teacherData.performance.studentsManaged}</p>
+                        <p className="text-xl font-bold">{trainerData.performance.studentsManaged}</p>
                       </div>
                       <User className="w-5 h-5 text-purple-600" />
                     </div>
@@ -407,7 +407,7 @@ export default function TeacherProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {teacherData.recentClasses.map((classItem, index) => (
+                    {trainerData.recentClasses.map((classItem, index) => (
                       <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
                         <div>
                           <p className="font-medium text-sm">{classItem.name}</p>
@@ -436,7 +436,7 @@ export default function TeacherProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {teacherData.schedule.map((schedule, index) => (
+                    {trainerData.schedule.map((schedule, index) => (
                       <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
                         <div>
                           <p className="font-medium text-sm">{schedule.class}</p>
@@ -462,15 +462,15 @@ export default function TeacherProfilePage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-3 rounded-lg bg-muted/50">
                       <p className="text-sm text-muted-foreground">Horas Trabalhadas</p>
-                      <p className="text-2xl font-bold">{teacherData.performance.monthlyHours}h</p>
+                      <p className="text-2xl font-bold">{trainerData.performance.monthlyHours}h</p>
                     </div>
                     <div className="p-3 rounded-lg bg-muted/50">
                       <p className="text-sm text-muted-foreground">Aulas Ministradas</p>
-                      <p className="text-2xl font-bold">{teacherData.performance.monthlyClasses}</p>
+                      <p className="text-2xl font-bold">{trainerData.performance.monthlyClasses}</p>
                     </div>
                     <div className="p-3 rounded-lg bg-muted/50 col-span-2">
                       <p className="text-sm text-muted-foreground">Alunos Atendidos</p>
-                      <p className="text-2xl font-bold">{teacherData.performance.studentsManaged}</p>
+                      <p className="text-2xl font-bold">{trainerData.performance.studentsManaged}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -479,11 +479,11 @@ export default function TeacherProfilePage() {
           </Tabs>
         </div>
 
-        {/* Teacher Edit Modal */}
-        <TeacherModal
+        {/* Trainer Edit Modal */}
+        <TrainerModal
           open={isModalOpen}
           mode="edit"
-          initialData={teacherData}
+          initialData={trainerData}
           onClose={() => setIsModalOpen(false)}
           onSubmit={handleModalSubmit}
         />

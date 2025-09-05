@@ -28,7 +28,7 @@ interface ClassModalProps {
   open: boolean
   mode: "create" | "edit"
   initialData?: ClassModalData
-  teachers: string[]
+  trainers: string[]
   onClose: () => void
   onSubmitData: (data: ClassModalData) => void
 }
@@ -37,7 +37,7 @@ export default function ClassModal({
   open,
   mode,
   initialData,
-  teachers,
+  trainers,
   onClose,
   onSubmitData,
 }: ClassModalProps) {
@@ -179,9 +179,9 @@ export default function ClassModal({
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  {teachers.map((teacher) => (
-                    <SelectItem key={teacher} value={teacher}>
-                      {teacher}
+                  {trainers.map((trainer) => (
+                    <SelectItem key={trainer} value={trainer}>
+                      {trainer}
                     </SelectItem>
                   ))}
                 </SelectContent>
