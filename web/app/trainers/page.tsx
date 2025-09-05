@@ -11,10 +11,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Search, Filter, Plus, User, Phone, Mail, Calendar, Clock, Edit, Trash2, UserPlus } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
-import TeacherModal from "@/components/teacher-modal"
+import TrainerModal from "@/components/trainer-modal"
 
-// Interface for teacher data to match the modal
-interface Teacher {
+// Interface for trainer data to match the modal
+interface Trainer {
   id: number
   name: string
   email: string
@@ -28,12 +28,12 @@ interface Teacher {
   hoursWorked: number
 }
 
-export default function TeachersPage() {
+export default function TrainersPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [userRole, setUserRole] = useState<string>("admin")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<"create" | "edit">("create")
-  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null)
+  const [editingTrainer, setEditingTrainer] = useState<Trainer | null>(null)
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [filters, setFilters] = useState({
     status: "all",
@@ -47,7 +47,7 @@ export default function TeachersPage() {
     setUserRole(role)
   }, [])
 
-  const [teachers, setTeachers] = useState<Teacher[]>([
+  const [trainers, setTrainers] = useState<Trainer[]>([
     {
       id: 1,
       name: "Ana Silva",
@@ -89,59 +89,59 @@ export default function TeachersPage() {
     },
   ])
 
-  // Handle opening modal for creating a new teacher
-  const handleCreateTeacher = () => {
+  // Handle opening modal for creating a new trainer
+  const handleCreateTrainer = () => {
     setModalMode("create")
-    setEditingTeacher(null)
+    setEditingTrainer(null)
     setIsModalOpen(true)
   }
 
-  // Handle opening modal for editing an existing teacher
-  const handleEditTeacher = (teacher: Teacher) => {
+  // Handle opening modal for editing an existing trainer
+  const handleEditTrainer = (trainer: Trainer) => {
     setModalMode("edit")
-    setEditingTeacher(teacher)
+    setEditingTrainer(trainer)
     setIsModalOpen(true)
   }
 
   // Handle modal submission
   const handleModalSubmit = (formData: any) => {
     if (modalMode === "create") {
-      // Create new teacher
-      const newTeacher: Teacher = {
-        id: teachers.length + 1,
+      // Create new trainer
+      const newTrainer: Trainer = {
+        id: trainers.length + 1,
         ...formData,
         joinDate: new Date().toISOString().split('T')[0],
         hoursWorked: 0,
       }
-      setTeachers([...teachers, newTeacher])
+      setTrainers([...trainers, newTrainer])
     } else {
-      // Update existing teacher
-      setTeachers(teachers.map(teacher =>
-        teacher.id === editingTeacher?.id
-          ? { ...teacher, ...formData }
-          : teacher
+      // Update existing trainer
+      setTrainers(trainers.map(trainer =>
+        trainer.id === editingTrainer?.id
+          ? { ...trainer, ...formData }
+          : trainer
       ))
     }
     setIsModalOpen(false)
-    setEditingTeacher(null)
+    setEditingTrainer(null)
   }
 
-  // Handle teacher deletion
-  const handleDeleteTeacher = (teacherId: number) => {
+  // Handle trainer deletion
+  const handleDeleteTrainer = (trainerId: number) => {
     if (confirm("Tem certeza que deseja excluir este professor?")) {
-      setTeachers(teachers.filter(teacher => teacher.id !== teacherId))
+      setTrainers(trainers.filter(trainer => trainer.id !== trainerId))
     }
   }
 
-  // Filter teachers based on search and filters
-  const filteredTeachers = teachers.filter(teacher => {
-    const matchesSearch = teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         teacher.email.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filter trainers based on search and filters
+  const filteredTrainers = trainers.filter(trainer => {
+    const matchesSearch = trainer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         trainer.email.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesStatus = filters.status === "all" || teacher.status === filters.status
-    const matchesCompensation = filters.compensation === "all" || teacher.compensation === filters.compensation
+    const matchesStatus = filters.status === "all" || trainer.status === filters.status
+    const matchesCompensation = filters.compensation === "all" || trainer.compensation === filters.compensation
     const matchesSpecialty = !filters.specialty ||
-                            teacher.specialties.some(spec =>
+                            trainer.specialties.some(spec =>
                               spec.toLowerCase().includes(filters.specialty.toLowerCase())
                             )
 
@@ -191,7 +191,7 @@ export default function TeachersPage() {
             <p className="text-sm text-muted-foreground">Gerencie professores e instrutores</p>
           </div>
           {userRole === "admin" && (
-            <Button onClick={handleCreateTeacher} className="bg-green-600 hover:bg-green-700">
+            <Button onClick={handleCreateTrainer} className="bg-green-600 hover:bg-green-700">
               <UserPlus className="w-4 h-4 mr-2" />
               Novo Professor
             </Button>
@@ -260,30 +260,30 @@ export default function TeachersPage() {
           </Card>
         )}
 
-        {/* Teachers Grid */}
+        {/* Trainers Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredTeachers.map((teacher) => (
+          {filteredTrainers.map((trainer) => (
             <Card
-              key={teacher.id}
+              key={trainer.id}
               className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => router.push(`/teachers/${teacher.id}`)}
+              onClick={() => router.push(`/trainers/${trainer.id}`)}
             >
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
                     <Avatar>
                       <AvatarFallback>
-                        {teacher.name.split(" ").map((n) => n[0]).join("")}
+                        {trainer.name.split(" ").map((n) => n[0]).join("")}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <CardTitle className="text-base">{teacher.name}</CardTitle>
+                      <CardTitle className="text-base">{trainer.name}</CardTitle>
                       <div className="flex gap-1 mt-1">
-                        <Badge className={getStatusColor(teacher.status)}>
-                          {teacher.status}
+                        <Badge className={getStatusColor(trainer.status)}>
+                          {trainer.status}
                         </Badge>
-                        <Badge className={getCompensationColor(teacher.compensation)}>
-                          {teacher.compensation}
+                        <Badge className={getCompensationColor(trainer.compensation)}>
+                          {trainer.compensation}
                         </Badge>
                       </div>
                     </div>
@@ -293,14 +293,14 @@ export default function TeachersPage() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleEditTeacher(teacher)}
+                        onClick={() => handleEditTrainer(trainer)}
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleDeleteTeacher(teacher.id)}
+                        onClick={() => handleDeleteTrainer(trainer.id)}
                         className="text-red-600 hover:text-red-800"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -313,33 +313,33 @@ export default function TeachersPage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2">
                     <Mail className="w-4 h-4 text-muted-foreground" />
-                    <span className="truncate">{teacher.email}</span>
+                    <span className="truncate">{trainer.email}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="w-4 h-4 text-muted-foreground" />
-                    <span>{teacher.phone}</span>
+                    <span>{trainer.phone}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span>Desde {new Date(teacher.joinDate).toLocaleDateString("pt-BR")}</span>
+                    <span>Desde {new Date(trainer.joinDate).toLocaleDateString("pt-BR")}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span>{teacher.hoursWorked}h este mês</span>
+                    <span>{trainer.hoursWorked}h este mês</span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Especialidades:</p>
                   <div className="flex flex-wrap gap-1">
-                    {teacher.specialties.slice(0, 2).map((specialty, idx) => (
+                    {trainer.specialties.slice(0, 2).map((specialty, idx) => (
                       <Badge key={idx} variant="outline" className="text-xs">
                         {specialty}
                       </Badge>
                     ))}
-                    {teacher.specialties.length > 2 && (
+                    {trainer.specialties.length > 2 && (
                       <Badge variant="outline" className="text-xs">
-                        +{teacher.specialties.length - 2}
+                        +{trainer.specialties.length - 2}
                       </Badge>
                     )}
                   </div>
@@ -349,21 +349,21 @@ export default function TeachersPage() {
           ))}
         </div>
 
-        {filteredTeachers.length === 0 && (
+        {filteredTrainers.length === 0 && (
           <div className="text-center py-8">
             <p className="text-muted-foreground">Nenhum professor encontrado.</p>
           </div>
         )}
       </div>
 
-      {/* Teacher Modal */}
-      <TeacherModal
+      {/* Trainer Modal */}
+      <TrainerModal
         open={isModalOpen}
         mode={modalMode}
-        initialData={editingTeacher || undefined}
+        initialData={editingTrainer || undefined}
         onClose={() => {
           setIsModalOpen(false)
-          setEditingTeacher(null)
+          setEditingTrainer(null)
         }}
         onSubmit={handleModalSubmit}
       />

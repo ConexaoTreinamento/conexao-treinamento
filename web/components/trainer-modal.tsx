@@ -17,7 +17,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { X } from "lucide-react"
 
-interface TeacherFormData {
+interface TrainerFormData {
   name: string
   email: string
   phone: string
@@ -29,22 +29,22 @@ interface TeacherFormData {
   newPassword?: string
 }
 
-interface TeacherModalProps {
+interface TrainerModalProps {
   open: boolean
   mode: "create" | "edit"
-  initialData?: Partial<TeacherFormData>
+  initialData?: Partial<TrainerFormData>
   onClose: () => void
-  onSubmit: (data: TeacherFormData) => void
+  onSubmit: (data: TrainerFormData) => void
 }
 
-export default function TeacherModal({
+export default function TrainerModal({
   open,
   mode,
   initialData,
   onClose,
   onSubmit,
-}: TeacherModalProps) {
-  const [formData, setFormData] = useState<TeacherFormData>({
+}: TrainerModalProps) {
+  const [formData, setFormData] = useState<TrainerFormData>({
     name: "",
     email: "",
     phone: "",
@@ -166,18 +166,18 @@ export default function TeacherModal({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="teacherName">Nome Completo *</Label>
+                <Label htmlFor="trainerName">Nome Completo *</Label>
                 <Input
-                  id="teacherName"
+                  id="trainerName"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="Ex: Ana Silva"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="teacherBirthDate">Data de Nascimento *</Label>
+                <Label htmlFor="trainerBirthDate">Data de Nascimento *</Label>
                 <Input
-                  id="teacherBirthDate"
+                  id="trainerBirthDate"
                   type="date"
                   value={formData.birthDate}
                   onChange={(e) => setFormData(prev => ({ ...prev, birthDate: e.target.value }))}
@@ -186,9 +186,9 @@ export default function TeacherModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="teacherAddress">Endereço *</Label>
+              <Label htmlFor="trainerAddress">Endereço *</Label>
               <Input
-                id="teacherAddress"
+                id="trainerAddress"
                 value={formData.address}
                 onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                 placeholder="Ex: Rua das Palmeiras, 456 - Jardins, São Paulo"
@@ -202,9 +202,9 @@ export default function TeacherModal({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="teacherEmail">E-mail *</Label>
+                <Label htmlFor="trainerEmail">E-mail *</Label>
                 <Input
-                  id="teacherEmail"
+                  id="trainerEmail"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
@@ -212,9 +212,9 @@ export default function TeacherModal({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="teacherPhone">Telefone *</Label>
+                <Label htmlFor="trainerPhone">Telefone *</Label>
                 <Input
-                  id="teacherPhone"
+                  id="trainerPhone"
                   value={formData.phone}
                   onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                   placeholder="Ex: (11) 99999-9999"
@@ -229,7 +229,7 @@ export default function TeacherModal({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="teacherCompensation">Tipo de Compensação *</Label>
+                <Label htmlFor="trainerCompensation">Tipo de Compensação *</Label>
                 <Select
                   value={formData.compensation}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, compensation: value }))}
@@ -244,7 +244,7 @@ export default function TeacherModal({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="teacherStatus">Status *</Label>
+                <Label htmlFor="trainerStatus">Status *</Label>
                 <Select
                   value={formData.status}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
@@ -314,11 +314,11 @@ export default function TeacherModal({
             <h4 className="text-sm font-medium">Acesso</h4>
 
             <div className="space-y-2">
-              <Label htmlFor="teacherPassword">
+              <Label htmlFor="trainerPassword">
                 {mode === "create" ? "Senha *" : "Nova Senha"}
               </Label>
               <Input
-                id="teacherPassword"
+                id="trainerPassword"
                 type="password"
                 value={formData.newPassword || ""}
                 onChange={(e) => setFormData(prev => ({ ...prev, newPassword: e.target.value }))}

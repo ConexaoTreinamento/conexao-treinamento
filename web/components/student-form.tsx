@@ -77,7 +77,7 @@ export interface StudentFormData {
   // Plan and status
   plan: string
   status: string
-  responsibleTeacher: string
+  responsibleTrainer: string
 
   // Objectives (above anamnesis)
   objectives: string
@@ -118,7 +118,7 @@ interface StudentFormProps {
 
 const plans = ["Mensal", "Trimestral", "Semestral", "Anual"]
 const statuses = ["Ativo", "Inativo", "Vencido"]
-const teachers = ["Prof. Ana", "Prof. Carlos", "Prof. Marina", "Prof. Roberto"]
+const trainers = ["Prof. Ana", "Prof. Carlos", "Prof. Marina", "Prof. Roberto"]
 
 export default function StudentForm({
   initialData = {},
@@ -153,7 +153,7 @@ export default function StudentForm({
     // Plan and status
     plan: initialData.plan || "",
     status: initialData.status || "Ativo",
-    responsibleTeacher: initialData.responsibleTeacher || "",
+    responsibleTrainer: initialData.responsibleTrainer || "",
 
     // Objectives
     objectives: initialData.objectives || "",
