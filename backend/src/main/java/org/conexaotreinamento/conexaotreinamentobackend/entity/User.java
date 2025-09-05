@@ -33,9 +33,11 @@ public class User {
     private UUID id;
 
     @Column(nullable = false, length = 120, unique = true)
+    @Setter
     private String email;
 
     @Column(nullable = false, length = 120)
+    @Setter
     private String password;
 
     @Enumerated(EnumType.STRING)
