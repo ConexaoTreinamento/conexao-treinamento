@@ -9,14 +9,13 @@ import { useRouter, useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Layout from "@/components/layout"
 import { getStudentPlanExpirationDate, UnifiedStatusBadge } from "@/lib/expiring-plans"
-import { STUDENT_PROFILES, getStudentProfileById, getStudentFullName } from "@/lib/students-data"
-import {StudentResponseDto} from "../../../lib/api-client";
+import { getStudentProfileById, getStudentFullName } from "@/lib/students-data"
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteMutation, restoreMutation } from "@/lib/api-client/@tanstack/react-query.gen";
 import { apiClient } from "@/lib/client";
 import ConfirmDeleteButton from "@/components/confirm-delete-button";
 import { useToast } from "@/hooks/use-toast";
-import {StudentProfile} from "../../../lib/students-data";
+import {StudentProfile} from "@/lib/students-data";
 
 // Type definitions
 interface MedicalData {
