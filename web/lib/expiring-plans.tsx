@@ -39,11 +39,11 @@ export const isPlanExpiring = (expirationDate: string, daysThreshold: number = 7
 }
 
 // Get unified status badge that combines status and expiration information
-export const getUnifiedStatusBadge = (expirationDate: string) => {
+export const UnifiedStatusBadge = ({expirationDate}: {expirationDate: string}) => {
   const daysUntilExpiration = calculateDaysUntilExpiration(expirationDate)
 
   if (daysUntilExpiration < 0) {
-    return <Badge variant="destructive" className="text-xs">Plano Expirado</Badge>
+    return <Badge variant="destructive" className="text-xs">Expirado</Badge>
   } else if (daysUntilExpiration === 0) {
     return <Badge variant="destructive" className="text-xs">Expira Hoje</Badge>
   } else if (daysUntilExpiration === 1) {
@@ -65,7 +65,7 @@ export const getUnifiedStatusBadge = (expirationDate: string) => {
 // Get the appropriate badge for expiring plans (deprecated - use getUnifiedStatusBadge instead)
 export const getExpiringPlanBadge = (daysUntilExpiration: number) => {
   if (daysUntilExpiration < 0) {
-    return <Badge variant="destructive" className="text-xs">Plano Expirado</Badge>
+    return <Badge variant="destructive" className="text-xs">Expirado</Badge>
   } else if (daysUntilExpiration === 0) {
     return <Badge variant="destructive" className="text-xs">Expira Hoje</Badge>
   } else if (daysUntilExpiration === 1) {

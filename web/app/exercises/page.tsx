@@ -17,26 +17,27 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+
 import { Search, Filter, Plus, Activity, Edit, Trash2, X } from "lucide-react"
 import Layout from "@/components/layout"
+import { DeleteExerciseDialog } from "@/components/exercises/delete-exercise-dialog"
+import { useEffect } from "react"
+
+
+interface Exercise {
+  id: number
+  name: string
+  description?: string
+}
 
 export default function ExercisesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isNewExerciseOpen, setIsNewExerciseOpen] = useState(false)
   const [isEditExerciseOpen, setIsEditExerciseOpen] = useState(false)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const [editingExercise, setEditingExercise] = useState<any>(null)
+  const [editingExercise, setEditingExercise] = useState<Exercise | null>(null)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null)
   const [filters, setFilters] = useState({
     category: "",
     equipment: "",
@@ -48,43 +49,58 @@ export default function ExercisesPage() {
     description: "",
   })
 
-  const [exercises, setExercises] = useState([
-    {
-      id: 1,
-      name: "Supino Reto",
-      description: "Exercício básico para desenvolvimento do peitoral",
-    },
-    {
-      id: 2,
-      name: "Agachamento Livre",
-      description: "Exercício fundamental para pernas e glúteos",
-    },
-    {
-      id: 3,
-      name: "Rosca Direta",
-      description: "Exercício isolado para bíceps",
-    },
-    {
-      id: 4,
-      name: "Puxada Frontal",
-      description: "Exercício para desenvolvimento das costas",
-    },
-    {
-      id: 5,
-      name: "Desenvolvimento Militar",
-      description: "Exercício composto para ombros",
-    },
-    {
-      id: 6,
-      name: "Prancha",
-      description: "Exercício isométrico para core",
-    },
-  ])
+  const [exercises, setExercises] = useState<Exercise[]>([])
+
+  const loadExercises = async () => {
+    // TODO: remover o mock de dentro de setExercises e chamar o fetch da api aqui e setar o estado com o retorno da api
+    // const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+    // const response = await fetch(`${apiUrl}/exercises`)
+    // const data = await response.json()
+    // setExercises(data.content || data || [])
+    
+    // Mock data - remover quando API estiver pronta
+    setExercises([
+      {
+        id: 1,
+        name: "Supino Reto",
+        description: "Exercício básico para desenvolvimento do peitoral",
+      },
+      {
+        id: 2,
+        name: "Agachamento Livre",
+        description: "Exercício fundamental para pernas e glúteos",
+      },
+      {
+        id: 3,
+        name: "Rosca Direta",
+        description: "Exercício isolado para bíceps",
+      },
+      {
+        id: 4,
+        name: "Puxada Frontal",
+        description: "Exercício para desenvolvimento das costas",
+      },
+      {
+        id: 5,
+        name: "Desenvolvimento Militar",
+        description: "Exercício composto para ombros",
+      },
+      {
+        id: 6,
+        name: "Prancha",
+        description: "Exercício isométrico para core",
+      },
+    ])
+  }
+
+  useEffect(() => {
+    loadExercises()
+  }, [])
 
   const filteredExercises = exercises.filter((exercise) => {
     const matchesSearch =
       exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exercise.description.toLowerCase().includes(searchTerm.toLowerCase())
+      (exercise.description || "").toLowerCase().includes(searchTerm.toLowerCase())
 
     return matchesSearch
   })
@@ -113,7 +129,7 @@ export default function ExercisesPage() {
             ? {
                 ...ex,
                 name: editingExercise.name.trim(),
-                description: editingExercise.description.trim() || "",
+                description: (editingExercise.description || "").trim(),
               }
             : ex,
         ),
@@ -123,11 +139,12 @@ export default function ExercisesPage() {
     }
   }
 
-  const handleDeleteExercise = (exerciseId: number) => {
-    setExercises((prev) => prev.filter((ex) => ex.id !== exerciseId))
+  const openDeleteDialog = (exercise: Exercise) => {
+    setExerciseToDelete(exercise)
+    setIsDeleteDialogOpen(true)
   }
 
-  const openEditDialog = (exercise: any) => {
+  const openEditDialog = (exercise: Exercise) => {
     setEditingExercise({ ...exercise })
     setIsEditExerciseOpen(true)
   }
@@ -307,31 +324,14 @@ export default function ExercisesPage() {
                     <Button variant="ghost" size="icon" onClick={() => openEditDialog(exercise)} className="h-8 w-8">
                       <Edit className="w-4 h-4" />
                     </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir Exercício</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Tem certeza que deseja excluir o exercício "{exercise.name}"? Esta ação não pode ser
-                            desfeita.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDeleteExercise(exercise.id)}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            Excluir
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => openDeleteDialog(exercise)}
+                      className="h-8 w-8 text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -357,6 +357,14 @@ export default function ExercisesPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Delete Exercise Dialog */}
+        <DeleteExerciseDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          exercise={exerciseToDelete}
+          onDelete={loadExercises}
+        />
       </div>
     </Layout>
   )

@@ -1,8 +1,12 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
+import React, {type MouseEventHandler} from "react"
+import { useState } from "react"
+import { keepPreviousData, useQuery } from "@tanstack/react-query"
+import { findAllOptions } from "@/lib/api-client/@tanstack/react-query.gen"
+import { apiClient } from "@/lib/client"
+import type { StudentResponseDto } from "@/lib/api-client/types.gen"
+import { UnifiedStatusBadge} from "@/lib/expiring-plans"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -17,107 +21,382 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X, Trash2, RotateCcw } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Layout from "@/components/layout"
 import StudentForm from "@/components/student-form"
-import {getStudentCurrentStatus, getStudentPlanExpirationDate, getUnifiedStatusBadge} from "@/lib/expiring-plans"
-import { STUDENTS, getStudentFullName } from "@/lib/students-data"
+import PageSelector from "@/components/ui/page-selector"
+import useDebounce from "@/hooks/use-debounce"
+import { useForm } from "react-hook-form"
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form"
+import { Checkbox } from "@/components/ui/checkbox"
+import ConfirmDeleteButton from "@/components/confirm-delete-button"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { deleteMutation, restoreMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { useToast } from "@/hooks/use-toast"
+
+// Type-safe filter interface
+interface StudentFilters {
+  status: "all" | "Ativo" | "Vencido" | "Inativo"
+  plan: "all" | "Mensal" | "Trimestral" | "Semestral" | "Anual"
+  minAge: number | null
+  maxAge: number | null
+  profession: string
+  gender: "all" | "Masculino" | "Feminino" | "Outro"
+  startDate: string
+  endDate: string
+  includeInactive: boolean
+}
+
+// Default filter values
+const DEFAULT_FILTERS: StudentFilters = {
+  status: "all",
+  plan: "all",
+  minAge: null,
+  maxAge: null,
+  profession: "all",
+  gender: "all",
+  startDate: "",
+  endDate: "",
+  includeInactive: false,
+}
+
+// Helper function to count active filters
+const countActiveFilters = (filters: StudentFilters): number => {
+  let count = 0
+  if (filters.status !== DEFAULT_FILTERS.status) count++
+  if (filters.plan !== DEFAULT_FILTERS.plan) count++
+  if (filters.minAge !== DEFAULT_FILTERS.minAge) count++
+  if (filters.maxAge !== DEFAULT_FILTERS.maxAge) count++
+  if (filters.profession !== DEFAULT_FILTERS.profession) count++
+  if (filters.gender !== DEFAULT_FILTERS.gender) count++
+  if (filters.startDate !== DEFAULT_FILTERS.startDate) count++
+  if (filters.endDate !== DEFAULT_FILTERS.endDate) count++
+  if (filters.includeInactive !== DEFAULT_FILTERS.includeInactive) count++
+  return count
+}
+
+const StudentCard = (props: {
+  student: StudentResponseDto,
+  onClick: () => void,
+  initials: string,
+  fullName: string,
+  expirationDate: Date,
+  onNewEvaluationClicked: MouseEventHandler<HTMLButtonElement>,
+  onClickedDelete: MouseEventHandler<HTMLButtonElement>,
+  isRestoring: boolean,
+  onConfirm: () => Promise<void>,
+  isDeleting: boolean,
+  age: number,
+  onDeleteClicked: () => void
+}) => (
+    <Card
+
+    className={`hover:shadow-md transition-shadow cursor-pointer ${props.student.deletedAt ? "bg-muted/60 border-dashed" : ""}`}
+    onClick={props.onClick}
+>
+    <CardContent className="p-4">
+        {/* Mobile Layout */}
+        <div className="flex flex-col gap-3 sm:hidden">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div
+                        className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
+                            {props.initials}
+                          </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-base leading-tight">{props.fullName}</h3>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                            <UnifiedStatusBadge expirationDate={props.expirationDate.toISOString()}/>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex items-center gap-1">
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={props.onNewEvaluationClicked}
+                        className="bg-transparent text-xs px-2 py-1 h-8 flex-shrink-0"
+                    >
+                        <Activity className="w-3 h-3 mr-1"/>
+                        Avaliação
+                    </Button>
+                    {props.student.deletedAt ? (
+                        <Button
+                            size="icon"
+                            variant="outline"
+                            onClick={props.onClickedDelete}
+                            className="h-8 w-8"
+                            disabled={props.isRestoring}
+                            aria-label="Reativar aluno"
+                        >
+                            <RotateCcw className="w-3 h-3"/>
+                        </Button>
+                    ) : (
+                        <ConfirmDeleteButton
+                            onConfirm={props.onConfirm}
+                            disabled={props.isDeleting}
+                            title="Excluir Aluno"
+                            description={`Tem certeza que deseja excluir ${props.fullName}? Ele será marcado como inativo e poderá ser restaurado.`}
+                            size="icon"
+                            variant="outline"
+                            className="h-8 w-8"
+                        >
+                            <Trash2 className="w-3 h-3"/>
+                        </ConfirmDeleteButton>
+                    )}
+                </div>
+            </div>
+
+            <div className="space-y-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                    <Mail className="w-3 h-3 flex-shrink-0"/>
+                    <span className="truncate flex-1">{props.student.email}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Phone className="w-3 h-3 flex-shrink-0"/>
+                    <span>{props.student.phone}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Calendar className="w-3 h-3 flex-shrink-0"/>
+                    <span>Plano Mensal</span>
+                </div>
+            </div>
+
+            <div className="text-xs text-muted-foreground space-y-1">
+                <div>
+                    {props.age} anos • {props.student.profession || "Profissão não informada"} •{" "}
+                    {props.student.gender === "M" ? "Masculino" : props.student.gender === "F" ? "Feminino" : "Outro"}
+                </div>
+                <div>
+                    Ingresso:{" "}
+                    {props.student.registrationDate ? new Date(props.student.registrationDate).toLocaleDateString("pt-BR") : "Data não informada"}
+                </div>
+            </div>
+        </div>
+
+        {/* Desktop Layout */}
+        <div className="hidden sm:flex items-center gap-4">
+            <div
+                className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span
+                        className="text-green-700 dark:text-green-300 font-semibold select-none">{props.initials}</span>
+            </div>
+
+            <div className="flex-1 min-w-0">
+                <div className="flex flex-col gap-2 mb-1">
+                    <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-lg flex-1 min-w-0 truncate">{props.fullName}</h3>
+                        <div className="flex gap-2 flex-shrink-0">
+                            <UnifiedStatusBadge expirationDate={props.expirationDate.toISOString()}/>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1 min-w-0">
+                        <Mail className="w-3 h-3 flex-shrink-0"/>
+                        <span className="truncate">{props.student.email}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <Phone className="w-3 h-3 flex-shrink-0"/>
+                        <span>{props.student.phone}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3 flex-shrink-0"/>
+                        <span>Plano Mensal</span>
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
+                        <span>
+                          {props.age} anos • {props.student.profession || "Profissão não informada"} • {props.student.gender === "M" ? "Masculino" : props.student.gender === "F" ? "Feminino" : "Outro"}
+                        </span>
+                    <span>Ingresso: {props.student.registrationDate ? new Date(props.student.registrationDate).toLocaleDateString("pt-BR") : "Data não informada"}</span>
+                </div>
+            </div>
+
+            <div className="flex flex-col gap-2 flex-shrink-0">
+                <div className="flex gap-2 flex-wrap">
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={props.onNewEvaluationClicked}
+                        className="bg-transparent text-xs px-2 py-1 h-8"
+                    >
+                        <Activity className="w-3 h-3 mr-1"/>
+                        Avaliação
+                    </Button>
+                    {props.student.deletedAt ? (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={props.onClickedDelete}
+                            disabled={props.isRestoring}
+                        >
+                            <RotateCcw className="w-3 h-3 mr-1"/> Reativar
+                        </Button>
+                    ) : (
+                        <ConfirmDeleteButton
+                            onConfirm={props.onDeleteClicked}
+                            disabled={props.isDeleting}
+                            title="Excluir Aluno"
+                            description={`Tem certeza que deseja excluir ${props.fullName}? Ele será marcado como inativo e poderá ser restaurado.`}
+                            size="sm"
+                            variant="outline"
+                        >
+                            <Trash2 className="w-3 h-3 mr-1"/> Excluir
+                        </ConfirmDeleteButton>
+                    )}
+                </div>
+            </div>
+        </div>
+    </CardContent>
+</Card>
+);
 
 export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [userRole, setUserRole] = useState<string>("")
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
-  const [filters, setFilters] = useState({
-    status: "all",
-    plan: "all",
-    ageRange: "all",
-    profession: "all",
-    gender: "all",
-    joinPeriod: "all",
+  
+  const form = useForm<StudentFilters>({
+    defaultValues: DEFAULT_FILTERS,
+    mode: "onChange",
   })
+  const watchedFilters = form.watch()
+
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { mutateAsync: deleteStudent, isPending: isDeleting } = useMutation(deleteMutation())
+  const { mutateAsync: restoreStudent, isPending: isRestoring } = useMutation(restoreMutation())
+  
+  // Get current page from URL query params or default to 0
+  // This allows users to share URLs with specific page numbers and maintains page state on refresh
+  const currentPage = parseInt(searchParams.get('page') || '0', 10)
 
-  useEffect(() => {
-    const role = localStorage.getItem("userRole") || "professor"
-    setUserRole(role)
-  }, [])
-
-  const filteredStudents = STUDENTS.filter((student) => {
-    const fullName = getStudentFullName(student)
-    const matchesSearch =
-      fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.profession.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.phone.includes(searchTerm)
-
-    // Use dynamic status based on plan expiration
-    const currentStatus = getStudentCurrentStatus(student.id)
-    const matchesStatus = filters.status === "all" || currentStatus === filters.status
-    const matchesPlan = filters.plan === "all" || student.plan === filters.plan
-
-    const age = new Date().getFullYear() - new Date(student.birthDate).getFullYear()
-    const matchesAge =
-      filters.ageRange === "all" ||
-      (filters.ageRange === "18-25" && age >= 18 && age <= 25) ||
-      (filters.ageRange === "26-35" && age >= 26 && age <= 35) ||
-      (filters.ageRange === "36-45" && age >= 36 && age <= 45) ||
-      (filters.ageRange === "46+" && age >= 46)
-
-    const matchesProfession = filters.profession === "all" || student.profession === filters.profession
-    const matchesGender =
-      filters.gender === "all" ||
-      (filters.gender === "Masculino" && student.sex === "M") ||
-      (filters.gender === "Feminino" && student.sex === "F")
-
-    const joinYear = new Date(student.registrationDate).getFullYear()
-    const matchesJoinPeriod =
-      filters.joinPeriod === "all" ||
-      (filters.joinPeriod === "2024" && joinYear === 2024) ||
-      (filters.joinPeriod === "2023" && joinYear === 2023) ||
-      (filters.joinPeriod === "older" && joinYear < 2023)
-
-    return (
-      matchesSearch &&
-      matchesStatus &&
-      matchesPlan &&
-      matchesAge &&
-      matchesProfession &&
-      matchesGender &&
-      matchesJoinPeriod
-    )
-  })
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Ativo":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      case "Vencido":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-      case "Inativo":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+  // Function to update URL with new page
+  const updatePageInURL = (newPage: number) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (newPage > 0) {
+      params.set('page', newPage.toString())
+    } else {
+      params.delete('page')
+    }
+    router.replace(`?${params.toString()}`)
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
 
-  const clearFilters = () => {
-    setFilters({
-      status: "all",
-      plan: "all",
-      ageRange: "all",
-      profession: "all",
-      gender: "all",
-      joinPeriod: "all",
-    })
+  // Function to set page and update URL
+  const setCurrentPage = (newPage: number) => {
+    updatePageInURL(newPage)
   }
 
-  const hasActiveFilters = Object.values(filters).some((filter) => filter !== "all")
-  const uniqueProfessions = [...new Set(STUDENTS.map((s) => s.profession))]
+  // Helper function to map frontend gender values to backend values
+  const mapGenderToBackend = (frontendGender: string): string | undefined => {
+    switch (frontendGender) {
+      case "Masculino": return "M"
+      case "Feminino": return "F"
+      case "Outro": return "O"
+      case "all": return undefined
+      default: return undefined
+    }
+  }
 
-  const handleCreateStudent = async (formData: any) => {
+  const pageSize = 20;
+
+  // Debounced inputs
+  const debouncedSearchTerm = useDebounce(searchTerm, 400)
+  const debouncedFilters = useDebounce(watchedFilters, 400)
+
+  // Validation flags (string ISO YYYY-MM-DD can be compared lexicographically)
+  const hasInvalidDateRange = Boolean(watchedFilters.startDate && watchedFilters.endDate && watchedFilters.startDate > watchedFilters.endDate)
+  const debouncedInvalidDateRange = Boolean(debouncedFilters.startDate && debouncedFilters.endDate && debouncedFilters.startDate > debouncedFilters.endDate)
+
+  React.useEffect(() => {
+    if (currentPage !== 0) {
+      setCurrentPage(0)
+    }
+    //We want to reset page only when debounced values change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchTerm, debouncedFilters])
+
+  // Fetch students using React Query with debounced values
+  const { data: studentsData, isLoading, error } = useQuery({
+    ...findAllOptions({
+      query: {
+        ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
+        ...(debouncedFilters.gender !== "all" && { gender: mapGenderToBackend(debouncedFilters.gender) }),
+        ...(debouncedFilters.profession !== "all" && { profession: debouncedFilters.profession }),
+        ...(debouncedFilters.minAge && { minAge: debouncedFilters.minAge }),
+        ...(debouncedFilters.maxAge && { maxAge: debouncedFilters.maxAge }),
+        ...(!debouncedInvalidDateRange && debouncedFilters.startDate && { registrationPeriodMinDate: debouncedFilters.startDate }),
+        ...(!debouncedInvalidDateRange && debouncedFilters.endDate && { registrationPeriodMaxDate: debouncedFilters.endDate }),
+        includeInactive: debouncedFilters.includeInactive,
+        pageable: {
+          page: currentPage,
+          size: pageSize,
+          sort: ["name,ASC"]
+        }
+      },
+      client: apiClient
+    }),
+    staleTime: 1000 * 60 * 5,
+    placeholderData: keepPreviousData
+  })
+
+  // Helper data extraction with proper typing
+  const totalPages = studentsData?.page?.totalPages || 0
+  const totalElements = studentsData?.page?.totalElements || 0
+
+  // Helper function to get student age from birthdate
+  const getStudentAge = (birthDate: string): number => {
+    if (!birthDate) {
+      return 0
+    }
+
+    const today = new Date()
+    const birth = new Date(birthDate)
+    let age = today.getFullYear() - birth.getFullYear()
+    const monthDiff = today.getMonth() - birth.getMonth()
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--
+    }
+
+    return age
+  }
+
+  // Handle search term change and reset page
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value)
+    setCurrentPage(0) // Reset to first page when search changes
+  }
+
+  // Helper function to get student full name
+  const getStudentFullName = (student: StudentResponseDto): string => {
+    return `${student.name || ""} ${student.surname || ""}`.trim()
+  }
+
+  // Clear filters via RHF
+  const clearFilters = () => {
+    form.reset(DEFAULT_FILTERS)
+    setCurrentPage(0)
+  }
+
+  const hasActiveFilters = countActiveFilters(watchedFilters) > 0
+
+  // Get unique professions from API data for filter dropdown
+  const uniqueProfessions = (studentsData?.content || []).map(s => s.profession).filter((p, i, arr) => p && arr.indexOf(p) === i)
+
+  const handleCreateStudent = async () => {
     setIsCreating(true)
 
     // Simulate API call
@@ -130,6 +409,23 @@ export default function StudentsPage() {
 
   const handleCancelCreate = () => {
     setIsCreateOpen(false)
+  }
+
+  const handleDelete = async (id: string) => {
+    await deleteStudent({ path: { id }, client: apiClient })
+    // Invalidate any students list queries
+    await queryClient.invalidateQueries({
+      predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAll'
+    })
+    toast({ title: "Aluno excluído", description: "O aluno foi marcado como inativo.", duration: 3000 })
+  }
+
+  const handleRestore = async (id: string) => {
+    await restoreStudent({ path: { id }, client: apiClient })
+    await queryClient.invalidateQueries({
+      predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAll'
+    })
+    toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
   }
 
   return (
@@ -174,7 +470,7 @@ export default function StudentsPage() {
             <Input
               placeholder="Buscar alunos por nome, email, telefone ou profissão..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => handleSearchChange(e.target.value)}
               className="pl-10"
             />
           </div>
@@ -186,7 +482,7 @@ export default function StudentsPage() {
                 Filtros
                 {hasActiveFilters && (
                   <Badge className="ml-2 bg-green-600 text-white text-xs px-1 py-0">
-                    {Object.values(filters).filter((f) => f !== "all").length}
+                    {countActiveFilters(watchedFilters)}
                   </Badge>
                 )}
               </Button>
@@ -197,270 +493,284 @@ export default function StudentsPage() {
                 <SheetDescription>Refine sua busca por alunos</SheetDescription>
               </SheetHeader>
               <div className="space-y-4 mt-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Status</label>
-                  <Select
-                    value={filters.status}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, status: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="Ativo">Ativo</SelectItem>
-                      <SelectItem value="Vencido">Vencido</SelectItem>
-                      <SelectItem value="Inativo">Inativo</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Form {...form}>
+                  <form className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="includeInactive"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                          <div className="space-y-0.5">
+                            <FormLabel>Mostrar inativos</FormLabel>
+                            <p className="text-xs text-muted-foreground">Inclui alunos marcados como inativos no resultado.</p>
+                          </div>
+                          <FormControl>
+                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="status"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Status</FormLabel>
+                          <FormControl>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">Todos</SelectItem>
+                                <SelectItem value="Ativo">Ativo</SelectItem>
+                                <SelectItem value="Vencido">Vencido</SelectItem>
+                                <SelectItem value="Inativo">Inativo</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Plano</label>
-                  <Select
-                    value={filters.plan}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, plan: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="Mensal">Mensal</SelectItem>
-                      <SelectItem value="Trimestral">Trimestral</SelectItem>
-                      <SelectItem value="Semestral">Semestral</SelectItem>
-                      <SelectItem value="Anual">Anual</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="plan"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Plano</FormLabel>
+                          <FormControl>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">Todos</SelectItem>
+                                <SelectItem value="Mensal">Mensal</SelectItem>
+                                <SelectItem value="Trimestral">Trimestral</SelectItem>
+                                <SelectItem value="Semestral">Semestral</SelectItem>
+                                <SelectItem value="Anual">Anual</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Faixa Etária</label>
-                  <Select
-                    value={filters.ageRange}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, ageRange: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas</SelectItem>
-                      <SelectItem value="18-25">18-25 anos</SelectItem>
-                      <SelectItem value="26-35">26-35 anos</SelectItem>
-                      <SelectItem value="36-45">36-45 anos</SelectItem>
-                      <SelectItem value="46+">46+ anos</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="minAge"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Idade Mínima</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="Ex: 18"
+                              value={field.value ?? ""}
+                              onChange={e => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                              min={0}
+                              max={150}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Gênero</label>
-                  <Select
-                    value={filters.gender}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, gender: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="Masculino">Masculino</SelectItem>
-                      <SelectItem value="Feminino">Feminino</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="maxAge"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Idade Máxima</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="Ex: 65"
+                              value={field.value ?? ""}
+                              onChange={e => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                              min={0}
+                              max={150}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Profissão</label>
-                  <Select
-                    value={filters.profession}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, profession: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas</SelectItem>
-                      {uniqueProfessions.map((profession) => (
-                        <SelectItem key={profession} value={profession}>
-                          {profession}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="gender"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Gênero</FormLabel>
+                          <FormControl>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">Todos</SelectItem>
+                                <SelectItem value="Masculino">Masculino</SelectItem>
+                                <SelectItem value="Feminino">Feminino</SelectItem>
+                                <SelectItem value="Outro">Outro</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Período de Ingresso</label>
-                  <Select
-                    value={filters.joinPeriod}
-                    onValueChange={(value) => setFilters((prev) => ({ ...prev, joinPeriod: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="2024">2024</SelectItem>
-                      <SelectItem value="2023">2023</SelectItem>
-                      <SelectItem value="older">Anterior a 2023</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                    <FormField
+                      control={form.control}
+                      name="profession"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Profissão</FormLabel>
+                          <FormControl>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">Todas</SelectItem>
+                                {uniqueProfessions.map((profession) => (
+                                  <SelectItem key={profession} value={profession!}>
+                                    {profession}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
 
-                {hasActiveFilters && (
-                  <Button variant="outline" onClick={clearFilters} className="w-full bg-transparent">
-                    <X className="w-4 h-4 mr-2" />
-                    Limpar Filtros
-                  </Button>
-                )}
+                    <FormField
+                      control={form.control}
+                      name="startDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Data de Ingresso (De)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="date"
+                              value={field.value}
+                              onChange={field.onChange}
+                              className={hasInvalidDateRange ? "border-red-500 focus-visible:ring-red-500" : undefined}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="endDate"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Data de Ingresso (Até)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="date"
+                              value={field.value}
+                              onChange={field.onChange}
+                              className={hasInvalidDateRange ? "border-red-500 focus-visible:ring-red-500" : undefined}
+                            />
+                          </FormControl>
+                          {hasInvalidDateRange && (
+                            <p className="text-xs text-red-600">A data inicial não pode ser posterior à data final.</p>
+                          )}
+                        </FormItem>
+                      )}
+                    />
+
+                    {hasActiveFilters && (
+                      <Button type="button" variant="outline" onClick={clearFilters} className="w-full bg-transparent">
+                        <X className="w-4 h-4 mr-2" />
+                        Limpar Filtros
+                      </Button>
+                    )}
+                  </form>
+                </Form>
               </div>
             </SheetContent>
           </Sheet>
         </div>
 
         {/* Results Summary */}
-        {(searchTerm || hasActiveFilters) && (
+        {!isLoading && !error && (
           <div className="text-sm text-muted-foreground">
-            Mostrando {filteredStudents.length} de {STUDENTS.length} alunos
+            Mostrando {(studentsData?.content || []).length} de {totalElements} alunos
+            {hasActiveFilters && " (filtrados)"}
           </div>
         )}
 
-        {/* Students List */}
-        <div className="space-y-3">
-          {filteredStudents.map((student) => {
-            const age = new Date().getFullYear() - new Date(student.birthDate).getFullYear()
-            const fullName = `${student.name} ${student.surname}`
-            const initials = `${student.name.charAt(0)}${student.surname.charAt(0)}`.toUpperCase()
-
-            // Get plan expiration date for unified status
-            const planExpirationDate = getStudentPlanExpirationDate(student.id)
-
-            return (
-              <Card
-                key={student.id}
-                className="hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => router.push(`/students/${student.id}`)}
-              >
+        {/* Loading State */}
+        {isLoading && (
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
                 <CardContent className="p-4">
-                  {/* Mobile Layout */}
-                  <div className="flex flex-col gap-3 sm:hidden">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
-                            {initials}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-base leading-tight">{fullName}</h3>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {getUnifiedStatusBadge(planExpirationDate)}
-                          </div>
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          router.push(`/students/${student.id}/evaluation/new`)
-                        }}
-                        className="bg-transparent text-xs px-2 py-1 h-8 flex-shrink-0"
-                      >
-                        <Activity className="w-3 h-3 mr-1" />
-                        Avaliação
-                      </Button>
-                    </div>
-
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Mail className="w-3 h-3 flex-shrink-0" />
-                        <span className="truncate flex-1">{student.email}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Phone className="w-3 h-3 flex-shrink-0" />
-                        <span>{student.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-3 h-3 flex-shrink-0" />
-                        <span>Plano {student.plan}</span>
-                      </div>
-                    </div>
-
-                    <div className="text-xs text-muted-foreground space-y-1">
-                      <div>
-                        {age} anos • {student.profession} •{" "}
-                        {student.sex === "M" ? "Masculino" : "Feminino"}
-                      </div>
-                      <div>
-                        Ingresso:{" "}
-                        {new Date(student.registrationDate).toLocaleDateString("pt-BR")}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Desktop Layout */}
-                  <div className="hidden sm:flex items-center gap-4">
-                    <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-green-700 dark:text-green-300 font-semibold select-none">{initials}</span>
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-col gap-2 mb-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-lg flex-1 min-w-0 truncate">{fullName}</h3>
-                          <div className="flex gap-2 flex-shrink-0">
-                            {getUnifiedStatusBadge(planExpirationDate)}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1 min-w-0">
-                          <Mail className="w-3 h-3 flex-shrink-0" />
-                          <span className="truncate">{student.email}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Phone className="w-3 h-3 flex-shrink-0" />
-                          <span>{student.phone}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3 flex-shrink-0" />
-                          <span>Plano {student.plan}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
-                        <span>
-                          {age} anos • {student.profession} • {student.sex === "M" ? "Masculino" : "Feminino"}
-                        </span>
-                        <span>Ingresso: {new Date(student.registrationDate).toLocaleDateString("pt-BR")}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2 flex-shrink-0">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          router.push(`/students/${student.id}/evaluation/new`)
-                        }}
-                        className="bg-transparent text-xs px-2 py-1 h-8"
-                      >
-                        <Activity className="w-3 h-3 mr-1" />
-                        Avaliação
-                      </Button>
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <Card>
+            <CardContent className="text-center py-12">
+              <div className="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-red-700 dark:text-red-300 font-semibold text-lg">!</span>
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Erro ao carregar alunos</h3>
+              <p className="text-muted-foreground">Tente recarregar a página</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Students List */}
+        <div className="space-y-3">
+          {!isLoading && !error && (studentsData?.content || []).map((student: StudentResponseDto) => {
+            const age = getStudentAge(student.birthDate || "")
+            const fullName = getStudentFullName(student)
+            const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase()
+
+            // For now, use mock plan expiration since backend doesn't have this yet
+            // In real implementation, this would come from the backend
+            const planExpirationDate = new Date()
+            planExpirationDate.setDate(planExpirationDate.getDate() + 30)
+
+            const expirationDate = new Date(student.registrationDate!)
+            expirationDate.setFullYear(expirationDate.getFullYear() + 2)
+            expirationDate.setMonth(expirationDate.getMonth() + 5)
+            expirationDate.setDate(expirationDate.getDate() + 20)
+            return (
+              <StudentCard key={student.id} student={student}
+                           onClick={() => router.push(`/students/${student.id}`)} initials={initials}
+                           fullName={fullName} expirationDate={expirationDate} onNewEvaluationClicked={e => {
+                  e.stopPropagation()
+                  router.push(`/students/${student.id}/evaluation/new`)
+              }} onClickedDelete={async e => {
+                  e.stopPropagation();
+                  await handleRestore(student.id!)
+              }} isRestoring={isRestoring} onConfirm={() => handleDelete(student.id!)} isDeleting={isDeleting} age={age}
+                           onDeleteClicked={() => {
+                                    void handleDelete(student.id!)
+                                }}/>
             )
           })}
         </div>
 
-        {filteredStudents.length === 0 && (
+        {!isLoading && !error && (studentsData?.content || []).length === 0 && (
           <Card>
             <CardContent className="text-center py-12">
               <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -479,6 +789,16 @@ export default function StudentsPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Pagination */}
+        {!isLoading && !error && (studentsData?.content || []).length > 0 && totalPages > 1 && (
+          <PageSelector
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        )}
+
       </div>
     </Layout>
   )

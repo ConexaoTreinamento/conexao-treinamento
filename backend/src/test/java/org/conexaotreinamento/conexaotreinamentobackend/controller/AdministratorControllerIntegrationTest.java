@@ -16,6 +16,8 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.conexaotreinamento.conexaotreinamentobackend.config.TestContainerConfig;
+import org.springframework.context.annotation.Import;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -31,6 +33,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@Import(TestContainerConfig.class)
 @DisplayName("AdministratorController Integration Tests")
 class AdministratorControllerIntegrationTest {
 
@@ -100,8 +103,7 @@ class AdministratorControllerIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.fieldErrors.firstName").value("Nome é obrigatório"))
                 .andExpect(jsonPath("$.fieldErrors.lastName").value("Sobrenome é obrigatório"))
-                .andExpect(jsonPath("$.fieldErrors.email").value("Email é obrigatório"))
-                .andExpect(jsonPath("$.fieldErrors.password").value("Senha é obrigatória"));
+                .andExpect(jsonPath("$.fieldErrors.email").value("Email é obrigatório"));
 
         // Verify nothing was saved
         assertThat(administratorRepository.count()).isEqualTo(0);

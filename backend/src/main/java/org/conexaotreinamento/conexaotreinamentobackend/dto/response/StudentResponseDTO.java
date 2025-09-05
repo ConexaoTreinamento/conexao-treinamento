@@ -27,6 +27,7 @@ public record StudentResponseDTO(
         String emergencyContactRelationship,
         String objectives,
         String observations,
+        LocalDate registrationDate,
         Instant createdAt,
         Instant updatedAt,
         Instant deletedAt,

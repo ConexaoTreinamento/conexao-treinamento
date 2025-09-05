@@ -94,6 +94,10 @@ public class Student {
     @Setter
     private String objectives;
 
+    @Column(name = "registration_date", nullable = false, updatable = false)
+    @Getter
+    @Setter
+    private LocalDate registrationDate;
     @Column(columnDefinition = "TEXT")
     @Setter
     private String observations;

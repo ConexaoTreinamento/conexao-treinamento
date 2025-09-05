@@ -13,16 +13,19 @@ import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.AnamnesisRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.PhysicalImpairmentRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.specification.StudentSpecifications;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Service
@@ -109,28 +112,43 @@ public class StudentService {
         Student student = studentRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
         
-        throw new UnsupportedOperationException("Not implemented yet");
+        return StudentResponseDTO.fromEntity(student);
     }
 
-    public Page<StudentResponseDTO> findAll(String search, Pageable pageable, boolean includeInactive) {
+    public Page<StudentResponseDTO> findAll(
+            String search, 
+            Student.Gender gender, 
+            String profession, 
+            Integer minAge,
+            Integer maxAge,
+            LocalDate startDate,
+            LocalDate endDate,
+            boolean includeInactive, 
+            Pageable pageable) {
+        
         if (pageable.getSort().isUnsorted()) {
-            pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), 
-                                    Sort.by("createdAt").descending());
+            pageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                Sort.by("createdAt").descending()
+            );
         }
         
-        Page<Student> students;
-        if (search == null || search.isBlank()) {
-            students = includeInactive ? 
-                studentRepository.findAll(pageable) : 
-                studentRepository.findByDeletedAtIsNull(pageable);
-        } else {
-            String searchTerm = "%" + search.toLowerCase() + "%";
-            students = includeInactive ? 
-                studentRepository.findBySearchTermIncludingInactive(searchTerm, pageable) :
-                studentRepository.findBySearchTermAndDeletedAtIsNull(searchTerm, pageable);
-        }
+        // Use specifications for dynamic filtering
+        Specification<Student> spec = StudentSpecifications.withFilters(
+            search,
+            gender,
+            profession,
+            minAge,
+            maxAge,
+            startDate,
+            endDate,
+            includeInactive
+        );
         
-        throw new UnsupportedOperationException("Not implemented yet - need to map to DTOs");
+        Page<Student> students = studentRepository.findAll(spec, pageable);
+        
+        return students.map(StudentResponseDTO::fromEntity);
     }
 
     @Transactional
@@ -154,6 +172,8 @@ public class StudentService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
 
         student.deactivate();
+
+        studentRepository.save(student);
     }
 
     @Transactional
@@ -166,6 +186,9 @@ public class StudentService {
         }
 
         student.activate();
-        throw new UnsupportedOperationException("Not implemented yet - need to map to DTO");
+
+        studentRepository.save(student);
+
+        return StudentResponseDTO.fromEntity(student);
     }
 }
