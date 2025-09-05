@@ -166,7 +166,7 @@ export default function AdministratorsPage() {
 
   // Reset form
   const resetForm = () => {
-    setFormData({ firstName: "", lastName: "", email: "", password: "" })
+    setFormData({ firstName:"", lastName: "", email: "", password: "" })
     setErrors({})
     setTouched({})
     setShowSuccess(false)
@@ -233,6 +233,13 @@ export default function AdministratorsPage() {
     return null
   }
 
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsCreateOpen(open)
+    if (!open) {
+      resetForm()
+    }
+  }
+
   return (
     <Layout>
       <div className="space-y-4">
@@ -242,7 +249,7 @@ export default function AdministratorsPage() {
             <h1 className="text-2xl font-bold">Administradores</h1>
             <p className="text-muted-foreground">Gerencie todos os administradores do sistema</p>
           </div>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <Dialog open={isCreateOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button className="bg-green-600 hover:bg-green-700">
                 <Plus className="w-4 h-4 mr-2" />
