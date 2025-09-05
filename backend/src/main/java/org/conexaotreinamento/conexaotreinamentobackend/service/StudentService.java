@@ -78,7 +78,7 @@ public class StudentService {
         anamnesis.setAlteredCholesterol(request.anamnesis().alteredCholesterol());
         anamnesis.setOsteoporosisLocation(request.anamnesis().osteoporosisLocation());
 
-        Anamnesis salvedAnamnesis = anamnesisRepository.save(anamnesis);
+        Anamnesis savedAnamnesis = anamnesisRepository.save(anamnesis);
 
         List<PhysicalImpairment> savedImpairments = new ArrayList<>();
         if (request.physicalImpairments() != null) {
@@ -93,7 +93,7 @@ public class StudentService {
             }
         }
 
-        AnamnesisResponseDTO responseAnamnesis = AnamnesisResponseDTO.fromEntity(salvedAnamnesis);
+        AnamnesisResponseDTO responseAnamnesis = AnamnesisResponseDTO.fromEntity(savedAnamnesis);
 
         List<PhysicalImpairmentResponseDTO> responsePhysicalImpairments = savedImpairments.stream()
                 .map(PhysicalImpairmentResponseDTO::fromEntity)
