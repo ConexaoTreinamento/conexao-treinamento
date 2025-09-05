@@ -316,12 +316,10 @@ export default function StudentsPage() {
   const debouncedSearchTerm = useDebounce(searchTerm, 400)
   const debouncedFilters = useDebounce(watchedFilters, 400)
 
-  // Flags de validação (string ISO YYYY-MM-DD pode ser comparada lexicograficamente)
+  // Validation flags (string ISO YYYY-MM-DD can be compared lexicographically)
   const hasInvalidDateRange = Boolean(watchedFilters.startDate && watchedFilters.endDate && watchedFilters.startDate > watchedFilters.endDate)
   const debouncedInvalidDateRange = Boolean(debouncedFilters.startDate && debouncedFilters.endDate && debouncedFilters.startDate > debouncedFilters.endDate)
 
-  // Reset para página 0 quando filtros/busca mudarem (após debounce)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   React.useEffect(() => {
     if (currentPage !== 0) {
       setCurrentPage(0)
@@ -330,7 +328,7 @@ export default function StudentsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearchTerm, debouncedFilters])
 
-  // Fetch students using React Query com valores debounced (evita enviar datas inválidas)
+  // Fetch students using React Query with debounced values
   const { data: studentsData, isLoading, error } = useQuery({
     ...findAllOptions({
       query: {
@@ -358,7 +356,7 @@ export default function StudentsPage() {
   const totalPages = studentsData?.page?.totalPages || 0
   const totalElements = studentsData?.page?.totalElements || 0
 
-  // Helper function to get student age from birth date
+  // Helper function to get student age from birthdate
   const getStudentAge = (birthDate: string): number => {
     if (!birthDate) {
       return 0
