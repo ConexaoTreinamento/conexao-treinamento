@@ -52,14 +52,14 @@ export default function ConfirmDeleteButton({
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={(v) => !loading && setOpen(v)}>
+    <AlertDialog open={open} onOpenChange={v => !loading && setOpen(v)}>
       <AlertDialogTrigger asChild>
         <Button
           variant={variant}
           size={size}
           className={className}
           disabled={disabled || loading}
-          onClick={(e) => e.stopPropagation()}
+          onClick={e => e.stopPropagation()}
         >
           {children ?? <Trash2 className="w-4 h-4" />}
         </Button>
