@@ -21,7 +21,8 @@ public interface ExerciseRepository extends JpaRepository<Exercise, UUID> {
            "AND (unaccent(LOWER(e.name)) LIKE '%' || unaccent(LOWER(:search)) || '%' " +
            "OR unaccent(LOWER(e.description)) LIKE '%' || unaccent(LOWER(:search)) || '%' " +
            "OR word_similarity(unaccent(LOWER(e.name)), unaccent(LOWER(:search))) > 0.3 " +
-           "OR word_similarity(unaccent(LOWER(e.description)), unaccent(LOWER(:search))) > 0.3)",
+           "OR word_similarity(unaccent(LOWER(e.description)), unaccent(LOWER(:search))) > 0.3) " +
+            "ORDER BY similarity(unaccent(LOWER(e.name)), unaccent(LOWER(:search))) DESC",
            nativeQuery = true)
     Page<Exercise> findBySearchTermAndDeletedAtIsNull(@Param("search") String search, Pageable pageable);
     
@@ -29,7 +30,8 @@ public interface ExerciseRepository extends JpaRepository<Exercise, UUID> {
            "(unaccent(LOWER(e.name)) LIKE '%' || unaccent(LOWER(:search)) || '%' " +
            "OR unaccent(LOWER(e.description)) LIKE '%' || unaccent(LOWER(:search)) || '%' " +
            "OR word_similarity(unaccent(LOWER(e.name)), unaccent(LOWER(:search))) > 0.3 " +
-           "OR word_similarity(unaccent(LOWER(e.description)), unaccent(LOWER(:search))) > 0.3)",
+           "OR word_similarity(unaccent(LOWER(e.description)), unaccent(LOWER(:search))) > 0.3) " +
+            "ORDER BY similarity(unaccent(LOWER(e.name)), unaccent(LOWER(:search))) DESC",
            nativeQuery = true)
     Page<Exercise> findBySearchTermIncludingInactive(@Param("search") String search, Pageable pageable);
 }

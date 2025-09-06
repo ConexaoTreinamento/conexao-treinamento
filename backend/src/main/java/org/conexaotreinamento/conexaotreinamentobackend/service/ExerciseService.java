@@ -42,21 +42,25 @@ public class ExerciseService {
     }
 
     public Page<ExerciseResponseDTO> findAll(String search, Pageable pageable, boolean includeInactive) {
-        if (pageable.getSort().isUnsorted()) {
-            pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
-                                    Sort.by("createdAt").descending());
-        }
 
         Page<Exercise> exercises;
+
         if (search == null || search.isBlank()) {
+
+            if (pageable.getSort().isUnsorted()) {
+                pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                        Sort.by("createdAt").descending());
+            }
+
             exercises = includeInactive ? 
                 repository.findAll(pageable) : 
                 repository.findByDeletedAtIsNull(pageable);
         } else {
             String searchTerm = "%" + search.toLowerCase() + "%";
-            exercises = includeInactive ? 
-                repository.findBySearchTermIncludingInactive(searchTerm, pageable) :
-                repository.findBySearchTermAndDeletedAtIsNull(searchTerm, pageable);
+
+            exercises = includeInactive ?
+                    repository.findBySearchTermIncludingInactive(searchTerm, pageable) :
+                    repository.findBySearchTermAndDeletedAtIsNull(searchTerm, pageable);
         }
         
         return exercises.map(ExerciseResponseDTO::fromEntity);

@@ -6,9 +6,6 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
@@ -73,14 +70,12 @@ export function DeleteExerciseDialog({
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Excluir Exercício</AlertDialogTitle>
-          <AlertDialogDescription>
-            Tem certeza que deseja excluir o exercício "{exercise?.name}"? Esta ação não pode ser
-            desfeita.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
+        <AlertDialogTitle className="sr-only">Excluir Exercício</AlertDialogTitle>
+        <h2 className="text-lg font-semibold mb-4">Excluir Exercício</h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Tem certeza que deseja excluir o exercício "{exercise?.name}"? Esta ação não pode ser desfeita.
+        </p>
+        <div className="flex gap-2 justify-end items-baseline">
           <AlertDialogCancel disabled={isLoading}>
             Cancelar
           </AlertDialogCancel>
@@ -91,7 +86,7 @@ export function DeleteExerciseDialog({
           >
             {isLoading ? "Excluindo..." : "Excluir"}
           </AlertDialogAction>
-        </AlertDialogFooter>
+        </div>
       </AlertDialogContent>
     </AlertDialog>
   )
