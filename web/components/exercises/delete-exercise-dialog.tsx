@@ -46,7 +46,12 @@ export function DeleteExerciseDialog({
       })
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        toast({
+          title: "Erro",
+          description: "Erro ao excluir exercício. Tente novamente.",
+          variant: "destructive",
+        })
+        return
       }
       
       onOpenChange(false)
