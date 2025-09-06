@@ -131,6 +131,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthEntryPoint))
                 .authenticationProvider(authenticationProvider())
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -140,6 +141,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/users/**").permitAll()
+                        .requestMatchers("/swagger-ui.html").permitAll()
+                        .requestMatchers("/swagger-ui/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**").permitAll()
                         .anyRequest().authenticated());
 
         return http.build();
@@ -150,6 +154,7 @@ public class SecurityConfig {
     public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthEntryPoint))
                 .authenticationProvider(authenticationProvider())
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -160,6 +165,9 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/users/**").authenticated()
                         .requestMatchers("/exercises/**").permitAll()
+                        .requestMatchers("/swagger-ui.html").permitAll()
+                        .requestMatchers("/swagger-ui/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**").permitAll()
                         .anyRequest().authenticated());
 
         return http.build();
