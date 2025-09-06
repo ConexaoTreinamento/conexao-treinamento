@@ -26,6 +26,8 @@ import { Search, Plus, Activity, Edit, Trash2, X, Eye } from "lucide-react"
 import Layout from "@/components/layout"
 import { DeleteExerciseDialog } from "@/components/exercises/delete-exercise-dialog"
 import { useEffect } from "react"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useToast } from "@/hooks/use-toast"
 
 
 interface Exercise {
@@ -52,13 +54,49 @@ export default function ExercisesPage() {
   const [exercises, setExercises] = useState<Exercise[]>([])
   const [totalPages, setTotalPages] = useState(0)
   const [currentPage, setCurrentPage] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
+  const { toast } = useToast()
 
   const loadExercises = async () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-    const response = await fetch(`${apiUrl}/exercises?search=${searchTerm}&page=${currentPage}`)
-    const data = await response.json()
-    setExercises(data.content || data || [])
-    setTotalPages(data.page?.totalPages || 1)
+    try {
+      setIsLoading(true)
+      
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+      const response = await fetch(`${apiUrl}/exercises?search=${searchTerm}&page=${currentPage}`)
+      
+      if (!response.ok) {
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar exercícios. Tente novamente.",
+          variant: "destructive",
+        })
+        setExercises([])
+        setTotalPages(1)
+        return
+      }
+      
+      const data = await response.json()
+      
+      // Validação dos dados recebidos
+      if (data && typeof data === 'object') {
+        setExercises(Array.isArray(data.content) ? data.content : Array.isArray(data) ? data : [])
+        setTotalPages(data.page?.totalPages || 1)
+      } else {
+        setExercises([])
+        setTotalPages(1)
+      }
+    } catch (err) {
+      console.error('Erro ao carregar exercícios:', err)
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar exercícios. Tente novamente.",
+        variant: "destructive",
+      })
+      setExercises([])
+      setTotalPages(1)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -70,8 +108,17 @@ export default function ExercisesPage() {
   }
 
   const handleSearch = () => {
-    setSearchTerm(searchInput)
-    setCurrentPage(0)
+    try {
+      setSearchTerm(searchInput)
+      setCurrentPage(0)
+    } catch (err) {
+      console.error('Erro ao realizar busca:', err)
+      toast({
+        title: "Erro",
+        description: "Erro ao realizar busca. Tente novamente.",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleClearSearch = () => {
@@ -81,41 +128,76 @@ export default function ExercisesPage() {
   }
 
   const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage)
+    try {
+      setCurrentPage(newPage)
+    } catch (err) {
+      console.error('Erro ao mudar página:', err)
+      toast({
+        title: "Erro",
+        description: "Erro ao mudar página. Tente novamente.",
+        variant: "destructive",
+      })
+    }
   }
 
 
   const handleCreateExercise = () => {
-    if (newExerciseForm.name.trim()) {
-      const newExercise = {
-        id: Date.now(),
-        name: newExerciseForm.name.trim(),
-        description: newExerciseForm.description.trim() || "",
+    try {
+      if (newExerciseForm.name.trim()) {
+        const newExercise = {
+          id: Date.now(),
+          name: newExerciseForm.name.trim(),
+          description: newExerciseForm.description.trim() || "",
+        }
+        setExercises((prev) => [...prev, newExercise])
+        setNewExerciseForm({
+          name: "",
+          description: "",
+        })
+        setIsNewExerciseOpen(false)
+        toast({
+          title: "Sucesso",
+          description: "Exercício criado com sucesso!",
+        })
       }
-      setExercises((prev) => [...prev, newExercise])
-      setNewExerciseForm({
-        name: "",
-        description: "",
+    } catch (err) {
+      console.error('Erro ao criar exercício:', err)
+      toast({
+        title: "Erro",
+        description: "Erro ao criar exercício. Tente novamente.",
+        variant: "destructive",
       })
-      setIsNewExerciseOpen(false)
     }
   }
 
   const handleEditExercise = () => {
-    if (editingExercise && editingExercise.name.trim()) {
-      setExercises((prev) =>
-        prev.map((ex) =>
-          ex.id === editingExercise.id
-            ? {
-                ...ex,
-                name: editingExercise.name.trim(),
-                description: (editingExercise.description || "").trim(),
-              }
-            : ex,
-        ),
-      )
-      setEditingExercise(null)
-      setIsEditExerciseOpen(false)
+    try {
+      if (editingExercise && editingExercise.name.trim()) {
+        setExercises((prev) =>
+          prev.map((ex) =>
+            ex.id === editingExercise.id
+              ? {
+                  ...ex,
+                  name: editingExercise.name.trim(),
+                  description: (editingExercise.description || "").trim(),
+                }
+              : ex,
+          ),
+        )
+        setEditingExercise(null)
+        setIsEditExerciseOpen(false)
+        toast({
+          title: "Sucesso",
+          description: "Exercício editado com sucesso!",
+        })
+      }
+    } catch (err) {
+      console.error('Erro ao editar exercício:', err)
+      toast({
+        title: "Erro",
+        description: "Erro ao editar exercício. Tente novamente.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -254,9 +336,28 @@ export default function ExercisesPage() {
           Página {currentPage + 1} de {totalPages} ({exercises.length} exercícios nesta página)
         </div>
 
+
+        {/* Loading State */}
+        {isLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 gap-3">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <Card key={index} className="h-32">
+                <CardHeader className="pb-2 pt-3 px-3">
+                  <Skeleton className="h-4 w-3/4" />
+                </CardHeader>
+                <CardContent className="px-3 pb-3">
+                  <Skeleton className="h-3 w-full mb-2" />
+                  <Skeleton className="h-3 w-2/3" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
         {/* Exercises Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 gap-3">
-          {exercises.map((exercise) => (
+        {!isLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 gap-3">
+            {exercises.map((exercise) => (
             <Card 
               key={exercise.id} 
               className="hover:shadow-md transition-shadow h-32 flex flex-col cursor-pointer" 
@@ -330,10 +431,11 @@ export default function ExercisesPage() {
                 )}
               </CardContent>
             </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {exercises.length === 0 && (
+        {!isLoading && exercises.length === 0 && (
           <Card>
             <CardContent className="text-center py-12">
               <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
