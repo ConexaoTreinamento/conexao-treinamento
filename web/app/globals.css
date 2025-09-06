@@ -57,3 +57,10 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  [data-radix-dialog-overlay] {
+    background-color: rgba(0, 0, 0, 0.3) !important;
+    backdrop-filter: blur(4px) !important;
+  }
+}
