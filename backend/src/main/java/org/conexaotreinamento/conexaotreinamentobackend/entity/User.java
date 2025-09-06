@@ -1,8 +1,18 @@
 package org.conexaotreinamento.conexaotreinamentobackend.entity;
 
+import java.time.Instant;
+import java.util.UUID;
+
+import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -12,31 +22,26 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import java.time.Instant;
-import java.util.UUID;
-
 @Entity
-@Table(name = "exercises")
+@Table(name = "users")
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Exercise {
-
+public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, length = 120)
-    @Setter
-    private String name;
+    @Column(nullable = false, length = 120, unique = true)
+    private String email;
 
-    @Column(length = 255)
+    @Column(nullable = false, length = 120)
+    private String password;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false, length = 20)
     @Setter
-    private String description;
+    private Role role;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -47,12 +52,12 @@ public class Exercise {
     private Instant updatedAt;
 
     @Column(name = "deleted_at")
-    @Setter
     private Instant deletedAt;
 
-    public Exercise(String name, String description) {
-        this.name = name;
-        this.description = description;
+    public User(String email, String password, Role role) {
+        this.email = email;
+        this.password = password;
+        this.role = role;
     }
 
     public boolean isActive() {
