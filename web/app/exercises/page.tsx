@@ -9,9 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
-  DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
@@ -37,6 +35,7 @@ interface Exercise {
 }
 
 export default function ExercisesPage() {
+  const [searchInput, setSearchInput] = useState("")
   const [searchTerm, setSearchTerm] = useState("")
   const [isNewExerciseOpen, setIsNewExerciseOpen] = useState(false)
   const [isEditExerciseOpen, setIsEditExerciseOpen] = useState(false)
@@ -66,8 +65,18 @@ export default function ExercisesPage() {
     loadExercises()
   }, [currentPage, searchTerm])
 
-  const handleSearchChange = (value: string) => {
-    setSearchTerm(value)
+  const handleSearchInputChange = (value: string) => {
+    setSearchInput(value)
+  }
+
+  const handleSearch = () => {
+    setSearchTerm(searchInput)
+    setCurrentPage(0)
+  }
+
+  const handleClearSearch = () => {
+    setSearchInput("")
+    setSearchTerm("")
     setCurrentPage(0)
   }
 
@@ -222,15 +231,16 @@ export default function ExercisesPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               placeholder="Buscar exercícios por nome ou descrição..."
-              value={searchTerm}
-              onChange={(e) => handleSearchChange(e.target.value)}
+              value={searchInput}
+              onChange={(e) => handleSearchInputChange(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               className="pl-10 pr-10"
             />
-            {searchTerm && (
+            {searchInput && (
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => handleSearchChange("")}
+                onClick={handleClearSearch}
                 className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 hover:bg-muted/50 text-muted-foreground hover:text-foreground"
               >
                 <X className="w-4 h-4" />
