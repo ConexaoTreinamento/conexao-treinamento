@@ -95,7 +95,7 @@ export default function SchedulePage() {
     },
   ])
 
-  const teachers = ["Prof. Ana", "Prof. Marina", "Prof. Roberto", "Prof. Carlos"]
+  const trainers = ["Prof. Ana", "Prof. Marina", "Prof. Roberto", "Prof. Carlos"]
 
   // Generate dates for horizontal scroll based on current month (14 days around middle of month)
   const getScrollDates = () => {
@@ -434,7 +434,7 @@ export default function SchedulePage() {
           initialData={modalInitialData}
           onClose={handleCloseClassModal}
           onSubmitData={handleCreateClass}
-          teachers={teachers}
+          trainers={trainers}
         />
       </div>
     </Layout>

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Fragment } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,139 +11,123 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Search, Filter, Plus, User, Phone, Mail, Calendar, Clock, Edit, Trash2, UserPlus } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
-import TeacherModal from "@/components/teacher-modal"
+import TrainerModal from "@/components/trainer-modal"
+import { createTrainerAndUserMutation, createTrainerAndUserOptions, findAllTrainersOptions, softDeleteTrainerUserMutation, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { createTrainerAndUser, TrainerResponseDto } from "@/lib/api-client"
+import { apiClient } from "@/lib/client"
+import { client } from "@/lib/api-client/client.gen"
 
-// Interface for teacher data to match the modal
-interface Teacher {
-  id: number
-  name: string
-  email: string
-  phone: string
-  address: string
-  birthDate: string
-  specialties: string[]
-  compensation: string
-  status: string
-  joinDate: string
-  hoursWorked: number
-}
+// Interface for trainer data to match the modal
 
-export default function TeachersPage() {
+export default function TrainersPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [userRole, setUserRole] = useState<string>("admin")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<"create" | "edit">("create")
-  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null)
+  const [editingTrainer, setEditingTrainer] = useState<TrainerResponseDto | null>(null)
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [filters, setFilters] = useState({
-    status: "all",
+    status: "Ativo",
     compensation: "all",
     specialty: "",
   })
   const router = useRouter()
+  const { mutateAsync: deleteTrainer, isPending: isDeleting } = useMutation(softDeleteTrainerUserMutation())
+  const { mutateAsync: createTrainer, isPending: isCreating } = useMutation(createTrainerAndUserMutation())
+  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerAndUserMutation())
 
+  const queryClient = useQueryClient();
   useEffect(() => {
     const role = localStorage.getItem("userRole") || "admin"
     setUserRole(role)
   }, [])
 
-  const [teachers, setTeachers] = useState<Teacher[]>([
-    {
-      id: 1,
-      name: "Ana Silva",
-      email: "ana@gym.com",
-      phone: "(11) 99999-9999",
-      address: "Rua das Palmeiras, 456 - Jardins, São Paulo",
-      birthDate: "1985-08-20",
-      specialties: ["Pilates", "Yoga", "Alongamento"],
-      compensation: "Horista",
-      status: "Ativo",
-      joinDate: "2024-01-15",
-      hoursWorked: 120,
-    },
-    {
-      id: 2,
-      name: "Carlos Santos",
-      email: "carlos@gym.com",
-      phone: "(11) 88888-8888",
-      address: "Av. Paulista, 1000 - Bela Vista, São Paulo",
-      birthDate: "1990-03-15",
-      specialties: ["Musculação", "CrossFit"],
-      compensation: "Mensalista",
-      status: "Ativo",
-      joinDate: "2024-02-03",
-      hoursWorked: 160,
-    },
-    {
-      id: 3,
-      name: "Marina Costa",
-      email: "marina@gym.com",
-      phone: "(11) 77777-7777",
-      address: "Av. Faria Lima, 789 - Itaim Bibi, São Paulo",
-      birthDate: "1990-04-15",
-      specialties: ["Yoga", "Meditação", "Relaxamento"],
-      compensation: "Horista",
-      status: "Ativo",
-      joinDate: "2023-12-20",
-      hoursWorked: 100,
-    },
-  ])
 
-  // Handle opening modal for creating a new teacher
-  const handleCreateTeacher = () => {
+  const { data: trainers, isLoading, error } = useQuery({
+    ...findAllTrainersOptions({
+      client: apiClient,
+      security: [{
+        type: "http",
+        scheme: "bearer",
+        in: "header",
+      },]
+    })
+  })
+
+  // Handle opening modal for creating a new trainer
+  const handleCreateTrainer = () => {
     setModalMode("create")
-    setEditingTeacher(null)
+    setEditingTrainer(null)
     setIsModalOpen(true)
   }
 
-  // Handle opening modal for editing an existing teacher
-  const handleEditTeacher = (teacher: Teacher) => {
+  // Handle opening modal for editing an existing trainer
+  const handleEditTrainer = (trainer: TrainerResponseDto) => {
     setModalMode("edit")
-    setEditingTeacher(teacher)
+    setEditingTrainer(trainer)
     setIsModalOpen(true)
   }
 
   // Handle modal submission
-  const handleModalSubmit = (formData: any) => {
+  const handleModalSubmit = async (formData: any) => {
     if (modalMode === "create") {
-      // Create new teacher
-      const newTeacher: Teacher = {
-        id: teachers.length + 1,
-        ...formData,
-        joinDate: new Date().toISOString().split('T')[0],
-        hoursWorked: 0,
-      }
-      setTeachers([...teachers, newTeacher])
+      // Create new trainer
+      await createTrainer({
+        body: formData,
+        client: apiClient,
+        security: [{
+          type: "http",
+          scheme: "bearer",
+          in: "header",
+        }],
+      })
     } else {
-      // Update existing teacher
-      setTeachers(teachers.map(teacher =>
-        teacher.id === editingTeacher?.id
-          ? { ...teacher, ...formData }
-          : teacher
-      ))
+      // Update existing trainer
+      await updateTrainer({
+        path: { id: String(editingTrainer?.id) },
+        body: formData,
+        client: apiClient,
+        security: [{
+          type: "http",
+          scheme: "bearer",
+          in: "header",
+        }],
+      })
     }
+    await queryClient.invalidateQueries({
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllTrainers'
+    })
     setIsModalOpen(false)
-    setEditingTeacher(null)
+    setEditingTrainer(null)
   }
 
-  // Handle teacher deletion
-  const handleDeleteTeacher = (teacherId: number) => {
+  // Handle trainer deletion
+  const handleDeleteTrainer = async (trainerId: string) => {
     if (confirm("Tem certeza que deseja excluir este professor?")) {
-      setTeachers(teachers.filter(teacher => teacher.id !== teacherId))
+      await deleteTrainer({
+        path: { id: String(trainerId) }, client: apiClient, security: [{
+          type: "http",
+          scheme: "bearer",
+          in: "header",
+        }]
+      });
+      await queryClient.invalidateQueries({
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllTrainers'
+      })
     }
   }
 
-  // Filter teachers based on search and filters
-  const filteredTeachers = teachers.filter(teacher => {
-    const matchesSearch = teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         teacher.email.toLowerCase().includes(searchTerm.toLowerCase())
-
-    const matchesStatus = filters.status === "all" || teacher.status === filters.status
-    const matchesCompensation = filters.compensation === "all" || teacher.compensation === filters.compensation
+  // Filter trainers based on search and filters
+  const filteredTrainers = trainers?.filter(trainer => {
+    const matchesSearch = trainer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      trainer.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus = filters.status === "all" || (trainer.active ? filters.status === "Ativo" : filters.status === "Inativo")
+    const matchesCompensation = filters.compensation === "all" || trainer.compensationType === (filters.compensation === "Mensalista" ? "MONTHLY" : "HOURLY")
     const matchesSpecialty = !filters.specialty ||
-                            teacher.specialties.some(spec =>
-                              spec.toLowerCase().includes(filters.specialty.toLowerCase())
-                            )
+      trainer.specialties?.some(spec =>
+        spec.toLowerCase().includes(filters.specialty.toLowerCase())
+      )
 
     return matchesSearch && matchesStatus && matchesCompensation && matchesSpecialty
   })
@@ -161,8 +145,8 @@ export default function TeachersPage() {
     }
   }
 
-  const getCompensationColor = (compensation: string) => {
-    return compensation === "Mensalista"
+  const getCompensationColor = (compensation: 'HOURLY' | 'MONTHLY') => {
+    return compensation === "MONTHLY"
       ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
       : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
   }
@@ -191,7 +175,7 @@ export default function TeachersPage() {
             <p className="text-sm text-muted-foreground">Gerencie professores e instrutores</p>
           </div>
           {userRole === "admin" && (
-            <Button onClick={handleCreateTeacher} className="bg-green-600 hover:bg-green-700">
+            <Button onClick={handleCreateTrainer} className="bg-green-600 hover:bg-green-700">
               <UserPlus className="w-4 h-4 mr-2" />
               Novo Professor
             </Button>
@@ -227,20 +211,18 @@ export default function TeachersPage() {
                 <label className="text-sm font-medium">Status</label>
                 <select
                   value={filters.status}
-                  onChange={(e) => setFilters({...filters, status: e.target.value})}
+                  onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                   className="w-full p-2 border rounded-md"
                 >
-                  <option value="all">Todos</option>
                   <option value="Ativo">Ativo</option>
                   <option value="Inativo">Inativo</option>
-                  <option value="Licença">Licença</option>
                 </select>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Compensação</label>
                 <select
                   value={filters.compensation}
-                  onChange={(e) => setFilters({...filters, compensation: e.target.value})}
+                  onChange={(e) => setFilters({ ...filters, compensation: e.target.value })}
                   className="w-full p-2 border rounded-md"
                 >
                   <option value="all">Todos</option>
@@ -253,58 +235,63 @@ export default function TeachersPage() {
                 <Input
                   placeholder="Filtrar por especialidade..."
                   value={filters.specialty}
-                  onChange={(e) => setFilters({...filters, specialty: e.target.value})}
+                  onChange={(e) => setFilters({ ...filters, specialty: e.target.value })}
                 />
               </div>
             </div>
           </Card>
         )}
 
-        {/* Teachers Grid */}
+        {/* Trainers Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredTeachers.map((teacher) => (
+          {filteredTrainers?.map((trainer) => (
             <Card
-              key={teacher.id}
+              key={trainer.id}
               className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => router.push(`/teachers/${teacher.id}`)}
+              onClick={() => router.push(`/trainers/${trainer.id}`)}
             >
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
                     <Avatar>
                       <AvatarFallback>
-                        {teacher.name.split(" ").map((n) => n[0]).join("")}
+                        {trainer.name?.split(" ").map((n) => n[0]).join("")}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <CardTitle className="text-base">{teacher.name}</CardTitle>
+                      <CardTitle className="text-base">{trainer.name}</CardTitle>
                       <div className="flex gap-1 mt-1">
-                        <Badge className={getStatusColor(teacher.status)}>
-                          {teacher.status}
+                        <Badge className={getStatusColor(trainer.active ? "Ativo" : "Inativo")}>
+                          {trainer.active ? "Ativo" : "Inativo"}
                         </Badge>
-                        <Badge className={getCompensationColor(teacher.compensation)}>
-                          {teacher.compensation}
+                        <Badge className={getCompensationColor(trainer.compensationType!)}>
+                          {trainer.compensationType === "MONTHLY" ? "Mensalista" : "Horista"}
                         </Badge>
                       </div>
                     </div>
                   </div>
                   {userRole === "admin" && (
                     <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleEditTeacher(teacher)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDeleteTeacher(teacher.id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {
+                        trainer.active &&
+                        <Fragment>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleEditTrainer(trainer)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteTrainer(trainer.id!)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </Fragment>
+                      }
                     </div>
                   )}
                 </div>
@@ -313,33 +300,33 @@ export default function TeachersPage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2">
                     <Mail className="w-4 h-4 text-muted-foreground" />
-                    <span className="truncate">{teacher.email}</span>
+                    <span className="truncate">{trainer.email}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Phone className="w-4 h-4 text-muted-foreground" />
-                    <span>{teacher.phone}</span>
+                    <span>{trainer.phone}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span>Desde {new Date(teacher.joinDate).toLocaleDateString("pt-BR")}</span>
+                    <span>Desde {new Date(trainer.joinDate!).toLocaleDateString("pt-BR")}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span>{teacher.hoursWorked}h este mês</span>
+                    <span>{trainer.hoursWorked}h este mês</span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Especialidades:</p>
                   <div className="flex flex-wrap gap-1">
-                    {teacher.specialties.slice(0, 2).map((specialty, idx) => (
+                    {trainer.specialties!.slice(0, 2).map((specialty, idx) => (
                       <Badge key={idx} variant="outline" className="text-xs">
                         {specialty}
                       </Badge>
                     ))}
-                    {teacher.specialties.length > 2 && (
+                    {trainer.specialties!.length > 2 && (
                       <Badge variant="outline" className="text-xs">
-                        +{teacher.specialties.length - 2}
+                        +{trainer.specialties!.length - 2}
                       </Badge>
                     )}
                   </div>
@@ -349,21 +336,21 @@ export default function TeachersPage() {
           ))}
         </div>
 
-        {filteredTeachers.length === 0 && (
+        {filteredTrainers?.length === 0 && (
           <div className="text-center py-8">
             <p className="text-muted-foreground">Nenhum professor encontrado.</p>
           </div>
         )}
       </div>
 
-      {/* Teacher Modal */}
-      <TeacherModal
+      {/* Trainer Modal */}
+      <TrainerModal
         open={isModalOpen}
         mode={modalMode}
-        initialData={editingTeacher || undefined}
+        initialData={editingTrainer || undefined}
         onClose={() => {
           setIsModalOpen(false)
-          setEditingTeacher(null)
+          setEditingTrainer(null)
         }}
         onSubmit={handleModalSubmit}
       />
