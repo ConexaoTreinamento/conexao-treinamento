@@ -14,27 +14,6 @@ import { findTrainerByIdOptions, updateTrainerAndUserMutation } from "@/lib/api-
 import { apiClient } from "@/lib/client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-// Type definitions
-interface TrainerSchedule {
-  day: string
-  time: string
-  class: string
-  students: number
-}
-
-interface TrainerPerformance {
-  monthlyHours: number
-  monthlyClasses: number
-  studentsManaged: number
-}
-
-interface RecentClass {
-  name: string
-  date: string
-  students: number
-  attendance: number
-}
-
 export default function TrainerProfilePage() {
   const router = useRouter()
   const params = useParams()
