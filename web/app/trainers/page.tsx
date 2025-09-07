@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Fragment } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,82 +12,48 @@ import { Search, Filter, Plus, User, Phone, Mail, Calendar, Clock, Edit, Trash2,
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import TrainerModal from "@/components/trainer-modal"
+import { createTrainerAndUserMutation, createTrainerAndUserOptions, findAllTrainersOptions, softDeleteTrainerUserMutation, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { createTrainerAndUser, TrainerResponseDto } from "@/lib/api-client"
+import { apiClient } from "@/lib/client"
+import { client } from "@/lib/api-client/client.gen"
 
 // Interface for trainer data to match the modal
-interface Trainer {
-  id: number
-  name: string
-  email: string
-  phone: string
-  address: string
-  birthDate: string
-  specialties: string[]
-  compensation: string
-  status: string
-  joinDate: string
-  hoursWorked: number
-}
 
 export default function TrainersPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [userRole, setUserRole] = useState<string>("admin")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<"create" | "edit">("create")
-  const [editingTrainer, setEditingTrainer] = useState<Trainer | null>(null)
+  const [editingTrainer, setEditingTrainer] = useState<TrainerResponseDto | null>(null)
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [filters, setFilters] = useState({
-    status: "all",
+    status: "Ativo",
     compensation: "all",
     specialty: "",
   })
   const router = useRouter()
+  const { mutateAsync: deleteTrainer, isPending: isDeleting } = useMutation(softDeleteTrainerUserMutation())
+  const { mutateAsync: createTrainer, isPending: isCreating } = useMutation(createTrainerAndUserMutation())
+  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerAndUserMutation())
 
+  const queryClient = useQueryClient();
   useEffect(() => {
     const role = localStorage.getItem("userRole") || "admin"
     setUserRole(role)
   }, [])
 
-  const [trainers, setTrainers] = useState<Trainer[]>([
-    {
-      id: 1,
-      name: "Ana Silva",
-      email: "ana@gym.com",
-      phone: "(11) 99999-9999",
-      address: "Rua das Palmeiras, 456 - Jardins, São Paulo",
-      birthDate: "1985-08-20",
-      specialties: ["Pilates", "Yoga", "Alongamento"],
-      compensation: "Horista",
-      status: "Ativo",
-      joinDate: "2024-01-15",
-      hoursWorked: 120,
-    },
-    {
-      id: 2,
-      name: "Carlos Santos",
-      email: "carlos@gym.com",
-      phone: "(11) 88888-8888",
-      address: "Av. Paulista, 1000 - Bela Vista, São Paulo",
-      birthDate: "1990-03-15",
-      specialties: ["Musculação", "CrossFit"],
-      compensation: "Mensalista",
-      status: "Ativo",
-      joinDate: "2024-02-03",
-      hoursWorked: 160,
-    },
-    {
-      id: 3,
-      name: "Marina Costa",
-      email: "marina@gym.com",
-      phone: "(11) 77777-7777",
-      address: "Av. Faria Lima, 789 - Itaim Bibi, São Paulo",
-      birthDate: "1990-04-15",
-      specialties: ["Yoga", "Meditação", "Relaxamento"],
-      compensation: "Horista",
-      status: "Ativo",
-      joinDate: "2023-12-20",
-      hoursWorked: 100,
-    },
-  ])
+
+  const { data: trainers, isLoading, error } = useQuery({
+    ...findAllTrainersOptions({
+      client: apiClient,
+      security: [{
+        type: "http",
+        scheme: "bearer",
+        in: "header",
+      },]
+    })
+  })
 
   // Handle opening modal for creating a new trainer
   const handleCreateTrainer = () => {
@@ -97,53 +63,71 @@ export default function TrainersPage() {
   }
 
   // Handle opening modal for editing an existing trainer
-  const handleEditTrainer = (trainer: Trainer) => {
+  const handleEditTrainer = (trainer: TrainerResponseDto) => {
     setModalMode("edit")
     setEditingTrainer(trainer)
     setIsModalOpen(true)
   }
 
   // Handle modal submission
-  const handleModalSubmit = (formData: any) => {
+  const handleModalSubmit = async (formData: any) => {
     if (modalMode === "create") {
       // Create new trainer
-      const newTrainer: Trainer = {
-        id: trainers.length + 1,
-        ...formData,
-        joinDate: new Date().toISOString().split('T')[0],
-        hoursWorked: 0,
-      }
-      setTrainers([...trainers, newTrainer])
+      await createTrainer({
+        body: formData,
+        client: apiClient,
+        security: [{
+          type: "http",
+          scheme: "bearer",
+          in: "header",
+        }],
+      })
     } else {
       // Update existing trainer
-      setTrainers(trainers.map(trainer =>
-        trainer.id === editingTrainer?.id
-          ? { ...trainer, ...formData }
-          : trainer
-      ))
+      await updateTrainer({
+        path: { id: String(editingTrainer?.id) },
+        body: formData,
+        client: apiClient,
+        security: [{
+          type: "http",
+          scheme: "bearer",
+          in: "header",
+        }],
+      })
     }
+    await queryClient.invalidateQueries({
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllTrainers'
+    })
     setIsModalOpen(false)
     setEditingTrainer(null)
   }
 
   // Handle trainer deletion
-  const handleDeleteTrainer = (trainerId: number) => {
+  const handleDeleteTrainer = async (trainerId: string) => {
     if (confirm("Tem certeza que deseja excluir este professor?")) {
-      setTrainers(trainers.filter(trainer => trainer.id !== trainerId))
+      await deleteTrainer({
+        path: { id: String(trainerId) }, client: apiClient, security: [{
+          type: "http",
+          scheme: "bearer",
+          in: "header",
+        }]
+      });
+      await queryClient.invalidateQueries({
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllTrainers'
+      })
     }
   }
 
   // Filter trainers based on search and filters
-  const filteredTrainers = trainers.filter(trainer => {
-    const matchesSearch = trainer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         trainer.email.toLowerCase().includes(searchTerm.toLowerCase())
-
-    const matchesStatus = filters.status === "all" || trainer.status === filters.status
-    const matchesCompensation = filters.compensation === "all" || trainer.compensation === filters.compensation
+  const filteredTrainers = trainers?.filter(trainer => {
+    const matchesSearch = trainer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      trainer.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus = filters.status === "all" || (trainer.active ? filters.status === "Ativo" : filters.status === "Inativo")
+    const matchesCompensation = filters.compensation === "all" || trainer.compensationType === (filters.compensation === "Mensalista" ? "MONTHLY" : "HOURLY")
     const matchesSpecialty = !filters.specialty ||
-                            trainer.specialties.some(spec =>
-                              spec.toLowerCase().includes(filters.specialty.toLowerCase())
-                            )
+      trainer.specialties?.some(spec =>
+        spec.toLowerCase().includes(filters.specialty.toLowerCase())
+      )
 
     return matchesSearch && matchesStatus && matchesCompensation && matchesSpecialty
   })
@@ -161,8 +145,8 @@ export default function TrainersPage() {
     }
   }
 
-  const getCompensationColor = (compensation: string) => {
-    return compensation === "Mensalista"
+  const getCompensationColor = (compensation: 'HOURLY' | 'MONTHLY') => {
+    return compensation === "MONTHLY"
       ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
       : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
   }
@@ -227,20 +211,18 @@ export default function TrainersPage() {
                 <label className="text-sm font-medium">Status</label>
                 <select
                   value={filters.status}
-                  onChange={(e) => setFilters({...filters, status: e.target.value})}
+                  onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                   className="w-full p-2 border rounded-md"
                 >
-                  <option value="all">Todos</option>
                   <option value="Ativo">Ativo</option>
                   <option value="Inativo">Inativo</option>
-                  <option value="Licença">Licença</option>
                 </select>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Compensação</label>
                 <select
                   value={filters.compensation}
-                  onChange={(e) => setFilters({...filters, compensation: e.target.value})}
+                  onChange={(e) => setFilters({ ...filters, compensation: e.target.value })}
                   className="w-full p-2 border rounded-md"
                 >
                   <option value="all">Todos</option>
@@ -253,7 +235,7 @@ export default function TrainersPage() {
                 <Input
                   placeholder="Filtrar por especialidade..."
                   value={filters.specialty}
-                  onChange={(e) => setFilters({...filters, specialty: e.target.value})}
+                  onChange={(e) => setFilters({ ...filters, specialty: e.target.value })}
                 />
               </div>
             </div>
@@ -262,7 +244,7 @@ export default function TrainersPage() {
 
         {/* Trainers Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredTrainers.map((trainer) => (
+          {filteredTrainers?.map((trainer) => (
             <Card
               key={trainer.id}
               className="hover:shadow-md transition-shadow cursor-pointer"
@@ -273,38 +255,43 @@ export default function TrainersPage() {
                   <div className="flex items-center space-x-3">
                     <Avatar>
                       <AvatarFallback>
-                        {trainer.name.split(" ").map((n) => n[0]).join("")}
+                        {trainer.name?.split(" ").map((n) => n[0]).join("")}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <CardTitle className="text-base">{trainer.name}</CardTitle>
                       <div className="flex gap-1 mt-1">
-                        <Badge className={getStatusColor(trainer.status)}>
-                          {trainer.status}
+                        <Badge className={getStatusColor(trainer.active ? "Ativo" : "Inativo")}>
+                          {trainer.active ? "Ativo" : "Inativo"}
                         </Badge>
-                        <Badge className={getCompensationColor(trainer.compensation)}>
-                          {trainer.compensation}
+                        <Badge className={getCompensationColor(trainer.compensationType!)}>
+                          {trainer.compensationType === "MONTHLY" ? "Mensalista" : "Horista"}
                         </Badge>
                       </div>
                     </div>
                   </div>
                   {userRole === "admin" && (
                     <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleEditTrainer(trainer)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDeleteTrainer(trainer.id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {
+                        trainer.active &&
+                        <Fragment>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleEditTrainer(trainer)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteTrainer(trainer.id!)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </Fragment>
+                      }
                     </div>
                   )}
                 </div>
@@ -321,7 +308,7 @@ export default function TrainersPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span>Desde {new Date(trainer.joinDate).toLocaleDateString("pt-BR")}</span>
+                    <span>Desde {new Date(trainer.joinDate!).toLocaleDateString("pt-BR")}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4 text-muted-foreground" />
@@ -332,14 +319,14 @@ export default function TrainersPage() {
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Especialidades:</p>
                   <div className="flex flex-wrap gap-1">
-                    {trainer.specialties.slice(0, 2).map((specialty, idx) => (
+                    {trainer.specialties!.slice(0, 2).map((specialty, idx) => (
                       <Badge key={idx} variant="outline" className="text-xs">
                         {specialty}
                       </Badge>
                     ))}
-                    {trainer.specialties.length > 2 && (
+                    {trainer.specialties!.length > 2 && (
                       <Badge variant="outline" className="text-xs">
-                        +{trainer.specialties.length - 2}
+                        +{trainer.specialties!.length - 2}
                       </Badge>
                     )}
                   </div>
@@ -349,7 +336,7 @@ export default function TrainersPage() {
           ))}
         </div>
 
-        {filteredTrainers.length === 0 && (
+        {filteredTrainers?.length === 0 && (
           <div className="text-center py-8">
             <p className="text-muted-foreground">Nenhum professor encontrado.</p>
           </div>

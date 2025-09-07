@@ -9,6 +9,10 @@ import { useRouter, useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Layout from "@/components/layout"
 import TrainerModal from "@/components/trainer-modal"
+import { ListTrainersDto, TrainerResponseDto, update } from "@/lib/api-client"
+import { findTrainerByIdOptions, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { apiClient } from "@/lib/client"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 // Type definitions
 interface TrainerSchedule {
@@ -31,168 +35,35 @@ interface RecentClass {
   attendance: number
 }
 
-interface TrainerData {
-  id: number
-  name: string
-  email: string
-  phone: string
-  address: string
-  birthDate: string
-  specialties: string[]
-  compensation: string
-  status: string
-  joinDate: string
-  hoursWorked: number
-  schedule: TrainerSchedule[]
-  performance: TrainerPerformance
-  recentClasses: RecentClass[]
-}
-
 export default function TrainerProfilePage() {
   const router = useRouter()
   const params = useParams()
-  const [trainerData, setTrainerData] = useState<TrainerData | null>(null)
-  const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerAndUserMutation())
 
-  // Mock trainers data - this should eventually be replaced with API calls
-  const mockTrainers: TrainerData[] = [
-    {
-      id: 1,
-      name: "Ana Silva",
-      email: "ana@gym.com",
-      phone: "(11) 99999-9999",
-      address: "Rua das Palmeiras, 456 - Jardins, São Paulo",
-      birthDate: "1985-08-20",
-      specialties: ["Pilates", "Yoga", "Alongamento"],
-      compensation: "Horista",
-      status: "Ativo",
-      joinDate: "2024-01-15",
-      hoursWorked: 120,
-      schedule: [
-        { day: "Segunda", time: "09:00-10:00", class: "Pilates Iniciante", students: 8 },
-        { day: "Segunda", time: "18:00-19:00", class: "Yoga", students: 6 },
-        { day: "Quarta", time: "09:00-10:00", class: "Pilates Intermediário", students: 10 },
-        { day: "Quarta", time: "18:00-19:00", class: "Alongamento", students: 5 },
-        { day: "Sexta", time: "09:00-10:00", class: "Pilates Iniciante", students: 7 },
-      ],
-      performance: {
-        monthlyHours: 120,
-        monthlyClasses: 48,
-        studentsManaged: 35,
-      },
-      recentClasses: [
-        { name: "Pilates Iniciante", date: "2024-07-20", students: 8, attendance: 7 },
-        { name: "Yoga", date: "2024-07-18", students: 6, attendance: 6 },
-        { name: "Pilates Intermediário", date: "2024-07-17", students: 10, attendance: 9 },
-      ],
-    },
-    {
-      id: 2,
-      name: "Marina Costa",
-      email: "marina@gym.com",
-      phone: "(11) 88888-8888",
-      address: "Av. Faria Lima, 789 - Itaim Bibi, São Paulo",
-      birthDate: "1990-04-15",
-      specialties: ["Yoga", "Meditação", "Relaxamento"],
-      compensation: "Mensalista",
-      status: "Ativo",
-      joinDate: "2024-02-01",
-      hoursWorked: 160,
-      schedule: [
-        { day: "Terça", time: "18:00-19:00", class: "Yoga Avançado", students: 12 },
-        { day: "Quinta", time: "18:00-19:00", class: "Yoga Avançado", students: 10 },
-        { day: "Sábado", time: "09:00-10:00", class: "Meditação", students: 8 },
-      ],
-      performance: {
-        monthlyHours: 160,
-        monthlyClasses: 36,
-        studentsManaged: 30,
-      },
-      recentClasses: [
-        { name: "Yoga Avançado", date: "2024-07-22", students: 12, attendance: 11 },
-        { name: "Meditação", date: "2024-07-21", students: 8, attendance: 8 },
-        { name: "Yoga Avançado", date: "2024-07-20", students: 10, attendance: 9 },
-      ],
-    },
-    {
-      id: 3,
-      name: "Roberto Lima",
-      email: "roberto@gym.com",
-      phone: "(11) 77777-7777",
-      address: "Rua Augusta, 321 - Consolação, São Paulo",
-      birthDate: "1983-11-30",
-      specialties: ["CrossFit", "Musculação", "Treinamento Funcional"],
-      compensation: "Horista",
-      status: "Ativo",
-      joinDate: "2023-11-10",
-      hoursWorked: 180,
-      schedule: [
-        { day: "Segunda", time: "07:00-08:00", class: "CrossFit", students: 8 },
-        { day: "Terça", time: "07:00-08:00", class: "CrossFit", students: 8 },
-        { day: "Quarta", time: "07:00-08:00", class: "CrossFit", students: 8 },
-        { day: "Quinta", time: "07:00-08:00", class: "CrossFit", students: 8 },
-        { day: "Sexta", time: "07:00-08:00", class: "CrossFit", students: 8 },
-      ],
-      performance: {
-        monthlyHours: 180,
-        monthlyClasses: 60,
-        studentsManaged: 40,
-      },
-      recentClasses: [
-        { name: "CrossFit", date: "2024-07-22", students: 8, attendance: 8 },
-        { name: "CrossFit", date: "2024-07-21", students: 8, attendance: 7 },
-        { name: "CrossFit", date: "2024-07-20", students: 8, attendance: 8 },
-      ],
-    },
-  ]
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    // Simulate fetching trainer data based on ID
-    const fetchTrainerData = async () => {
-      setLoading(true)
-      try {
-        // In a real application, this would be an API call
-        // const response = await fetch(`/api/trainers/${params.id}`)
-        // const data = await response.json()
+  const { data: trainerData, isLoading, error } = useQuery({
+    ...findTrainerByIdOptions({
+      path: { id: params.id as string },
+      client: apiClient,
+      security: [{
+        type: "http",
+        scheme: "bearer",
+        in: "header",
+      },]
+    })
+  })
 
-        // For now, find the trainer from mock data
-        const trainerId = parseInt(params.id as string)
-        const trainer = mockTrainers.find(t => t.id === trainerId)
-
-        if (trainer) {
-          setTrainerData(trainer)
-        } else {
-          // Handle trainer not found
-          console.error('Trainer not found')
-          router.push('/trainers')
-        }
-      } catch (error) {
-        console.error('Error fetching trainer data:', error)
-        router.push('/trainers')
-      } finally {
-        setLoading(false)
-      }
+  const getStatusColor = (status: boolean) => {
+    if (status) {
+      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
     }
-
-    if (params.id) {
-      fetchTrainerData()
-    }
-  }, [params.id, router])
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Ativo":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      case "Inativo":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-    }
+    return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
   }
 
-  const getCompensationColor = (compensation: string) => {
-    return compensation === "Mensalista"
+  const getCompensationColor = (compensationType: "MONTHLY" | "HOURLY") => {
+    return compensationType === "MONTHLY"
       ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
       : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
   }
@@ -214,25 +85,35 @@ export default function TrainerProfilePage() {
   }
 
   // Handle modal submission
-  const handleModalSubmit = (formData: any) => {
+  const handleModalSubmit = async (formData: any) => {
     if (trainerData) {
       // Update the trainer data with new form data
       const updatedTrainer = { ...trainerData, ...formData }
-      setTrainerData(updatedTrainer)
 
-      // In a real application, this would make an API call to update the trainer
-      // await fetch(`/api/trainers/${trainerData.id}`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData)
-      // })
-
-      console.log('Trainer updated:', updatedTrainer)
+      await updateTrainer({
+        path: { id: String(updatedTrainer?.id) },
+        body: updatedTrainer,
+        client: apiClient,
+        security: [{
+          type: "http",
+          scheme: "bearer",
+          in: "header",
+        }],
+      })
+      await queryClient.invalidateQueries({
+        predicate: function (q) {
+          console.log(q)
+          return false
+        }
+      })
+      await queryClient.invalidateQueries({
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findTrainerById'
+      })
     }
     setIsModalOpen(false)
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
@@ -285,7 +166,7 @@ export default function TrainerProfilePage() {
             <CardHeader className="text-center pb-4">
               <Avatar className="w-20 h-20 mx-auto">
                 <AvatarFallback className="text-xl select-none">
-                  {trainerData.name
+                  {trainerData.name!
                     .split(" ")
                     .map((n) => n[0])
                     .join("")}
@@ -294,8 +175,8 @@ export default function TrainerProfilePage() {
               <div className="space-y-2">
                 <CardTitle className="text-lg">{trainerData.name}</CardTitle>
                 <div className="flex flex-wrap justify-center gap-2">
-                  <Badge className={getStatusColor(trainerData.status)}>{trainerData.status}</Badge>
-                  <Badge className={getCompensationColor(trainerData.compensation)}>{trainerData.compensation}</Badge>
+                  <Badge className={getStatusColor(trainerData.active!)}>{trainerData.active!}</Badge>
+                  <Badge className={getCompensationColor(trainerData.compensationType!)}>{trainerData.compensationType === "MONTHLY" ? "Mensalist" : "Horista"}</Badge>
                 </div>
               </div>
             </CardHeader>
@@ -311,7 +192,7 @@ export default function TrainerProfilePage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <span>{calculateAge(trainerData.birthDate)} anos</span>
+                  <span>{calculateAge(trainerData.birthDate!)} anos</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
@@ -327,7 +208,7 @@ export default function TrainerProfilePage() {
               <div className="space-y-2">
                 <p className="text-sm font-medium">Especialidades:</p>
                 <div className="flex flex-wrap gap-1">
-                  {trainerData.specialties.map((specialty, idx) => (
+                  {trainerData.specialties?.map((specialty, idx) => (
                     <Badge key={idx} variant="outline" className="text-xs">
                       {specialty}
                     </Badge>
@@ -348,7 +229,7 @@ export default function TrainerProfilePage() {
           </Card>
 
           {/* Content Tabs */}
-          <Tabs defaultValue="overview" className="space-y-4">
+          {/* <Tabs defaultValue="overview" className="space-y-4">
             <TabsList className="grid w-full grid-cols-3 h-auto">
               <TabsTrigger value="overview" className="text-xs px-2 py-2">
                 Geral
@@ -362,7 +243,6 @@ export default function TrainerProfilePage() {
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">
-              {/* Stats Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                 <Card>
                   <CardContent className="p-4">
@@ -371,8 +251,7 @@ export default function TrainerProfilePage() {
                         <p className="text-xs font-medium text-muted-foreground">Horas/Mês</p>
                         <p className="text-xl font-bold">{trainerData.performance.monthlyHours}h</p>
                       </div>
-                      <Clock className="w-5 h-5 text-blue-600" />
-                    </div>
+                      <Clock className="w-5 h-5 text-blue-600" />`
                   </CardContent>
                 </Card>
                 <Card>
@@ -399,7 +278,6 @@ export default function TrainerProfilePage() {
                 </Card>
               </div>
 
-              {/* Recent Classes */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Aulas Recentes</CardTitle>
@@ -475,8 +353,8 @@ export default function TrainerProfilePage() {
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
-          </Tabs>
+            </TabsContent> 
+          </Tabs> */}
         </div>
 
         {/* Trainer Edit Modal */}
