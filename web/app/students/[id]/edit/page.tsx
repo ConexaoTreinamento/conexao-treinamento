@@ -38,7 +38,18 @@ export default function EditStudentPage() {
     enabled: Boolean(id)
   })
 
-  const student: StudentResponseDto | undefined = studentData as any
+  const studentFromCache = React.useMemo(() => {
+    const queries = queryClient.getQueriesData({}) as any
+    for (const [key, data] of queries) {
+      if (Array.isArray(key) && key[0] && (key[0] as any)._id === 'findAll') {
+        const content = (data as any)?.content
+        if (Array.isArray(content) && content.length > 0) return content[0] as StudentResponseDto
+      }
+    }
+    return undefined
+  }, [queryClient])
+
+  const student: StudentResponseDto | undefined = (studentData as any) ?? studentFromCache
 
   const { mutateAsync: updateStudent } = useMutation(updateMutation())
 

@@ -20,6 +20,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.UUID;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +30,9 @@ public class StudentService {
     private final StudentRepository studentRepository;
     private final AnamnesisRepository anamnesisRepository;
     private final PhysicalImpairmentRepository physicalImpairmentRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Transactional
     public StudentResponseDTO create(StudentRequestDTO request) {
@@ -176,49 +181,33 @@ public class StudentService {
         if (request.anamnesis() != null) {
             var dto = request.anamnesis();
             var existing = anamnesisRepository.findById(savedStudent.getId());
+            // To avoid Hibernate StaleObjectStateException caused by merging a detached Anamnesis,
+            // delete the existing row, flush the persistence context, then persist a fresh instance.
             if (existing.isPresent()) {
-                var anam = existing.get();
-                anam.setMedication(dto.medication());
-                anam.setDoctorAwareOfPhysicalActivity(dto.isDoctorAwareOfPhysicalActivity());
-                anam.setFavoritePhysicalActivity(dto.favoritePhysicalActivity());
-                anam.setHasInsomnia(dto.hasInsomnia());
-                anam.setDietOrientedBy(dto.dietOrientedBy());
-                anam.setCardiacProblems(dto.cardiacProblems());
-                anam.setHasHypertension(dto.hasHypertension());
-                anam.setChronicDiseases(dto.chronicDiseases());
-                anam.setDifficultiesInPhysicalActivities(dto.difficultiesInPhysicalActivities());
-                anam.setMedicalOrientationsToAvoidPhysicalActivity(dto.medicalOrientationsToAvoidPhysicalActivity());
-                anam.setSurgeriesInTheLast12Months(dto.surgeriesInTheLast12Months());
-                anam.setRespiratoryProblems(dto.respiratoryProblems());
-                anam.setJointMuscularBackPain(dto.jointMuscularBackPain());
-                anam.setSpinalDiscProblems(dto.spinalDiscProblems());
-                anam.setDiabetes(dto.diabetes());
-                anam.setSmokingDuration(dto.smokingDuration());
-                anam.setAlteredCholesterol(dto.alteredCholesterol());
-                anam.setOsteoporosisLocation(dto.osteoporosisLocation());
-                anamnesisRepository.save(anam);
-            } else {
-                org.conexaotreinamento.conexaotreinamentobackend.entity.Anamnesis anamnesis = new org.conexaotreinamento.conexaotreinamentobackend.entity.Anamnesis(savedStudent);
-                anamnesis.setMedication(dto.medication());
-                anamnesis.setDoctorAwareOfPhysicalActivity(dto.isDoctorAwareOfPhysicalActivity());
-                anamnesis.setFavoritePhysicalActivity(dto.favoritePhysicalActivity());
-                anamnesis.setHasInsomnia(dto.hasInsomnia());
-                anamnesis.setDietOrientedBy(dto.dietOrientedBy());
-                anamnesis.setCardiacProblems(dto.cardiacProblems());
-                anamnesis.setHasHypertension(dto.hasHypertension());
-                anamnesis.setChronicDiseases(dto.chronicDiseases());
-                anamnesis.setDifficultiesInPhysicalActivities(dto.difficultiesInPhysicalActivities());
-                anamnesis.setMedicalOrientationsToAvoidPhysicalActivity(dto.medicalOrientationsToAvoidPhysicalActivity());
-                anamnesis.setSurgeriesInTheLast12Months(dto.surgeriesInTheLast12Months());
-                anamnesis.setRespiratoryProblems(dto.respiratoryProblems());
-                anamnesis.setJointMuscularBackPain(dto.jointMuscularBackPain());
-                anamnesis.setSpinalDiscProblems(dto.spinalDiscProblems());
-                anamnesis.setDiabetes(dto.diabetes());
-                anamnesis.setSmokingDuration(dto.smokingDuration());
-                anamnesis.setAlteredCholesterol(dto.alteredCholesterol());
-                anamnesis.setOsteoporosisLocation(dto.osteoporosisLocation());
-                anamnesisRepository.save(anamnesis);
+                anamnesisRepository.deleteById(savedStudent.getId());
+                entityManager.flush();
             }
+
+            org.conexaotreinamento.conexaotreinamentobackend.entity.Anamnesis anamnesis = new org.conexaotreinamento.conexaotreinamentobackend.entity.Anamnesis(savedStudent);
+            anamnesis.setMedication(dto.medication());
+            anamnesis.setDoctorAwareOfPhysicalActivity(dto.isDoctorAwareOfPhysicalActivity());
+            anamnesis.setFavoritePhysicalActivity(dto.favoritePhysicalActivity());
+            anamnesis.setHasInsomnia(dto.hasInsomnia());
+            anamnesis.setDietOrientedBy(dto.dietOrientedBy());
+            anamnesis.setCardiacProblems(dto.cardiacProblems());
+            anamnesis.setHasHypertension(dto.hasHypertension());
+            anamnesis.setChronicDiseases(dto.chronicDiseases());
+            anamnesis.setDifficultiesInPhysicalActivities(dto.difficultiesInPhysicalActivities());
+            anamnesis.setMedicalOrientationsToAvoidPhysicalActivity(dto.medicalOrientationsToAvoidPhysicalActivity());
+            anamnesis.setSurgeriesInTheLast12Months(dto.surgeriesInTheLast12Months());
+            anamnesis.setRespiratoryProblems(dto.respiratoryProblems());
+            anamnesis.setJointMuscularBackPain(dto.jointMuscularBackPain());
+            anamnesis.setSpinalDiscProblems(dto.spinalDiscProblems());
+            anamnesis.setDiabetes(dto.diabetes());
+            anamnesis.setSmokingDuration(dto.smokingDuration());
+            anamnesis.setAlteredCholesterol(dto.alteredCholesterol());
+            anamnesis.setOsteoporosisLocation(dto.osteoporosisLocation());
+            anamnesisRepository.saveAndFlush(anamnesis);
         }
 
         // Replace physical impairments
