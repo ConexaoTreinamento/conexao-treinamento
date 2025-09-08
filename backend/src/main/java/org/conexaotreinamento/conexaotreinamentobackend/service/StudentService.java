@@ -35,7 +35,66 @@ public class StudentService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Student with this email already exists");
         }
 
-        throw new UnsupportedOperationException("Not implemented yet");
+        // Build student entity from request
+        Student student = new Student(request.email(), request.name(), request.surname(), request.gender(), request.birthDate());
+        student.setPhone(request.phone());
+        student.setProfession(request.profession());
+        student.setStreet(request.street());
+        student.setNumber(request.number());
+        student.setComplement(request.complement());
+        student.setNeighborhood(request.neighborhood());
+        student.setCep(request.cep());
+        student.setEmergencyContactName(request.emergencyContactName());
+        student.setEmergencyContactPhone(request.emergencyContactPhone());
+        student.setEmergencyContactRelationship(request.emergencyContactRelationship());
+        student.setObjectives(request.objectives());
+        // registrationDate is defaulted by DB; set it here to keep entity consistent
+        student.setRegistrationDate(LocalDate.now());
+
+        // Persist student first to generate UUID (used by Anamnesis and PhysicalImpairments)
+        Student savedStudent = studentRepository.save(student);
+
+        // Save anamnesis if provided
+        if (request.anamnesis() != null) {
+            var dto = request.anamnesis();
+            org.conexaotreinamento.conexaotreinamentobackend.entity.Anamnesis anamnesis = new org.conexaotreinamento.conexaotreinamentobackend.entity.Anamnesis(savedStudent);
+            anamnesis.setMedication(dto.medication());
+            anamnesis.setDoctorAwareOfPhysicalActivity(dto.isDoctorAwareOfPhysicalActivity());
+            anamnesis.setFavoritePhysicalActivity(dto.favoritePhysicalActivity());
+            anamnesis.setHasInsomnia(dto.hasInsomnia());
+            anamnesis.setDietOrientedBy(dto.dietOrientedBy());
+            anamnesis.setCardiacProblems(dto.cardiacProblems());
+            anamnesis.setHasHypertension(dto.hasHypertension());
+            anamnesis.setChronicDiseases(dto.chronicDiseases());
+            anamnesis.setDifficultiesInPhysicalActivities(dto.difficultiesInPhysicalActivities());
+            anamnesis.setMedicalOrientationsToAvoidPhysicalActivity(dto.medicalOrientationsToAvoidPhysicalActivity());
+            anamnesis.setSurgeriesInTheLast12Months(dto.surgeriesInTheLast12Months());
+            anamnesis.setRespiratoryProblems(dto.respiratoryProblems());
+            anamnesis.setJointMuscularBackPain(dto.jointMuscularBackPain());
+            anamnesis.setSpinalDiscProblems(dto.spinalDiscProblems());
+            anamnesis.setDiabetes(dto.diabetes());
+            anamnesis.setSmokingDuration(dto.smokingDuration());
+            anamnesis.setAlteredCholesterol(dto.alteredCholesterol());
+            anamnesis.setOsteoporosisLocation(dto.osteoporosisLocation());
+
+            anamnesisRepository.save(anamnesis);
+        }
+
+        // Save physical impairments if provided
+        if (request.physicalImpairments() != null && !request.physicalImpairments().isEmpty()) {
+            java.util.List<org.conexaotreinamento.conexaotreinamentobackend.entity.PhysicalImpairment> toSave = new java.util.ArrayList<>();
+            for (var pi : request.physicalImpairments()) {
+                toSave.add(new org.conexaotreinamento.conexaotreinamentobackend.entity.PhysicalImpairment(
+                        savedStudent,
+                        pi.type(),
+                        pi.name(),
+                        pi.observations()
+                ));
+            }
+            physicalImpairmentRepository.saveAll(toSave);
+        }
+
+        return StudentResponseDTO.fromEntity(savedStudent);
     }
 
     public StudentResponseDTO findById(UUID id) {
@@ -93,7 +152,91 @@ public class StudentService {
             }
         }
 
-        throw new UnsupportedOperationException("Not implemented yet");
+        // Update basic fields
+        student.setEmail(request.email());
+        student.setName(request.name());
+        student.setSurname(request.surname());
+        student.setGender(request.gender());
+        student.setBirthDate(request.birthDate());
+        student.setPhone(request.phone());
+        student.setProfession(request.profession());
+        student.setStreet(request.street());
+        student.setNumber(request.number());
+        student.setComplement(request.complement());
+        student.setNeighborhood(request.neighborhood());
+        student.setCep(request.cep());
+        student.setEmergencyContactName(request.emergencyContactName());
+        student.setEmergencyContactPhone(request.emergencyContactPhone());
+        student.setEmergencyContactRelationship(request.emergencyContactRelationship());
+        student.setObjectives(request.objectives());
+
+        Student savedStudent = studentRepository.save(student);
+
+        // Update or create anamnesis
+        if (request.anamnesis() != null) {
+            var dto = request.anamnesis();
+            var existing = anamnesisRepository.findById(savedStudent.getId());
+            if (existing.isPresent()) {
+                var anam = existing.get();
+                anam.setMedication(dto.medication());
+                anam.setDoctorAwareOfPhysicalActivity(dto.isDoctorAwareOfPhysicalActivity());
+                anam.setFavoritePhysicalActivity(dto.favoritePhysicalActivity());
+                anam.setHasInsomnia(dto.hasInsomnia());
+                anam.setDietOrientedBy(dto.dietOrientedBy());
+                anam.setCardiacProblems(dto.cardiacProblems());
+                anam.setHasHypertension(dto.hasHypertension());
+                anam.setChronicDiseases(dto.chronicDiseases());
+                anam.setDifficultiesInPhysicalActivities(dto.difficultiesInPhysicalActivities());
+                anam.setMedicalOrientationsToAvoidPhysicalActivity(dto.medicalOrientationsToAvoidPhysicalActivity());
+                anam.setSurgeriesInTheLast12Months(dto.surgeriesInTheLast12Months());
+                anam.setRespiratoryProblems(dto.respiratoryProblems());
+                anam.setJointMuscularBackPain(dto.jointMuscularBackPain());
+                anam.setSpinalDiscProblems(dto.spinalDiscProblems());
+                anam.setDiabetes(dto.diabetes());
+                anam.setSmokingDuration(dto.smokingDuration());
+                anam.setAlteredCholesterol(dto.alteredCholesterol());
+                anam.setOsteoporosisLocation(dto.osteoporosisLocation());
+                anamnesisRepository.save(anam);
+            } else {
+                org.conexaotreinamento.conexaotreinamentobackend.entity.Anamnesis anamnesis = new org.conexaotreinamento.conexaotreinamentobackend.entity.Anamnesis(savedStudent);
+                anamnesis.setMedication(dto.medication());
+                anamnesis.setDoctorAwareOfPhysicalActivity(dto.isDoctorAwareOfPhysicalActivity());
+                anamnesis.setFavoritePhysicalActivity(dto.favoritePhysicalActivity());
+                anamnesis.setHasInsomnia(dto.hasInsomnia());
+                anamnesis.setDietOrientedBy(dto.dietOrientedBy());
+                anamnesis.setCardiacProblems(dto.cardiacProblems());
+                anamnesis.setHasHypertension(dto.hasHypertension());
+                anamnesis.setChronicDiseases(dto.chronicDiseases());
+                anamnesis.setDifficultiesInPhysicalActivities(dto.difficultiesInPhysicalActivities());
+                anamnesis.setMedicalOrientationsToAvoidPhysicalActivity(dto.medicalOrientationsToAvoidPhysicalActivity());
+                anamnesis.setSurgeriesInTheLast12Months(dto.surgeriesInTheLast12Months());
+                anamnesis.setRespiratoryProblems(dto.respiratoryProblems());
+                anamnesis.setJointMuscularBackPain(dto.jointMuscularBackPain());
+                anamnesis.setSpinalDiscProblems(dto.spinalDiscProblems());
+                anamnesis.setDiabetes(dto.diabetes());
+                anamnesis.setSmokingDuration(dto.smokingDuration());
+                anamnesis.setAlteredCholesterol(dto.alteredCholesterol());
+                anamnesis.setOsteoporosisLocation(dto.osteoporosisLocation());
+                anamnesisRepository.save(anamnesis);
+            }
+        }
+
+        // Replace physical impairments
+        physicalImpairmentRepository.deleteByStudentId(savedStudent.getId());
+        if (request.physicalImpairments() != null && !request.physicalImpairments().isEmpty()) {
+            java.util.List<org.conexaotreinamento.conexaotreinamentobackend.entity.PhysicalImpairment> toSave = new java.util.ArrayList<>();
+            for (var pi : request.physicalImpairments()) {
+                toSave.add(new org.conexaotreinamento.conexaotreinamentobackend.entity.PhysicalImpairment(
+                        savedStudent,
+                        pi.type(),
+                        pi.name(),
+                        pi.observations()
+                ));
+            }
+            physicalImpairmentRepository.saveAll(toSave);
+        }
+
+        return StudentResponseDTO.fromEntity(savedStudent);
     }
 
     @Transactional

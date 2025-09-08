@@ -24,7 +24,8 @@ import {
 import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X, Trash2, RotateCcw } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Layout from "@/components/layout"
-import StudentForm from "@/components/student-form"
+import StudentForm, { type StudentFormData } from "@/components/student-form"
+import type { StudentRequestDto } from "@/lib/api-client/types.gen"
 import PageSelector from "@/components/ui/page-selector"
 import useDebounce from "@/hooks/use-debounce"
 import { useForm } from "react-hook-form"
@@ -32,7 +33,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/
 import { Checkbox } from "@/components/ui/checkbox"
 import ConfirmDeleteButton from "@/components/confirm-delete-button"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { deleteMutation, restoreMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { deleteMutation, restoreMutation, createMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { useToast } from "@/hooks/use-toast"
 
 // Type-safe filter interface
@@ -275,6 +276,7 @@ export default function StudentsPage() {
   const { toast } = useToast()
   const { mutateAsync: deleteStudent, isPending: isDeleting } = useMutation(deleteMutation())
   const { mutateAsync: restoreStudent, isPending: isRestoring } = useMutation(restoreMutation())
+  const { mutateAsync: createStudent } = useMutation(createMutation())
   
   // Get current page from URL query params or default to 0
   // This allows users to share URLs with specific page numbers and maintains page state on refresh
@@ -396,15 +398,89 @@ export default function StudentsPage() {
   // Get unique professions from API data for filter dropdown
   const uniqueProfessions = (studentsData?.content || []).map(s => s.profession).filter((p, i, arr) => p && arr.indexOf(p) === i)
 
-  const handleCreateStudent = async () => {
+  const handleCreateStudent = async (formData: StudentFormData) => {
     setIsCreating(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    const mapInsomnia = (v: any): "YES" | "NO" | "SOMETIMES" | undefined => {
+      if (!v) return undefined
+      if (v === "sim") return "YES"
+      if (v === "nao") return "NO"
+      if (v === "as-vezes") return "SOMETIMES"
+      return undefined
+    }
 
-    setIsCreating(false)
-    setIsCreateOpen(false)
-    // In real app, would create student and refresh list
+    const mapImpairmentType = (t: any): "VISUAL" | "AUDITORY" | "MOTOR" | "INTELLECTUAL" | "OTHER" => {
+      if (!t) return "OTHER"
+      switch (t) {
+        case "motor": return "MOTOR"
+        case "visual": return "VISUAL"
+        case "auditivo": return "AUDITORY"
+        case "linguistico": return "INTELLECTUAL"
+        case "emocional": return "OTHER"
+        case "outro": return "OTHER"
+        default: return String(t).toUpperCase() as "VISUAL" | "AUDITORY" | "MOTOR" | "INTELLECTUAL" | "OTHER"
+      }
+    }
+
+    try {
+      const requestBody = {
+        email: formData.email,
+        name: formData.name,
+        surname: formData.surname,
+        gender: formData.sex || "O",
+        birthDate: formData.birthDate,
+        phone: formData.phone,
+        profession: formData.profession,
+        street: formData.street,
+        number: formData.number,
+        complement: formData.complement,
+        neighborhood: formData.neighborhood,
+        cep: formData.cep,
+        emergencyContactName: formData.emergencyName,
+        emergencyContactPhone: formData.emergencyPhone,
+        emergencyContactRelationship: formData.emergencyRelationship,
+        objectives: formData.objectives,
+        observations: formData.impairmentObservations,
+        anamnesis: (formData.medication || formData.isDoctorAwareOfPhysicalActivity !== undefined || formData.favoritePhysicalActivity) ? {
+          medication: formData.medication,
+          isDoctorAwareOfPhysicalActivity: formData.isDoctorAwareOfPhysicalActivity,
+          favoritePhysicalActivity: formData.favoritePhysicalActivity,
+          hasInsomnia: mapInsomnia(formData.hasInsomnia),
+          dietOrientedBy: formData.dietOrientedBy,
+          cardiacProblems: formData.cardiacProblems,
+          hasHypertension: formData.hasHypertension,
+          chronicDiseases: formData.chronicDiseases,
+          difficultiesInPhysicalActivities: formData.difficultiesInPhysicalActivities,
+          medicalOrientationsToAvoidPhysicalActivity: formData.medicalOrientationsToAvoidPhysicalActivity,
+          surgeriesInTheLast12Months: formData.surgeriesInTheLast12Months,
+          respiratoryProblems: formData.respiratoryProblems,
+          jointMuscularBackPain: formData.jointMuscularBackPain,
+          spinalDiscProblems: formData.spinalDiscProblems,
+          diabetes: formData.diabetes,
+          smokingDuration: formData.smokingDuration,
+          alteredCholesterol: formData.alteredCholesterol,
+          osteoporosisLocation: formData.osteoporosisLocation
+        } : undefined,
+        physicalImpairments: formData.physicalImpairments?.map((p: any) => ({
+          type: mapImpairmentType(p.type),
+          name: p.name || "",
+          observations: p.observations
+        }))
+      } as StudentRequestDto;
+
+      await createStudent({ body: requestBody, client: apiClient })
+      await queryClient.invalidateQueries({
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAll'
+      })
+      toast({ title: "Aluno criado", description: "Aluno cadastrado com sucesso.", duration: 3000 })
+      setIsCreateOpen(false)
+    } catch (e) {
+      toast({ title: "Erro ao criar aluno", description: "Não foi possível criar o aluno.", duration: 4000 })
+      // eslint-disable-next-line no-console
+      console.error(e)
+    } finally {
+      setIsCreating(false)
+    }
   }
 
   const handleCancelCreate = () => {
