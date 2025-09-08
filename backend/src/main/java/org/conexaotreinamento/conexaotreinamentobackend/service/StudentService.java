@@ -105,8 +105,43 @@ public class StudentService {
     public StudentResponseDTO findById(UUID id) {
         Student student = studentRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
-        
-        return StudentResponseDTO.fromEntity(student);
+
+        var anamnesisEntity = anamnesisRepository.findById(student.getId()).orElse(null);
+        org.conexaotreinamento.conexaotreinamentobackend.dto.response.AnamnesisResponseDTO anamnesisDto =
+                org.conexaotreinamento.conexaotreinamentobackend.dto.response.AnamnesisResponseDTO.fromEntity(anamnesisEntity);
+
+        java.util.List<org.conexaotreinamento.conexaotreinamentobackend.dto.response.PhysicalImpairmentResponseDTO> physicalImpairments =
+                physicalImpairmentRepository.findByStudentId(student.getId())
+                        .stream()
+                        .map(org.conexaotreinamento.conexaotreinamentobackend.dto.response.PhysicalImpairmentResponseDTO::fromEntity)
+                        .toList();
+
+        return new StudentResponseDTO(
+                student.getId(),
+                student.getEmail(),
+                student.getName(),
+                student.getSurname(),
+                student.getGender(),
+                student.getBirthDate(),
+                student.getPhone(),
+                student.getProfession(),
+                student.getStreet(),
+                student.getNumber(),
+                student.getComplement(),
+                student.getNeighborhood(),
+                student.getCep(),
+                student.getEmergencyContactName(),
+                student.getEmergencyContactPhone(),
+                student.getEmergencyContactRelationship(),
+                student.getObjectives(),
+                student.getObservations(),
+                student.getRegistrationDate(),
+                student.getCreatedAt(),
+                student.getUpdatedAt(),
+                student.getDeletedAt(),
+                anamnesisDto,
+                physicalImpairments
+        );
     }
 
     public Page<StudentResponseDTO> findAll(
