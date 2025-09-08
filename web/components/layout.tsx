@@ -16,7 +16,7 @@ import ExpiringPlansModal from "@/components/expiring-plans-modal"
 const navigation = [
 	{ name: "Agenda", href: "/schedule", icon: Calendar },
 	{ name: "Alunos", href: "/students", icon: Users },
-	{ name: "Professores", href: "/teachers", icon: UserCheck, adminOnly: true },
+	{ name: "Professores", href: "/trainers", icon: UserCheck, adminOnly: true },
 	{ name: "Administradores", href: "/administrators", icon: Shield, adminOnly: true },
 	{ name: "Exercícios", href: "/exercises", icon: Dumbbell },
 	{ name: "Eventos", href: "/events", icon: Calendar },

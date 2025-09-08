@@ -7,4 +7,3 @@ public record ExerciseRequestDTO(
         @NotBlank @Size(max = 120) String name,
         @Size(max = 255) String description
 ) {}
-

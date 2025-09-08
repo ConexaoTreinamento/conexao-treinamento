@@ -311,7 +311,7 @@ export default function ClassDetailPage() {
     )
   }
 
-  const availableTeachers = [
+  const availableTrainers = [
     "Prof. Ana Silva",
     "Prof. Marina Costa",
     "Prof. Roberto Lima",
@@ -875,9 +875,9 @@ export default function ClassDetailPage() {
                     <SelectValue placeholder="Selecionar professor..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableTeachers.map((teacher) => (
-                      <SelectItem key={teacher} value={teacher}>
-                        {teacher}
+                    {availableTrainers.map((trainer) => (
+                      <SelectItem key={trainer} value={trainer}>
+                        {trainer}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -911,7 +911,7 @@ export default function ClassDetailPage() {
           }}
           onClose={handleCloseModalityModal}
           onSubmitData={handleEditModality}
-          teachers={availableTeachers}
+          trainers={availableTrainers}
         />
       </div>
     </Layout>

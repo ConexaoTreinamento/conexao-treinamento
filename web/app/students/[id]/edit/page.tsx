@@ -33,7 +33,7 @@ export default function EditStudentPage() {
     emergencyRelationship: "Pai",
     plan: "Mensal",
     status: "Ativo",
-    responsibleTeacher: "Prof. Ana",
+    responsibleTrainer: "Prof. Ana",
     objectives: "Perder 5kg, Melhorar condicionamento físico",
 
     // Medical anamnesis data

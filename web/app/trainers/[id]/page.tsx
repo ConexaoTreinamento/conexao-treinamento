@@ -8,191 +8,41 @@ import { ArrowLeft, User, Phone, Mail, Calendar, Clock, Edit, MapPin } from "luc
 import { useRouter, useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Layout from "@/components/layout"
-import TeacherModal from "@/components/teacher-modal"
+import TrainerModal from "@/components/trainer-modal"
+import { ListTrainersDto, TrainerResponseDto, update } from "@/lib/api-client"
+import { findTrainerByIdOptions, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { apiClient } from "@/lib/client"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-// Type definitions
-interface TeacherSchedule {
-  day: string
-  time: string
-  class: string
-  students: number
-}
-
-interface TeacherPerformance {
-  monthlyHours: number
-  monthlyClasses: number
-  studentsManaged: number
-}
-
-interface RecentClass {
-  name: string
-  date: string
-  students: number
-  attendance: number
-}
-
-interface TeacherData {
-  id: number
-  name: string
-  email: string
-  phone: string
-  address: string
-  birthDate: string
-  specialties: string[]
-  compensation: string
-  status: string
-  joinDate: string
-  hoursWorked: number
-  schedule: TeacherSchedule[]
-  performance: TeacherPerformance
-  recentClasses: RecentClass[]
-}
-
-export default function TeacherProfilePage() {
+export default function TrainerProfilePage() {
   const router = useRouter()
   const params = useParams()
-  const [teacherData, setTeacherData] = useState<TeacherData | null>(null)
-  const [loading, setLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerAndUserMutation())
 
-  // Mock teachers data - this should eventually be replaced with API calls
-  const mockTeachers: TeacherData[] = [
-    {
-      id: 1,
-      name: "Ana Silva",
-      email: "ana@gym.com",
-      phone: "(11) 99999-9999",
-      address: "Rua das Palmeiras, 456 - Jardins, São Paulo",
-      birthDate: "1985-08-20",
-      specialties: ["Pilates", "Yoga", "Alongamento"],
-      compensation: "Horista",
-      status: "Ativo",
-      joinDate: "2024-01-15",
-      hoursWorked: 120,
-      schedule: [
-        { day: "Segunda", time: "09:00-10:00", class: "Pilates Iniciante", students: 8 },
-        { day: "Segunda", time: "18:00-19:00", class: "Yoga", students: 6 },
-        { day: "Quarta", time: "09:00-10:00", class: "Pilates Intermediário", students: 10 },
-        { day: "Quarta", time: "18:00-19:00", class: "Alongamento", students: 5 },
-        { day: "Sexta", time: "09:00-10:00", class: "Pilates Iniciante", students: 7 },
-      ],
-      performance: {
-        monthlyHours: 120,
-        monthlyClasses: 48,
-        studentsManaged: 35,
-      },
-      recentClasses: [
-        { name: "Pilates Iniciante", date: "2024-07-20", students: 8, attendance: 7 },
-        { name: "Yoga", date: "2024-07-18", students: 6, attendance: 6 },
-        { name: "Pilates Intermediário", date: "2024-07-17", students: 10, attendance: 9 },
-      ],
-    },
-    {
-      id: 2,
-      name: "Marina Costa",
-      email: "marina@gym.com",
-      phone: "(11) 88888-8888",
-      address: "Av. Faria Lima, 789 - Itaim Bibi, São Paulo",
-      birthDate: "1990-04-15",
-      specialties: ["Yoga", "Meditação", "Relaxamento"],
-      compensation: "Mensalista",
-      status: "Ativo",
-      joinDate: "2024-02-01",
-      hoursWorked: 160,
-      schedule: [
-        { day: "Terça", time: "18:00-19:00", class: "Yoga Avançado", students: 12 },
-        { day: "Quinta", time: "18:00-19:00", class: "Yoga Avançado", students: 10 },
-        { day: "Sábado", time: "09:00-10:00", class: "Meditação", students: 8 },
-      ],
-      performance: {
-        monthlyHours: 160,
-        monthlyClasses: 36,
-        studentsManaged: 30,
-      },
-      recentClasses: [
-        { name: "Yoga Avançado", date: "2024-07-22", students: 12, attendance: 11 },
-        { name: "Meditação", date: "2024-07-21", students: 8, attendance: 8 },
-        { name: "Yoga Avançado", date: "2024-07-20", students: 10, attendance: 9 },
-      ],
-    },
-    {
-      id: 3,
-      name: "Roberto Lima",
-      email: "roberto@gym.com",
-      phone: "(11) 77777-7777",
-      address: "Rua Augusta, 321 - Consolação, São Paulo",
-      birthDate: "1983-11-30",
-      specialties: ["CrossFit", "Musculação", "Treinamento Funcional"],
-      compensation: "Horista",
-      status: "Ativo",
-      joinDate: "2023-11-10",
-      hoursWorked: 180,
-      schedule: [
-        { day: "Segunda", time: "07:00-08:00", class: "CrossFit", students: 8 },
-        { day: "Terça", time: "07:00-08:00", class: "CrossFit", students: 8 },
-        { day: "Quarta", time: "07:00-08:00", class: "CrossFit", students: 8 },
-        { day: "Quinta", time: "07:00-08:00", class: "CrossFit", students: 8 },
-        { day: "Sexta", time: "07:00-08:00", class: "CrossFit", students: 8 },
-      ],
-      performance: {
-        monthlyHours: 180,
-        monthlyClasses: 60,
-        studentsManaged: 40,
-      },
-      recentClasses: [
-        { name: "CrossFit", date: "2024-07-22", students: 8, attendance: 8 },
-        { name: "CrossFit", date: "2024-07-21", students: 8, attendance: 7 },
-        { name: "CrossFit", date: "2024-07-20", students: 8, attendance: 8 },
-      ],
-    },
-  ]
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    // Simulate fetching teacher data based on ID
-    const fetchTeacherData = async () => {
-      setLoading(true)
-      try {
-        // In a real application, this would be an API call
-        // const response = await fetch(`/api/teachers/${params.id}`)
-        // const data = await response.json()
+  const { data: trainerData, isLoading, error } = useQuery({
+    ...findTrainerByIdOptions({
+      path: { id: params.id as string },
+      client: apiClient,
+      security: [{
+        type: "http",
+        scheme: "bearer",
+        in: "header",
+      },]
+    })
+  })
 
-        // For now, find the teacher from mock data
-        const teacherId = parseInt(params.id as string)
-        const teacher = mockTeachers.find(t => t.id === teacherId)
-
-        if (teacher) {
-          setTeacherData(teacher)
-        } else {
-          // Handle teacher not found
-          console.error('Teacher not found')
-          router.push('/teachers')
-        }
-      } catch (error) {
-        console.error('Error fetching teacher data:', error)
-        router.push('/teachers')
-      } finally {
-        setLoading(false)
-      }
+  const getStatusColor = (status: boolean) => {
+    if (status) {
+      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
     }
-
-    if (params.id) {
-      fetchTeacherData()
-    }
-  }, [params.id, router])
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Ativo":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      case "Inativo":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-    }
+    return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
   }
 
-  const getCompensationColor = (compensation: string) => {
-    return compensation === "Mensalista"
+  const getCompensationColor = (compensationType: "MONTHLY" | "HOURLY") => {
+    return compensationType === "MONTHLY"
       ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
       : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
   }
@@ -209,30 +59,40 @@ export default function TeacherProfilePage() {
   }
 
   // Handle opening modal for editing
-  const handleEditTeacher = () => {
+  const handleEditTrainer = () => {
     setIsModalOpen(true)
   }
 
   // Handle modal submission
-  const handleModalSubmit = (formData: any) => {
-    if (teacherData) {
-      // Update the teacher data with new form data
-      const updatedTeacher = { ...teacherData, ...formData }
-      setTeacherData(updatedTeacher)
+  const handleModalSubmit = async (formData: any) => {
+    if (trainerData) {
+      // Update the trainer data with new form data
+      const updatedTrainer = { ...trainerData, ...formData }
 
-      // In a real application, this would make an API call to update the teacher
-      // await fetch(`/api/teachers/${teacherData.id}`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData)
-      // })
-
-      console.log('Teacher updated:', updatedTeacher)
+      await updateTrainer({
+        path: { id: String(updatedTrainer?.id) },
+        body: updatedTrainer,
+        client: apiClient,
+        security: [{
+          type: "http",
+          scheme: "bearer",
+          in: "header",
+        }],
+      })
+      await queryClient.invalidateQueries({
+        predicate: function (q) {
+          console.log(q)
+          return false
+        }
+      })
+      await queryClient.invalidateQueries({
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findTrainerById'
+      })
     }
     setIsModalOpen(false)
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
@@ -245,7 +105,7 @@ export default function TeacherProfilePage() {
     )
   }
 
-  if (!teacherData) {
+  if (!trainerData) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
@@ -253,7 +113,7 @@ export default function TeacherProfilePage() {
             <p className="text-lg font-semibold">Professor não encontrado</p>
             <Button
               variant="outline"
-              onClick={() => router.push('/teachers')}
+              onClick={() => router.push('/trainers')}
               className="mt-4"
             >
               Voltar para lista de professores
@@ -285,17 +145,17 @@ export default function TeacherProfilePage() {
             <CardHeader className="text-center pb-4">
               <Avatar className="w-20 h-20 mx-auto">
                 <AvatarFallback className="text-xl select-none">
-                  {teacherData.name
+                  {trainerData.name!
                     .split(" ")
                     .map((n) => n[0])
                     .join("")}
                 </AvatarFallback>
               </Avatar>
               <div className="space-y-2">
-                <CardTitle className="text-lg">{teacherData.name}</CardTitle>
+                <CardTitle className="text-lg">{trainerData.name}</CardTitle>
                 <div className="flex flex-wrap justify-center gap-2">
-                  <Badge className={getStatusColor(teacherData.status)}>{teacherData.status}</Badge>
-                  <Badge className={getCompensationColor(teacherData.compensation)}>{teacherData.compensation}</Badge>
+                  <Badge className={getStatusColor(trainerData.active!)}>{trainerData.active!}</Badge>
+                  <Badge className={getCompensationColor(trainerData.compensationType!)}>{trainerData.compensationType === "MONTHLY" ? "Mensalist" : "Horista"}</Badge>
                 </div>
               </div>
             </CardHeader>
@@ -303,31 +163,31 @@ export default function TeacherProfilePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <span className="truncate">{teacherData.email}</span>
+                  <span className="truncate">{trainerData.email}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <span>{teacherData.phone}</span>
+                  <span>{trainerData.phone}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <span>{calculateAge(teacherData.birthDate)} anos</span>
+                  <span>{calculateAge(trainerData.birthDate!)} anos</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  <span>{teacherData.hoursWorked}h este mês</span>
+                  <span>{trainerData.hoursWorked}h este mês</span>
                 </div>
               </div>
 
               <div className="flex items-start gap-2 text-sm">
                 <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                <span className="text-xs leading-relaxed">{teacherData.address}</span>
+                <span className="text-xs leading-relaxed">{trainerData.address}</span>
               </div>
 
               <div className="space-y-2">
                 <p className="text-sm font-medium">Especialidades:</p>
                 <div className="flex flex-wrap gap-1">
-                  {teacherData.specialties.map((specialty, idx) => (
+                  {trainerData.specialties?.map((specialty, idx) => (
                     <Badge key={idx} variant="outline" className="text-xs">
                       {specialty}
                     </Badge>
@@ -338,7 +198,7 @@ export default function TeacherProfilePage() {
                 <Button
                   size="sm"
                   className="bg-green-600 hover:bg-green-700 w-full"
-                  onClick={handleEditTeacher}
+                  onClick={handleEditTrainer}
                 >
                   <Edit className="w-4 h-4 mr-2" />
                   Editar Perfil
@@ -348,7 +208,7 @@ export default function TeacherProfilePage() {
           </Card>
 
           {/* Content Tabs */}
-          <Tabs defaultValue="overview" className="space-y-4">
+          {/* <Tabs defaultValue="overview" className="space-y-4">
             <TabsList className="grid w-full grid-cols-3 h-auto">
               <TabsTrigger value="overview" className="text-xs px-2 py-2">
                 Geral
@@ -362,17 +222,15 @@ export default function TeacherProfilePage() {
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">
-              {/* Stats Cards */}
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                 <Card>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs font-medium text-muted-foreground">Horas/Mês</p>
-                        <p className="text-xl font-bold">{teacherData.performance.monthlyHours}h</p>
+                        <p className="text-xl font-bold">{trainerData.performance.monthlyHours}h</p>
                       </div>
-                      <Clock className="w-5 h-5 text-blue-600" />
-                    </div>
+                      <Clock className="w-5 h-5 text-blue-600" />`
                   </CardContent>
                 </Card>
                 <Card>
@@ -380,7 +238,7 @@ export default function TeacherProfilePage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs font-medium text-muted-foreground">Aulas/Mês</p>
-                        <p className="text-xl font-bold">{teacherData.performance.monthlyClasses}</p>
+                        <p className="text-xl font-bold">{trainerData.performance.monthlyClasses}</p>
                       </div>
                       <Calendar className="w-5 h-5 text-green-600" />
                     </div>
@@ -391,7 +249,7 @@ export default function TeacherProfilePage() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-xs font-medium text-muted-foreground">Alunos</p>
-                        <p className="text-xl font-bold">{teacherData.performance.studentsManaged}</p>
+                        <p className="text-xl font-bold">{trainerData.performance.studentsManaged}</p>
                       </div>
                       <User className="w-5 h-5 text-purple-600" />
                     </div>
@@ -399,7 +257,6 @@ export default function TeacherProfilePage() {
                 </Card>
               </div>
 
-              {/* Recent Classes */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Aulas Recentes</CardTitle>
@@ -407,7 +264,7 @@ export default function TeacherProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {teacherData.recentClasses.map((classItem, index) => (
+                    {trainerData.recentClasses.map((classItem, index) => (
                       <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
                         <div>
                           <p className="font-medium text-sm">{classItem.name}</p>
@@ -436,7 +293,7 @@ export default function TeacherProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {teacherData.schedule.map((schedule, index) => (
+                    {trainerData.schedule.map((schedule, index) => (
                       <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
                         <div>
                           <p className="font-medium text-sm">{schedule.class}</p>
@@ -462,28 +319,28 @@ export default function TeacherProfilePage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-3 rounded-lg bg-muted/50">
                       <p className="text-sm text-muted-foreground">Horas Trabalhadas</p>
-                      <p className="text-2xl font-bold">{teacherData.performance.monthlyHours}h</p>
+                      <p className="text-2xl font-bold">{trainerData.performance.monthlyHours}h</p>
                     </div>
                     <div className="p-3 rounded-lg bg-muted/50">
                       <p className="text-sm text-muted-foreground">Aulas Ministradas</p>
-                      <p className="text-2xl font-bold">{teacherData.performance.monthlyClasses}</p>
+                      <p className="text-2xl font-bold">{trainerData.performance.monthlyClasses}</p>
                     </div>
                     <div className="p-3 rounded-lg bg-muted/50 col-span-2">
                       <p className="text-sm text-muted-foreground">Alunos Atendidos</p>
-                      <p className="text-2xl font-bold">{teacherData.performance.studentsManaged}</p>
+                      <p className="text-2xl font-bold">{trainerData.performance.studentsManaged}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
-          </Tabs>
+            </TabsContent> 
+          </Tabs> */}
         </div>
 
-        {/* Teacher Edit Modal */}
-        <TeacherModal
+        {/* Trainer Edit Modal */}
+        <TrainerModal
           open={isModalOpen}
           mode="edit"
-          initialData={teacherData}
+          initialData={trainerData}
           onClose={() => setIsModalOpen(false)}
           onSubmit={handleModalSubmit}
         />
