@@ -3,7 +3,10 @@ package org.conexaotreinamento.conexaotreinamentobackend.service;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.StudentRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AnamnesisResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.PhysicalImpairmentResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.Anamnesis;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.AnamnesisRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.PhysicalImpairmentRepository;
@@ -106,14 +109,13 @@ public class StudentService {
         Student student = studentRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
 
-        var anamnesisEntity = anamnesisRepository.findById(student.getId()).orElse(null);
-        org.conexaotreinamento.conexaotreinamentobackend.dto.response.AnamnesisResponseDTO anamnesisDto =
-                org.conexaotreinamento.conexaotreinamentobackend.dto.response.AnamnesisResponseDTO.fromEntity(anamnesisEntity);
+        Anamnesis anamnesisEntity = anamnesisRepository.findById(student.getId()).orElse(null);
+        AnamnesisResponseDTO anamnesisDto = AnamnesisResponseDTO.fromEntity(anamnesisEntity);
 
-        java.util.List<org.conexaotreinamento.conexaotreinamentobackend.dto.response.PhysicalImpairmentResponseDTO> physicalImpairments =
+        java.util.List<PhysicalImpairmentResponseDTO> physicalImpairments =
                 physicalImpairmentRepository.findByStudentId(student.getId())
                         .stream()
-                        .map(org.conexaotreinamento.conexaotreinamentobackend.dto.response.PhysicalImpairmentResponseDTO::fromEntity)
+                        .map(PhysicalImpairmentResponseDTO::fromEntity)
                         .toList();
 
         return new StudentResponseDTO(
