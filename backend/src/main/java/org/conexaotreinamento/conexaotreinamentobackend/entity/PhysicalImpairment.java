@@ -44,6 +44,6 @@ public class PhysicalImpairment {
     }
 
     public enum PhysicalImpairmentType {
-        VISUAL, AUDITORY, MOTOR, INTELLECTUAL, OTHER
+        visual, auditory, motor, intellectual, other
     }
 }
