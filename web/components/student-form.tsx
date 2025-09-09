@@ -98,7 +98,7 @@ export default function StudentForm({
 }: StudentFormProps) {
   const id = useId()
 
-  const { control, register, handleSubmit, setValue } = useForm<StudentFormData>({
+  const { control, register, handleSubmit, setValue, formState: { errors } } = useForm<StudentFormData>({
     defaultValues: {
       // spread initial so missing values are undefined
       ...initialData,
@@ -358,6 +358,7 @@ export default function StudentForm({
               <Controller
                 control={control}
                 name="hasInsomnia"
+                rules={{ required: true }}
                 render={({ field }) => (
                   <Select value={field.value ?? ""} onValueChange={(v) => field.onChange(v)}>
                     <SelectTrigger>
@@ -371,6 +372,7 @@ export default function StudentForm({
                   </Select>
                 )}
               />
+              {errors.hasInsomnia && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
 
             <div className="space-y-2">
