@@ -401,15 +401,15 @@ export default function StudentsPage() {
   const handleCreateStudent = async (formData: StudentFormData) => {
     setIsCreating(true)
 
-    const mapInsomnia = (v: any): "YES" | "NO" | "SOMETIMES" | undefined => {
-      if (!v) return undefined
+    const mapInsomnia = (v?: string | null): "YES" | "NO" | "SOMETIMES" | undefined => {
+      if (v === undefined || v === null) return undefined
       if (v === "sim") return "YES"
       if (v === "nao") return "NO"
       if (v === "as-vezes") return "SOMETIMES"
       return undefined
     }
 
-    const mapImpairmentType = (t: any): "VISUAL" | "AUDITORY" | "MOTOR" | "INTELLECTUAL" | "OTHER" => {
+    const mapImpairmentType = (t?: string | null): "VISUAL" | "AUDITORY" | "MOTOR" | "INTELLECTUAL" | "OTHER" => {
       if (!t) return "OTHER"
       switch (t) {
         case "motor": return "MOTOR"
@@ -423,6 +423,33 @@ export default function StudentsPage() {
     }
 
     try {
+      const anamnesisFields = [
+        "medication",
+        "isDoctorAwareOfPhysicalActivity",
+        "favoritePhysicalActivity",
+        "hasInsomnia",
+        "dietOrientedBy",
+        "cardiacProblems",
+        "hasHypertension",
+        "chronicDiseases",
+        "difficultiesInPhysicalActivities",
+        "medicalOrientationsToAvoidPhysicalActivity",
+        "surgeriesInTheLast12Months",
+        "respiratoryProblems",
+        "jointMuscularBackPain",
+        "spinalDiscProblems",
+        "diabetes",
+        "smokingDuration",
+        "alteredCholesterol",
+        "osteoporosisLocation"
+      ];
+      const hasAnamnesis = anamnesisFields.some((f: string) => {
+        const v = (formData as unknown as Record<string, unknown>)[f];
+        if (v === undefined || v === null) return false;
+        if (typeof v === "string") return v.trim() !== "";
+        return true;
+      });
+
       const requestBody = {
         email: formData.email,
         name: formData.name,
@@ -441,7 +468,7 @@ export default function StudentsPage() {
         emergencyContactRelationship: formData.emergencyRelationship,
         objectives: formData.objectives,
         observations: formData.impairmentObservations,
-        anamnesis: (formData.medication || formData.isDoctorAwareOfPhysicalActivity !== undefined || formData.favoritePhysicalActivity) ? {
+        anamnesis: hasAnamnesis ? {
           medication: formData.medication,
           isDoctorAwareOfPhysicalActivity: formData.isDoctorAwareOfPhysicalActivity,
           favoritePhysicalActivity: formData.favoritePhysicalActivity,
@@ -461,11 +488,22 @@ export default function StudentsPage() {
           alteredCholesterol: formData.alteredCholesterol,
           osteoporosisLocation: formData.osteoporosisLocation
         } : undefined,
-        physicalImpairments: formData.physicalImpairments?.map((p: any) => ({
-          type: mapImpairmentType(p.type),
-          name: p.name || "",
-          observations: p.observations
-        }))
+        physicalImpairments: formData.physicalImpairments
+          ?.filter((p): p is NonNullable<StudentFormData['physicalImpairments']>[number] => {
+            if (!p) {
+              return false
+            }
+            const hasContent =
+              String((p.type ?? "")).trim().length > 0 ||
+              String((p.name ?? "")).trim().length > 0 ||
+              String((p.observations ?? "")).trim().length > 0
+            return hasContent
+          })
+          .map((p) => ({
+            type: mapImpairmentType(p.type),
+            name: p.name || "",
+            observations: p.observations
+          }))
       } as StudentRequestDto;
 
       await createStudent({ body: requestBody, client: apiClient })
@@ -581,7 +619,7 @@ export default function StudentsPage() {
                             <p className="text-xs text-muted-foreground">Inclui alunos marcados como inativos no resultado.</p>
                           </div>
                           <FormControl>
-                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                            <Checkbox checked={Boolean(field.value)} onCheckedChange={(v) => field.onChange(Boolean(v))} />
                           </FormControl>
                         </FormItem>
                       )}

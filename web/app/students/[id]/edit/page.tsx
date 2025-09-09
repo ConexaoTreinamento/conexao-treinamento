@@ -10,7 +10,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { findByIdOptions, updateMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { useToast } from "@/hooks/use-toast"
-import type { StudentResponseDto } from "@/lib/api-client/types.gen"
+import type { StudentResponseDto, StudentRequestDto } from "@/lib/api-client/types.gen"
 
 /**
  * Edit student page - fetches student by id, maps response to StudentFormData and
@@ -39,17 +39,20 @@ export default function EditStudentPage() {
   })
 
   const studentFromCache = React.useMemo(() => {
-    const queries = queryClient.getQueriesData({}) as any
+    const queries = queryClient.getQueriesData({}) as Array<[unknown, unknown]>
     for (const [key, data] of queries) {
-      if (Array.isArray(key) && key[0] && (key[0] as any)._id === 'findAll') {
-        const content = (data as any)?.content
-        if (Array.isArray(content) && content.length > 0) return content[0] as StudentResponseDto
+      if (Array.isArray(key) && key[0] && typeof key[0] === "object") {
+        const first = key[0] as Record<string, unknown>
+        if (first["_id"] === 'findAll') {
+          const content = (data as Record<string, unknown> | null)?.content as unknown
+          if (Array.isArray(content) && content.length > 0) return content[0] as StudentResponseDto
+        }
       }
     }
     return undefined
   }, [queryClient])
 
-  const student: StudentResponseDto | undefined = (studentData as any) ?? studentFromCache
+  const student: StudentResponseDto | undefined = (studentData as StudentResponseDto | undefined) ?? studentFromCache
 
   const { mutateAsync: updateStudent } = useMutation(updateMutation())
 
@@ -138,15 +141,15 @@ export default function EditStudentPage() {
     if (!id) return
     setIsSaving(true)
 
-    const mapInsomniaToApi = (v: any): "YES" | "NO" | "SOMETIMES" | undefined => {
-      if (!v) return undefined
+    const mapInsomniaToApi = (v?: string | null): "YES" | "NO" | "SOMETIMES" | undefined => {
+      if (v === undefined || v === null) return undefined
       if (v === "sim") return "YES"
       if (v === "nao") return "NO"
       if (v === "as-vezes") return "SOMETIMES"
       return undefined
     }
 
-    const mapImpairmentTypeToApi = (t: any): "VISUAL" | "AUDITORY" | "MOTOR" | "INTELLECTUAL" | "OTHER" => {
+    const mapImpairmentTypeToApi = (t?: string | null): "VISUAL" | "AUDITORY" | "MOTOR" | "INTELLECTUAL" | "OTHER" => {
       if (!t) return "OTHER"
       switch (t) {
         case "motor": return "MOTOR"
@@ -155,12 +158,39 @@ export default function EditStudentPage() {
         case "linguistico": return "INTELLECTUAL"
         case "emocional": return "OTHER"
         case "outro": return "OTHER"
-        default: return String(t).toUpperCase() as any
+        default: return String(t).toUpperCase() as "VISUAL" | "AUDITORY" | "MOTOR" | "INTELLECTUAL" | "OTHER"
       }
     }
 
     try {
-      const requestBody: any = {
+      const anamnesisFields = [
+        "medication",
+        "isDoctorAwareOfPhysicalActivity",
+        "favoritePhysicalActivity",
+        "hasInsomnia",
+        "dietOrientedBy",
+        "cardiacProblems",
+        "hasHypertension",
+        "chronicDiseases",
+        "difficultiesInPhysicalActivities",
+        "medicalOrientationsToAvoidPhysicalActivity",
+        "surgeriesInTheLast12Months",
+        "respiratoryProblems",
+        "jointMuscularBackPain",
+        "spinalDiscProblems",
+        "diabetes",
+        "smokingDuration",
+        "alteredCholesterol",
+        "osteoporosisLocation"
+      ];
+      const hasAnamnesis = anamnesisFields.some((f: string) => {
+        const v = (formData as unknown as Record<string, unknown>)[f];
+        if (v === undefined || v === null) return false;
+        if (typeof v === "string") return v.trim() !== "";
+        return true;
+      });
+
+      const requestBody = {
         email: formData.email,
         name: formData.name,
         surname: formData.surname,
@@ -178,7 +208,7 @@ export default function EditStudentPage() {
         emergencyContactRelationship: formData.emergencyRelationship,
         objectives: formData.objectives,
         observations: formData.impairmentObservations,
-        anamnesis: (formData.medication || formData.isDoctorAwareOfPhysicalActivity !== undefined || formData.favoritePhysicalActivity) ? {
+        anamnesis: hasAnamnesis ? {
           medication: formData.medication,
           isDoctorAwareOfPhysicalActivity: formData.isDoctorAwareOfPhysicalActivity,
           favoritePhysicalActivity: formData.favoritePhysicalActivity,
@@ -198,19 +228,28 @@ export default function EditStudentPage() {
           alteredCholesterol: formData.alteredCholesterol,
           osteoporosisLocation: formData.osteoporosisLocation
         } : undefined,
-        physicalImpairments: formData.physicalImpairments?.map((p: any) => ({
-          type: mapImpairmentTypeToApi(p.type),
-          name: p.name || "",
-          observations: p.observations
-        }))
-      }
+        physicalImpairments: formData.physicalImpairments
+          ?.filter((p): p is NonNullable<StudentFormData['physicalImpairments']>[number] => {
+            if (!p) return false
+            const hasContent =
+              String((p.type ?? "")).trim().length > 0 ||
+              String((p.name ?? "")).trim().length > 0 ||
+              String((p.observations ?? "")).trim().length > 0
+            return hasContent
+          })
+          .map((p) => ({
+            type: mapImpairmentTypeToApi(p.type),
+            name: p.name || "",
+            observations: p.observations
+          }))
+      } as StudentRequestDto
 
       await updateStudent({ path: { id }, body: requestBody, client: apiClient })
       await queryClient.invalidateQueries({
         predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAll'
       })
       toast({ title: "Aluno atualizado", description: "As alterações foram salvas.", duration: 3000 })
-      router.push(`/students/${id}`)
+      router.replace(`/students/${id}`)
     } catch (e) {
       // eslint-disable-next-line no-console
       console.error(e)
