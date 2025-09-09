@@ -56,11 +56,17 @@ export default function EditStudentPage() {
 
   const { mutateAsync: updateStudent } = useMutation(updateMutation())
 
-  const mapInsomniaFromApi = (v?: "YES" | "NO" | "SOMETIMES" | null) => {
+  const mapInsomniaFromApi = (v?: string | null) => {
     if (!v) return undefined
-    if (v === "YES") return "sim"
-    if (v === "NO") return "nao"
-    if (v === "SOMETIMES") return "as-vezes"
+    const normalized = String(v).trim().toLowerCase()
+
+    // Accept multiple possible representations from the API:
+    // - English enums: "YES", "NO", "SOMETIMES" (any case)
+    // - English words: "yes", "no", "sometimes"
+    // - Portuguese values if present: "sim", "nao", "as-vezes"
+    if (normalized === "yes" || normalized === "sim") return "sim"
+    if (normalized === "no" || normalized === "nao") return "nao"
+    if (normalized === "sometimes" || normalized === "sometime" || normalized === "as-vezes") return "as-vezes"
     return undefined
   }
 
@@ -141,24 +147,24 @@ export default function EditStudentPage() {
     if (!id) return
     setIsSaving(true)
 
-    const mapInsomniaToApi = (v?: string | null): "YES" | "NO" | "SOMETIMES" | undefined => {
+    const mapInsomniaToApi = (v?: string | null): "yes" | "no" | "sometimes" | undefined => {
       if (v === undefined || v === null) return undefined
-      if (v === "sim") return "YES"
-      if (v === "nao") return "NO"
-      if (v === "as-vezes") return "SOMETIMES"
+      if (v === "sim") return "yes"
+      if (v === "nao") return "no"
+      if (v === "as-vezes") return "sometimes"
       return undefined
     }
 
-    const mapImpairmentTypeToApi = (t?: string | null): "VISUAL" | "AUDITORY" | "MOTOR" | "INTELLECTUAL" | "OTHER" => {
-      if (!t) return "OTHER"
+    const mapImpairmentTypeToApi = (t?: string | null): "visual" | "auditory" | "motor" | "intellectual" | "other" => {
+      if (!t) return "other"
       switch (t) {
-        case "motor": return "MOTOR"
-        case "visual": return "VISUAL"
-        case "auditivo": return "AUDITORY"
-        case "linguistico": return "INTELLECTUAL"
-        case "emocional": return "OTHER"
-        case "outro": return "OTHER"
-        default: return String(t).toUpperCase() as "VISUAL" | "AUDITORY" | "MOTOR" | "INTELLECTUAL" | "OTHER"
+        case "motor": return "motor"
+        case "visual": return "visual"
+        case "auditivo": return "auditory"
+        case "linguistico": return "intellectual"
+        case "emocional": return "other"
+        case "outro": return "other"
+        default: return String(t).toLowerCase() as "visual" | "auditory" | "motor" | "intellectual" | "other"
       }
     }
 

@@ -401,24 +401,24 @@ export default function StudentsPage() {
   const handleCreateStudent = async (formData: StudentFormData) => {
     setIsCreating(true)
 
-    const mapInsomnia = (v?: string | null): "YES" | "NO" | "SOMETIMES" | undefined => {
+    const mapInsomnia = (v?: string | null): "yes" | "no" | "sometimes" | undefined => {
       if (v === undefined || v === null) return undefined
-      if (v === "sim") return "YES"
-      if (v === "nao") return "NO"
-      if (v === "as-vezes") return "SOMETIMES"
+      if (v === "sim") return "yes"
+      if (v === "nao") return "no"
+      if (v === "as-vezes") return "sometimes"
       return undefined
     }
 
-    const mapImpairmentType = (t?: string | null): "VISUAL" | "AUDITORY" | "MOTOR" | "INTELLECTUAL" | "OTHER" => {
-      if (!t) return "OTHER"
+    const mapImpairmentType = (t?: string | null): "visual" | "auditory" | "motor" | "intellectual" | "other" => {
+      if (!t) return "other"
       switch (t) {
-        case "motor": return "MOTOR"
-        case "visual": return "VISUAL"
-        case "auditivo": return "AUDITORY"
-        case "linguistico": return "INTELLECTUAL"
-        case "emocional": return "OTHER"
-        case "outro": return "OTHER"
-        default: return String(t).toUpperCase() as "VISUAL" | "AUDITORY" | "MOTOR" | "INTELLECTUAL" | "OTHER"
+        case "motor": return "motor"
+        case "visual": return "visual"
+        case "auditivo": return "auditory"
+        case "linguistico": return "intellectual"
+        case "emocional": return "other"
+        case "outro": return "other"
+        default: return String(t).toLowerCase() as "visual" | "auditory" | "motor" | "intellectual" | "other"
       }
     }
 
