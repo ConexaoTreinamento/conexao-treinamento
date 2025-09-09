@@ -112,6 +112,39 @@ export default function StudentForm({
     name: "physicalImpairments"
   })
 
+  // Keep form in sync when initialData prop changes (e.g. after fetch on edit page).
+  // react-hook-form only applies defaultValues on first render, so we must call reset
+  // when new initialData arrives to populate the form.
+  // Guard against repeated resets (which can cause an update loop) by comparing
+  // a serialized snapshot of the data and only calling reset when it actually changed.
+  const _lastResetRef = React.useRef<string | null>(null)
+  React.useEffect(() => {
+    // skip when initialData is missing or an empty object (default prop)
+    if (!initialData || Object.keys(initialData).length === 0) {
+      return
+    }
+
+    const toReset = {
+      ...initialData,
+      status: initialData.status ?? "Ativo",
+      physicalImpairments: initialData.physicalImpairments?.map((p) => ({ ...p })) ?? []
+    }
+
+    let snapshot: string
+    try {
+      snapshot = JSON.stringify(toReset)
+    } catch {
+      // fallback: if serialization fails, force reset once
+      snapshot = String(Math.random())
+    }
+
+    if (_lastResetRef.current !== snapshot) {
+      _lastResetRef.current = snapshot
+      reset(toReset)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialData, reset])
+
   const addPhysicalImpairment = () => {
     append({
       id: uuidv4(),
