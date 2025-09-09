@@ -1,7 +1,6 @@
 "use client"
 
-import type React from "react"
-import { useId } from "react"
+import React, { useId, useEffect, useRef } from "react"
 import { v4 as uuidv4 } from "uuid"
 import { useForm, Controller, useFieldArray } from "react-hook-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -98,7 +97,7 @@ export default function StudentForm({
 }: StudentFormProps) {
   const id = useId()
 
-  const { control, register, handleSubmit, setValue, formState: { errors } } = useForm<StudentFormData>({
+  const { control, register, handleSubmit, setValue, reset, formState: { errors } } = useForm<StudentFormData>({
     defaultValues: {
       // spread initial so missing values are undefined
       ...initialData,
@@ -107,43 +106,28 @@ export default function StudentForm({
     }
   })
 
+  // Reset form once when initialData becomes available (handles async load / page refresh)
+  const initializedRef = useRef(false)
+  useEffect(() => {
+    if (initializedRef.current) return
+    // consider initialData as available when it has at least one own property
+    const hasData = initialData && Object.keys(initialData).length > 0
+    if (!hasData) return
+    const payload = {
+      ...initialData,
+      status: initialData?.status ?? "Ativo",
+      physicalImpairments: initialData?.physicalImpairments?.map((p) => ({ ...p })) ?? []
+    }
+    reset(payload)
+    initializedRef.current = true
+  }, [initialData, reset])
+
   const { fields, append, remove, update } = useFieldArray({
     control,
     name: "physicalImpairments"
   })
 
-  // Keep form in sync when initialData prop changes (e.g. after fetch on edit page).
-  // react-hook-form only applies defaultValues on first render, so we must call reset
-  // when new initialData arrives to populate the form.
-  // Guard against repeated resets (which can cause an update loop) by comparing
-  // a serialized snapshot of the data and only calling reset when it actually changed.
-  const _lastResetRef = React.useRef<string | null>(null)
-  React.useEffect(() => {
-    // skip when initialData is missing or an empty object (default prop)
-    if (!initialData || Object.keys(initialData).length === 0) {
-      return
-    }
 
-    const toReset = {
-      ...initialData,
-      status: initialData.status ?? "Ativo",
-      physicalImpairments: initialData.physicalImpairments?.map((p) => ({ ...p })) ?? []
-    }
-
-    let snapshot: string
-    try {
-      snapshot = JSON.stringify(toReset)
-    } catch {
-      // fallback: if serialization fails, force reset once
-      snapshot = String(Math.random())
-    }
-
-    if (_lastResetRef.current !== snapshot) {
-      _lastResetRef.current = snapshot
-      reset(toReset)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialData, reset])
 
   const addPhysicalImpairment = () => {
     append({
@@ -174,18 +158,22 @@ export default function StudentForm({
             <div className="space-y-2">
               <Label htmlFor={`name-${id}`}>Nome *</Label>
               <Input id={`name-${id}`} {...register("name", { required: true })} />
+              {errors.name && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor={`surname-${id}`}>Sobrenome *</Label>
               <Input id={`surname-${id}`} {...register("surname", { required: true })} />
+              {errors.surname && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor={`email-${id}`}>Email *</Label>
               <Input id={`email-${id}`} type="email" {...register("email", { required: true })} />
+              {errors.email && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor={`phone-${id}`}>Telefone *</Label>
               <Input id={`phone-${id}`} {...register("phone", { required: true })} placeholder="(11) 99999-9999" />
+              {errors.phone && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor={`sex-${id}`}>Sexo *</Label>
@@ -193,7 +181,7 @@ export default function StudentForm({
                 control={control}
                 name="sex"
                 render={({ field }) => (
-                  <Select value={field.value ?? ""} onValueChange={(v) => field.onChange(v)}>
+                  <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
@@ -208,6 +196,7 @@ export default function StudentForm({
             <div className="space-y-2">
               <Label htmlFor={`birthDate-${id}`}>Data de Nascimento *</Label>
               <Input id={`birthDate-${id}`} type="date" {...register("birthDate", { required: true })} />
+              {errors.birthDate && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor={`profession-${id}`}>Profissão</Label>
@@ -227,10 +216,12 @@ export default function StudentForm({
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor={`street-${id}`}>Rua *</Label>
               <Input id={`street-${id}`} {...register("street", { required: true })} />
+              {errors.street && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor={`number-${id}`}>Número *</Label>
               <Input id={`number-${id}`} {...register("number", { required: true })} />
+              {errors.number && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor={`complement-${id}`}>Complemento</Label>
@@ -239,10 +230,12 @@ export default function StudentForm({
             <div className="space-y-2">
               <Label htmlFor={`neighborhood-${id}`}>Bairro *</Label>
               <Input id={`neighborhood-${id}`} {...register("neighborhood", { required: true })} />
+              {errors.neighborhood && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor={`cep-${id}`}>CEP *</Label>
               <Input id={`cep-${id}`} {...register("cep", { required: true })} />
+              {errors.cep && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
           </div>
         </CardContent>
@@ -258,14 +251,17 @@ export default function StudentForm({
             <div className="space-y-2">
               <Label htmlFor={`emergencyName-${id}`}>Nome *</Label>
               <Input id={`emergencyName-${id}`} {...register("emergencyName", { required: true })} />
+              {errors.emergencyName && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor={`emergencyPhone-${id}`}>Telefone *</Label>
               <Input id={`emergencyPhone-${id}`} {...register("emergencyPhone", { required: true })} />
+              {errors.emergencyPhone && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor={`emergencyRelationship-${id}`}>Parentesco *</Label>
               <Input id={`emergencyRelationship-${id}`} {...register("emergencyRelationship", { required: true })} />
+              {errors.emergencyRelationship && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
           </div>
         </CardContent>
@@ -284,7 +280,7 @@ export default function StudentForm({
                 control={control}
                 name="plan"
                 render={({ field }) => (
-                  <Select value={field.value ?? ""} onValueChange={(v) => field.onChange(v)}>
+                  <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o plano" />
                     </SelectTrigger>
@@ -305,7 +301,7 @@ export default function StudentForm({
                 control={control}
                 name="status"
                 render={({ field }) => (
-                  <Select value={field.value ?? ""} onValueChange={(v) => field.onChange(v)}>
+                  <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o status" />
                     </SelectTrigger>
@@ -391,9 +387,10 @@ export default function StudentForm({
               <Controller
                 control={control}
                 name="hasInsomnia"
+                defaultValue={initialData?.hasInsomnia ?? ""}
                 rules={{ required: true }}
                 render={({ field }) => (
-                  <Select value={field.value ?? ""} onValueChange={(v) => field.onChange(v)}>
+                  <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
@@ -433,6 +430,7 @@ export default function StudentForm({
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor={`chronicDiseases-${id}`}>Doenças crônicas?</Label>
               <Input id={`chronicDiseases-${id}`} {...register("chronicDiseases")} placeholder="Ex: Diabetes tipo 2, Artrite" />
             </div>
 
@@ -526,7 +524,7 @@ export default function StudentForm({
                     control={control}
                     name={`physicalImpairments.${index}.type` as const}
                     render={({ field }) => (
-                      <Select value={field.value ?? ""} onValueChange={(v) => field.onChange(v)}>
+                      <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
