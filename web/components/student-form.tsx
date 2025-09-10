@@ -97,12 +97,23 @@ export default function StudentForm({
 }: StudentFormProps) {
   const id = useId()
 
+  // normalize incoming initialData so form uses the expected local values
+  const normalizedInitialData: Partial<StudentFormData> = {
+    ...initialData,
+    // backend may store hasInsomnia as 'yes'|'no'|'sometimes' — normalize to form values
+    hasInsomnia: initialData?.hasInsomnia === "yes" ? "sim"
+      : initialData?.hasInsomnia === "no" ? "nao"
+      : initialData?.hasInsomnia === "sometimes" ? "as-vezes"
+      : (initialData?.hasInsomnia as unknown as string | undefined) ?? undefined,
+    physicalImpairments: initialData?.physicalImpairments?.map((p) => ({ ...p })) ?? []
+  }
+
   const { control, register, handleSubmit, setValue, reset, formState: { errors } } = useForm<StudentFormData>({
     defaultValues: {
-      // spread initial so missing values are undefined
-      ...initialData,
-      status: initialData.status ?? "Ativo",
-      physicalImpairments: initialData.physicalImpairments?.map((p) => ({ ...p })) ?? []
+      // spread normalized initial so missing values are undefined
+      ...normalizedInitialData,
+      status: normalizedInitialData.status ?? "Ativo",
+      physicalImpairments: normalizedInitialData.physicalImpairments ?? []
     }
   })
 
@@ -114,13 +125,13 @@ export default function StudentForm({
     const hasData = initialData && Object.keys(initialData).length > 0
     if (!hasData) return
     const payload = {
-      ...initialData,
-      status: initialData?.status ?? "Ativo",
-      physicalImpairments: initialData?.physicalImpairments?.map((p) => ({ ...p })) ?? []
+      ...normalizedInitialData,
+      status: normalizedInitialData?.status ?? "Ativo",
+      physicalImpairments: normalizedInitialData?.physicalImpairments ?? []
     }
     reset(payload)
     initializedRef.current = true
-  }, [initialData, reset])
+  }, [initialData, normalizedInitialData, reset])
 
   const { fields, append, remove, update } = useFieldArray({
     control,
@@ -387,8 +398,9 @@ export default function StudentForm({
               <Controller
                 control={control}
                 name="hasInsomnia"
-                defaultValue={initialData?.hasInsomnia ?? ""}
-                rules={{ required: true }}
+                defaultValue={normalizedInitialData?.hasInsomnia ?? ""}
+                // Only require this field when creating a new student; in edit mode keep optional
+                rules={mode === "create" ? { required: true } : undefined}
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
                     <SelectTrigger>
