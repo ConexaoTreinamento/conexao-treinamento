@@ -1,7 +1,8 @@
 "use client"
 
-import type React from "react"
-import { useState } from "react"
+import React, { useId, useEffect, useRef } from "react"
+import { v4 as uuidv4 } from "uuid"
+import { useForm, Controller, useFieldArray } from "react-hook-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,101 +11,68 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { User, Plus, Trash2 } from "lucide-react"
-import { v4 as uuidv4 } from 'uuid'
+import {hasInsomniaTypes, impairmentTypes} from "@/lib/students-data";
 
 interface PhysicalImpairment {
   id: string
-  type: string
-  name: string
-  observations: string
+  type?: string
+  name?: string
+  observations?: string
 }
-
-// Reusable checkbox component
-interface BooleanCheckboxProps {
-  id: string
-  label: string
-  checked: boolean
-  onCheckedChange: (checked: boolean) => void
-}
-
-const BooleanCheckbox: React.FC<BooleanCheckboxProps> = ({
-  id,
-  label,
-  checked,
-  onCheckedChange
-}) => (
-  <div className="space-y-2">
-    <Label>{label}</Label>
-    <div className="flex items-center space-x-2">
-      <Checkbox
-        id={id}
-        checked={checked}
-        onCheckedChange={onCheckedChange}
-        className="h-5 w-5 data-[state=checked]:!bg-green-600 data-[state=checked]:!border-green-600 data-[state=checked]:!text-white"
-      />
-      <Label
-        htmlFor={id}
-        className="text-sm cursor-pointer"
-      >
-        {checked ? "Sim" : "Não"}
-      </Label>
-    </div>
-  </div>
-)
 
 export interface StudentFormData {
   // Basic info
-  name: string
-  surname: string
-  email: string
-  phone: string
-  sex: string
-  birthDate: string
-  profession: string
+  name?: string
+  surname?: string
+  email?: string
+  phone?: string
+  sex?: string
+  birthDate?: string
+  profession?: string
 
   // Address
-  street: string
-  number: string
-  complement: string
-  neighborhood: string
-  cep: string
+  street?: string
+  number?: string
+  complement?: string
+  neighborhood?: string
+  cep?: string
 
   // Emergency contact
-  emergencyName: string
-  emergencyPhone: string
-  emergencyRelationship: string
+  emergencyName?: string
+  emergencyPhone?: string
+  emergencyRelationship?: string
 
   // Plan and status
-  plan: string
-  status: string
-  responsibleTrainer: string
+  plan?: string
+  status?: string
+  responsibleTrainer?: string
 
   // Objectives (above anamnesis)
-  objectives: string
+  objectives?: string
 
-  // Anamnesis fields in the required order
-  medication: string
-  isDoctorAwareOfPhysicalActivity: boolean
-  favoritePhysicalActivity: string
-  hasInsomnia: string
-  dietOrientedBy: string
-  cardiacProblems: string
-  hasHypertension: boolean
-  chronicDiseases: string
-  difficultiesInPhysicalActivities: string
-  medicalOrientationsToAvoidPhysicalActivity: string
-  surgeriesInTheLast12Months: string
-  respiratoryProblems: string
-  jointMuscularBackPain: string
-  spinalDiscProblems: string
-  diabetes: string
-  smokingDuration: string
-  alteredCholesterol: boolean
-  osteoporosisLocation: string
-  impairmentObservations: string
+  // Anamnesis fields
+  medication?: string
+  isDoctorAwareOfPhysicalActivity?: boolean
+  favoritePhysicalActivity?: string
+  hasInsomnia?: string
+  dietOrientedBy?: string
+  cardiacProblems?: string
+  hasHypertension?: boolean
+  chronicDiseases?: string
+  difficultiesInPhysicalActivities?: string
+  medicalOrientationsToAvoidPhysicalActivity?: string
+  surgeriesInTheLast12Months?: string
+  respiratoryProblems?: string
+  jointMuscularBackPain?: string
+  spinalDiscProblems?: string
+  diabetes?: string
+  smokingDuration?: string
+  alteredCholesterol?: boolean
+  osteoporosisLocation?: string
+  impairmentObservations?: string
 
   // Physical impairments list
-  physicalImpairments: PhysicalImpairment[]
+  physicalImpairments?: PhysicalImpairment[]
 }
 
 interface StudentFormProps {
@@ -128,105 +96,61 @@ export default function StudentForm({
   isLoading = false,
   mode
 }: StudentFormProps) {
-  const [formData, setFormData] = useState<StudentFormData>({
-    // Basic info
-    name: initialData.name || "",
-    surname: initialData.surname || "",
-    email: initialData.email || "",
-    phone: initialData.phone || "",
-    sex: initialData.sex || "",
-    birthDate: initialData.birthDate || "",
-    profession: initialData.profession || "",
+  const id = useId()
 
-    // Address
-    street: initialData.street || "",
-    number: initialData.number || "",
-    complement: initialData.complement || "",
-    neighborhood: initialData.neighborhood || "",
-    cep: initialData.cep || "",
+  const normalizedInitialData: Partial<StudentFormData> = {
+    ...initialData,
+    physicalImpairments: initialData?.physicalImpairments?.map((p) => ({ ...p })) ?? []
+  }
 
-    // Emergency contact
-    emergencyName: initialData.emergencyName || "",
-    emergencyPhone: initialData.emergencyPhone || "",
-    emergencyRelationship: initialData.emergencyRelationship || "",
-
-    // Plan and status
-    plan: initialData.plan || "",
-    status: initialData.status || "Ativo",
-    responsibleTrainer: initialData.responsibleTrainer || "",
-
-    // Objectives
-    objectives: initialData.objectives || "",
-
-    // Anamnesis fields
-    medication: initialData.medication || "",
-    isDoctorAwareOfPhysicalActivity: false,
-    favoritePhysicalActivity: initialData.favoritePhysicalActivity || "",
-    hasInsomnia: initialData.hasInsomnia || "",
-    dietOrientedBy: initialData.dietOrientedBy || "",
-    cardiacProblems: initialData.cardiacProblems || "",
-    hasHypertension: false,
-    chronicDiseases: initialData.chronicDiseases || "",
-    difficultiesInPhysicalActivities: initialData.difficultiesInPhysicalActivities || "",
-    medicalOrientationsToAvoidPhysicalActivity: initialData.medicalOrientationsToAvoidPhysicalActivity || "",
-    surgeriesInTheLast12Months: initialData.surgeriesInTheLast12Months || "",
-    respiratoryProblems: initialData.respiratoryProblems || "",
-    jointMuscularBackPain: initialData.jointMuscularBackPain || "",
-    spinalDiscProblems: initialData.spinalDiscProblems || "",
-    diabetes: initialData.diabetes || "",
-    smokingDuration: initialData.smokingDuration || "",
-    alteredCholesterol: false,
-    osteoporosisLocation: initialData.osteoporosisLocation || "",
-    impairmentObservations: initialData.impairmentObservations || "",
-
-    // Physical impairments
-    physicalImpairments: initialData.physicalImpairments || [],
+  const { control, register, handleSubmit, setValue, reset, formState: { errors } } = useForm<StudentFormData>({
+    defaultValues: {
+      // spread normalized initial so missing values are undefined
+      ...normalizedInitialData,
+      status: normalizedInitialData.status ?? "Ativo",
+      physicalImpairments: normalizedInitialData.physicalImpairments ?? []
+    }
   })
 
-  const handleInputChange = (field: keyof StudentFormData, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
+  // Reset form once when initialData becomes available (handles async load / page refresh)
+  const initializedRef = useRef(false)
+  useEffect(() => {
+    if (initializedRef.current) return
+    // consider initialData as available when it has at least one own property
+    const hasData = initialData && Object.keys(initialData).length > 0
+    if (!hasData) return
+    const payload = {
+      ...normalizedInitialData,
+      status: normalizedInitialData?.status ?? "Ativo",
+      physicalImpairments: normalizedInitialData?.physicalImpairments ?? []
+    }
+    reset(payload)
+    initializedRef.current = true
+  }, [initialData, normalizedInitialData, reset])
 
-  const handleBooleanChange = (field: keyof StudentFormData, value: boolean) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
+  const { fields, append, remove, update } = useFieldArray({
+    control,
+    name: "physicalImpairments"
+  })
+
+
 
   const addPhysicalImpairment = () => {
-    const newImpairment: PhysicalImpairment = {
+    append({
       id: uuidv4(),
       type: "",
       name: "",
       observations: ""
-    }
-    setFormData(prev => ({
-      ...prev,
-      physicalImpairments: [...prev.physicalImpairments, newImpairment]
-    }))
+    })
   }
 
-  const removePhysicalImpairment = (id: string) => {
-    setFormData(prev => ({
-      ...prev,
-      physicalImpairments: prev.physicalImpairments.filter(imp => imp.id !== id)
-    }))
-  }
-
-  const updatePhysicalImpairment = (id: string, field: keyof PhysicalImpairment, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      physicalImpairments: prev.physicalImpairments.map(imp =>
-        imp.id === id ? { ...imp, [field]: value } : imp
-      )
-    }))
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmit(formData)
+  const onFormSubmit = (data: StudentFormData) => {
+    // normalize empty arrays/undefined if necessary in caller
+    onSubmit(data)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
       {/* Personal Information */}
       <Card>
         <CardHeader>
@@ -238,73 +162,51 @@ export default function StudentForm({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nome *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
-                required
+              <Label htmlFor={`name-${id}`}>Nome *</Label>
+              <Input id={`name-${id}`} {...register("name", { required: true })} />
+              {errors.name && <p className="text-xs text-red-600">Campo obrigatório</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`surname-${id}`}>Sobrenome *</Label>
+              <Input id={`surname-${id}`} {...register("surname", { required: true })} />
+              {errors.surname && <p className="text-xs text-red-600">Campo obrigatório</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`email-${id}`}>Email *</Label>
+              <Input id={`email-${id}`} type="email" {...register("email", { required: true })} />
+              {errors.email && <p className="text-xs text-red-600">Campo obrigatório</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`phone-${id}`}>Telefone *</Label>
+              <Input id={`phone-${id}`} {...register("phone", { required: true })} placeholder="(11) 99999-9999" />
+              {errors.phone && <p className="text-xs text-red-600">Campo obrigatório</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`sex-${id}`}>Sexo *</Label>
+              <Controller
+                control={control}
+                name="sex"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="M">Masculino</SelectItem>
+                      <SelectItem value="F">Feminino</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="surname">Sobrenome *</Label>
-              <Input
-                id="surname"
-                value={formData.surname}
-                onChange={(e) => handleInputChange("surname", e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefone *</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                placeholder="(11) 99999-9999"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="sex">Sexo *</Label>
-              <Select value={formData.sex} onValueChange={(value) => handleInputChange("sex", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="M">Masculino</SelectItem>
-                  <SelectItem value="F">Feminino</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="birthDate">Data de Nascimento *</Label>
-              <Input
-                id="birthDate"
-                type="date"
-                value={formData.birthDate}
-                onChange={(e) => handleInputChange("birthDate", e.target.value)}
-                required
-              />
+              <Label htmlFor={`birthDate-${id}`}>Data de Nascimento *</Label>
+              <Input id={`birthDate-${id}`} type="date" {...register("birthDate", { required: true })} />
+              {errors.birthDate && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="profession">Profissão</Label>
-              <Input
-                id="profession"
-                value={formData.profession}
-                onChange={(e) => handleInputChange("profession", e.target.value)}
-                placeholder="Ex: Designer, Engenheiro, etc."
-              />
+              <Label htmlFor={`profession-${id}`}>Profissão</Label>
+              <Input id={`profession-${id}`} {...register("profession")} placeholder="Ex: Designer, Engenheiro, etc." />
             </div>
           </div>
         </CardContent>
@@ -318,48 +220,28 @@ export default function StudentForm({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="street">Rua *</Label>
-              <Input
-                id="street"
-                value={formData.street}
-                onChange={(e) => handleInputChange("street", e.target.value)}
-                required
-              />
+              <Label htmlFor={`street-${id}`}>Rua *</Label>
+              <Input id={`street-${id}`} {...register("street", { required: true })} />
+              {errors.street && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="number">Número *</Label>
-              <Input
-                id="number"
-                value={formData.number}
-                onChange={(e) => handleInputChange("number", e.target.value)}
-                required
-              />
+              <Label htmlFor={`number-${id}`}>Número *</Label>
+              <Input id={`number-${id}`} {...register("number", { required: true })} />
+              {errors.number && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="complement">Complemento</Label>
-              <Input
-                id="complement"
-                value={formData.complement}
-                onChange={(e) => handleInputChange("complement", e.target.value)}
-              />
+              <Label htmlFor={`complement-${id}`}>Complemento</Label>
+              <Input id={`complement-${id}`} {...register("complement")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="neighborhood">Bairro *</Label>
-              <Input
-                id="neighborhood"
-                value={formData.neighborhood}
-                onChange={(e) => handleInputChange("neighborhood", e.target.value)}
-                required
-              />
+              <Label htmlFor={`neighborhood-${id}`}>Bairro *</Label>
+              <Input id={`neighborhood-${id}`} {...register("neighborhood", { required: true })} />
+              {errors.neighborhood && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cep">CEP *</Label>
-              <Input
-                id="cep"
-                value={formData.cep}
-                onChange={(e) => handleInputChange("cep", e.target.value)}
-                required
-              />
+              <Label htmlFor={`cep-${id}`}>CEP *</Label>
+              <Input id={`cep-${id}`} {...register("cep", { required: true })} />
+              {errors.cep && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
           </div>
         </CardContent>
@@ -373,31 +255,19 @@ export default function StudentForm({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="emergencyName">Nome *</Label>
-              <Input
-                id="emergencyName"
-                value={formData.emergencyName}
-                onChange={(e) => handleInputChange("emergencyName", e.target.value)}
-                required
-              />
+              <Label htmlFor={`emergencyName-${id}`}>Nome *</Label>
+              <Input id={`emergencyName-${id}`} {...register("emergencyName", { required: true })} />
+              {errors.emergencyName && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="emergencyPhone">Telefone *</Label>
-              <Input
-                id="emergencyPhone"
-                value={formData.emergencyPhone}
-                onChange={(e) => handleInputChange("emergencyPhone", e.target.value)}
-                required
-              />
+              <Label htmlFor={`emergencyPhone-${id}`}>Telefone *</Label>
+              <Input id={`emergencyPhone-${id}`} {...register("emergencyPhone", { required: true })} />
+              {errors.emergencyPhone && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="emergencyRelationship">Parentesco *</Label>
-              <Input
-                id="emergencyRelationship"
-                value={formData.emergencyRelationship}
-                onChange={(e) => handleInputChange("emergencyRelationship", e.target.value)}
-                required
-              />
+              <Label htmlFor={`emergencyRelationship-${id}`}>Parentesco *</Label>
+              <Input id={`emergencyRelationship-${id}`} {...register("emergencyRelationship", { required: true })} />
+              {errors.emergencyRelationship && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
           </div>
         </CardContent>
@@ -411,34 +281,46 @@ export default function StudentForm({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="plan">Plano *</Label>
-              <Select value={formData.plan} onValueChange={(value) => handleInputChange("plan", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o plano" />
-                </SelectTrigger>
-                <SelectContent>
-                  {plans.map((plan) => (
-                    <SelectItem key={plan} value={plan}>
-                      {plan}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor={`plan-${id}`}>Plano *</Label>
+              <Controller
+                control={control}
+                name="plan"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o plano" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {plans.map((plan) => (
+                        <SelectItem key={plan} value={plan}>
+                          {plan}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statuses.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor={`status-${id}`}>Status</Label>
+              <Controller
+                control={control}
+                name="status"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statuses.map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {status}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </div>
         </CardContent>
@@ -451,14 +333,8 @@ export default function StudentForm({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="objectives">Objetivos</Label>
-            <Textarea
-              id="objectives"
-              value={formData.objectives}
-              onChange={(e) => handleInputChange("objectives", e.target.value)}
-              placeholder="Ex: Perder 5kg, Melhorar condicionamento cardiovascular, Fortalecer músculos das pernas"
-              rows={3}
-            />
+            <Label htmlFor={`objectives-${id}`}>Objetivos</Label>
+            <Textarea id={`objectives-${id}`} {...register("objectives")} placeholder="Ex: Perder 5kg, Melhorar condicionamento cardiovascular, Fortalecer músculos das pernas" rows={3} />
           </div>
         </CardContent>
       </Card>
@@ -470,14 +346,8 @@ export default function StudentForm({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="impairmentObservations">Observações</Label>
-            <Textarea
-              id="impairmentObservations"
-              value={formData.impairmentObservations}
-              onChange={(e) => handleInputChange("impairmentObservations", e.target.value)}
-              placeholder="Observações gerais sobre a anamnese..."
-              rows={3}
-            />
+            <Label htmlFor={`impairmentObservations-${id}`}>Observações</Label>
+            <Textarea id={`impairmentObservations-${id}`} {...register("impairmentObservations")} placeholder="Observações gerais sobre a anamnese..." rows={3} />
           </div>
         </CardContent>
       </Card>
@@ -491,186 +361,141 @@ export default function StudentForm({
           {/* Anamnesis fields in responsive grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="medication">Faz uso de algum medicamento?</Label>
-              <Input
-                id="medication"
-                value={formData.medication}
-                onChange={(e) => handleInputChange("medication", e.target.value)}
-                placeholder="Ex: Vitamina D, Ômega 3"
+              <Label htmlFor={`medication-${id}`}>Faz uso de algum medicamento?</Label>
+              <Input id={`medication-${id}`} {...register("medication")} placeholder="Ex: Vitamina D, Ômega 3" />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Seu médico tem conhecimento de sua atividade física?</Label>
+              <Controller
+                control={control}
+                name="isDoctorAwareOfPhysicalActivity"
+                render={({ field }) => (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      checked={!!field.value}
+                      onCheckedChange={(v) => field.onChange(!!v)}
+                      className="h-5 w-5 data-[state=checked]:!bg-green-600 data-[state=checked]:!border-green-600 data-[state=checked]:!text-white"
+                    />
+                    <Label className="text-sm cursor-pointer">{field.value ? "Sim" : "Não"}</Label>
+                  </div>
+                )}
               />
             </div>
 
             <div className="space-y-2">
-              <BooleanCheckbox
-                id="isDoctorAwareOfPhysicalActivity"
-                label="Seu médico tem conhecimento de sua atividade física?"
-                checked={formData.isDoctorAwareOfPhysicalActivity}
-                onCheckedChange={(checked) => handleBooleanChange("isDoctorAwareOfPhysicalActivity", checked)}
+              <Label htmlFor={`favoritePhysicalActivity-${id}`}>Qual tipo de atividade que mais lhe agrada?</Label>
+              <Input id={`favoritePhysicalActivity-${id}`} {...register("favoritePhysicalActivity")} placeholder="Ex: Corrida, Natação" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor={`hasInsomnia-${id}`}>Você tem insônia?</Label>
+              <Controller
+                control={control}
+                name="hasInsomnia"
+                defaultValue={normalizedInitialData?.hasInsomnia ?? ""}
+                // Only require this field when creating a new student; in edit mode keep optional
+                rules={mode === "create" ? { required: true } : undefined}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(hasInsomniaTypes) as (keyof typeof hasInsomniaTypes)[]).map(type => <SelectItem key={type} value={type}>{hasInsomniaTypes[type]}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.hasInsomnia && <p className="text-xs text-red-600">Campo obrigatório</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor={`dietOrientedBy-${id}`}>Faz dieta? Se sim, com orientação de:</Label>
+              <Input id={`dietOrientedBy-${id}`} {...register("dietOrientedBy")} placeholder="Ex: Nutricionista Ana Silva" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor={`cardiacProblems-${id}`}>Problemas cardíacos?</Label>
+              <Input id={`cardiacProblems-${id}`} {...register("cardiacProblems")} placeholder="Ex: Arritmia, Pressão alta" />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Hipertensão arterial?</Label>
+              <Controller
+                control={control}
+                name="hasHypertension"
+                render={({ field }) => (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox checked={!!field.value} onCheckedChange={(v) => field.onChange(!!v)} className="h-5 w-5" />
+                    <Label className="text-sm cursor-pointer">{field.value ? "Sim" : "Não"}</Label>
+                  </div>
+                )}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="favoritePhysicalActivity">Qual tipo de atividade que mais lhe agrada?</Label>
-              <Input
-                id="favoritePhysicalActivity"
-                value={formData.favoritePhysicalActivity}
-                onChange={(e) => handleInputChange("favoritePhysicalActivity", e.target.value)}
-                placeholder="Ex: Corrida, Natação"
+              <Label htmlFor={`chronicDiseases-${id}`}>Doenças crônicas?</Label>
+              <Input id={`chronicDiseases-${id}`} {...register("chronicDiseases")} placeholder="Ex: Diabetes tipo 2, Artrite" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor={`difficultiesInPhysicalActivities-${id}`}>Dificuldades para realização de exercícios físicos?</Label>
+              <Input id={`difficultiesInPhysicalActivities-${id}`} {...register("difficultiesInPhysicalActivities")} placeholder="Ex: Dor no joelho direito" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor={`medicalOrientationsToAvoidPhysicalActivity-${id}`}>Orientação médica impeditiva de alguma atividade física?</Label>
+              <Input id={`medicalOrientationsToAvoidPhysicalActivity-${id}`} {...register("medicalOrientationsToAvoidPhysicalActivity")} placeholder="Ex: Evitar exercícios de alto impacto" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor={`surgeriesInTheLast12Months-${id}`}>Cirurgias nos últimos 12 meses?</Label>
+              <Input id={`surgeriesInTheLast12Months-${id}`} {...register("surgeriesInTheLast12Months")} placeholder="Ex: Cirurgia de menisco" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor={`respiratoryProblems-${id}`}>Problemas respiratórios?</Label>
+              <Input id={`respiratoryProblems-${id}`} {...register("respiratoryProblems")} placeholder="Ex: Asma, Bronquite" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor={`jointMuscularBackPain-${id}`}>Dor nas articulações, músculos ou nas costas?</Label>
+              <Input id={`jointMuscularBackPain-${id}`} {...register("jointMuscularBackPain")} placeholder="Ex: Dor lombar crônica" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor={`spinalDiscProblems-${id}`}>Hérnia de disco, problemas degenerativos na coluna?</Label>
+              <Input id={`spinalDiscProblems-${id}`} {...register("spinalDiscProblems")} placeholder="Ex: Hérnia de disco L4-L5" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor={`diabetes-${id}`}>Diabetes?</Label>
+              <Input id={`diabetes-${id}`} {...register("diabetes")} placeholder="Ex: Tipo 2, controlada com medicação" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor={`smokingDuration-${id}`}>Fumante (se sim, há quanto tempo?)</Label>
+              <Input id={`smokingDuration-${id}`} {...register("smokingDuration")} placeholder="Ex: 5 anos" />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Colesterol alterado?</Label>
+              <Controller
+                control={control}
+                name="alteredCholesterol"
+                render={({ field }) => (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox checked={!!field.value} onCheckedChange={(v) => field.onChange(!!v)} className="h-5 w-5" />
+                    <Label className="text-sm cursor-pointer">{field.value ? "Sim" : "Não"}</Label>
+                  </div>
+                )}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="hasInsomnia">Você tem insônia?</Label>
-              <Select
-                value={formData.hasInsomnia}
-                onValueChange={(value) => handleInputChange("hasInsomnia", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sim">Sim</SelectItem>
-                  <SelectItem value="nao">Não</SelectItem>
-                  <SelectItem value="as-vezes">Às vezes</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="dietOrientedBy">Faz dieta? Se sim, com orientação de:</Label>
-              <Input
-                id="dietOrientedBy"
-                value={formData.dietOrientedBy}
-                onChange={(e) => handleInputChange("dietOrientedBy", e.target.value)}
-                placeholder="Ex: Nutricionista Ana Silva"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cardiacProblems">Problemas cardíacos?</Label>
-              <Input
-                id="cardiacProblems"
-                value={formData.cardiacProblems}
-                onChange={(e) => handleInputChange("cardiacProblems", e.target.value)}
-                placeholder="Ex: Arritmia, Pressão alta"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <BooleanCheckbox
-                id="hasHypertension"
-                label="Hipertensão arterial?"
-                checked={formData.hasHypertension}
-                onCheckedChange={(checked) => handleBooleanChange("hasHypertension", checked)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Input
-                id="chronicDiseases"
-                value={formData.chronicDiseases}
-                onChange={(e) => handleInputChange("chronicDiseases", e.target.value)}
-                placeholder="Ex: Diabetes tipo 2, Artrite"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="difficultiesInPhysicalActivities">Dificuldades para realização de exercícios físicos?</Label>
-              <Input
-                id="difficultiesInPhysicalActivities"
-                value={formData.difficultiesInPhysicalActivities}
-                onChange={(e) => handleInputChange("difficultiesInPhysicalActivities", e.target.value)}
-                placeholder="Ex: Dor no joelho direito"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="medicalOrientationsToAvoidPhysicalActivity">Orientação médica impeditiva de alguma atividade física?</Label>
-              <Input
-                id="medicalOrientationsToAvoidPhysicalActivity"
-                value={formData.medicalOrientationsToAvoidPhysicalActivity}
-                onChange={(e) => handleInputChange("medicalOrientationsToAvoidPhysicalActivity", e.target.value)}
-                placeholder="Ex: Evitar exercícios de alto impacto"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="surgeriesInTheLast12Months">Cirurgias nos últimos 12 meses?</Label>
-              <Input
-                id="surgeriesInTheLast12Months"
-                value={formData.surgeriesInTheLast12Months}
-                onChange={(e) => handleInputChange("surgeriesInTheLast12Months", e.target.value)}
-                placeholder="Ex: Cirurgia de menisco"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="respiratoryProblems">Problemas respiratórios?</Label>
-              <Input
-                id="respiratoryProblems"
-                value={formData.respiratoryProblems}
-                onChange={(e) => handleInputChange("respiratoryProblems", e.target.value)}
-                placeholder="Ex: Asma, Bronquite"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="jointMuscularBackPain">Dor nas articulações, músculos ou nas costas?</Label>
-              <Input
-                id="jointMuscularBackPain"
-                value={formData.jointMuscularBackPain}
-                onChange={(e) => handleInputChange("jointMuscularBackPain", e.target.value)}
-                placeholder="Ex: Dor lombar crônica"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="spinalDiscProblems">Hérnia de disco, problemas degenerativos na coluna?</Label>
-              <Input
-                id="spinalDiscProblems"
-                value={formData.spinalDiscProblems}
-                onChange={(e) => handleInputChange("spinalDiscProblems", e.target.value)}
-                placeholder="Ex: Hérnia de disco L4-L5"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="diabetes">Diabetes?</Label>
-              <Input
-                id="diabetes"
-                value={formData.diabetes}
-                onChange={(e) => handleInputChange("diabetes", e.target.value)}
-                placeholder="Ex: Tipo 2, controlada com medicação"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="smokingDuration">Fumante (se sim, há quanto tempo?)</Label>
-              <Input
-                id="smokingDuration"
-                value={formData.smokingDuration}
-                onChange={(e) => handleInputChange("smokingDuration", e.target.value)}
-                placeholder="Ex: 5 anos"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <BooleanCheckbox
-                id="alteredCholesterol"
-                label="Colesterol alterado?"
-                checked={formData.alteredCholesterol}
-                onCheckedChange={(checked) => handleBooleanChange("alteredCholesterol", checked)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="osteoporosisLocation">Osteoporose?</Label>
-              <Input
-                id="osteoporosisLocation"
-                value={formData.osteoporosisLocation}
-                onChange={(e) => handleInputChange("osteoporosisLocation", e.target.value)}
-                placeholder="Ex: Coluna vertebral, Quadril"
-              />
+              <Label htmlFor={`osteoporosisLocation-${id}`}>Osteoporose?</Label>
+              <Input id={`osteoporosisLocation-${id}`} {...register("osteoporosisLocation")} placeholder="Ex: Coluna vertebral, Quadril" />
             </div>
           </div>
 
@@ -690,32 +515,35 @@ export default function StudentForm({
               </Button>
             </div>
 
-            {formData.physicalImpairments.map((impairment) => (
-              <div key={impairment.id} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border rounded-lg">
+            {fields.length === 0 && (
+              <div className="text-center py-6 text-muted-foreground">
+                Nenhum comprometimento físico adicionado
+              </div>
+            )}
+
+            {fields.map((fieldItem, index) => (
+              <div key={fieldItem.id} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border rounded-lg">
                 <div className="space-y-2">
                   <Label className="text-sm">Tipo</Label>
-                  <Select
-                    value={impairment.type}
-                    onValueChange={(value) => updatePhysicalImpairment(impairment.id, "type", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="motor">Motor</SelectItem>
-                      <SelectItem value="emocional">Emocional</SelectItem>
-                      <SelectItem value="visual">Visual</SelectItem>
-                      <SelectItem value="auditivo">Auditivo</SelectItem>
-                      <SelectItem value="linguistico">Linguístico</SelectItem>
-                      <SelectItem value="outro">Outro</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Controller
+                    control={control}
+                    name={`physicalImpairments.${index}.type` as const}
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {(Object.keys(impairmentTypes) as (keyof typeof impairmentTypes)[]).map(type => <SelectItem key={type} value={type}>{impairmentTypes[type]}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm">Nome</Label>
                   <Input
-                    value={impairment.name}
-                    onChange={(e) => updatePhysicalImpairment(impairment.id, "name", e.target.value)}
+                    {...register(`physicalImpairments.${index}.name` as const)}
                     placeholder="Ex: Limitação no joelho"
                     className="text-sm"
                   />
@@ -723,8 +551,7 @@ export default function StudentForm({
                 <div className="space-y-2">
                   <Label className="text-sm">Observações</Label>
                   <Input
-                    value={impairment.observations}
-                    onChange={(e) => updatePhysicalImpairment(impairment.id, "observations", e.target.value)}
+                    {...register(`physicalImpairments.${index}.observations` as const)}
                     placeholder="Ex: Devido à cirurgia"
                     className="text-sm"
                   />
@@ -734,7 +561,7 @@ export default function StudentForm({
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => removePhysicalImpairment(impairment.id)}
+                    onClick={() => remove(index)}
                     className="text-red-600 hover:text-red-700 hover:bg-red-50 w-full lg:w-auto"
                   >
                     <Trash2 className="w-4 h-4 lg:mr-0 mr-2" />
@@ -743,12 +570,6 @@ export default function StudentForm({
                 </div>
               </div>
             ))}
-
-            {formData.physicalImpairments.length === 0 && (
-              <div className="text-center py-6 text-muted-foreground">
-                Nenhum comprometimento físico adicionado
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>

@@ -90,6 +90,10 @@ public class Student {
     @Setter
     private String objectives;
 
+    @Column(columnDefinition = "TEXT")
+    @Setter
+    private String observations;
+
     @Column(name = "registration_date", nullable = false, updatable = false)
     @Getter
     @Setter

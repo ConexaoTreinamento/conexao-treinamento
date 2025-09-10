@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+
 import java.util.UUID;
 
 @Entity
@@ -99,10 +100,9 @@ public class Anamnesis {
 
     public Anamnesis(Student student) {
         this.student = student;
-        studentId = student.getId();
     }
 
     public enum InsomniaFrequency {
-        YES, NO, SOMETIMES
+        yes, no, sometimes
     }
 }

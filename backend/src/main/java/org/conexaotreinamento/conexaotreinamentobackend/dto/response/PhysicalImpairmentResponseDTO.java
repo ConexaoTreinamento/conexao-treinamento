@@ -11,6 +11,13 @@ public record PhysicalImpairmentResponseDTO(
         String observations
 ) {
     public static PhysicalImpairmentResponseDTO fromEntity(PhysicalImpairment physicalImpairment) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        if (physicalImpairment == null) return null;
+
+        return new PhysicalImpairmentResponseDTO(
+                physicalImpairment.getId(),
+                physicalImpairment.getImpairmentType(),
+                physicalImpairment.getName(),
+                physicalImpairment.getObservations()
+        );
     }
 }

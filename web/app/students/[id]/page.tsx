@@ -7,44 +7,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, Edit, CalendarDays, Trash2, RotateCcw } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
-import { getStudentPlanExpirationDate, UnifiedStatusBadge } from "@/lib/expiring-plans"
-import {getStudentProfileById, getStudentFullName, STUDENT_PROFILES} from "@/lib/students-data"
-import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
-import {deleteMutation, findByIdOptions, restoreMutation} from "@/lib/api-client/@tanstack/react-query.gen";
-import { apiClient } from "@/lib/client";
+import { UnifiedStatusBadge } from "@/lib/expiring-plans"
+import {hasInsomniaTypes, impairmentTypes, STUDENT_PROFILES} from "@/lib/students-data"
+import { useDeleteStudent, useRestoreStudent } from "@/lib/hooks/student-mutations";
+import {apiClient} from "@/lib/client";
 import ConfirmDeleteButton from "@/components/confirm-delete-button";
 import { useToast } from "@/hooks/use-toast";
-import {StudentProfile} from "@/lib/students-data";
-import {StudentResponseDto} from "@/lib/api-client";
-import {useMemo} from "react";
+import type { StudentResponseDto } from "@/lib/api-client/types.gen"
+import {useStudent} from "@/lib/hooks/student-queries";
 
 // Type definitions
-interface MedicalData {
-  medication: string[]
-  isDoctorAwareOfPhysicalActivity: boolean
-  favoritePhysicalActivity: string
-  hasInsomnia: string
-  isOnADiet: { orientedBy: string } | null
-  cardiacProblems: string[]
-  hasHypertension: boolean
-  chronicDiseases: string[]
-  difficultiesInPhysicalActivities: string[]
-  medicalOrientationsToAvoidPhysicalActivity: string[]
-  surgeriesInTheLast12Months: string[]
-  respiratoryProblems: string[]
-  jointMuscularBackPain: string[]
-  spinalDiscProblems: string[]
-  diabetes: string
-  smokingDuration: string
-  alteredCholesterol: boolean
-  osteoporosisLocation: string
-  physicalImpairments: Array<{
-    type: string
-    name: string
-    observations: string
-  }>
-}
-
 interface Evaluation {
   id: string
   date: string
@@ -79,25 +51,12 @@ interface Evaluation {
   }
 }
 
-interface ClassItem {
-  name: string
-  date: string
-  instructor: string
-  status: string
-}
-
 interface ScheduleClass {
   day: string
   time: string
   class: string
   instructor: string
 }
-
-interface ClassSchedule {
-  daysPerWeek: number
-  selectedClasses: ScheduleClass[]
-}
-
 interface Exercise {
   id: string
   name: string
@@ -107,48 +66,27 @@ interface Exercise {
   duration?: string
   notes?: string
 }
-
-interface ClassExercise {
-  classDate: string
-  className: string
-  instructor: string
-  exercises: Exercise[]
-}
-
 export default function StudentProfilePage() {
   const router = useRouter()
   const params = useParams()
-  const queryClient = useQueryClient()
   const { toast } = useToast()
   const studentMockData = STUDENT_PROFILES[0] //used for fields that don't exist on studentResponseDTO
 
-  const { mutateAsync: deleteStudent, isPending: isDeleting } = useMutation(deleteMutation())
-  const { mutateAsync: restoreStudent, isPending: isRestoring } = useMutation(restoreMutation())
+  const { mutateAsync: deleteStudent, isPending: isDeleting } = useDeleteStudent()
+  const { mutateAsync: restoreStudent, isPending: isRestoring } = useRestoreStudent()
 
   const handleDelete = async () => {
     await deleteStudent({ path: { id: String(params.id) }, client: apiClient })
-    // Invalidate any students list queries
-    await queryClient.invalidateQueries({
-      predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey[0])?._id === 'findAll'
-    })
     toast({ title: "Aluno excluído", description: "O aluno foi marcado como inativo.", duration: 3000 })
     router.back()
   }
 
   const handleRestore = async () => {
     await restoreStudent({ path: { id: String(params.id) }, client: apiClient })
-    await queryClient.invalidateQueries({
-      predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey[0])?._id === 'findAll'
-    })
     toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
   }
 
-  const apiClientMemo = useMemo(() => apiClient, [])
-
-  const { data: studentData, isLoading, error } = useQuery({
-    ...findByIdOptions({path: { id: String(params.id) }, client: apiClientMemo }),
-    enabled: !!params.id
-  })
+  const { data: studentData, isLoading, error } = useStudent({path: {id: String(params.id)}}, {enabled: Boolean(params.id)})
 
   const getFullName = (student: StudentResponseDto | undefined) => {
     if (!student) return ""
@@ -158,26 +96,6 @@ export default function StudentProfilePage() {
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "N/A"
     return new Date(dateString).toLocaleDateString("pt-BR")
-  }
-
-  const getInsomniaDisplay = (hasInsomnia: 'YES' | 'NO' | 'SOMETIMES' | undefined) => {
-    switch (hasInsomnia) {
-      case 'YES': return 'Sim'
-      case 'NO': return 'Não'
-      case 'SOMETIMES': return 'Às vezes'
-      default: return 'N/A'
-    }
-  }
-
-  const getImpairmentTypeDisplay = (type: 'VISUAL' | 'AUDITORY' | 'MOTOR' | 'INTELLECTUAL' | 'OTHER' | undefined) => {
-    switch (type) {
-      case 'VISUAL': return 'Visual'
-      case 'AUDITORY': return 'Auditivo'
-      case 'MOTOR': return 'Motor'
-      case 'INTELLECTUAL': return 'Intelectual'
-      case 'OTHER': return 'Outro'
-      default: return 'N/A'
-    }
   }
 
   const formatAddress = (student: StudentResponseDto | undefined) => {
@@ -245,21 +163,7 @@ export default function StudentProfilePage() {
       </Layout>
     )
   }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Ativo":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      case "Vencido":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-      case "Inativo":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-    }
-  }
-
-  const getAttendanceColor = (status: string) => {
+    const getAttendanceColor = (status: string) => {
     return status === "Presente"
       ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
       : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
@@ -329,7 +233,7 @@ export default function StudentProfilePage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4 text-muted-foreground flex-shrink-0"/>
-                  <span>{studentData.profession}</span>
+                  <span>{studentData.profession ?? "Sem profissão"}</span>
                 </div>
               </div>
 
@@ -479,7 +383,7 @@ export default function StudentProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {studentMockData.evaluations.map((evaluation: Evaluation, index: number) => (
+                    {studentMockData.evaluations.map((evaluation: Evaluation) => (
                       <div
                         key={evaluation.id}
                         className="p-4 rounded-lg border bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors"
@@ -616,6 +520,10 @@ export default function StudentProfilePage() {
                     <span className="text-sm text-muted-foreground">Última Renovação:</span>
                       <p>{new Date(studentMockData.lastRenewal).toLocaleDateString("pt-BR")}</p>
                     </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Objetivos:</span>
+                      <p className="text-sm">{studentData.objectives || "Não informado"}</p>
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -634,19 +542,6 @@ export default function StudentProfilePage() {
                     </div>
                   </CardContent>
                 </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Informações Médicas</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <span className="text-sm text-muted-foreground">Objetivos:</span>
-                      <p className="text-sm">{studentData.objectives || "Não informado"}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Ficha de Anamnese</CardTitle>
@@ -666,7 +561,7 @@ export default function StudentProfilePage() {
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Insônia:</span>
-                      <p className="text-sm">{getInsomniaDisplay(studentData.anamnesis?.hasInsomnia)}</p>
+                      <p className="text-sm">{studentData.anamnesis?.hasInsomnia ? hasInsomniaTypes[studentData.anamnesis?.hasInsomnia] : "N/A"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Dieta orientada por:</span>
@@ -738,7 +633,7 @@ export default function StudentProfilePage() {
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <div>
                                   <span className="text-sm text-muted-foreground">Tipo:</span>
-                                  <p className="text-sm font-medium">{getImpairmentTypeDisplay(impairment.type)}</p>
+                                  <p className="text-sm font-medium">{impairment.type ? impairmentTypes[impairment.type] : "N/A"}</p>
                                 </div>
                                 <div>
                                   <span className="text-sm text-muted-foreground">Nome:</span>
