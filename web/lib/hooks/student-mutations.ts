@@ -5,8 +5,8 @@ import {
   restoreMutation,
   updateMutation
 } from "@/lib/api-client/@tanstack/react-query.gen";
-import {customApiClient} from "@/lib/custom-api-client";
-import {Options, StudentResponseDto, UpdateData} from "@/lib/api-client";
+import {apiClient} from "@/lib/client";
+import {Options, StudentResponseDto, UpdateData} from "@/lib/client";
 
 /**
  * Hooks that wrap generated mutation factories and add onSuccess invalidations
@@ -56,7 +56,7 @@ export const useUpdateStudent = (options: UseMutationOptions<StudentResponseDto,
       }),
         // Invalidate the specific cached student (findById) so the details refresh
         queryClient.invalidateQueries({
-          queryKey: findByIdOptions({path: {id: args[1].path.id ?? ""}, client: customApiClient}).queryKey
+          queryKey: findByIdOptions({path: {id: args[1].path.id ?? ""}, client: apiClient}).queryKey
         })])
     }
   });

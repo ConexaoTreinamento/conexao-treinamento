@@ -14,8 +14,8 @@ import Layout from "@/components/layout"
 import TrainerModal from "@/components/trainer-modal"
 import { createTrainerAndUserMutation, createTrainerAndUserOptions, findAllTrainersOptions, softDeleteTrainerUserMutation, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createTrainerAndUser, TrainerResponseDto } from "@/lib/custom-api-client"
-import { customApiClient } from "@/lib/custom-api-client"
+import { createTrainerAndUser, TrainerResponseDto } from "@/lib/api-client"
+import { apiClient } from "@/lib/client"
 import { client } from "@/lib/api-client/client.gen"
 
 // Interface for trainer data to match the modal
@@ -46,7 +46,7 @@ export default function TrainersPage() {
 
   const { data: trainers, isLoading, error } = useQuery({
     ...findAllTrainersOptions({
-      client: customApiClient,
+      client: apiClient,
       security: [{
         type: "http",
         scheme: "bearer",
@@ -75,7 +75,7 @@ export default function TrainersPage() {
       // Create new trainer
       await createTrainer({
         body: formData,
-        client: customApiClient,
+        client: apiClient,
         security: [{
           type: "http",
           scheme: "bearer",
@@ -87,7 +87,7 @@ export default function TrainersPage() {
       await updateTrainer({
         path: { id: String(editingTrainer?.id) },
         body: formData,
-        client: customApiClient,
+        client: apiClient,
         security: [{
           type: "http",
           scheme: "bearer",
@@ -106,7 +106,7 @@ export default function TrainersPage() {
   const handleDeleteTrainer = async (trainerId: string) => {
     if (confirm("Tem certeza que deseja excluir este professor?")) {
       await deleteTrainer({
-        path: { id: String(trainerId) }, client: customApiClient, security: [{
+        path: { id: String(trainerId) }, client: apiClient, security: [{
           type: "http",
           scheme: "bearer",
           in: "header",

@@ -6,12 +6,12 @@ import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
 import StudentForm, { type StudentFormData } from "@/components/student-form"
 import { Button } from "@/components/ui/button"
-import {useQuery, useQueryClient} from "@tanstack/react-query"
-import { findByIdOptions } from "@/lib/api-client/@tanstack/react-query.gen"
-import { customApiClient } from "@/lib/custom-api-client"
+import { apiClient } from "@/lib/client"
 import { useToast } from "@/hooks/use-toast"
 import type {StudentResponseDto, StudentRequestDto, AnamnesisResponseDto} from "@/lib/api-client/types.gen"
 import {useUpdateStudent} from "@/lib/hooks/student-mutations";
+import { useQueryClient } from "@tanstack/react-query"
+import {useStudent} from "@/lib/hooks/student-queries";
 
 /**
  * Edit student page - fetches student by id, maps response to StudentFormData and
@@ -28,14 +28,14 @@ export default function EditStudentPage() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
 
-  const { data: studentData, isLoading: isStudentLoading } = useQuery({
-    ...findByIdOptions({
+  const { data: studentData, isLoading: isStudentLoading } = useStudent(
+    {
       path: { id: id ?? "" },
-      client: customApiClient
-    }),
-    enabled: Boolean(id)
-  })
-
+    },
+    {
+      enabled: Boolean(id)
+    }
+  )
   const studentFromCache = React.useMemo(() => {
     const queries = queryClient.getQueriesData({}) as Array<[unknown, unknown]>
     for (const [key, data] of queries) {
@@ -208,7 +208,7 @@ export default function EditStudentPage() {
           }))
       } as StudentRequestDto
 
-      await updateStudent({ path: { id }, body: requestBody, client: customApiClient })
+      await updateStudent({ path: { id }, body: requestBody, client: apiClient })
     } catch (e) {
       toast({ title: "Erro ao atualizar", description: "Não foi possível salvar as alterações.", duration: 4000 })
     }

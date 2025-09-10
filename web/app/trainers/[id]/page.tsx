@@ -11,7 +11,7 @@ import Layout from "@/components/layout"
 import TrainerModal from "@/components/trainer-modal"
 import { ListTrainersDto, TrainerResponseDto, update } from "@/lib/custom-api-client"
 import { findTrainerByIdOptions, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
-import { customApiClient } from "@/lib/custom-api-client"
+import { apiClient } from "@/lib/client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export default function TrainerProfilePage() {
@@ -25,7 +25,7 @@ export default function TrainerProfilePage() {
   const { data: trainerData, isLoading, error } = useQuery({
     ...findTrainerByIdOptions({
       path: { id: params.id as string },
-      client: customApiClient,
+      client: apiClient,
       security: [{
         type: "http",
         scheme: "bearer",
@@ -72,7 +72,7 @@ export default function TrainerProfilePage() {
       await updateTrainer({
         path: { id: String(updatedTrainer?.id) },
         body: updatedTrainer,
-        client: customApiClient,
+        client: apiClient,
         security: [{
           type: "http",
           scheme: "bearer",

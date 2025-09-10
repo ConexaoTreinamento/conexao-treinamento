@@ -34,7 +34,7 @@ import ConfirmDeleteButton from "@/components/confirm-delete-button"
 import {useCreateStudent, useDeleteStudent, useRestoreStudent} from "@/lib/hooks/student-mutations"
 import {useToast} from "@/hooks/use-toast"
 import {useStudents} from "@/lib/hooks/student-queries";
-import {customApiClient} from "@/lib/custom-api-client";
+import {apiClient} from "@/lib/client";
 
 // Type-safe filter interface
 interface StudentFilters {
@@ -472,7 +472,7 @@ export default function StudentsPage() {
           }))
       } as StudentRequestDto;
 
-      await createStudent({ body: requestBody, client: customApiClient })
+      await createStudent({ body: requestBody, client: apiClient })
       toast({ title: "Aluno criado", description: "Aluno cadastrado com sucesso.", duration: 3000 })
       setIsCreateOpen(false)
     } catch (e) {
@@ -489,12 +489,12 @@ export default function StudentsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    await deleteStudent({ path: { id }, client: customApiClient })
+    await deleteStudent({ path: { id }, client: apiClient })
     toast({ title: "Aluno excluído", description: "O aluno foi marcado como inativo.", duration: 3000 })
   }
 
   const handleRestore = async (id: string) => {
-    await restoreStudent({ path: { id }, client: customApiClient })
+    await restoreStudent({ path: { id }, client: apiClient })
     toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
   }
 
