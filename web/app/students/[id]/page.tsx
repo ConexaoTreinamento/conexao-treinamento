@@ -260,7 +260,7 @@ export default function StudentProfilePage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4 text-muted-foreground flex-shrink-0"/>
-                  <span>{studentData.profession}</span>
+                  <span>{studentData.profession ?? "Sem profissão"}</span>
                 </div>
               </div>
 
@@ -547,6 +547,10 @@ export default function StudentProfilePage() {
                     <span className="text-sm text-muted-foreground">Última Renovação:</span>
                       <p>{new Date(studentMockData.lastRenewal).toLocaleDateString("pt-BR")}</p>
                     </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Objetivos:</span>
+                      <p className="text-sm">{studentData.objectives || "Não informado"}</p>
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -565,19 +569,6 @@ export default function StudentProfilePage() {
                     </div>
                   </CardContent>
                 </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Informações Médicas</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div>
-                      <span className="text-sm text-muted-foreground">Objetivos:</span>
-                      <p className="text-sm">{studentData.objectives || "Não informado"}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Ficha de Anamnese</CardTitle>
