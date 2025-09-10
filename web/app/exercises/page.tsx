@@ -6,22 +6,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import CreateExerciseModal from "@/components/ui/create-exercise-modal"
+import EditExerciseModal from "@/components/ui/edit-exercise-modal"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 
 import { Search, Filter, Plus, Activity, Edit, Trash2, X } from "lucide-react"
 import Layout from "@/components/layout"
 import { DeleteExerciseDialog } from "@/components/exercises/delete-exercise-dialog"
 import { useEffect } from "react"
+import {useToast} from "@/hooks/use-toast";
 
 
 interface Exercise {
@@ -50,6 +43,9 @@ export default function ExercisesPage() {
   })
 
   const [exercises, setExercises] = useState<Exercise[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  const { toast } = useToast()
 
   const loadExercises = async () => {
     // TODO: remover o mock de dentro de setExercises e chamar o fetch da api aqui e setar o estado com o retorno da api
@@ -57,40 +53,27 @@ export default function ExercisesPage() {
     // const response = await fetch(`${apiUrl}/exercises`)
     // const data = await response.json()
     // setExercises(data.content || data || [])
-    
-    // Mock data - remover quando API estiver pronta
-    setExercises([
-      {
-        id: 1,
-        name: "Supino Reto",
-        description: "Exercício básico para desenvolvimento do peitoral",
-      },
-      {
-        id: 2,
-        name: "Agachamento Livre",
-        description: "Exercício fundamental para pernas e glúteos",
-      },
-      {
-        id: 3,
-        name: "Rosca Direta",
-        description: "Exercício isolado para bíceps",
-      },
-      {
-        id: 4,
-        name: "Puxada Frontal",
-        description: "Exercício para desenvolvimento das costas",
-      },
-      {
-        id: 5,
-        name: "Desenvolvimento Militar",
-        description: "Exercício composto para ombros",
-      },
-      {
-        id: 6,
-        name: "Prancha",
-        description: "Exercício isométrico para core",
-      },
-    ])
+
+    try{
+      setIsLoading(true)
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
+      const response = await fetch(`${API_URL}/exercises`)
+
+      if (!response.ok) {
+        throw new Error('Erro ao buscar exercícios')
+      }
+
+      const data = await response.json()
+      setExercises(data.content || data || [])
+    } catch (error) {
+      toast({
+        title: "Erro ao carregar exercícios",
+        description: "Ocorreu um erro ao buscar os exercícios. Tente novamente.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -99,45 +82,12 @@ export default function ExercisesPage() {
 
   const filteredExercises = exercises.filter((exercise) => {
     const matchesSearch =
-      exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (exercise.description || "").toLowerCase().includes(searchTerm.toLowerCase())
+        exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (exercise.description || "").toLowerCase().includes(searchTerm.toLowerCase())
 
     return matchesSearch
   })
 
-  const handleCreateExercise = () => {
-    if (newExerciseForm.name.trim()) {
-      const newExercise = {
-        id: Date.now(),
-        name: newExerciseForm.name.trim(),
-        description: newExerciseForm.description.trim() || "",
-      }
-      setExercises((prev) => [...prev, newExercise])
-      setNewExerciseForm({
-        name: "",
-        description: "",
-      })
-      setIsNewExerciseOpen(false)
-    }
-  }
-
-  const handleEditExercise = () => {
-    if (editingExercise && editingExercise.name.trim()) {
-      setExercises((prev) =>
-        prev.map((ex) =>
-          ex.id === editingExercise.id
-            ? {
-                ...ex,
-                name: editingExercise.name.trim(),
-                description: (editingExercise.description || "").trim(),
-              }
-            : ex,
-        ),
-      )
-      setEditingExercise(null)
-      setIsEditExerciseOpen(false)
-    }
-  }
 
   const openDeleteDialog = (exercise: Exercise) => {
     setExerciseToDelete(exercise)
@@ -145,8 +95,8 @@ export default function ExercisesPage() {
   }
 
   const openEditDialog = (exercise: Exercise) => {
-    setEditingExercise({ ...exercise })
-    setIsEditExerciseOpen(true)
+    setEditingExercise(exercise);
+    setIsEditExerciseOpen(true);
   }
 
   const clearFilters = () => {
@@ -169,91 +119,30 @@ export default function ExercisesPage() {
             <h1 className="text-2xl font-bold">Exercícios</h1>
             <p className="text-muted-foreground">Biblioteca de exercícios para fichas de treino</p>
           </div>
-          <Dialog open={isNewExerciseOpen} onOpenChange={setIsNewExerciseOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-green-600 hover:bg-green-700">
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Exercício
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Novo Exercício</DialogTitle>
-                <DialogDescription>Adicione um novo exercício à biblioteca</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="exerciseName">Nome do Exercício *</Label>
-                  <Input
-                    id="exerciseName"
-                    value={newExerciseForm.name}
-                    onChange={(e) => setNewExerciseForm((prev) => ({ ...prev, name: e.target.value }))}
-                    placeholder="Ex: Supino Inclinado"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Descrição</Label>
-                  <Textarea
-                    id="description"
-                    value={newExerciseForm.description}
-                    onChange={(e) => setNewExerciseForm((prev) => ({ ...prev, description: e.target.value }))}
-                    placeholder="Descreva como executar o exercício..."
-                    rows={3}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsNewExerciseOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleCreateExercise} className="bg-green-600 hover:bg-green-700">
-                  Criar Exercício
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+
+          <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => setIsNewExerciseOpen(true)}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Exercício
+          </Button>
+
+          <CreateExerciseModal
+              isOpen={isNewExerciseOpen}
+              onClose={() => setIsNewExerciseOpen(false)}
+              onExerciseCreated={loadExercises}
+          />
+
+          <EditExerciseModal
+              isOpen={isEditExerciseOpen}
+              onClose={() => setIsEditExerciseOpen(false)}
+              exercise={editingExercise}
+              onExerciseUpdated={loadExercises}
+          />
+
         </div>
 
-        {/* Edit Exercise Dialog */}
-        <Dialog open={isEditExerciseOpen} onOpenChange={setIsEditExerciseOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Editar Exercício</DialogTitle>
-              <DialogDescription>Modifique as informações do exercício</DialogDescription>
-            </DialogHeader>
-            {editingExercise && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="editExerciseName">Nome do Exercício *</Label>
-                  <Input
-                    id="editExerciseName"
-                    value={editingExercise.name}
-                    onChange={(e) => setEditingExercise((prev: any) => ({ ...prev, name: e.target.value }))}
-                    placeholder="Ex: Supino Inclinado"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editDescription">Descrição</Label>
-                  <Textarea
-                    id="editDescription"
-                    value={editingExercise.description}
-                    onChange={(e) => setEditingExercise((prev: any) => ({ ...prev, description: e.target.value }))}
-                    placeholder="Descreva como executar o exercício..."
-                    rows={3}
-                  />
-                </div>
-              </div>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditExerciseOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleEditExercise} className="bg-green-600 hover:bg-green-700">
-                Salvar Alterações
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
         {/* Search and Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
@@ -324,9 +213,9 @@ export default function ExercisesPage() {
                     <Button variant="ghost" size="icon" onClick={() => openEditDialog(exercise)} className="h-8 w-8">
                       <Edit className="w-4 h-4" />
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => openDeleteDialog(exercise)}
                       className="h-8 w-8 text-red-600 hover:text-red-700"
                     >
