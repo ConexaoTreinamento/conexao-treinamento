@@ -2,8 +2,13 @@ package org.conexaotreinamento.conexaotreinamentobackend.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.AnamnesisRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.StudentRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AnamnesisResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.PhysicalImpairmentResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.Anamnesis;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.PhysicalImpairment;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.AnamnesisRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.PhysicalImpairmentRepository;
@@ -19,7 +24,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 @Service
 @RequiredArgsConstructor
@@ -29,20 +38,91 @@ public class StudentService {
     private final AnamnesisRepository anamnesisRepository;
     private final PhysicalImpairmentRepository physicalImpairmentRepository;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     @Transactional
     public StudentResponseDTO create(StudentRequestDTO request) {
         if (studentRepository.existsByEmailIgnoringCaseAndDeletedAtIsNull(request.email())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Student with this email already exists");
         }
 
-        throw new UnsupportedOperationException("Not implemented yet");
+        // Build student entity from request
+        Student student = new Student(request.email(), request.name(), request.surname(), request.gender(), request.birthDate());
+        applyDTOFields(request, student);
+
+        // registrationDate is defaulted by DB; set it here to keep entity consistent
+        student.setRegistrationDate(LocalDate.now());
+
+        // Persist student first to generate UUID (used by Anamnesis and PhysicalImpairments)
+        Student savedStudent = studentRepository.save(student);
+
+        // Save anamnesis if provided
+        if (request.anamnesis() != null) {
+            AnamnesisRequestDTO dto = request.anamnesis();
+            Anamnesis anamnesis = new Anamnesis(savedStudent);
+            createOrEditAnamnesis(dto, anamnesis);
+
+            anamnesisRepository.save(anamnesis);
+        }
+
+        // Save physical impairments if provided
+        return createOrEditPhysicalImpairments(request, savedStudent);
+    }
+
+    private void applyDTOFields(StudentRequestDTO request, Student student) {
+        student.setPhone(request.phone());
+        student.setProfession(request.profession());
+        student.setStreet(request.street());
+        student.setNumber(request.number());
+        student.setComplement(request.complement());
+        student.setNeighborhood(request.neighborhood());
+        student.setCep(request.cep());
+        student.setEmergencyContactName(request.emergencyContactName());
+        student.setEmergencyContactPhone(request.emergencyContactPhone());
+        student.setEmergencyContactRelationship(request.emergencyContactRelationship());
+        student.setObjectives(request.objectives());
     }
 
     public StudentResponseDTO findById(UUID id) {
         Student student = studentRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
-        
-        return StudentResponseDTO.fromEntity(student);
+
+        Anamnesis anamnesisEntity = anamnesisRepository.findById(student.getId()).orElse(null);
+        AnamnesisResponseDTO anamnesisDto = AnamnesisResponseDTO.fromEntity(anamnesisEntity);
+
+        java.util.List<PhysicalImpairmentResponseDTO> physicalImpairments =
+                physicalImpairmentRepository.findByStudentId(student.getId())
+                        .stream()
+                        .map(PhysicalImpairmentResponseDTO::fromEntity)
+                        .toList();
+
+        return new StudentResponseDTO(
+                student.getId(),
+                student.getEmail(),
+                student.getName(),
+                student.getSurname(),
+                student.getGender(),
+                student.getBirthDate(),
+                student.getPhone(),
+                student.getProfession(),
+                student.getStreet(),
+                student.getNumber(),
+                student.getComplement(),
+                student.getNeighborhood(),
+                student.getCep(),
+                student.getEmergencyContactName(),
+                student.getEmergencyContactPhone(),
+                student.getEmergencyContactRelationship(),
+                student.getObjectives(),
+                student.getObservations(),
+                student.getRegistrationDate(),
+                student.getCreatedAt(),
+                student.getUpdatedAt(),
+                student.getDeletedAt(),
+                anamnesisDto,
+                physicalImpairments
+        );
     }
 
     public Page<StudentResponseDTO> findAll(
@@ -93,7 +173,75 @@ public class StudentService {
             }
         }
 
-        throw new UnsupportedOperationException("Not implemented yet");
+        // Update basic fields
+        student.setEmail(request.email());
+        student.setName(request.name());
+        student.setSurname(request.surname());
+        student.setGender(request.gender());
+        student.setBirthDate(request.birthDate());
+        applyDTOFields(request, student);
+
+        Student savedStudent = studentRepository.save(student);
+
+        // Update or create anamnesis
+        if (request.anamnesis() != null) {
+            AnamnesisRequestDTO dto = request.anamnesis();
+            Optional<Anamnesis> existing = anamnesisRepository.findById(savedStudent.getId());
+            // To avoid Hibernate StaleObjectStateException caused by merging a detached Anamnesis,
+            // delete the existing row, flush the persistence context, then persist a fresh instance.
+            if (existing.isPresent()) {
+                anamnesisRepository.deleteById(savedStudent.getId());
+                entityManager.flush();
+            }
+
+            Anamnesis anamnesis = createAnamnesis(savedStudent, dto);
+            anamnesisRepository.saveAndFlush(anamnesis);
+        }
+
+        // Replace physical impairments
+        physicalImpairmentRepository.deleteAllByStudentId(savedStudent.getId());
+        return createOrEditPhysicalImpairments(request, savedStudent);
+    }
+
+    private static Anamnesis createAnamnesis(Student savedStudent, AnamnesisRequestDTO dto) {
+        Anamnesis anamnesis = new Anamnesis(savedStudent);
+        createOrEditAnamnesis(dto, anamnesis);
+        return anamnesis;
+    }
+
+    private static void createOrEditAnamnesis(AnamnesisRequestDTO dto, Anamnesis anamnesis) {
+        anamnesis.setMedication(dto.medication());
+        anamnesis.setDoctorAwareOfPhysicalActivity(dto.isDoctorAwareOfPhysicalActivity());
+        anamnesis.setFavoritePhysicalActivity(dto.favoritePhysicalActivity());
+        anamnesis.setHasInsomnia(dto.hasInsomnia());
+        anamnesis.setDietOrientedBy(dto.dietOrientedBy());
+        anamnesis.setCardiacProblems(dto.cardiacProblems());
+        anamnesis.setHasHypertension(dto.hasHypertension());
+        anamnesis.setChronicDiseases(dto.chronicDiseases());
+        anamnesis.setDifficultiesInPhysicalActivities(dto.difficultiesInPhysicalActivities());
+        anamnesis.setMedicalOrientationsToAvoidPhysicalActivity(dto.medicalOrientationsToAvoidPhysicalActivity());
+        anamnesis.setSurgeriesInTheLast12Months(dto.surgeriesInTheLast12Months());
+        anamnesis.setRespiratoryProblems(dto.respiratoryProblems());
+        anamnesis.setJointMuscularBackPain(dto.jointMuscularBackPain());
+        anamnesis.setSpinalDiscProblems(dto.spinalDiscProblems());
+        anamnesis.setDiabetes(dto.diabetes());
+        anamnesis.setSmokingDuration(dto.smokingDuration());
+        anamnesis.setAlteredCholesterol(dto.alteredCholesterol());
+        anamnesis.setOsteoporosisLocation(dto.osteoporosisLocation());
+    }
+
+    private StudentResponseDTO createOrEditPhysicalImpairments(StudentRequestDTO request, Student savedStudent) {
+        if (request.physicalImpairments() != null && !request.physicalImpairments().isEmpty()) {
+            List<PhysicalImpairment> toSave = request.physicalImpairments().stream().map(pi -> new PhysicalImpairment(
+                    savedStudent,
+                    pi.type(),
+                    pi.name(),
+                    pi.observations()
+            )).toList();
+            physicalImpairmentRepository.saveAll(toSave);
+        }
+
+        return StudentResponseDTO.fromEntity(savedStudent);
     }
 
     @Transactional
@@ -112,7 +260,7 @@ public class StudentService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
         
         if (student.isActive() || studentRepository.existsByEmailIgnoringCaseAndDeletedAtIsNull(student.getEmail())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot restore student.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot restore student due to email conflict or already active.");
         }
 
         student.activate();

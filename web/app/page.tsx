@@ -9,12 +9,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Eye, EyeOff } from "lucide-react"
 import Image from "next/image"
+import { useMutation } from "@tanstack/react-query"
+import { loginMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { apiClient } from "@/lib/client"
 
 export default function HomePage() {
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const router = useRouter()
+  const { mutateAsync: login, isPending: isLoading } = useMutation(loginMutation());
 
   useEffect(() => {
     const userRole = localStorage.getItem("userRole")
@@ -23,17 +27,41 @@ export default function HomePage() {
     }
   }, [router])
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     // Mock login logic
-    if (email === "admin@gym.com") {
-      localStorage.setItem("userRole", "admin")
-      localStorage.setItem("userName", "Admin Principal")
-    } else {
-      localStorage.setItem("userRole", "professor")
-      localStorage.setItem("userName", "Professor Silva")
+    const result = await login({
+      body: { email, password }, client: apiClient, security: [
+        {
+          type: "http",
+          scheme: "bearer",
+          in: "header",
+        }
+      ]
+    });
+    const payload = getJWTTokenPayload(result.token!)
+    if (payload.role && result.token) {
+      localStorage.setItem("userRole", getRoleName(payload.role))
+      localStorage.setItem("token", result.token)
+      router.push("/schedule")
     }
-    router.push("/schedule")
+  }
+
+  function getJWTTokenPayload(token: string) {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(escape(window.atob(base64)));
+    return JSON.parse(jsonPayload);
+  }
+
+  function getRoleName(role: string) {
+    switch (role) {
+      case "ROLE_ADMIN":
+        return "admin"
+      case "ROLE_TRAINER":
+        return "professor"
+    }
+    throw new Error("Invalid role")
   }
 
   return (
@@ -87,11 +115,6 @@ export default function HomePage() {
               Entrar
             </Button>
           </form>
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>Contas de teste:</p>
-            <p>Admin: admin@gym.com</p>
-            <p>Professor: professor@gym.com</p>
-          </div>
         </CardContent>
       </Card>
     </div>

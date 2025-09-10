@@ -45,8 +45,8 @@ public class StudentController {
     public ResponseEntity<Page<StudentResponseDTO>> findAll(
             @RequestParam(required = false) String search,
             
-            @RequestParam(required = false) 
-            @Pattern(regexp = "^[MFO]$", message = "Gender must be M, F, or O")
+            @RequestParam(required = false)
+            @Pattern(regexp = "(?i)^[MFO]$", message = "Gender must be M, F, or O")
             String gender,
             
             @RequestParam(required = false) String profession,
