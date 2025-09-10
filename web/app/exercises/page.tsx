@@ -29,6 +29,9 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
+import CreateExerciseModal from "@/components/ui/create-exercise-modal"
+import EditExerciseModal from "@/components/ui/edit-exercise-modal"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
 import { Search, Plus, Activity, Edit, Trash2, X, Eye, RotateCcw, MoreVertical } from "lucide-react"
 import Layout from "@/components/layout"
@@ -57,6 +60,12 @@ export default function ExercisesPage() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
   const [showInactive, setShowInactive] = useState(false)
+  const [filters, setFilters] = useState({
+    category: "",
+    equipment: "",
+    difficulty: "",
+    muscle: "",
+  })
   const [newExerciseForm, setNewExerciseForm] = useState({
     name: "",
     description: "",
@@ -71,10 +80,10 @@ export default function ExercisesPage() {
   const loadExercises = async () => {
     try {
       setIsLoading(true)
-      
+
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
       const response = await fetch(`${apiUrl}/exercises?search=${searchTerm}&page=${currentPage}&includeInactive=${showInactive}`)
-      
+
       if (!response.ok) {
         toast({
           title: "Erro",
@@ -85,11 +94,11 @@ export default function ExercisesPage() {
         setTotalPages(1)
         return
       }
-      
+
       const data = await response.json()
-      
+
       // Validação dos dados recebidos
-      if (data && typeof data === 'object') { 
+      if (data && typeof data === 'object') {
         setExercises(Array.isArray(data.content) ? data.content : Array.isArray(data) ? data : [])
         setTotalPages(data.page?.totalPages || 1)
       } else {
@@ -137,6 +146,13 @@ export default function ExercisesPage() {
     setSearchTerm("")
     setCurrentPage(0)
   }
+
+  const filteredExercises = exercises.filter((exercise) => {
+    const matchesSearch =
+        exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (exercise.description || "").toLowerCase().includes(searchTerm.toLowerCase())
+      return matchesSearch
+  })
 
   const handlePageChange = (newPage: number) => {
     try {
@@ -218,9 +234,20 @@ export default function ExercisesPage() {
   }
 
   const openEditDialog = (exercise: Exercise) => {
-    setEditingExercise({ ...exercise })
-    setIsEditExerciseOpen(true)
+    setEditingExercise(exercise);
+    setIsEditExerciseOpen(true);
   }
+
+    const clearFilters = () => {
+        setFilters({
+            category: "",
+            equipment: "",
+            difficulty: "",
+            muscle: "",
+        })
+    }
+
+    const hasActiveFilters = Object.values(filters).some((filter) => filter !== "")
 
   const openDetailsDialog = (exercise: Exercise) => {
     setSelectedExercise(exercise)
@@ -236,7 +263,7 @@ export default function ExercisesPage() {
           'Content-Type': 'application/json',
         },
       })
-      
+
       if (!response.ok) {
         toast({
           title: "Erro",
@@ -245,12 +272,12 @@ export default function ExercisesPage() {
         })
         return
       }
-      
+
       toast({
         title: "Sucesso",
         description: "Exercício restaurado com sucesso!",
       })
-      
+
       loadExercises()
     } catch (err) {
       console.error('Erro ao restaurar exercício:', err)
@@ -271,87 +298,30 @@ export default function ExercisesPage() {
             <h1 className="text-2xl font-bold">Exercícios</h1>
             <p className="text-muted-foreground">Biblioteca de exercícios para fichas de treino</p>
           </div>
-          <Dialog open={isNewExerciseOpen} onOpenChange={setIsNewExerciseOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-green-600 hover:bg-green-700">
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Exercício
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogTitle className="sr-only">Novo Exercício</DialogTitle>
-              <h2 className="text-lg font-semibold mb-4">Novo Exercício</h2>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="exerciseName">Nome do Exercício *</Label>
-                  <Input
-                    id="exerciseName"
-                    value={newExerciseForm.name}
-                    onChange={(e) => setNewExerciseForm((prev) => ({ ...prev, name: e.target.value }))}
-                    placeholder="Ex: Supino Inclinado"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Descrição</Label>
-                  <Textarea
-                    id="description"
-                    value={newExerciseForm.description}
-                    onChange={(e) => setNewExerciseForm((prev) => ({ ...prev, description: e.target.value }))}
-                    placeholder="Descreva como executar o exercício..."
-                    rows={3}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsNewExerciseOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleCreateExercise} className="bg-green-600 hover:bg-green-700">
-                  Criar Exercício
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+
+          <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={() => setIsNewExerciseOpen(true)}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Exercício
+          </Button>
+
+          <CreateExerciseModal
+              isOpen={isNewExerciseOpen}
+              onClose={() => setIsNewExerciseOpen(false)}
+              onExerciseCreated={loadExercises}
+          />
+
+          <EditExerciseModal
+              isOpen={isEditExerciseOpen}
+              onClose={() => setIsEditExerciseOpen(false)}
+              exercise={editingExercise}
+              onExerciseUpdated={loadExercises}
+          />
+
         </div>
 
-        {/* Edit Exercise Dialog */}
-        <Dialog open={isEditExerciseOpen} onOpenChange={setIsEditExerciseOpen}>
-          <DialogContent className="max-w-md">
-            <DialogTitle className="sr-only">Editar Exercício</DialogTitle>
-            <h2 className="text-lg font-semibold mb-4">Editar Exercício</h2>
-            {editingExercise && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="editExerciseName">Nome do Exercício *</Label>
-                  <Input
-                    id="editExerciseName"
-                    value={editingExercise.name}
-                    onChange={(e) => setEditingExercise((prev: any) => ({ ...prev, name: e.target.value }))}
-                    placeholder="Ex: Supino Inclinado"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editDescription">Descrição</Label>
-                  <Textarea
-                    id="editDescription"
-                    value={editingExercise.description}
-                    onChange={(e) => setEditingExercise((prev: any) => ({ ...prev, description: e.target.value }))}
-                    placeholder="Descreva como executar o exercício..."
-                    rows={3}
-                  />
-                </div>
-              </div>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditExerciseOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleEditExercise} className="bg-green-600 hover:bg-green-700">
-                Salvar Alterações
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
         {/* Search and Filters */}
         <div className="flex flex-col sm:flex-row gap-4">
@@ -414,8 +384,8 @@ export default function ExercisesPage() {
         {!isLoading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 gap-3">
             {exercises.map((exercise) => (
-            <Card 
-              key={exercise.id} 
+            <Card
+              key={exercise.id}
               className={`hover:shadow-md transition-shadow h-36 flex flex-col cursor-pointer ${
                 exercise.deletedAt ? 'opacity-60 border-red-200 bg-red-50/30' : ''
               }`}
@@ -425,7 +395,7 @@ export default function ExercisesPage() {
                 <div className="flex items-start justify-between h-full">
                   <div className="flex-1 min-w-0 pr-2 overflow-hidden">
                     <div className="flex items-center gap-2 mb-1">
-                      <CardTitle className="text-sm font-medium leading-tight break-words min-h-8 flex-1" 
+                      <CardTitle className="text-sm font-medium leading-tight break-words min-h-8 flex-1"
                         style={{
                           display: '-webkit-box',
                           WebkitLineClamp: 2,
@@ -447,9 +417,9 @@ export default function ExercisesPage() {
                   <div className="flex-shrink-0">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={(e) => e.stopPropagation()}
                           className="h-6 w-6 hover:bg-black hover:text-white"
                         >
@@ -457,7 +427,7 @@ export default function ExercisesPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={(e) => {
                             e.stopPropagation()
                             openDetailsDialog(exercise)
@@ -469,7 +439,7 @@ export default function ExercisesPage() {
                         </DropdownMenuItem>
                         {!exercise.deletedAt ? (
                           <>
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation()
                                 openEditDialog(exercise)
@@ -479,7 +449,7 @@ export default function ExercisesPage() {
                               <Edit className="w-4 h-4 mr-2" />
                               Editar
                             </DropdownMenuItem>
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               onClick={(e) => {
                                 e.stopPropagation()
                                 openDeleteDialog(exercise)
@@ -491,7 +461,7 @@ export default function ExercisesPage() {
                             </DropdownMenuItem>
                           </>
                         ) : (
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation()
                               handleRestoreExercise(exercise)
@@ -510,8 +480,8 @@ export default function ExercisesPage() {
               <CardContent className="px-3 pb-3 flex-1 min-h-16">
                 <div className="h-full overflow-hidden">
                   {exercise.description ? (
-                    <CardDescription 
-                      className="text-sm leading-relaxed break-words" 
+                    <CardDescription
+                      className="text-sm leading-relaxed break-words"
                       style={{
                         display: '-webkit-box',
                         WebkitLineClamp: 3,
@@ -570,7 +540,7 @@ export default function ExercisesPage() {
                 const pages = []
                 const startPage = Math.max(0, currentPage - 1)
                 const endPage = Math.min(totalPages - 1, currentPage + 1)
-                
+
                 for (let i = startPage; i <= endPage; i++) {
                   pages.push(
                     <PaginationItem key={i}>
