@@ -6,12 +6,11 @@ import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
 import StudentForm, { type StudentFormData } from "@/components/student-form"
 import { Button } from "@/components/ui/button"
-import {useQuery, useMutation, useQueryClient, UseMutationOptions} from "@tanstack/react-query"
-import { findByIdOptions, updateMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import {useQuery, useQueryClient} from "@tanstack/react-query"
+import { findByIdOptions } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { useToast } from "@/hooks/use-toast"
-import type {StudentResponseDto, StudentRequestDto, AnamnesisResponseDto, UpdateData} from "@/lib/api-client/types.gen"
-import {Options} from "@/lib/api-client"
+import type {StudentResponseDto, StudentRequestDto, AnamnesisResponseDto} from "@/lib/api-client/types.gen"
 import {useUpdateStudent} from "@/lib/hooks/student-mutations";
 
 /**
@@ -19,7 +18,6 @@ import {useUpdateStudent} from "@/lib/hooks/student-mutations";
  * wires updateMutation from generated react-query client.
  *
  * Notes:
- * - Mapping functions translate backend enums to form values and vice-versa.
  * - On successful update we invalidate the students list and navigate back to student page.
  */
 
