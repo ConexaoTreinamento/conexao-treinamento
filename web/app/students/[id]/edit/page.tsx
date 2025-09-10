@@ -64,7 +64,9 @@ export default function EditStudentPage() {
         queryKey: findByIdOptions({ path: { id: id ?? "" }, client: apiClient }).queryKey
       })
       toast({ title: "Aluno atualizado", description: "As alterações foram salvas.", duration: 3000 })
-      if (id) router.replace(`/students/${id}`)
+      if (id) {
+        router.back()
+      }
     }
   })
 
@@ -157,7 +159,6 @@ export default function EditStudentPage() {
 
   const handleSubmit = async (formData: StudentFormData) => {
     if (!id) return
-    setIsSaving(true)
 
     const mapInsomniaToApi = (v?: string | null): "yes" | "no" | "sometimes" | undefined => {
       if (v === undefined || v === null) return undefined
@@ -268,7 +269,6 @@ export default function EditStudentPage() {
       console.error(e)
       toast({ title: "Erro ao atualizar", description: "Não foi possível salvar as alterações.", duration: 4000 })
     } finally {
-      setIsSaving(false)
     }
   }
 
