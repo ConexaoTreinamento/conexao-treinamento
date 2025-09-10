@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { User, Plus, Trash2 } from "lucide-react"
+import {AnamnesisResponseDto, PhysicalImpairmentResponseDto} from "@/lib/api-client";
+import {hasInsomniaTypes, impairmentTypes} from "@/lib/students-data";
 
 interface PhysicalImpairment {
   id: string
@@ -97,14 +99,8 @@ export default function StudentForm({
 }: StudentFormProps) {
   const id = useId()
 
-  // normalize incoming initialData so form uses the expected local values
   const normalizedInitialData: Partial<StudentFormData> = {
     ...initialData,
-    // backend may store hasInsomnia as 'yes'|'no'|'sometimes' — normalize to form values
-    hasInsomnia: initialData?.hasInsomnia === "yes" ? "sim"
-      : initialData?.hasInsomnia === "no" ? "nao"
-      : initialData?.hasInsomnia === "sometimes" ? "as-vezes"
-      : (initialData?.hasInsomnia as unknown as string | undefined) ?? undefined,
     physicalImpairments: initialData?.physicalImpairments?.map((p) => ({ ...p })) ?? []
   }
 
@@ -407,9 +403,7 @@ export default function StudentForm({
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="sim">Sim</SelectItem>
-                      <SelectItem value="nao">Não</SelectItem>
-                      <SelectItem value="as-vezes">Às vezes</SelectItem>
+                      {(Object.keys(hasInsomniaTypes) as (keyof typeof hasInsomniaTypes)[]).map(type => <SelectItem key={type} value={type}>{hasInsomniaTypes[type]}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 )}
@@ -541,12 +535,7 @@ export default function StudentForm({
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="motor">Motor</SelectItem>
-                          <SelectItem value="emocional">Emocional</SelectItem>
-                          <SelectItem value="visual">Visual</SelectItem>
-                          <SelectItem value="auditivo">Auditivo</SelectItem>
-                          <SelectItem value="linguistico">Linguístico</SelectItem>
-                          <SelectItem value="outro">Outro</SelectItem>
+                            {(Object.keys(impairmentTypes) as (keyof typeof impairmentTypes)[]).map(type => <SelectItem key={type} value={type}>{impairmentTypes[type]}</SelectItem>)}
                         </SelectContent>
                       </Select>
                     )}

@@ -7,24 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, Edit, CalendarDays, Trash2, RotateCcw } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
-import { getStudentPlanExpirationDate, UnifiedStatusBadge } from "@/lib/expiring-plans"
-import {getStudentProfileById, getStudentFullName, STUDENT_PROFILES} from "@/lib/students-data"
-import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
-import {deleteMutation, findByIdOptions, restoreMutation} from "@/lib/api-client/@tanstack/react-query.gen";
-import { apiClient } from "@/lib/client";
-import ConfirmDeleteButton from "@/components/confirm-delete-button";
-import { useToast } from "@/hooks/use-toast";
-import {StudentProfile} from "@/lib/students-data";
-import {StudentResponseDto} from "@/lib/api-client";
-import {useMemo} from "react";
 import { UnifiedStatusBadge } from "@/lib/expiring-plans"
-import { STUDENT_PROFILES } from "@/lib/students-data"
+import {hasInsomniaTypes, impairmentTypes, STUDENT_PROFILES} from "@/lib/students-data"
 import { useDeleteStudent, useRestoreStudent } from "@/lib/hooks/student-mutations";
 import { apiClient } from "@/lib/client";
 import ConfirmDeleteButton from "@/components/confirm-delete-button";
 import { useToast } from "@/hooks/use-toast";
-import {StudentResponseDto} from "@/lib/api-client";
-import {useMemo} from "react";
+import type { StudentResponseDto } from "@/lib/api-client";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query"
 import { findByIdOptions } from "@/lib/api-client/@tanstack/react-query.gen"
 
@@ -78,18 +68,9 @@ interface Exercise {
   duration?: string
   notes?: string
 }
-
-interface ClassExercise {
-  classDate: string
-  className: string
-  instructor: string
-  exercises: Exercise[]
-}
-
 export default function StudentProfilePage() {
   const router = useRouter()
   const params = useParams()
-  const queryClient = useQueryClient()
   const { toast } = useToast()
   const studentMockData = STUDENT_PROFILES[0] //used for fields that don't exist on studentResponseDTO
 
@@ -122,26 +103,6 @@ export default function StudentProfilePage() {
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "N/A"
     return new Date(dateString).toLocaleDateString("pt-BR")
-  }
-
-  const getInsomniaDisplay = (hasInsomnia: 'yes' | 'no' | 'sometimes' | undefined) => {
-    switch (hasInsomnia) {
-      case 'yes': return 'Sim'
-      case 'no': return 'Não'
-      case 'sometimes': return 'Às vezes'
-      default: return 'N/A'
-    }
-  }
-
-  const getImpairmentTypeDisplay = (type: 'visual' | 'auditory' | 'motor' | 'intellectual' | 'other' | undefined) => {
-    switch (type) {
-      case 'visual': return 'Visual'
-      case 'auditory': return 'Auditivo'
-      case 'motor': return 'Motor'
-      case 'intellectual': return 'Intelectual'
-      case 'other': return 'Outro'
-      default: return 'N/A'
-    }
   }
 
   const formatAddress = (student: StudentResponseDto | undefined) => {
@@ -607,7 +568,7 @@ export default function StudentProfilePage() {
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Insônia:</span>
-                      <p className="text-sm">{getInsomniaDisplay(studentData.anamnesis?.hasInsomnia)}</p>
+                      <p className="text-sm">{studentData.anamnesis?.hasInsomnia ? hasInsomniaTypes[studentData.anamnesis?.hasInsomnia] : "N/A"}</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">Dieta orientada por:</span>
@@ -679,7 +640,7 @@ export default function StudentProfilePage() {
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <div>
                                   <span className="text-sm text-muted-foreground">Tipo:</span>
-                                  <p className="text-sm font-medium">{getImpairmentTypeDisplay(impairment.type)}</p>
+                                  <p className="text-sm font-medium">{impairment.type ? impairmentTypes[impairment.type] : "N/A"}</p>
                                 </div>
                                 <div>
                                   <span className="text-sm text-muted-foreground">Nome:</span>

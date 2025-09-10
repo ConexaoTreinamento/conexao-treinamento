@@ -70,28 +70,6 @@ export default function EditStudentPage() {
     }
   })
 
-  const mapInsomniaFromApi = (v?: AnamnesisResponseDto["hasInsomnia"] | null) => {
-    if (!v) return undefined
-    const normalized = String(v).trim().toLowerCase()
-
-    if (normalized === "yes" || normalized === "sim") return "sim"
-    if (normalized === "no" || normalized === "nao") return "nao"
-    if (normalized === "sometimes" || normalized === "sometime" || normalized === "as-vezes") return "as-vezes"
-    return undefined
-  }
-
-  const mapImpairmentTypeFromApi = (t?: PhysicalImpairmentResponseDto["type"] | null) => {
-    if (!t) return "outro"
-    switch (t.toUpperCase()) {
-      case "motor": return "motor"
-      case "visual": return "visual"
-      case "auditory": return "auditivo"
-      case "intellectual": return "linguistico"
-      case "other": return "outro"
-      default: return String(t).toLowerCase()
-    }
-  }
-
   const mapStudentResponseToForm = (s?: StudentResponseDto): Partial<StudentFormData> | undefined => {
     if (!s) return undefined
     return {
@@ -116,7 +94,7 @@ export default function EditStudentPage() {
       medication: s.anamnesis?.medication ?? undefined,
       isDoctorAwareOfPhysicalActivity: s.anamnesis?.isDoctorAwareOfPhysicalActivity ?? undefined,
       favoritePhysicalActivity: s.anamnesis?.favoritePhysicalActivity ?? undefined,
-      hasInsomnia: mapInsomniaFromApi(s.anamnesis?.hasInsomnia ?? undefined),
+      hasInsomnia: s.anamnesis?.hasInsomnia ?? undefined,
       dietOrientedBy: s.anamnesis?.dietOrientedBy ?? undefined,
       cardiacProblems: s.anamnesis?.cardiacProblems ?? undefined,
       hasHypertension: s.anamnesis?.hasHypertension ?? undefined,
@@ -134,7 +112,7 @@ export default function EditStudentPage() {
       // physical impairments
       physicalImpairments: s.physicalImpairments?.map((p) => ({
         id: p.id ?? String(Math.random()),
-        type: mapImpairmentTypeFromApi(p.type),
+        type: p.type,
         name: p.name ?? "",
         observations: p.observations ?? ""
       })) ?? []
@@ -155,27 +133,6 @@ export default function EditStudentPage() {
 
   const handleSubmit = async (formData: StudentFormData) => {
     if (!id) return
-
-    const mapInsomniaToApi = (v?: string | null): AnamnesisResponseDto["hasInsomnia"] | undefined => {
-      if (v === undefined || v === null) return undefined
-      if (v === "sim") return "yes"
-      if (v === "nao") return "no"
-      if (v === "as-vezes") return "sometimes"
-      return undefined
-    }
-
-    const mapImpairmentTypeToApi = (t?: string | null): PhysicalImpairmentResponseDto["type"] => {
-      if (!t) return "other"
-      switch (t) {
-        case "motor": return "motor"
-        case "visual": return "visual"
-        case "auditivo": return "auditory"
-        case "linguistico": return "intellectual"
-        case "emocional": return "other"
-        case "outro": return "other"
-        default: return String(t).toLowerCase() as PhysicalImpairmentResponseDto["type"]
-      }
-    }
 
     try {
       const anamnesisFields: (keyof AnamnesisResponseDto)[] = [
@@ -228,7 +185,7 @@ export default function EditStudentPage() {
           medication: formData.medication,
           isDoctorAwareOfPhysicalActivity: formData.isDoctorAwareOfPhysicalActivity,
           favoritePhysicalActivity: formData.favoritePhysicalActivity,
-          hasInsomnia: mapInsomniaToApi(formData.hasInsomnia),
+          hasInsomnia: formData.hasInsomnia,
           dietOrientedBy: formData.dietOrientedBy,
           cardiacProblems: formData.cardiacProblems,
           hasHypertension: formData.hasHypertension,
@@ -254,7 +211,7 @@ export default function EditStudentPage() {
             return hasContent
           })
           .map((p) => ({
-            type: mapImpairmentTypeToApi(p.type),
+            type: p.type,
             name: p.name || "",
             observations: p.observations
           }))

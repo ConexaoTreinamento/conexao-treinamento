@@ -6,7 +6,6 @@ import {findAllOptions} from "@/lib/api-client/@tanstack/react-query.gen"
 import {apiClient} from "@/lib/client"
 import type {
     AnamnesisResponseDto,
-    PhysicalImpairmentResponseDto,
     StudentRequestDto,
     StudentResponseDto
 } from "@/lib/api-client/types.gen"
@@ -401,27 +400,6 @@ export default function StudentsPage() {
   const handleCreateStudent = async (formData: StudentFormData) => {
     setIsCreating(true)
 
-    const mapInsomnia = (v?: string | null): AnamnesisResponseDto["hasInsomnia"] | undefined => {
-      if (v === undefined || v === null) return undefined
-      if (v === "sim") return "yes"
-      if (v === "nao") return "no"
-      if (v === "as-vezes") return "sometimes"
-      return undefined
-    }
-
-    const mapImpairmentType = (t?: string | null): PhysicalImpairmentResponseDto["type"] => {
-      if (!t) return "other"
-      switch (t) {
-        case "motor": return "motor"
-        case "visual": return "visual"
-        case "auditivo": return "auditory"
-        case "linguistico": return "intellectual"
-        case "emocional": return "other"
-        case "outro": return "other"
-        default: return String(t).toLowerCase() as PhysicalImpairmentResponseDto["type"]
-      }
-    }
-
     try {
       const anamnesisFields: (keyof AnamnesisResponseDto)[] = [
         "medication",
@@ -472,7 +450,7 @@ export default function StudentsPage() {
           medication: formData.medication,
           isDoctorAwareOfPhysicalActivity: formData.isDoctorAwareOfPhysicalActivity,
           favoritePhysicalActivity: formData.favoritePhysicalActivity,
-          hasInsomnia: mapInsomnia(formData.hasInsomnia),
+          hasInsomnia: formData.hasInsomnia,
           dietOrientedBy: formData.dietOrientedBy,
           cardiacProblems: formData.cardiacProblems,
           hasHypertension: formData.hasHypertension,
@@ -498,7 +476,7 @@ export default function StudentsPage() {
                 String((p.observations ?? "")).trim().length > 0
           })
           .map((p) => ({
-            type: mapImpairmentType(p.type),
+            type: p.type,
             name: p.name || "",
             observations: p.observations
           }))
