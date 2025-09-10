@@ -1,5 +1,12 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createMutation, deleteMutation, restoreMutation } from "@/lib/api-client/@tanstack/react-query.gen";
+import {useMutation, UseMutationOptions, useQueryClient} from "@tanstack/react-query";
+import {
+  createMutation,
+  deleteMutation, findByIdOptions,
+  restoreMutation,
+  updateMutation
+} from "@/lib/api-client/@tanstack/react-query.gen";
+import {Options, StudentResponseDto, type UpdateData} from "@/lib/api-client";
+import {apiClient} from "@/lib/client";
 
 /**
  * Hooks that wrap generated mutation factories and add onSuccess invalidations
@@ -15,9 +22,10 @@ export const useCreateStudent = () => {
   return useMutation({
     ...base,
     onSuccess: async (...args) => {
-      // call generator-provided onSuccess if present
       try {
-        if (base.onSuccess) await (base.onSuccess)(...args);
+        if (base.onSuccess) {
+          await (base.onSuccess)(...args);
+        }
       } catch (e) {
         // ignore
       }
@@ -28,6 +36,32 @@ export const useCreateStudent = () => {
   });
 };
 
+export const useUpdateStudent = (options: UseMutationOptions<StudentResponseDto, Error, Options<UpdateData>, unknown>) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    ...updateMutation(),
+    ...options,
+    onSuccess: async (...args) => {
+      if (options.onSuccess) {
+        try {
+          await options.onSuccess(...args)
+        } catch (e) {
+          // ignore
+        }
+      }
+      // Invalidate the students list
+      await Promise.all([queryClient.invalidateQueries({
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAll'
+      }),
+        // Invalidate the specific cached student (findById) so the details refresh
+        queryClient.invalidateQueries({
+          queryKey: findByIdOptions({path: {id: args[1].path.id ?? ""}, client: apiClient}).queryKey
+        })])
+    }
+  });
+};
+
 export const useDeleteStudent = () => {
   const queryClient = useQueryClient();
   const base = deleteMutation();
@@ -35,7 +69,9 @@ export const useDeleteStudent = () => {
   return useMutation({
     ...base,
     onSuccess: async (...args) => {
-      if (base.onSuccess) await (base.onSuccess)(...args);
+      if (base.onSuccess) {
+        await (base.onSuccess)(...args);
+      }
       await queryClient.invalidateQueries({
         predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === "findAll",
       });

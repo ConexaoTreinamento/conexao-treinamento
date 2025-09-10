@@ -6,11 +6,13 @@ import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
 import StudentForm, { type StudentFormData } from "@/components/student-form"
 import { Button } from "@/components/ui/button"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import {useQuery, useMutation, useQueryClient, UseMutationOptions} from "@tanstack/react-query"
 import { findByIdOptions, updateMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { useToast } from "@/hooks/use-toast"
-import type { StudentResponseDto, StudentRequestDto, AnamnesisResponseDto, PhysicalImpairmentResponseDto } from "@/lib/api-client/types.gen"
+import type {StudentResponseDto, StudentRequestDto, AnamnesisResponseDto, UpdateData} from "@/lib/api-client/types.gen"
+import {Options} from "@/lib/api-client"
+import {useUpdateStudent} from "@/lib/hooks/student-mutations";
 
 /**
  * Edit student page - fetches student by id, maps response to StudentFormData and
@@ -52,18 +54,9 @@ export default function EditStudentPage() {
 
   const student: StudentResponseDto | undefined = (studentData as StudentResponseDto | undefined) ?? studentFromCache
 
-  const { mutateAsync: updateStudent, isPending: isEditPending } = useMutation({
-    ...updateMutation(),
-    onSuccess: async (...args) => {
-      // Invalidate the students list
-      await queryClient.invalidateQueries({
-        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAll'
-      })
-      // Invalidate the specific cached student (findById) so the details refresh
-      await queryClient.invalidateQueries({
-        queryKey: findByIdOptions({ path: { id: id ?? "" }, client: apiClient }).queryKey
-      })
-      toast({ title: "Aluno atualizado", description: "As alterações foram salvas.", duration: 3000 })
+  const {mutateAsync: updateStudent, isPending: isEditPending} = useUpdateStudent({
+    onSuccess: () => {
+      toast({title: "Aluno atualizado", description: "As alterações foram salvas.", duration: 3000})
       if (id) {
         router.back()
       }
