@@ -193,7 +193,7 @@ public class StudentService {
                 entityManager.flush();
             }
 
-            Anamnesis anamnesis = getAnamnesis(savedStudent, dto);
+            Anamnesis anamnesis = createAnamnesis(savedStudent, dto);
             anamnesisRepository.saveAndFlush(anamnesis);
         }
 
@@ -202,7 +202,7 @@ public class StudentService {
         return createOrEditPhysicalImpairments(request, savedStudent);
     }
 
-    private static Anamnesis getAnamnesis(Student savedStudent, AnamnesisRequestDTO dto) {
+    private static Anamnesis createAnamnesis(Student savedStudent, AnamnesisRequestDTO dto) {
         Anamnesis anamnesis = new Anamnesis(savedStudent);
         createOrEditAnamnesis(dto, anamnesis);
         return anamnesis;
