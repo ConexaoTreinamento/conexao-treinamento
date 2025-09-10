@@ -54,7 +54,21 @@ export default function EditStudentPage() {
 
   const student: StudentResponseDto | undefined = (studentData as StudentResponseDto | undefined) ?? studentFromCache
 
-  const { mutateAsync: updateStudent } = useMutation(updateMutation())
+  const { mutateAsync: updateStudent } = useMutation({
+    ...updateMutation(),
+    onSuccess: async (...args) => {
+      // Invalidate the students list
+      await queryClient.invalidateQueries({
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAll'
+      })
+      // Invalidate the specific cached student (findById) so the details refresh
+      await queryClient.invalidateQueries({
+        queryKey: findByIdOptions({ path: { id: id ?? "" }, client: apiClient }).queryKey
+      })
+      toast({ title: "Aluno atualizado", description: "As alterações foram salvas.", duration: 3000 })
+      if (id) router.replace(`/students/${id}`)
+    }
+  })
 
   const mapInsomniaFromApi = (v?: string | null) => {
     if (!v) return undefined
@@ -251,11 +265,6 @@ export default function EditStudentPage() {
       } as StudentRequestDto
 
       await updateStudent({ path: { id }, body: requestBody, client: apiClient })
-      await queryClient.invalidateQueries({
-        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAll'
-      })
-      toast({ title: "Aluno atualizado", description: "As alterações foram salvas.", duration: 3000 })
-      router.replace(`/students/${id}`)
     } catch (e) {
       // eslint-disable-next-line no-console
       console.error(e)
