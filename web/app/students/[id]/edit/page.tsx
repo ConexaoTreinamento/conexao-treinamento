@@ -10,7 +10,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { findByIdOptions, updateMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { useToast } from "@/hooks/use-toast"
-import type { StudentResponseDto, StudentRequestDto } from "@/lib/api-client/types.gen"
+import type { StudentResponseDto, StudentRequestDto, AnamnesisResponseDto, PhysicalImpairmentResponseDto } from "@/lib/api-client/types.gen"
 
 /**
  * Edit student page - fetches student by id, maps response to StudentFormData and
@@ -160,7 +160,7 @@ export default function EditStudentPage() {
   const handleSubmit = async (formData: StudentFormData) => {
     if (!id) return
 
-    const mapInsomniaToApi = (v?: string | null): "yes" | "no" | "sometimes" | undefined => {
+    const mapInsomniaToApi = (v?: string | null): AnamnesisResponseDto["hasInsomnia"] | undefined => {
       if (v === undefined || v === null) return undefined
       if (v === "sim") return "yes"
       if (v === "nao") return "no"
@@ -168,7 +168,7 @@ export default function EditStudentPage() {
       return undefined
     }
 
-    const mapImpairmentTypeToApi = (t?: string | null): "visual" | "auditory" | "motor" | "intellectual" | "other" => {
+    const mapImpairmentTypeToApi = (t?: string | null): PhysicalImpairmentResponseDto["type"] => {
       if (!t) return "other"
       switch (t) {
         case "motor": return "motor"
@@ -177,12 +177,12 @@ export default function EditStudentPage() {
         case "linguistico": return "intellectual"
         case "emocional": return "other"
         case "outro": return "other"
-        default: return String(t).toLowerCase() as "visual" | "auditory" | "motor" | "intellectual" | "other"
+        default: return String(t).toLowerCase() as PhysicalImpairmentResponseDto["type"]
       }
     }
 
     try {
-      const anamnesisFields = [
+      const anamnesisFields: (keyof AnamnesisResponseDto)[] = [
         "medication",
         "isDoctorAwareOfPhysicalActivity",
         "favoritePhysicalActivity",
@@ -201,7 +201,8 @@ export default function EditStudentPage() {
         "smokingDuration",
         "alteredCholesterol",
         "osteoporosisLocation"
-      ];
+      ] as const;
+
       const hasAnamnesis = anamnesisFields.some((f: string) => {
         const v = (formData as unknown as Record<string, unknown>)[f];
         if (v === undefined || v === null) return false;
