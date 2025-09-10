@@ -11,7 +11,7 @@ import Layout from "@/components/layout"
 
 export default function ReportsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState("month")
-  const [selectedTeacher, setSelectedTeacher] = useState("all")
+  const [selectedTrainer, setSelectedTrainer] = useState("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [userRole, setUserRole] = useState<string>("")
   const router = useRouter()
@@ -25,8 +25,8 @@ export default function ReportsPage() {
     }
   }, [router])
 
-  // Mock teacher reports data
-  const teacherReports = [
+  // Mock trainer reports data
+  const trainerReports = [
     {
       id: 1,
       name: "Prof. Ana Silva",
@@ -99,15 +99,15 @@ export default function ReportsPage() {
     { name: "Outros", count: 56 },
   ]
 
-  const filteredReports = teacherReports.filter((teacher) => {
-    const matchesSearch = teacher.name.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesTeacher = selectedTeacher === "all" || teacher.id.toString() === selectedTeacher
-    return matchesSearch && matchesTeacher
+  const filteredReports = trainerReports.filter((trainer) => {
+    const matchesSearch = trainer.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesTrainer = selectedTrainer === "all" || trainer.id.toString() === selectedTrainer
+    return matchesSearch && matchesTrainer
   })
 
-  const totalHours = filteredReports.reduce((sum, teacher) => sum + teacher.hoursWorked, 0)
-  const totalClasses = filteredReports.reduce((sum, teacher) => sum + teacher.classesGiven, 0)
-  const totalStudents = filteredReports.reduce((sum, teacher) => sum + teacher.studentsManaged, 0)
+  const totalHours = filteredReports.reduce((sum, trainer) => sum + trainer.hoursWorked, 0)
+  const totalClasses = filteredReports.reduce((sum, trainer) => sum + trainer.classesGiven, 0)
+  const totalStudents = filteredReports.reduce((sum, trainer) => sum + trainer.studentsManaged, 0)
 
   if (userRole !== "admin") {
     return null
@@ -136,15 +136,15 @@ export default function ReportsPage() {
             />
           </div>
 
-          <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>
+          <Select value={selectedTrainer} onValueChange={setSelectedTrainer}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Todos os professores" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os professores</SelectItem>
-              {teacherReports.map((teacher) => (
-                <SelectItem key={teacher.id} value={teacher.id.toString()}>
-                  {teacher.name}
+              {trainerReports.map((trainer) => (
+                <SelectItem key={trainer.id} value={trainer.id.toString()}>
+                  {trainer.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -202,7 +202,7 @@ export default function ReportsPage() {
           </Card>
         </div>
 
-        {/* Teachers Performance Table */}
+        {/* Trainers Performance Table */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -226,15 +226,15 @@ export default function ReportsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredReports.map((teacher) => {
-                    const initials = teacher.name.replace("Prof.", "")
+                  {filteredReports.map((trainer) => {
+                    const initials = trainer.name.replace("Prof.", "")
                       .split(" ")
                       .map((n) => n[0])
                       .join("")
                       .toUpperCase()
 
                     return (
-                      <tr key={teacher.id} className="border-b hover:bg-muted/50">
+                      <tr key={trainer.id} className="border-b hover:bg-muted/50">
                         <td className="p-3">
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
@@ -242,27 +242,27 @@ export default function ReportsPage() {
                                 {initials}
                               </span>
                             </div>
-                            <span className="font-medium">{teacher.name}</span>
+                            <span className="font-medium">{trainer.name}</span>
                           </div>
                         </td>
-                        <td className="p-3 font-medium">{teacher.weeklyHours}h</td>
-                        <td className="p-3 font-medium">{teacher.hoursWorked}h</td>
-                        <td className="p-3 font-medium">{teacher.monthlyClasses}</td>
-                        <td className="p-3">{teacher.studentsManaged}</td>
+                        <td className="p-3 font-medium">{trainer.weeklyHours}h</td>
+                        <td className="p-3 font-medium">{trainer.hoursWorked}h</td>
+                        <td className="p-3 font-medium">{trainer.monthlyClasses}</td>
+                        <td className="p-3">{trainer.studentsManaged}</td>
                         <td className="p-3">
                           <Badge
                             className={
-                              teacher.compensation === "Mensalista"
+                              trainer.compensation === "Mensalista"
                                 ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
                                 : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
                             }
                           >
-                            {teacher.compensation}
+                            {trainer.compensation}
                           </Badge>
                         </td>
                         <td className="p-3">
                           <div className="flex flex-wrap gap-1">
-                            {teacher.specialties.map((specialty, idx) => (
+                            {trainer.specialties.map((specialty, idx) => (
                               <Badge key={idx} variant="outline" className="text-xs">
                                 {specialty}
                               </Badge>
