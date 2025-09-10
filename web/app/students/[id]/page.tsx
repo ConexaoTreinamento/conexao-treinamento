@@ -7,6 +7,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, Edit, CalendarDays, Trash2, RotateCcw } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
+import { getStudentPlanExpirationDate, UnifiedStatusBadge } from "@/lib/expiring-plans"
+import {getStudentProfileById, getStudentFullName, STUDENT_PROFILES} from "@/lib/students-data"
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {deleteMutation, findByIdOptions, restoreMutation} from "@/lib/api-client/@tanstack/react-query.gen";
+import { apiClient } from "@/lib/client";
+import ConfirmDeleteButton from "@/components/confirm-delete-button";
+import { useToast } from "@/hooks/use-toast";
+import {StudentProfile} from "@/lib/students-data";
+import {StudentResponseDto} from "@/lib/api-client";
+import {useMemo} from "react";
 import { UnifiedStatusBadge } from "@/lib/expiring-plans"
 import { STUDENT_PROFILES } from "@/lib/students-data"
 import { useDeleteStudent, useRestoreStudent } from "@/lib/hooks/student-mutations";
@@ -68,9 +78,18 @@ interface Exercise {
   duration?: string
   notes?: string
 }
+
+interface ClassExercise {
+  classDate: string
+  className: string
+  instructor: string
+  exercises: Exercise[]
+}
+
 export default function StudentProfilePage() {
   const router = useRouter()
   const params = useParams()
+  const queryClient = useQueryClient()
   const { toast } = useToast()
   const studentMockData = STUDENT_PROFILES[0] //used for fields that don't exist on studentResponseDTO
 
