@@ -6,7 +6,7 @@ import {
   updateMutation
 } from "@/lib/api-client/@tanstack/react-query.gen";
 import {apiClient} from "@/lib/client";
-import {Options, StudentResponseDto, UpdateData} from "@/lib/api-client";
+import type {Options, StudentResponseDto, UpdateData} from "@/lib/api-client";
 
 /**
  * Hooks that wrap generated mutation factories and add onSuccess invalidations

@@ -13,7 +13,7 @@ import { useDeleteStudent, useRestoreStudent } from "@/lib/hooks/student-mutatio
 import {apiClient} from "@/lib/client";
 import ConfirmDeleteButton from "@/components/confirm-delete-button";
 import { useToast } from "@/hooks/use-toast";
-import { StudentResponseDto } from "@/lib/api-client/types.gen"
+import type { StudentResponseDto } from "@/lib/api-client/types.gen"
 import {useStudent} from "@/lib/hooks/student-queries";
 
 // Type definitions

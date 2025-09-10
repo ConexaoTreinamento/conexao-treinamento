@@ -2,7 +2,7 @@ import {useQuery, keepPreviousData, UseQueryOptions} from "@tanstack/react-query
 import {findAllOptions, findByIdOptions, findByIdQueryKey} from "@/lib/api-client/@tanstack/react-query.gen";
 import type { Options } from "@/lib/api-client/client/types";
 import {apiClient} from "@/lib/client";
-import {FindAllData, FindByIdData, StudentResponseDto} from "@/lib/api-client";
+import type {FindAllData, FindByIdData, StudentResponseDto} from "@/lib/api-client";
 
 export const useStudent = (options: Options<FindByIdData>, queryOptions?: Omit<UseQueryOptions<StudentResponseDto, Error, StudentResponseDto, ReturnType<typeof findByIdQueryKey>>, 'queryKey' | 'queryFn'>) => useQuery({
   ...findByIdOptions({...options, client: apiClient}),
