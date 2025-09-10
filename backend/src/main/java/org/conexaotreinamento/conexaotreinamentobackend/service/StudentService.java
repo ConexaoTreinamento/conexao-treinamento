@@ -259,7 +259,7 @@ public class StudentService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
         
         if (student.isActive() || studentRepository.existsByEmailIgnoringCaseAndDeletedAtIsNull(student.getEmail())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot restore student.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot restore student due to email conflict or already active.");
         }
 
         student.activate();
