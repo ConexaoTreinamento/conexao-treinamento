@@ -70,7 +70,7 @@ export default function EditStudentPage() {
     }
   })
 
-  const mapInsomniaFromApi = (v?: string | null) => {
+  const mapInsomniaFromApi = (v?: AnamnesisResponseDto["hasInsomnia"] | null) => {
     if (!v) return undefined
     const normalized = String(v).trim().toLowerCase()
 
@@ -80,14 +80,14 @@ export default function EditStudentPage() {
     return undefined
   }
 
-  const mapImpairmentTypeFromApi = (t?: string | null) => {
+  const mapImpairmentTypeFromApi = (t?: PhysicalImpairmentResponseDto["type"] | null) => {
     if (!t) return "outro"
     switch (t.toUpperCase()) {
-      case "MOTOR": return "motor"
-      case "VISUAL": return "visual"
-      case "AUDITORY": return "auditivo"
-      case "INTELLECTUAL": return "linguistico"
-      case "OTHER": return "outro"
+      case "motor": return "motor"
+      case "visual": return "visual"
+      case "auditory": return "auditivo"
+      case "intellectual": return "linguistico"
+      case "other": return "outro"
       default: return String(t).toLowerCase()
     }
   }
