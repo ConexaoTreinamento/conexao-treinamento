@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import {StudentProfile} from "@/lib/students-data";
 import {StudentResponseDto} from "@/lib/api-client";
 import {useMemo} from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { findByIdOptions } from "@/lib/api-client/@tanstack/react-query.gen"
 
 // Type definitions
 interface MedicalData {
@@ -152,22 +154,22 @@ export default function StudentProfilePage() {
     return new Date(dateString).toLocaleDateString("pt-BR")
   }
 
-  const getInsomniaDisplay = (hasInsomnia: 'YES' | 'NO' | 'SOMETIMES' | undefined) => {
+  const getInsomniaDisplay = (hasInsomnia: 'yes' | 'no' | 'sometimes' | undefined) => {
     switch (hasInsomnia) {
-      case 'YES': return 'Sim'
-      case 'NO': return 'Não'
-      case 'SOMETIMES': return 'Às vezes'
+      case 'yes': return 'Sim'
+      case 'no': return 'Não'
+      case 'sometimes': return 'Às vezes'
       default: return 'N/A'
     }
   }
 
-  const getImpairmentTypeDisplay = (type: 'VISUAL' | 'AUDITORY' | 'MOTOR' | 'INTELLECTUAL' | 'OTHER' | undefined) => {
+  const getImpairmentTypeDisplay = (type: 'visual' | 'auditory' | 'motor' | 'intellectual' | 'other' | undefined) => {
     switch (type) {
-      case 'VISUAL': return 'Visual'
-      case 'AUDITORY': return 'Auditivo'
-      case 'MOTOR': return 'Motor'
-      case 'INTELLECTUAL': return 'Intelectual'
-      case 'OTHER': return 'Outro'
+      case 'visual': return 'Visual'
+      case 'auditory': return 'Auditivo'
+      case 'motor': return 'Motor'
+      case 'intellectual': return 'Intelectual'
+      case 'other': return 'Outro'
       default: return 'N/A'
     }
   }
