@@ -11,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { User, Plus, Trash2 } from "lucide-react"
-import {AnamnesisResponseDto, PhysicalImpairmentResponseDto} from "@/lib/client";
 import {hasInsomniaTypes, impairmentTypes} from "@/lib/students-data";
 
 interface PhysicalImpairment {
