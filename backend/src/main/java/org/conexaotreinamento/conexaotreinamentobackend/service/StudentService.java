@@ -59,7 +59,7 @@ public class StudentService {
         // Save anamnesis if provided
         if (request.anamnesis() != null) {
             var dto = request.anamnesis();
-            org.conexaotreinamento.conexaotreinamentobackend.entity.Anamnesis anamnesis = new org.conexaotreinamento.conexaotreinamentobackend.entity.Anamnesis(savedStudent);
+            Anamnesis anamnesis = new Anamnesis(savedStudent);
             createOrEditAnamnesis(dto, anamnesis);
 
             anamnesisRepository.save(anamnesis);
