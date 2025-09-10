@@ -11,7 +11,7 @@ import { Eye, EyeOff } from "lucide-react"
 import Image from "next/image"
 import { useMutation } from "@tanstack/react-query"
 import { loginMutation } from "@/lib/api-client/@tanstack/react-query.gen"
-import { apiClient } from "@/lib/client"
+import { customApiClient } from "@/lib/custom-api-client"
 
 export default function HomePage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -31,7 +31,7 @@ export default function HomePage() {
     e.preventDefault()
     // Mock login logic
     const result = await login({
-      body: { email, password }, client: apiClient, security: [
+      body: { email, password }, client: customApiClient, security: [
         {
           type: "http",
           scheme: "bearer",

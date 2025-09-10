@@ -10,13 +10,11 @@ import Layout from "@/components/layout"
 import { UnifiedStatusBadge } from "@/lib/expiring-plans"
 import {hasInsomniaTypes, impairmentTypes, STUDENT_PROFILES} from "@/lib/students-data"
 import { useDeleteStudent, useRestoreStudent } from "@/lib/hooks/student-mutations";
-import { apiClient } from "@/lib/client";
+import {customApiClient} from "@/lib/custom-api-client";
 import ConfirmDeleteButton from "@/components/confirm-delete-button";
 import { useToast } from "@/hooks/use-toast";
-import type { StudentResponseDto } from "@/lib/api-client";
-import { useMemo } from "react";
-import { useQuery } from "@tanstack/react-query"
-import { findByIdOptions } from "@/lib/api-client/@tanstack/react-query.gen"
+import { StudentResponseDto } from "@/lib/api-client/types.gen"
+import {useStudent} from "@/lib/hooks/student-queries";
 
 // Type definitions
 interface Evaluation {
@@ -78,22 +76,17 @@ export default function StudentProfilePage() {
   const { mutateAsync: restoreStudent, isPending: isRestoring } = useRestoreStudent()
 
   const handleDelete = async () => {
-    await deleteStudent({ path: { id: String(params.id) }, client: apiClient })
+    await deleteStudent({ path: { id: String(params.id) }, client: customApiClient })
     toast({ title: "Aluno excluído", description: "O aluno foi marcado como inativo.", duration: 3000 })
     router.back()
   }
 
   const handleRestore = async () => {
-    await restoreStudent({ path: { id: String(params.id) }, client: apiClient })
+    await restoreStudent({ path: { id: String(params.id) }, client: customApiClient })
     toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
   }
 
-  const apiClientMemo = useMemo(() => apiClient, [])
-
-  const { data: studentData, isLoading, error } = useQuery({
-    ...findByIdOptions({path: { id: String(params.id) }, client: apiClientMemo }),
-    enabled: !!params.id
-  })
+  const { data: studentData, isLoading, error } = useStudent({path: {id: String(params.id)}}, {enabled: Boolean(params.id)})
 
   const getFullName = (student: StudentResponseDto | undefined) => {
     if (!student) return ""

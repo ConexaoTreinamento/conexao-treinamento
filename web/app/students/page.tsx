@@ -1,9 +1,6 @@
 "use client"
 
 import React, {type MouseEventHandler, useState} from "react"
-import {useQuery} from "@tanstack/react-query"
-import {findAllOptions} from "@/lib/api-client/@tanstack/react-query.gen"
-import {apiClient} from "@/lib/client"
 import type {
     AnamnesisResponseDto,
     StudentRequestDto,
@@ -36,6 +33,8 @@ import {Checkbox} from "@/components/ui/checkbox"
 import ConfirmDeleteButton from "@/components/confirm-delete-button"
 import {useCreateStudent, useDeleteStudent, useRestoreStudent} from "@/lib/hooks/student-mutations"
 import {useToast} from "@/hooks/use-toast"
+import {useStudents} from "@/lib/hooks/student-queries";
+import {customApiClient} from "@/lib/custom-api-client";
 
 // Type-safe filter interface
 interface StudentFilters {
@@ -331,26 +330,17 @@ export default function StudentsPage() {
   }, [debouncedSearchTerm, debouncedFilters])
 
   // Fetch students using React Query with debounced values
-  const { data: studentsData, isLoading, error } = useQuery({
-    ...findAllOptions({
-      query: {
-        ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
-        ...(debouncedFilters.gender !== "all" && { gender: mapGenderToBackend(debouncedFilters.gender) }),
-        ...(debouncedFilters.profession !== "all" && { profession: debouncedFilters.profession }),
-        ...(debouncedFilters.minAge && { minAge: debouncedFilters.minAge }),
-        ...(debouncedFilters.maxAge && { maxAge: debouncedFilters.maxAge }),
-        ...(!debouncedInvalidDateRange && debouncedFilters.startDate && { registrationPeriodMinDate: debouncedFilters.startDate }),
-        ...(!debouncedInvalidDateRange && debouncedFilters.endDate && { registrationPeriodMaxDate: debouncedFilters.endDate }),
-        includeInactive: debouncedFilters.includeInactive,
-        pageable: {
-          page: currentPage,
-          size: pageSize,
-          sort: ["name,ASC"]
-        }
-      },
-      client: apiClient
-    }),
-    staleTime: 1000 * 60 * 5
+  const { data: studentsData, isLoading, error } = useStudents({
+    ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
+    ...(debouncedFilters.gender !== "all" && { gender: mapGenderToBackend(debouncedFilters.gender) }),
+    ...(debouncedFilters.profession !== "all" && { profession: debouncedFilters.profession }),
+    ...(debouncedFilters.minAge && { minAge: debouncedFilters.minAge }),
+    ...(debouncedFilters.maxAge && { maxAge: debouncedFilters.maxAge }),
+    ...(!debouncedInvalidDateRange && debouncedFilters.startDate && { registrationPeriodMinDate: debouncedFilters.startDate }),
+    ...(!debouncedInvalidDateRange && debouncedFilters.endDate && { registrationPeriodMaxDate: debouncedFilters.endDate }),
+    includeInactive: debouncedFilters.includeInactive,
+    page: currentPage,
+    pageSize: pageSize
   })
 
   // Helper data extraction with proper typing
@@ -482,7 +472,7 @@ export default function StudentsPage() {
           }))
       } as StudentRequestDto;
 
-      await createStudent({ body: requestBody, client: apiClient })
+      await createStudent({ body: requestBody, client: customApiClient })
       toast({ title: "Aluno criado", description: "Aluno cadastrado com sucesso.", duration: 3000 })
       setIsCreateOpen(false)
     } catch (e) {
@@ -499,12 +489,12 @@ export default function StudentsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    await deleteStudent({ path: { id }, client: apiClient })
+    await deleteStudent({ path: { id }, client: customApiClient })
     toast({ title: "Aluno excluído", description: "O aluno foi marcado como inativo.", duration: 3000 })
   }
 
   const handleRestore = async (id: string) => {
-    await restoreStudent({ path: { id }, client: apiClient })
+    await restoreStudent({ path: { id }, client: customApiClient })
     toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
   }
 

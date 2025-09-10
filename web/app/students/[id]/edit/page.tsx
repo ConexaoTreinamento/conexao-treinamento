@@ -8,7 +8,7 @@ import StudentForm, { type StudentFormData } from "@/components/student-form"
 import { Button } from "@/components/ui/button"
 import {useQuery, useQueryClient} from "@tanstack/react-query"
 import { findByIdOptions } from "@/lib/api-client/@tanstack/react-query.gen"
-import { apiClient } from "@/lib/client"
+import { customApiClient } from "@/lib/custom-api-client"
 import { useToast } from "@/hooks/use-toast"
 import type {StudentResponseDto, StudentRequestDto, AnamnesisResponseDto} from "@/lib/api-client/types.gen"
 import {useUpdateStudent} from "@/lib/hooks/student-mutations";
@@ -31,7 +31,7 @@ export default function EditStudentPage() {
   const { data: studentData, isLoading: isStudentLoading } = useQuery({
     ...findByIdOptions({
       path: { id: id ?? "" },
-      client: apiClient
+      client: customApiClient
     }),
     enabled: Boolean(id)
   })
@@ -208,7 +208,7 @@ export default function EditStudentPage() {
           }))
       } as StudentRequestDto
 
-      await updateStudent({ path: { id }, body: requestBody, client: apiClient })
+      await updateStudent({ path: { id }, body: requestBody, client: customApiClient })
     } catch (e) {
       toast({ title: "Erro ao atualizar", description: "Não foi possível salvar as alterações.", duration: 4000 })
     }

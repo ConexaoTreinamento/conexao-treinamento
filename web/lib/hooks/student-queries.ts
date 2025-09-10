@@ -1,7 +1,13 @@
-import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { findAllOptions } from "@/lib/api-client/@tanstack/react-query.gen";
+import {useQuery, keepPreviousData, UseQueryOptions} from "@tanstack/react-query";
+import {findAllOptions, findByIdOptions, findByIdQueryKey} from "@/lib/api-client/@tanstack/react-query.gen";
 import type { Options } from "@/lib/api-client/client/types";
-import type { FindAllData } from "../api-client";
+import {customApiClient} from "@/lib/custom-api-client";
+import {FindAllData, FindByIdData, StudentResponseDto} from "@/lib/api-client";
+
+export const useStudent = (options: Options<FindByIdData>, queryOptions?: Omit<UseQueryOptions<StudentResponseDto, Error, StudentResponseDto, ReturnType<typeof findByIdQueryKey>>, 'queryKey' | 'queryFn'>) => useQuery({
+  ...findByIdOptions({...options, client: customApiClient}),
+  ...queryOptions,
+});
 
 /**
  * useStudents - encapsulates the students list query
@@ -51,7 +57,7 @@ export const useStudents = (params: {
   };
 
   return useQuery({
-    ...findAllOptions(options),
+    ...findAllOptions({...options, client: customApiClient}),
     staleTime: 1000 * 60 * 5,
     placeholderData: keepPreviousData,
   });

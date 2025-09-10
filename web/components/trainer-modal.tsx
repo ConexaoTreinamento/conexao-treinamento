@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { X } from "lucide-react"
-import { CreateTrainerDto, TrainerResponseDto } from "@/lib/api-client"
+import { CreateTrainerDto, TrainerResponseDto } from "@/lib/custom-api-client"
 
 interface TrainerFormData {
   name: string

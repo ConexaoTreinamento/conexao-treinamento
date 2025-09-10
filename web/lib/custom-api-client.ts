@@ -1,8 +1,7 @@
-import { createClient, createConfig } from './api-client/client'
-import type { ClientOptions } from './api-client/types.gen'
+import {ClientOptions, createClient, createConfig} from './api-client/client'
 
 // Create a custom client with query serializer for nested objects
-export const apiClient = createClient(createConfig<ClientOptions>({
+export const customApiClient = createClient(createConfig<ClientOptions>({
     baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
     querySerializer: (params: Record<string, unknown>) => {
         const searchParams = new URLSearchParams();
