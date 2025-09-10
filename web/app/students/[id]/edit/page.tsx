@@ -266,10 +266,7 @@ export default function EditStudentPage() {
 
       await updateStudent({ path: { id }, body: requestBody, client: apiClient })
     } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error(e)
       toast({ title: "Erro ao atualizar", description: "Não foi possível salvar as alterações.", duration: 4000 })
-    } finally {
     }
   }
 
