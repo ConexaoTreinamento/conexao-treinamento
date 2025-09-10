@@ -351,8 +351,7 @@ export default function StudentsPage() {
       },
       client: apiClient
     }),
-    staleTime: 1000 * 60 * 5,
-    placeholderData: keepPreviousData
+    staleTime: 1000 * 60 * 5
   })
 
   // Helper data extraction with proper typing
@@ -845,14 +844,16 @@ export default function StudentsPage() {
           {!isLoading && !error && (studentsData?.content || []).map((student: StudentResponseDto) => {
             const age = getStudentAge(student.birthDate || "")
             const fullName = getStudentFullName(student)
-            const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase()
+            const initials = fullName
+              .split(' ')
+              .filter(Boolean)
+              .map(n => n[0])
+              .join('')
+              .toUpperCase()
 
             // For now, use mock plan expiration since backend doesn't have this yet
             // In real implementation, this would come from the backend
-            const planExpirationDate = new Date()
-            planExpirationDate.setDate(planExpirationDate.getDate() + 30)
-
-            const expirationDate = new Date(student.registrationDate!)
+            const expirationDate = student.registrationDate ? new Date(student.registrationDate) : new Date()
             expirationDate.setFullYear(expirationDate.getFullYear() + 2)
             expirationDate.setMonth(expirationDate.getMonth() + 5)
             expirationDate.setDate(expirationDate.getDate() + 20)
