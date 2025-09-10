@@ -28,9 +28,7 @@ export default function EditStudentPage() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
 
-  const [isSaving, setIsSaving] = useState(false)
-
-  const { data: studentData, isLoading: isFetching } = useQuery({
+  const { data: studentData, isLoading: isStudentLoading } = useQuery({
     ...findByIdOptions({
       path: { id: id ?? "" },
       client: apiClient
@@ -54,7 +52,7 @@ export default function EditStudentPage() {
 
   const student: StudentResponseDto | undefined = (studentData as StudentResponseDto | undefined) ?? studentFromCache
 
-  const { mutateAsync: updateStudent } = useMutation({
+  const { mutateAsync: updateStudent, isPending: isEditPending } = useMutation({
     ...updateMutation(),
     onSuccess: async (...args) => {
       // Invalidate the students list
@@ -294,7 +292,7 @@ export default function EditStudentPage() {
           onSubmit={handleSubmit}
           onCancel={handleCancel}
           submitLabel="Salvar Alterações"
-          isLoading={isSaving || isFetching}
+          isLoading={isStudentLoading || isEditPending}
           mode="edit"
         />
       </div>
