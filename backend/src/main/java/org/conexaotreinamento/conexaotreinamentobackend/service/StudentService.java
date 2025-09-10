@@ -25,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -58,7 +59,7 @@ public class StudentService {
 
         // Save anamnesis if provided
         if (request.anamnesis() != null) {
-            var dto = request.anamnesis();
+            AnamnesisRequestDTO dto = request.anamnesis();
             Anamnesis anamnesis = new Anamnesis(savedStudent);
             createOrEditAnamnesis(dto, anamnesis);
 
@@ -184,8 +185,8 @@ public class StudentService {
 
         // Update or create anamnesis
         if (request.anamnesis() != null) {
-            var dto = request.anamnesis();
-            var existing = anamnesisRepository.findById(savedStudent.getId());
+            AnamnesisRequestDTO dto = request.anamnesis();
+            Optional<Anamnesis> existing = anamnesisRepository.findById(savedStudent.getId());
             // To avoid Hibernate StaleObjectStateException caused by merging a detached Anamnesis,
             // delete the existing row, flush the persistence context, then persist a fresh instance.
             if (existing.isPresent()) {
