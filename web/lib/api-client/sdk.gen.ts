@@ -20,6 +20,12 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 
 export const softDeleteTrainerUser = <ThrowOnError extends boolean = false>(options: Options<SoftDeleteTrainerUserData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).delete<SoftDeleteTrainerUserResponses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/trainers/{id}',
         ...options
     });
@@ -27,6 +33,12 @@ export const softDeleteTrainerUser = <ThrowOnError extends boolean = false>(opti
 
 export const findTrainerById = <ThrowOnError extends boolean = false>(options: Options<FindTrainerByIdData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<FindTrainerByIdResponses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/trainers/{id}',
         ...options
     });
@@ -34,6 +46,12 @@ export const findTrainerById = <ThrowOnError extends boolean = false>(options: O
 
 export const updateTrainerAndUser = <ThrowOnError extends boolean = false>(options: Options<UpdateTrainerAndUserData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).put<UpdateTrainerAndUserResponses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/trainers/{id}',
         ...options,
         headers: {
@@ -45,6 +63,12 @@ export const updateTrainerAndUser = <ThrowOnError extends boolean = false>(optio
 
 export const delete_ = <ThrowOnError extends boolean = false>(options: Options<DeleteData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).delete<DeleteResponses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/students/{id}',
         ...options
     });
@@ -52,6 +76,12 @@ export const delete_ = <ThrowOnError extends boolean = false>(options: Options<D
 
 export const findById = <ThrowOnError extends boolean = false>(options: Options<FindByIdData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<FindByIdResponses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/students/{id}',
         ...options
     });
@@ -59,6 +89,12 @@ export const findById = <ThrowOnError extends boolean = false>(options: Options<
 
 export const update = <ThrowOnError extends boolean = false>(options: Options<UpdateData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).put<UpdateResponses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/students/{id}',
         ...options,
         headers: {
@@ -70,6 +106,12 @@ export const update = <ThrowOnError extends boolean = false>(options: Options<Up
 
 export const delete1 = <ThrowOnError extends boolean = false>(options: Options<Delete1Data, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).delete<Delete1Responses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/exercises/{id}',
         ...options
     });
@@ -77,6 +119,12 @@ export const delete1 = <ThrowOnError extends boolean = false>(options: Options<D
 
 export const findById1 = <ThrowOnError extends boolean = false>(options: Options<FindById1Data, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<FindById1Responses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/exercises/{id}',
         ...options
     });
@@ -84,6 +132,12 @@ export const findById1 = <ThrowOnError extends boolean = false>(options: Options
 
 export const patch = <ThrowOnError extends boolean = false>(options: Options<PatchData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).patch<PatchResponses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/exercises/{id}',
         ...options,
         headers: {
@@ -95,6 +149,12 @@ export const patch = <ThrowOnError extends boolean = false>(options: Options<Pat
 
 export const update1 = <ThrowOnError extends boolean = false>(options: Options<Update1Data, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).put<Update1Responses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/exercises/{id}',
         ...options,
         headers: {
@@ -106,6 +166,12 @@ export const update1 = <ThrowOnError extends boolean = false>(options: Options<U
 
 export const delete2 = <ThrowOnError extends boolean = false>(options: Options<Delete2Data, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).delete<Delete2Responses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/administrators/{id}',
         ...options
     });
@@ -113,6 +179,12 @@ export const delete2 = <ThrowOnError extends boolean = false>(options: Options<D
 
 export const findById2 = <ThrowOnError extends boolean = false>(options: Options<FindById2Data, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<FindById2Responses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/administrators/{id}',
         ...options
     });
@@ -120,6 +192,12 @@ export const findById2 = <ThrowOnError extends boolean = false>(options: Options
 
 export const patch1 = <ThrowOnError extends boolean = false>(options: Options<Patch1Data, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).patch<Patch1Responses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/administrators/{id}',
         ...options,
         headers: {
@@ -131,6 +209,12 @@ export const patch1 = <ThrowOnError extends boolean = false>(options: Options<Pa
 
 export const update2 = <ThrowOnError extends boolean = false>(options: Options<Update2Data, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).put<Update2Responses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/administrators/{id}',
         ...options,
         headers: {
@@ -142,6 +226,12 @@ export const update2 = <ThrowOnError extends boolean = false>(options: Options<U
 
 export const getAllUsersSimple = <ThrowOnError extends boolean = false>(options: Options<GetAllUsersSimpleData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<GetAllUsersSimpleResponses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/users',
         ...options
     });
@@ -149,6 +239,12 @@ export const getAllUsersSimple = <ThrowOnError extends boolean = false>(options:
 
 export const createUser = <ThrowOnError extends boolean = false>(options: Options<CreateUserData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).post<CreateUserResponses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/users',
         ...options,
         headers: {
@@ -160,6 +256,12 @@ export const createUser = <ThrowOnError extends boolean = false>(options: Option
 
 export const findAllTrainers = <ThrowOnError extends boolean = false>(options?: Options<FindAllTrainersData, ThrowOnError>) => {
     return (options?.client ?? _heyApiClient).get<FindAllTrainersResponses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/trainers',
         ...options
     });
@@ -167,6 +269,12 @@ export const findAllTrainers = <ThrowOnError extends boolean = false>(options?: 
 
 export const createTrainerAndUser = <ThrowOnError extends boolean = false>(options: Options<CreateTrainerAndUserData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).post<CreateTrainerAndUserResponses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/trainers',
         ...options,
         headers: {
@@ -178,6 +286,12 @@ export const createTrainerAndUser = <ThrowOnError extends boolean = false>(optio
 
 export const findAll = <ThrowOnError extends boolean = false>(options: Options<FindAllData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<FindAllResponses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/students',
         ...options
     });
@@ -185,6 +299,12 @@ export const findAll = <ThrowOnError extends boolean = false>(options: Options<F
 
 export const create = <ThrowOnError extends boolean = false>(options: Options<CreateData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).post<CreateResponses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/students',
         ...options,
         headers: {
@@ -196,6 +316,12 @@ export const create = <ThrowOnError extends boolean = false>(options: Options<Cr
 
 export const findAll1 = <ThrowOnError extends boolean = false>(options: Options<FindAll1Data, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<FindAll1Responses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/exercises',
         ...options
     });
@@ -203,6 +329,12 @@ export const findAll1 = <ThrowOnError extends boolean = false>(options: Options<
 
 export const create1 = <ThrowOnError extends boolean = false>(options: Options<Create1Data, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).post<Create1Responses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/exercises',
         ...options,
         headers: {
@@ -214,6 +346,12 @@ export const create1 = <ThrowOnError extends boolean = false>(options: Options<C
 
 export const logout = <ThrowOnError extends boolean = false>(options?: Options<LogoutData, ThrowOnError>) => {
     return (options?.client ?? _heyApiClient).post<LogoutResponses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/auth/logout',
         ...options
     });
@@ -221,6 +359,12 @@ export const logout = <ThrowOnError extends boolean = false>(options?: Options<L
 
 export const login = <ThrowOnError extends boolean = false>(options: Options<LoginData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).post<LoginResponses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/auth/login',
         ...options,
         headers: {
@@ -232,6 +376,12 @@ export const login = <ThrowOnError extends boolean = false>(options: Options<Log
 
 export const findAll2 = <ThrowOnError extends boolean = false>(options: Options<FindAll2Data, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).get<FindAll2Responses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/administrators',
         ...options
     });
@@ -239,6 +389,12 @@ export const findAll2 = <ThrowOnError extends boolean = false>(options: Options<
 
 export const create2 = <ThrowOnError extends boolean = false>(options: Options<Create2Data, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).post<Create2Responses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/administrators',
         ...options,
         headers: {
@@ -250,6 +406,12 @@ export const create2 = <ThrowOnError extends boolean = false>(options: Options<C
 
 export const patch2 = <ThrowOnError extends boolean = false>(options: Options<Patch2Data, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).patch<Patch2Responses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/users/{id}',
         ...options,
         headers: {
@@ -261,6 +423,12 @@ export const patch2 = <ThrowOnError extends boolean = false>(options: Options<Pa
 
 export const restore = <ThrowOnError extends boolean = false>(options: Options<RestoreData, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).patch<RestoreResponses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/students/{id}/restore',
         ...options
     });
@@ -268,6 +436,12 @@ export const restore = <ThrowOnError extends boolean = false>(options: Options<R
 
 export const restore1 = <ThrowOnError extends boolean = false>(options: Options<Restore1Data, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).patch<Restore1Responses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/exercises/{id}/restore',
         ...options
     });
@@ -275,6 +449,12 @@ export const restore1 = <ThrowOnError extends boolean = false>(options: Options<
 
 export const restore2 = <ThrowOnError extends boolean = false>(options: Options<Restore2Data, ThrowOnError>) => {
     return (options.client ?? _heyApiClient).patch<Restore2Responses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
         url: '/administrators/{id}/restore',
         ...options
     });

@@ -1,5 +1,4 @@
-import { createClient, createConfig } from './api-client/client'
-import type { ClientOptions } from './api-client/types.gen'
+import {type ClientOptions, createClient, createConfig} from './api-client/client'
 
 // Create a custom client with query serializer for nested objects
 export const apiClient = createClient(createConfig<ClientOptions>({

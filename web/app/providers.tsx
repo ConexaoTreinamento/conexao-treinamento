@@ -1,19 +1,11 @@
 "use client"
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { useState } from "react"
+import { QueryClientProvider } from "@tanstack/react-query"
+import { queryClient } from "@/lib/query-client"
 import { ThemeProvider } from "next-themes"
 import { Toaster as ShadcnToaster } from "@/components/ui/toaster"
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 1000 * 60 * 5, // 5 minutes
-        retry: 1,
-      },
-    },
-  }))
 
   return (
     <QueryClientProvider client={queryClient}>

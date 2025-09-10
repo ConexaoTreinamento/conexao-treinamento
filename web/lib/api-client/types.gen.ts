@@ -28,7 +28,7 @@ export type AnamnesisRequestDto = {
     medication?: string;
     isDoctorAwareOfPhysicalActivity?: boolean;
     favoritePhysicalActivity?: string;
-    hasInsomnia?: 'YES' | 'NO' | 'SOMETIMES';
+    hasInsomnia?: 'yes' | 'no' | 'sometimes';
     dietOrientedBy?: string;
     cardiacProblems?: string;
     hasHypertension?: boolean;
@@ -46,7 +46,7 @@ export type AnamnesisRequestDto = {
 };
 
 export type PhysicalImpairmentRequestDto = {
-    type: 'VISUAL' | 'AUDITORY' | 'MOTOR' | 'INTELLECTUAL' | 'OTHER';
+    type: 'visual' | 'auditory' | 'motor' | 'intellectual' | 'other';
     name: string;
     observations?: string;
 };
@@ -77,7 +77,7 @@ export type AnamnesisResponseDto = {
     medication?: string;
     isDoctorAwareOfPhysicalActivity?: boolean;
     favoritePhysicalActivity?: string;
-    hasInsomnia?: 'YES' | 'NO' | 'SOMETIMES';
+    hasInsomnia?: 'yes' | 'no' | 'sometimes';
     dietOrientedBy?: string;
     cardiacProblems?: string;
     hasHypertension?: boolean;
@@ -96,7 +96,7 @@ export type AnamnesisResponseDto = {
 
 export type PhysicalImpairmentResponseDto = {
     id?: string;
-    type?: 'VISUAL' | 'AUDITORY' | 'MOTOR' | 'INTELLECTUAL' | 'OTHER';
+    type?: 'visual' | 'auditory' | 'motor' | 'intellectual' | 'other';
     name?: string;
     observations?: string;
 };

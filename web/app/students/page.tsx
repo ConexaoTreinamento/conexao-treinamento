@@ -1,39 +1,40 @@
 "use client"
 
-import React, {type MouseEventHandler} from "react"
-import { useState } from "react"
-import { keepPreviousData, useQuery } from "@tanstack/react-query"
-import { findAllOptions } from "@/lib/api-client/@tanstack/react-query.gen"
-import { apiClient } from "@/lib/client"
-import type { StudentResponseDto } from "@/lib/api-client/types.gen"
-import { UnifiedStatusBadge} from "@/lib/expiring-plans"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import React, {type MouseEventHandler, useState} from "react"
+import type {
+    AnamnesisResponseDto,
+    StudentRequestDto,
+    StudentResponseDto
+} from "@/lib/api-client/types.gen"
+import {UnifiedStatusBadge} from "@/lib/expiring-plans"
+import {Card, CardContent} from "@/components/ui/card"
+import {Button} from "@/components/ui/button"
+import {Input} from "@/components/ui/input"
+import {Badge} from "@/components/ui/badge"
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
+import {Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger} from "@/components/ui/sheet"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog"
-import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X, Trash2, RotateCcw } from "lucide-react"
-import { useRouter, useSearchParams } from "next/navigation"
+import {Activity, Calendar, Filter, Mail, Phone, Plus, RotateCcw, Search, Trash2, X} from "lucide-react"
+import {useRouter, useSearchParams} from "next/navigation"
 import Layout from "@/components/layout"
-import StudentForm from "@/components/student-form"
+import StudentForm, {type StudentFormData} from "@/components/student-form"
 import PageSelector from "@/components/ui/page-selector"
 import useDebounce from "@/hooks/use-debounce"
-import { useForm } from "react-hook-form"
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form"
-import { Checkbox } from "@/components/ui/checkbox"
+import {useForm} from "react-hook-form"
+import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form"
+import {Checkbox} from "@/components/ui/checkbox"
 import ConfirmDeleteButton from "@/components/confirm-delete-button"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { deleteMutation, restoreMutation } from "@/lib/api-client/@tanstack/react-query.gen"
-import { useToast } from "@/hooks/use-toast"
+import {useCreateStudent, useDeleteStudent, useRestoreStudent} from "@/lib/hooks/student-mutations"
+import {useToast} from "@/hooks/use-toast"
+import {useStudents} from "@/lib/hooks/student-queries";
+import {apiClient} from "@/lib/client";
 
 // Type-safe filter interface
 interface StudentFilters {
@@ -271,10 +272,10 @@ export default function StudentsPage() {
 
   const router = useRouter()
   const searchParams = useSearchParams()
-  const queryClient = useQueryClient()
   const { toast } = useToast()
-  const { mutateAsync: deleteStudent, isPending: isDeleting } = useMutation(deleteMutation())
-  const { mutateAsync: restoreStudent, isPending: isRestoring } = useMutation(restoreMutation())
+  const { mutateAsync: deleteStudent, isPending: isDeleting } = useDeleteStudent()
+  const { mutateAsync: restoreStudent, isPending: isRestoring } = useRestoreStudent()
+  const { mutateAsync: createStudent } = useCreateStudent()
   
   // Get current page from URL query params or default to 0
   // This allows users to share URLs with specific page numbers and maintains page state on refresh
@@ -329,27 +330,17 @@ export default function StudentsPage() {
   }, [debouncedSearchTerm, debouncedFilters])
 
   // Fetch students using React Query with debounced values
-  const { data: studentsData, isLoading, error } = useQuery({
-    ...findAllOptions({
-      query: {
-        ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
-        ...(debouncedFilters.gender !== "all" && { gender: mapGenderToBackend(debouncedFilters.gender) }),
-        ...(debouncedFilters.profession !== "all" && { profession: debouncedFilters.profession }),
-        ...(debouncedFilters.minAge && { minAge: debouncedFilters.minAge }),
-        ...(debouncedFilters.maxAge && { maxAge: debouncedFilters.maxAge }),
-        ...(!debouncedInvalidDateRange && debouncedFilters.startDate && { registrationPeriodMinDate: debouncedFilters.startDate }),
-        ...(!debouncedInvalidDateRange && debouncedFilters.endDate && { registrationPeriodMaxDate: debouncedFilters.endDate }),
-        includeInactive: debouncedFilters.includeInactive,
-        pageable: {
-          page: currentPage,
-          size: pageSize,
-          sort: ["name,ASC"]
-        }
-      },
-      client: apiClient
-    }),
-    staleTime: 1000 * 60 * 5,
-    placeholderData: keepPreviousData
+  const { data: studentsData, isLoading, error } = useStudents({
+    ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
+    ...(debouncedFilters.gender !== "all" && { gender: mapGenderToBackend(debouncedFilters.gender) }),
+    ...(debouncedFilters.profession !== "all" && { profession: debouncedFilters.profession }),
+    ...(debouncedFilters.minAge && { minAge: debouncedFilters.minAge }),
+    ...(debouncedFilters.maxAge && { maxAge: debouncedFilters.maxAge }),
+    ...(!debouncedInvalidDateRange && debouncedFilters.startDate && { registrationPeriodMinDate: debouncedFilters.startDate }),
+    ...(!debouncedInvalidDateRange && debouncedFilters.endDate && { registrationPeriodMaxDate: debouncedFilters.endDate }),
+    includeInactive: debouncedFilters.includeInactive,
+    page: currentPage,
+    pageSize: pageSize
   })
 
   // Helper data extraction with proper typing
@@ -396,15 +387,101 @@ export default function StudentsPage() {
   // Get unique professions from API data for filter dropdown
   const uniqueProfessions = (studentsData?.content || []).map(s => s.profession).filter((p, i, arr) => p && arr.indexOf(p) === i)
 
-  const handleCreateStudent = async () => {
+  const handleCreateStudent = async (formData: StudentFormData) => {
     setIsCreating(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    try {
+      const anamnesisFields: (keyof AnamnesisResponseDto)[] = [
+        "medication",
+        "isDoctorAwareOfPhysicalActivity",
+        "favoritePhysicalActivity",
+        "hasInsomnia",
+        "dietOrientedBy",
+        "cardiacProblems",
+        "hasHypertension",
+        "chronicDiseases",
+        "difficultiesInPhysicalActivities",
+        "medicalOrientationsToAvoidPhysicalActivity",
+        "surgeriesInTheLast12Months",
+        "respiratoryProblems",
+        "jointMuscularBackPain",
+        "spinalDiscProblems",
+        "diabetes",
+        "smokingDuration",
+        "alteredCholesterol",
+        "osteoporosisLocation"
+      ];
+      const hasAnamnesis = anamnesisFields.some((f: string) => {
+        const v = (formData as unknown as Record<string, unknown>)[f];
+        if (v === undefined || v === null) return false;
+        if (typeof v === "string") return v.trim() !== "";
+        return true;
+      });
 
-    setIsCreating(false)
-    setIsCreateOpen(false)
-    // In real app, would create student and refresh list
+      const requestBody = {
+        email: formData.email,
+        name: formData.name,
+        surname: formData.surname,
+        gender: formData.sex || "O",
+        birthDate: formData.birthDate,
+        phone: formData.phone,
+        profession: formData.profession,
+        street: formData.street,
+        number: formData.number,
+        complement: formData.complement,
+        neighborhood: formData.neighborhood,
+        cep: formData.cep,
+        emergencyContactName: formData.emergencyName,
+        emergencyContactPhone: formData.emergencyPhone,
+        emergencyContactRelationship: formData.emergencyRelationship,
+        objectives: formData.objectives,
+        observations: formData.impairmentObservations,
+        anamnesis: hasAnamnesis ? {
+          medication: formData.medication,
+          isDoctorAwareOfPhysicalActivity: formData.isDoctorAwareOfPhysicalActivity,
+          favoritePhysicalActivity: formData.favoritePhysicalActivity,
+          hasInsomnia: formData.hasInsomnia,
+          dietOrientedBy: formData.dietOrientedBy,
+          cardiacProblems: formData.cardiacProblems,
+          hasHypertension: formData.hasHypertension,
+          chronicDiseases: formData.chronicDiseases,
+          difficultiesInPhysicalActivities: formData.difficultiesInPhysicalActivities,
+          medicalOrientationsToAvoidPhysicalActivity: formData.medicalOrientationsToAvoidPhysicalActivity,
+          surgeriesInTheLast12Months: formData.surgeriesInTheLast12Months,
+          respiratoryProblems: formData.respiratoryProblems,
+          jointMuscularBackPain: formData.jointMuscularBackPain,
+          spinalDiscProblems: formData.spinalDiscProblems,
+          diabetes: formData.diabetes,
+          smokingDuration: formData.smokingDuration,
+          alteredCholesterol: formData.alteredCholesterol,
+          osteoporosisLocation: formData.osteoporosisLocation
+        } : undefined,
+        physicalImpairments: formData.physicalImpairments
+          ?.filter((p): p is NonNullable<StudentFormData['physicalImpairments']>[number] => {
+            if (!p) {
+              return false
+            }
+              return String((p.type ?? "")).trim().length > 0 ||
+                String((p.name ?? "")).trim().length > 0 ||
+                String((p.observations ?? "")).trim().length > 0
+          })
+          .map((p) => ({
+            type: p.type,
+            name: p.name || "",
+            observations: p.observations
+          }))
+      } as StudentRequestDto;
+
+      await createStudent({ body: requestBody, client: apiClient })
+      toast({ title: "Aluno criado", description: "Aluno cadastrado com sucesso.", duration: 3000 })
+      setIsCreateOpen(false)
+    } catch (e) {
+      toast({ title: "Erro ao criar aluno", description: "Não foi possível criar o aluno.", duration: 4000 })
+      // eslint-disable-next-line no-console
+      console.error(e)
+    } finally {
+      setIsCreating(false)
+    }
   }
 
   const handleCancelCreate = () => {
@@ -413,18 +490,11 @@ export default function StudentsPage() {
 
   const handleDelete = async (id: string) => {
     await deleteStudent({ path: { id }, client: apiClient })
-    // Invalidate any students list queries
-    await queryClient.invalidateQueries({
-      predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAll'
-    })
     toast({ title: "Aluno excluído", description: "O aluno foi marcado como inativo.", duration: 3000 })
   }
 
   const handleRestore = async (id: string) => {
     await restoreStudent({ path: { id }, client: apiClient })
-    await queryClient.invalidateQueries({
-      predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAll'
-    })
     toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
   }
 
@@ -505,7 +575,7 @@ export default function StudentsPage() {
                             <p className="text-xs text-muted-foreground">Inclui alunos marcados como inativos no resultado.</p>
                           </div>
                           <FormControl>
-                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                            <Checkbox checked={Boolean(field.value)} onCheckedChange={(v) => field.onChange(Boolean(v))} />
                           </FormControl>
                         </FormItem>
                       )}
@@ -742,14 +812,16 @@ export default function StudentsPage() {
           {!isLoading && !error && (studentsData?.content || []).map((student: StudentResponseDto) => {
             const age = getStudentAge(student.birthDate || "")
             const fullName = getStudentFullName(student)
-            const initials = fullName.split(' ').map(n => n[0]).join('').toUpperCase()
+            const initials = fullName
+              .split(' ')
+              .filter(Boolean)
+              .map(n => n[0])
+              .join('')
+              .toUpperCase()
 
             // For now, use mock plan expiration since backend doesn't have this yet
             // In real implementation, this would come from the backend
-            const planExpirationDate = new Date()
-            planExpirationDate.setDate(planExpirationDate.getDate() + 30)
-
-            const expirationDate = new Date(student.registrationDate!)
+            const expirationDate = student.registrationDate ? new Date(student.registrationDate) : new Date()
             expirationDate.setFullYear(expirationDate.getFullYear() + 2)
             expirationDate.setMonth(expirationDate.getMonth() + 5)
             expirationDate.setDate(expirationDate.getDate() + 20)
