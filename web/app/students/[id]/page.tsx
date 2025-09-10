@@ -10,8 +10,7 @@ import { useState, useEffect } from "react"
 import Layout from "@/components/layout"
 import { getStudentPlanExpirationDate, UnifiedStatusBadge } from "@/lib/expiring-plans"
 import { getStudentProfileById, getStudentFullName, STUDENT_PROFILES } from "@/lib/students-data"
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { deleteMutation, restoreMutation } from "@/lib/api-client/@tanstack/react-query.gen";
+import { useDeleteStudent, useRestoreStudent } from "@/lib/hooks/student-mutations";
 import { apiClient } from "@/lib/client";
 import ConfirmDeleteButton from "@/components/confirm-delete-button";
 import { useToast } from "@/hooks/use-toast";
@@ -143,27 +142,18 @@ export default function StudentProfilePage() {
   const params = useParams()
   const [studentData, setStudentData] = useState<StudentProfile | null>(null)
   const [loading, setLoading] = useState(true)
-  const queryClient = useQueryClient()
   const { toast } = useToast()
-
-  const { mutateAsync: deleteStudent, isPending: isDeleting } = useMutation(deleteMutation())
-  const { mutateAsync: restoreStudent, isPending: isRestoring } = useMutation(restoreMutation())
+  const { mutateAsync: deleteStudent, isPending: isDeleting } = useDeleteStudent()
+  const { mutateAsync: restoreStudent, isPending: isRestoring } = useRestoreStudent()
 
   const handleDelete = async () => {
     await deleteStudent({ path: { id: String(params.id) }, client: apiClient })
-    // Invalidate any students list queries
-    await queryClient.invalidateQueries({
-      predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey[0])?._id === 'findAll'
-    })
     toast({ title: "Aluno excluído", description: "O aluno foi marcado como inativo.", duration: 3000 })
     router.back()
   }
 
   const handleRestore = async () => {
     await restoreStudent({ path: { id: String(params.id) }, client: apiClient })
-    await queryClient.invalidateQueries({
-      predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey[0])?._id === 'findAll'
-    })
     toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
   }
 

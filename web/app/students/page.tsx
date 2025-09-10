@@ -32,8 +32,8 @@ import { useForm } from "react-hook-form"
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form"
 import { Checkbox } from "@/components/ui/checkbox"
 import ConfirmDeleteButton from "@/components/confirm-delete-button"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { deleteMutation, restoreMutation, createMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { useQueryClient } from "@tanstack/react-query"
+import { useCreateStudent, useDeleteStudent, useRestoreStudent } from "@/lib/hooks/student-mutations"
 import { useToast } from "@/hooks/use-toast"
 
 // Type-safe filter interface
@@ -274,9 +274,9 @@ export default function StudentsPage() {
   const searchParams = useSearchParams()
   const queryClient = useQueryClient()
   const { toast } = useToast()
-  const { mutateAsync: deleteStudent, isPending: isDeleting } = useMutation(deleteMutation())
-  const { mutateAsync: restoreStudent, isPending: isRestoring } = useMutation(restoreMutation())
-  const { mutateAsync: createStudent } = useMutation(createMutation())
+  const { mutateAsync: deleteStudent, isPending: isDeleting } = useDeleteStudent()
+  const { mutateAsync: restoreStudent, isPending: isRestoring } = useRestoreStudent()
+  const { mutateAsync: createStudent } = useCreateStudent()
   
   // Get current page from URL query params or default to 0
   // This allows users to share URLs with specific page numbers and maintains page state on refresh
@@ -507,9 +507,6 @@ export default function StudentsPage() {
       } as StudentRequestDto;
 
       await createStudent({ body: requestBody, client: apiClient })
-      await queryClient.invalidateQueries({
-        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAll'
-      })
       toast({ title: "Aluno criado", description: "Aluno cadastrado com sucesso.", duration: 3000 })
       setIsCreateOpen(false)
     } catch (e) {
@@ -527,18 +524,11 @@ export default function StudentsPage() {
 
   const handleDelete = async (id: string) => {
     await deleteStudent({ path: { id }, client: apiClient })
-    // Invalidate any students list queries
-    await queryClient.invalidateQueries({
-      predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAll'
-    })
     toast({ title: "Aluno excluído", description: "O aluno foi marcado como inativo.", duration: 3000 })
   }
 
   const handleRestore = async (id: string) => {
     await restoreStudent({ path: { id }, client: apiClient })
-    await queryClient.invalidateQueries({
-      predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAll'
-    })
     toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
   }
 
