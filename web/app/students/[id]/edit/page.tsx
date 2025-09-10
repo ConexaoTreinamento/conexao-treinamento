@@ -280,6 +280,7 @@ export default function EditStudentPage() {
         </div>
 
         <StudentForm
+          key={student ? `student-${student.id ?? id}` : `student-${initialData ? JSON.stringify(initialData) : "none"}`}
           initialData={initialData}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
