@@ -42,6 +42,6 @@ INSERT INTO PHYSICAL_IMPAIRMENTS (
   NAME,
   OBSERVATIONS
 ) VALUES
-('a1b2c3d4-0000-4000-8000-000000000001', '2b7e8c9e-2d4b-5e2a-8f7e-2d4b5e2a8f7e', 'sensory', 'Deficiência auditiva', 'Utiliza aparelho auditivo'),
+('a1b2c3d4-0000-4000-8000-000000000001', '2b7e8c9e-2d4b-5e2a-8f7e-2d4b5e2a8f7e', 'auditory', 'Deficiência auditiva', 'Utiliza aparelho auditivo'),
 ('a1b2c3d4-0000-4000-8000-000000000002', '4c9f8c9e-3e4b-6f2a-7f6e-3e3b6f2a7f6e', 'motor', 'Problema de mobilidade lombar', 'Flexão anterior limitada'),
 ('a1b2c3d4-0000-4000-8000-000000000003', '3c9f8c9e-3e4b-6f2a-7f6e-3e4b6f2a7f6e', 'other', 'Condição cardíaca', 'Evitar intervalos de alta intensidade');
