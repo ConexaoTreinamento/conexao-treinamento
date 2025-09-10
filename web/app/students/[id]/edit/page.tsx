@@ -1,7 +1,7 @@
 "use client"
 
-import React, { useState, useMemo } from "react"
-import { ArrowLeft, Save } from "lucide-react"
+import React, { useMemo } from "react"
+import { ArrowLeft } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
 import StudentForm, { type StudentFormData } from "@/components/student-form"
