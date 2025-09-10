@@ -309,7 +309,7 @@ export default function StudentProfilePage() {
                 <div className="flex flex-wrap justify-center gap-2">
                   <UnifiedStatusBadge expirationDate={formatDate("2026-05-15")} />
                   <Badge variant="outline">Plano {studentMockData.plan ?? "Plano Anual"}</Badge>
-                  //Mock value, switch to real one when implemented
+                  {/*Mock value, switch to real one when implemented*/}
                 </div>
               </div>
             </CardHeader>
