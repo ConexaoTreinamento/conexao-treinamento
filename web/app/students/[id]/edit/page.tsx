@@ -74,10 +74,6 @@ export default function EditStudentPage() {
     if (!v) return undefined
     const normalized = String(v).trim().toLowerCase()
 
-    // Accept multiple possible representations from the API:
-    // - English enums: "YES", "NO", "SOMETIMES" (any case)
-    // - English words: "yes", "no", "sometimes"
-    // - Portuguese values if present: "sim", "nao", "as-vezes"
     if (normalized === "yes" || normalized === "sim") return "sim"
     if (normalized === "no" || normalized === "nao") return "nao"
     if (normalized === "sometimes" || normalized === "sometime" || normalized === "as-vezes") return "as-vezes"

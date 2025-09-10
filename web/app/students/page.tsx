@@ -1,40 +1,42 @@
 "use client"
 
-import React, {type MouseEventHandler} from "react"
-import { useState } from "react"
-import { keepPreviousData, useQuery } from "@tanstack/react-query"
-import { findAllOptions } from "@/lib/api-client/@tanstack/react-query.gen"
-import { apiClient } from "@/lib/client"
-import type { StudentResponseDto } from "@/lib/api-client/types.gen"
-import { UnifiedStatusBadge} from "@/lib/expiring-plans"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import React, {type MouseEventHandler, useState} from "react"
+import {keepPreviousData, useQuery} from "@tanstack/react-query"
+import {findAllOptions} from "@/lib/api-client/@tanstack/react-query.gen"
+import {apiClient} from "@/lib/client"
+import type {
+    AnamnesisResponseDto,
+    PhysicalImpairmentResponseDto,
+    StudentRequestDto,
+    StudentResponseDto
+} from "@/lib/api-client/types.gen"
+import {UnifiedStatusBadge} from "@/lib/expiring-plans"
+import {Card, CardContent} from "@/components/ui/card"
+import {Button} from "@/components/ui/button"
+import {Input} from "@/components/ui/input"
+import {Badge} from "@/components/ui/badge"
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
+import {Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger} from "@/components/ui/sheet"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog"
-import { Search, Filter, Plus, Phone, Mail, Calendar, Activity, X, Trash2, RotateCcw } from "lucide-react"
-import { useRouter, useSearchParams } from "next/navigation"
+import {Activity, Calendar, Filter, Mail, Phone, Plus, RotateCcw, Search, Trash2, X} from "lucide-react"
+import {useRouter, useSearchParams} from "next/navigation"
 import Layout from "@/components/layout"
-import StudentForm, { type StudentFormData } from "@/components/student-form"
-import type { StudentRequestDto } from "@/lib/api-client/types.gen"
+import StudentForm, {type StudentFormData} from "@/components/student-form"
 import PageSelector from "@/components/ui/page-selector"
 import useDebounce from "@/hooks/use-debounce"
-import { useForm } from "react-hook-form"
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form"
-import { Checkbox } from "@/components/ui/checkbox"
+import {useForm} from "react-hook-form"
+import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form"
+import {Checkbox} from "@/components/ui/checkbox"
 import ConfirmDeleteButton from "@/components/confirm-delete-button"
-import { useQueryClient } from "@tanstack/react-query"
-import { useCreateStudent, useDeleteStudent, useRestoreStudent } from "@/lib/hooks/student-mutations"
-import { useToast } from "@/hooks/use-toast"
+import {useCreateStudent, useDeleteStudent, useRestoreStudent} from "@/lib/hooks/student-mutations"
+import {useToast} from "@/hooks/use-toast"
 
 // Type-safe filter interface
 interface StudentFilters {
@@ -272,7 +274,6 @@ export default function StudentsPage() {
 
   const router = useRouter()
   const searchParams = useSearchParams()
-  const queryClient = useQueryClient()
   const { toast } = useToast()
   const { mutateAsync: deleteStudent, isPending: isDeleting } = useDeleteStudent()
   const { mutateAsync: restoreStudent, isPending: isRestoring } = useRestoreStudent()
@@ -401,7 +402,7 @@ export default function StudentsPage() {
   const handleCreateStudent = async (formData: StudentFormData) => {
     setIsCreating(true)
 
-    const mapInsomnia = (v?: string | null): "yes" | "no" | "sometimes" | undefined => {
+    const mapInsomnia = (v?: string | null): AnamnesisResponseDto["hasInsomnia"] | undefined => {
       if (v === undefined || v === null) return undefined
       if (v === "sim") return "yes"
       if (v === "nao") return "no"
@@ -409,7 +410,7 @@ export default function StudentsPage() {
       return undefined
     }
 
-    const mapImpairmentType = (t?: string | null): "visual" | "auditory" | "motor" | "intellectual" | "other" => {
+    const mapImpairmentType = (t?: string | null): PhysicalImpairmentResponseDto["type"] => {
       if (!t) return "other"
       switch (t) {
         case "motor": return "motor"
@@ -418,12 +419,12 @@ export default function StudentsPage() {
         case "linguistico": return "intellectual"
         case "emocional": return "other"
         case "outro": return "other"
-        default: return String(t).toLowerCase() as "visual" | "auditory" | "motor" | "intellectual" | "other"
+        default: return String(t).toLowerCase() as PhysicalImpairmentResponseDto["type"]
       }
     }
 
     try {
-      const anamnesisFields = [
+      const anamnesisFields: (keyof AnamnesisResponseDto)[] = [
         "medication",
         "isDoctorAwareOfPhysicalActivity",
         "favoritePhysicalActivity",
@@ -493,11 +494,9 @@ export default function StudentsPage() {
             if (!p) {
               return false
             }
-            const hasContent =
-              String((p.type ?? "")).trim().length > 0 ||
-              String((p.name ?? "")).trim().length > 0 ||
-              String((p.observations ?? "")).trim().length > 0
-            return hasContent
+              return String((p.type ?? "")).trim().length > 0 ||
+                String((p.name ?? "")).trim().length > 0 ||
+                String((p.observations ?? "")).trim().length > 0
           })
           .map((p) => ({
             type: mapImpairmentType(p.type),

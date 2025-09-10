@@ -7,45 +7,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, Edit, CalendarDays, Trash2, RotateCcw } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
-import { getStudentPlanExpirationDate, UnifiedStatusBadge } from "@/lib/expiring-plans"
-import { getStudentProfileById, getStudentFullName, STUDENT_PROFILES } from "@/lib/students-data"
+import { UnifiedStatusBadge } from "@/lib/expiring-plans"
+import { STUDENT_PROFILES } from "@/lib/students-data"
 import { useDeleteStudent, useRestoreStudent } from "@/lib/hooks/student-mutations";
 import { apiClient } from "@/lib/client";
 import ConfirmDeleteButton from "@/components/confirm-delete-button";
 import { useToast } from "@/hooks/use-toast";
-import {StudentProfile} from "@/lib/students-data";
 import {StudentResponseDto} from "@/lib/api-client";
 import {useMemo} from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { findByIdOptions } from "@/lib/api-client/@tanstack/react-query.gen"
 
 // Type definitions
-interface MedicalData {
-  medication: string[]
-  isDoctorAwareOfPhysicalActivity: boolean
-  favoritePhysicalActivity: string
-  hasInsomnia: string
-  isOnADiet: { orientedBy: string } | null
-  cardiacProblems: string[]
-  hasHypertension: boolean
-  chronicDiseases: string[]
-  difficultiesInPhysicalActivities: string[]
-  medicalOrientationsToAvoidPhysicalActivity: string[]
-  surgeriesInTheLast12Months: string[]
-  respiratoryProblems: string[]
-  jointMuscularBackPain: string[]
-  spinalDiscProblems: string[]
-  diabetes: string
-  smokingDuration: string
-  alteredCholesterol: boolean
-  osteoporosisLocation: string
-  physicalImpairments: Array<{
-    type: string
-    name: string
-    observations: string
-  }>
-}
-
 interface Evaluation {
   id: string
   date: string
@@ -80,25 +53,12 @@ interface Evaluation {
   }
 }
 
-interface ClassItem {
-  name: string
-  date: string
-  instructor: string
-  status: string
-}
-
 interface ScheduleClass {
   day: string
   time: string
   class: string
   instructor: string
 }
-
-interface ClassSchedule {
-  daysPerWeek: number
-  selectedClasses: ScheduleClass[]
-}
-
 interface Exercise {
   id: string
   name: string
@@ -108,18 +68,9 @@ interface Exercise {
   duration?: string
   notes?: string
 }
-
-interface ClassExercise {
-  classDate: string
-  className: string
-  instructor: string
-  exercises: Exercise[]
-}
-
 export default function StudentProfilePage() {
   const router = useRouter()
   const params = useParams()
-  const queryClient = useQueryClient()
   const { toast } = useToast()
   const studentMockData = STUDENT_PROFILES[0] //used for fields that don't exist on studentResponseDTO
 
@@ -239,21 +190,7 @@ export default function StudentProfilePage() {
       </Layout>
     )
   }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Ativo":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      case "Vencido":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-      case "Inativo":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-    }
-  }
-
-  const getAttendanceColor = (status: string) => {
+    const getAttendanceColor = (status: string) => {
     return status === "Presente"
       ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
       : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
@@ -473,7 +410,7 @@ export default function StudentProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {studentMockData.evaluations.map((evaluation: Evaluation, index: number) => (
+                    {studentMockData.evaluations.map((evaluation: Evaluation) => (
                       <div
                         key={evaluation.id}
                         className="p-4 rounded-lg border bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors"
