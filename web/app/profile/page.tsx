@@ -61,7 +61,7 @@ export default function ProfilePage() {
         phone: data.phone,
         address: data.address,
         birthDate: data.birthDate,
-        joinDate: data.joinDate,
+        joinDate: data.createdAt,
         bio: data.bio || "",
         specialties: Array.isArray(data.specialties) ? data.specialties : [],
         avatar: "/placeholder.svg?height=100&width=100"
