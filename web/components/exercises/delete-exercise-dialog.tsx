@@ -9,6 +9,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
+import { getAuthHeaders } from "@/app/administrators/page"
 
 interface Exercise {
   id: number
@@ -40,9 +41,7 @@ export function DeleteExerciseDialog({
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
       const response = await fetch(`${apiUrl}/exercises/${exercise.id}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders()
       })
       
       if (!response.ok) {

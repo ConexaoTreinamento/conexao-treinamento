@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Shield } from "lucide-react"
 import Layout from "@/components/layout"
+import { getAuthHeaders } from "../page"
 
 interface AdministratorData {
   id: string
@@ -38,7 +39,7 @@ export default function AdministratorProfilePage() {
     const fetchAdministratorData = async () => {
       setLoading(true)
       try {
-        const response = await fetch(`http://localhost:8080/administrators/${params.id}`)
+        const response = await fetch(`http://localhost:8080/administrators/${params.id}`, {headers: getAuthHeaders()})
         if (!response.ok) {
           throw new Error("Erro ao buscar administrador")
         }

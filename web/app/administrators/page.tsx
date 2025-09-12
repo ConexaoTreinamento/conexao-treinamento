@@ -1,11 +1,11 @@
 "use client"
 
 import type React from "react"
-import {useEffect, useState} from "react"
-import {Card, CardContent} from "@/components/ui/card"
-import {Button} from "@/components/ui/button"
-import {Input} from "@/components/ui/input"
-import {Badge} from "@/components/ui/badge"
+import { useEffect, useState } from "react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -14,9 +14,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import {Label} from "@/components/ui/label"
-import {Mail, Plus, Search, Shield, AlertCircle, CheckCircle} from "lucide-react"
-import {useRouter} from "next/navigation"
+import { Label } from "@/components/ui/label"
+import { Mail, Plus, Search, Shield, AlertCircle, CheckCircle } from "lucide-react"
+import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 
 interface Administrator {
@@ -45,6 +45,14 @@ interface ValidationErrors {
   general?: string
 }
 
+export const getAuthHeaders = () => {
+  const token = localStorage.getItem("token") // adjust key if different
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+}
+
 export default function AdministratorsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [userRole, setUserRole] = useState<string>("")
@@ -53,7 +61,7 @@ export default function AdministratorsPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-  
+
   // Form state
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
@@ -62,8 +70,8 @@ export default function AdministratorsPage() {
     password: ""
   })
   const [errors, setErrors] = useState<ValidationErrors>({})
-  const [touched, setTouched] = useState<{[key: string]: boolean}>({})
-  
+  const [touched, setTouched] = useState<{ [key: string]: boolean }>({})
+
   const router = useRouter()
 
   useEffect(() => {
@@ -82,7 +90,7 @@ export default function AdministratorsPage() {
   const loadAdministrators = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('http://localhost:8080/administrators')
+      const response = await fetch('http://localhost:8080/administrators', { headers: getAuthHeaders() })
       if (response.ok) {
         const data = await response.json()
         setAdministrators(data.content || [])
@@ -99,7 +107,7 @@ export default function AdministratorsPage() {
   const filteredAdministrators = administrators.filter((admin) => {
     const fullName = admin.fullName || `${admin.firstName} ${admin.lastName}`
     return fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        admin.email.toLowerCase().includes(searchTerm.toLowerCase())
+      admin.email.toLowerCase().includes(searchTerm.toLowerCase())
   })
 
   // Validate individual fields (US-ADM-202 and US-ADM-203)
@@ -109,25 +117,25 @@ export default function AdministratorsPage() {
         if (!value.trim()) return "Nome é obrigatório"
         if (value.length > 100) return "Nome deve ter no máximo 100 caracteres"
         return ""
-      
+
       case 'lastName':
         if (!value.trim()) return "Sobrenome é obrigatório"
         if (value.length > 100) return "Sobrenome deve ter no máximo 100 caracteres"
         return ""
-      
+
       case 'email':
         if (!value.trim()) return "Email é obrigatório"
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         if (!emailRegex.test(value)) return "Email deve ter um formato válido (nome@domínio)"
         if (value.length > 255) return "Email deve ter no máximo 255 caracteres"
         return ""
-      
+
       case 'password':
         if (!value.trim()) return "Senha é obrigatória"
         if (value.length < 6) return "Senha deve ter pelo menos 6 caracteres"
         if (value.length > 255) return "Senha deve ter no máximo 255 caracteres"
         return ""
-      
+
       default:
         return ""
     }
@@ -136,7 +144,7 @@ export default function AdministratorsPage() {
   // Handle field changes
   const handleFieldChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }))
-    
+
     // Real-time validation
     if (touched[name]) {
       const error = validateField(name, value)
@@ -154,19 +162,19 @@ export default function AdministratorsPage() {
   // Validate all fields
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {}
-    
+
     Object.keys(formData).forEach(key => {
       const error = validateField(key, formData[key as keyof FormData])
       if (error) newErrors[key as keyof ValidationErrors] = error
     })
-    
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   // Reset form
   const resetForm = () => {
-    setFormData({ firstName:"", lastName: "", email: "", password: "" })
+    setFormData({ firstName: "", lastName: "", email: "", password: "" })
     setErrors({})
     setTouched({})
     setShowSuccess(false)
@@ -175,10 +183,10 @@ export default function AdministratorsPage() {
   // Handle form submit
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // Mark all fields as touched
     setTouched({ firstName: true, lastName: true, email: true, password: true })
-    
+
     if (!validateForm()) {
       return
     }
@@ -189,9 +197,7 @@ export default function AdministratorsPage() {
     try {
       const response = await fetch('http://localhost:8080/administrators', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(formData),
       })
 
@@ -200,7 +206,7 @@ export default function AdministratorsPage() {
         setShowSuccess(true)
         resetForm()
         loadAdministrators() // Reload list
-        
+
         // Close dialog after showing success
         setTimeout(() => {
           setIsCreateOpen(false)
@@ -209,7 +215,7 @@ export default function AdministratorsPage() {
       } else {
         // Handle validation errors from backend
         const errorData = await response.json()
-        
+
         if (response.status === 409) {
           // Email já está em uso (US-ADM-203)
           setErrors({ email: "Email já está em uso" })
@@ -378,9 +384,9 @@ export default function AdministratorsPage() {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-4">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
+                  <Button
+                    type="button"
+                    variant="outline"
                     onClick={() => {
                       setIsCreateOpen(false)
                       resetForm()
@@ -389,8 +395,8 @@ export default function AdministratorsPage() {
                   >
                     Cancelar
                   </Button>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="bg-green-600 hover:bg-green-700"
                     disabled={isSubmitting || showSuccess}
                   >
@@ -459,9 +465,9 @@ export default function AdministratorsPage() {
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
                           <h3 className="font-semibold text-lg flex-1 min-w-0">{fullName}</h3>
                           <div className="flex items-center gap-2">
-                            <Badge 
-                              className={admin.active 
-                                ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300" 
+                            <Badge
+                              className={admin.active
+                                ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
                                 : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
                               }
                             >
@@ -475,7 +481,7 @@ export default function AdministratorsPage() {
                           <Mail className="w-3 h-3" />
                           <span className="truncate">{admin.email}</span>
                         </div>
-                        
+
                         <div className="text-xs text-muted-foreground mt-1">
                           Criado em: {new Date(admin.createdAt).toLocaleDateString('pt-BR')}
                         </div>

@@ -12,6 +12,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { getAuthHeaders } from "@/app/administrators/page";
 
 interface EditExerciseModalProps {
     isOpen: boolean;
@@ -48,9 +49,7 @@ export default function EditExerciseModal({ isOpen, onClose, exercise, onExercis
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
             const response = await fetch(`${API_URL}/exercises/${exercise.id}`, {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ name, description }),
             });
 

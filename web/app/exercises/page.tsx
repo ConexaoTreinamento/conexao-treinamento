@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import {
   DropdownMenu,
@@ -39,6 +38,7 @@ import { DeleteExerciseDialog } from "@/components/exercises/delete-exercise-dia
 import { useEffect } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
+import { getAuthHeaders } from "../administrators/page"
 
 
 interface Exercise {
@@ -82,7 +82,7 @@ export default function ExercisesPage() {
       setIsLoading(true)
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-      const response = await fetch(`${apiUrl}/exercises?search=${searchTerm}&page=${currentPage}&includeInactive=${showInactive}`)
+      const response = await fetch(`${apiUrl}/exercises?search=${searchTerm}&page=${currentPage}&includeInactive=${showInactive}`, {headers: getAuthHeaders()})
 
       if (!response.ok) {
         toast({
@@ -259,9 +259,7 @@ export default function ExercisesPage() {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
       const response = await fetch(`${apiUrl}/exercises/${exercise.id}/restore`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       })
 
       if (!response.ok) {
