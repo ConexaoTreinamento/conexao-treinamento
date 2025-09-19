@@ -86,7 +86,7 @@ frontend-tests:
         working-directory: ./web
         run: pnpm build
 
-  docker-build-scan:
+docker-build-scan:
     name: Docker Build & Security Scan
     runs-on: ubuntu-22.04
     needs: [backend-tests, frontend-tests]
