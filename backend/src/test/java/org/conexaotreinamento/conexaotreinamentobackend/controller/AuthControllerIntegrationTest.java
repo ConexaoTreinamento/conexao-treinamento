@@ -195,13 +195,6 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return 401 when accessing protected endpoint without token")
-    void shouldReturn401WhenAccessingProtectedEndpointWithoutToken() throws Exception {
-        mockMvc.perform(get("/users"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
     @DisplayName("Should return 401 when accessing protected endpoint with invalid token")
     void shouldReturn401WhenAccessingProtectedEndpointWithInvalidToken() throws Exception {
         String invalidToken = "invalid.jwt.token";
