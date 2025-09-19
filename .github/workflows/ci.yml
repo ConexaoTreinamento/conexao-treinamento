@@ -110,11 +110,6 @@ jobs:
           docker-compose -f docker-compose.test.yml --env-file .env.test up -d
           sleep 30 # Wait for services to be ready
 
-      - name: Wait for services to be ready
-        run: |
-          timeout 300 bash -c 'until curl -fs http://localhost:8080/actuator/health; do sleep 5; done'
-          timeout 300 bash -c 'until curl -fs http://localhost:3000; do sleep 5; done'
-
       - name: Run Smoke Tests
         run: |
           curl -f http://localhost:8080/actuator/health
