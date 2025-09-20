@@ -185,19 +185,20 @@ export const getParseAs = (
 
   return;
 };
+
 export const setAuthParams = async ({
   security,
   ...options
 }: Pick<Required<RequestOptions>, 'security'> &
   Pick<RequestOptions, 'auth' | 'query'> & {
     headers: Headers;
-    url?: string;
   }) => {
   for (const auth of security) {
-    // 🔹 Always read from localStorage
-    const token = await getAuthToken(auth, () => localStorage.getItem("token") || undefined);
+    const token = await getAuthToken(auth, options.auth);
 
-    if (!token) continue;
+    if (!token) {
+      continue;
+    }
 
     const name = auth.name ?? 'Authorization';
 
@@ -220,7 +221,6 @@ export const setAuthParams = async ({
     return;
   }
 };
-
 
 export const buildUrl: Client['buildUrl'] = (options) => {
   const url = getUrl({

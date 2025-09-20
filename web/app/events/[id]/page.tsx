@@ -10,6 +10,11 @@ import { Input } from "@/components/ui/input"
 import { useParams, useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import EventModal from "@/components/event-modal"
+import { useEvent } from "@/lib/hooks/event-queries";
+import { useUpdateEvent, useDeleteEvent, useRestoreEvent } from "@/lib/hooks/event-mutations";
+import { apiClient } from "@/lib/client";
+import ConfirmDeleteButton from "@/components/confirm-delete-button";
+import { useToast } from "@/hooks/use-toast";
 
 // Type definitions
 interface EventParticipant {
@@ -45,56 +50,61 @@ export default function EventDetailPage() {
   // Add search state for participants - moved to correct position to fix hook order
   const [participantSearchTerm, setParticipantSearchTerm] = useState("")
 
-  // Mock events data - this should eventually be replaced with API calls
-  const mockEvents: EventData[] = [
-    {
-      id: 1,
-      name: "Corrida no Parque",
-      date: "2024-08-15",
-      startTime: "07:00",
-      endTime: "08:00",
-      location: "Parque Ibirapuera",
-      status: "Aberto",
-      description: "Corrida matinal de 5km no parque para todos os níveis. Venha participar desta atividade ao ar livre e conhecer outros alunos da academia!",
-      instructor: "Prof. Carlos Santos",
-      participants: [
-        { id: 1, name: "Maria Silva", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-20", present: true },
-        { id: 2, name: "João Santos", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-21", present: false },
-        { id: 3, name: "Ana Costa", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-22", present: true },
-      ],
-    },
-    {
-      id: 2,
-      name: "Workshop de Yoga",
-      date: "2024-08-20",
-      startTime: "14:00",
-      endTime: "16:00",
-      location: "Studio Principal",
-      status: "Aberto",
-      description: "Workshop intensivo de Yoga com técnicas avançadas de respiração e posturas. Aprenda com especialistas e aprofunde sua prática.",
-      instructor: "Prof. Marina Costa",
-      participants: [
-        { id: 4, name: "Patricia Oliveira", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-15", present: true },
-        { id: 5, name: "Roberto Silva", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-16", present: true },
-        { id: 6, name: "Fernanda Costa", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-17", present: false },
-      ],
-    },
-    {
-      id: 3,
-      name: "Competição de CrossFit",
-      date: "2024-08-25",
-      startTime: "09:00",
-      endTime: "12:00",
-      location: "Área Externa",
-      status: "Aberto",
-      description: "Competição amistosa de CrossFit com diferentes categorias. Venha testar seus limites e se divertir com outros atletas!",
-      instructor: "Prof. Roberto Lima",
-      participants: [
-        { id: 7, name: "Carlos Lima", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-18", present: true },
-        { id: 8, name: "Lucia Ferreira", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-19", present: false },
-      ],
-    },
-  ]
+  const updateEvent = useUpdateEvent();
+  const deleteEvent = useDeleteEvent();
+  const restoreEvent = useRestoreEvent();
+  const { toast } = useToast();
+
+  // Fetch event via generated API client
+  const { data: eventResp, isLoading: isEventLoading, error: eventError } = useEvent(
+    { path: { id: String(params.id) } },
+    { enabled: Boolean(params.id) }
+  );
+
+  // Map API response to local EventData shape
+  useEffect(() => {
+    if (!eventResp) return;
+    const participants = (eventResp.participants ?? []).map((p: any, idx: number) => ({
+      id: idx + 1,
+      name: typeof p === "string" ? p : p.name ?? String(p),
+      avatar: "/placeholder.svg?height=40&width=40",
+      enrolledAt: (p as any).enrolledAt ?? new Date().toISOString().split("T")[0],
+      present: Boolean((p as any).present),
+    }));
+
+    setEventData({
+      id: Number(eventResp.id ?? 0),
+      name: eventResp.name ?? "",
+      date: eventResp.date ?? "",
+      startTime: eventResp.startTime ?? "",
+      endTime: eventResp.endTime ?? "",
+      location: eventResp.location ?? "",
+      status: eventResp.deletedAt ? "Cancelado" : "Aberto",
+      description: eventResp.description ?? "",
+      instructor: eventResp.instructor ?? "",
+      participants,
+    });
+
+    setEventForm({
+      name: eventResp.name ?? "",
+      date: eventResp.date ?? "",
+      startTime: eventResp.startTime ?? "",
+      endTime: eventResp.endTime ?? "",
+      location: eventResp.location ?? "",
+      description: eventResp.description ?? "",
+      students: participants.map((p) => p.name),
+      attendance: participants.reduce((acc, p) => ({ ...acc, [p.name]: p.present }), {}),
+    });
+
+    setLoading(false);
+  }, [eventResp]);
+
+  useEffect(() => {
+    if (eventError) {
+      console.error("Error loading event", eventError);
+      router.push("/events");
+    }
+  }, [eventError, router]);
 
   // Edit form state - fixed to include missing properties
   const [eventForm, setEventForm] = useState({
@@ -109,48 +119,10 @@ export default function EventDetailPage() {
   })
 
   useEffect(() => {
-    // Simulate fetching event data based on ID
-    const fetchEventData = async () => {
-      setLoading(true)
-      try {
-        // In a real application, this would be an API call
-        // const response = await fetch(`/api/events/${params.id}`)
-        // const data = await response.json()
-
-        // For now, find the event from mock data
-        const eventId = parseInt(params.id as string)
-        const event = mockEvents.find(e => e.id === eventId)
-
-        if (event) {
-          setEventData(event)
-          // Initialize form with event data
-          setEventForm({
-            name: event.name,
-            date: event.date,
-            startTime: event.startTime,
-            endTime: event.endTime,
-            location: event.location,
-            description: event.description,
-            students: event.participants.map(p => p.name),
-            attendance: event.participants.reduce((acc, p) => ({ ...acc, [p.name]: p.present }), {}),
-          })
-        } else {
-          // Handle event not found
-          console.error('Event not found')
-          router.push('/events')
-        }
-      } catch (error) {
-        console.error('Error fetching event data:', error)
-        router.push('/events')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    if (params.id) {
-      fetchEventData()
-    }
-  }, [params.id, router])
+    // Data is loaded via generated API client; no local fetch required.
+    if (!eventResp) return;
+    // loading handled by eventResp effect
+  }, [eventResp]);
 
   if (loading) {
     return (
@@ -320,24 +292,12 @@ export default function EventDetailPage() {
     setIsAddStudentOpen(false)
   }
 
-  // Handle event edit from modal
+  // Handle event edit from modal (call API)
   const handleEventEdit = (formData: any) => {
     if (!eventData) return
 
-    // Convert form participants to EventParticipant objects
-    const updatedParticipants = formData.students.map((studentName: string, index: number) => {
-      const existingParticipant = eventData.participants.find(p => p.name === studentName)
-      return existingParticipant || {
-        id: Date.now() + index,
-        name: studentName,
-        avatar: "/placeholder.svg?height=40&width=40",
-        enrolledAt: new Date().toISOString().split('T')[0],
-        present: formData.attendance?.[studentName] || false
-      }
-    })
-
-    const updatedEvent = {
-      ...eventData,
+    // Build request body according to API shape
+    const body = {
       name: formData.name,
       date: formData.date,
       startTime: formData.startTime,
@@ -345,10 +305,43 @@ export default function EventDetailPage() {
       location: formData.location,
       description: formData.description,
       instructor: formData.instructor,
-      participants: updatedParticipants
+      participants: formData.students ?? []
     }
 
-    setEventData(updatedEvent)
+    updateEvent.mutate(
+      { path: { id: String(eventData.id) }, body, client: apiClient },
+      {
+        onSuccess: (res) => {
+          // Update local UI with returned data
+          const participants = (res.participants ?? []).map((p: any, idx: number) => ({
+            id: idx + 1,
+            name: typeof p === "string" ? p : p.name ?? String(p),
+            avatar: "/placeholder.svg?height=40&width=40",
+            enrolledAt: (p as any).enrolledAt ?? new Date().toISOString().split("T")[0],
+            present: Boolean((p as any).present),
+          }));
+
+          setEventData({
+            id: Number(res.id ?? eventData.id),
+            name: res.name ?? body.name,
+            date: res.date ?? body.date,
+            startTime: res.startTime ?? body.startTime,
+            endTime: res.endTime ?? body.endTime,
+            location: res.location ?? body.location,
+            status: res.deletedAt ? "Cancelado" : "Aberto",
+            description: res.description ?? body.description,
+            instructor: res.instructor ?? body.instructor,
+            participants,
+          });
+
+          setIsEditOpen(false);
+          toast({ title: "Evento atualizado", description: "As alterações foram salvas.", duration: 3000 });
+        },
+        onError: (err: any) => {
+          toast({ title: "Erro", description: err?.message || "Não foi possível atualizar o evento.", duration: 4000 });
+        }
+      }
+    )
   }
 
   return (
@@ -365,9 +358,59 @@ export default function EventDetailPage() {
               {formatDate(eventData.date)} • {eventData.startTime} - {eventData.endTime}
             </p>
           </div>
-          <Button variant="outline" size="icon" onClick={() => setIsEditOpen(true)}>
-            <Edit className="w-4 h-4"/>
-          </Button>
+
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => setIsEditOpen(true)} disabled={updateEvent.status === "pending" || deleteEvent.status === "pending" || restoreEvent.status === "pending"}>
+              <Edit className="w-4 h-4"/>
+            </Button>
+
+            {eventData?.status === "Cancelado" ? (
+              <Button
+                variant="outline"
+                size="icon"
+                disabled={restoreEvent.status === "pending" || updateEvent.status === "pending" || deleteEvent.status === "pending"}
+                onClick={() =>
+                  restoreEvent.mutate(
+                    { path: { id: String(eventData.id) }, client: apiClient },
+                    {
+                      onSuccess: () => {
+                        setEventData(prev => prev ? { ...prev, status: "Aberto" } : prev);
+                        toast({ title: "Evento restaurado", description: "Evento reativado.", duration: 3000 });
+                      },
+                      onError: (err: any) => {
+                        toast({ title: "Erro", description: err?.message || "Não foi possível restaurar o evento.", duration: 4000 });
+                      }
+                    }
+                  )
+                }
+              >
+                <ArrowLeft className="w-4 h-4 rotate-180" />
+              </Button>
+            ) : (
+              <ConfirmDeleteButton
+                onConfirm={() =>
+                  deleteEvent.mutate(
+                    { path: { id: String(eventData.id) }, client: apiClient },
+                    {
+                      onSuccess: () => {
+                        toast({ title: "Evento excluído", description: "O evento foi marcado como inativo.", duration: 3000 });
+                        router.push("/events");
+                      },
+                      onError: (err: any) => {
+                        toast({ title: "Erro", description: err?.message || "Não foi possível excluir o evento.", duration: 4000 });
+                      }
+                    }
+                  )
+                }
+                title="Excluir Evento"
+                description="Tem certeza que deseja excluir este evento? Ele será marcado como inativo."
+              >
+                <Button variant="ghost" size="icon" disabled={deleteEvent.status === "pending" || updateEvent.status === "pending" || restoreEvent.status === "pending"}>
+                  <X className="w-4 h-4"/>
+                </Button>
+              </ConfirmDeleteButton>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -515,6 +558,7 @@ export default function EventDetailPage() {
           onSubmit={handleEventEdit}
           availableStudents={availableStudents}
           instructors={availableInstructors}
+          isSubmitting={updateEvent.status === "pending"}
         />
       </div>
     </Layout>

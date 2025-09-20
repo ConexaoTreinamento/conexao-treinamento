@@ -142,6 +142,32 @@ export type ExerciseResponseDto = {
     deletedAt?: string;
 };
 
+export type EventRequestDto = {
+    name: string;
+    date: string;
+    startTime?: string;
+    endTime?: string;
+    location?: string;
+    description?: string;
+    instructor?: string;
+    participants?: Array<string>;
+};
+
+export type EventResponseDto = {
+    id?: string;
+    name?: string;
+    date?: string;
+    startTime?: string;
+    endTime?: string;
+    location?: string;
+    description?: string;
+    instructor?: string;
+    participants?: Array<string>;
+    createdAt?: string;
+    updatedAt?: string;
+    deletedAt?: string;
+};
+
 export type AdministratorRequestDto = {
     firstName: string;
     lastName: string;
@@ -205,6 +231,17 @@ export type PatchExerciseRequestDto = {
     description?: string;
 };
 
+export type PatchEventRequestDto = {
+    name?: string;
+    date?: string;
+    startTime?: string;
+    endTime?: string;
+    location?: string;
+    description?: string;
+    instructor?: string;
+    participants?: Array<string>;
+};
+
 export type PatchAdministratorRequestDto = {
     firstName?: string;
     lastName?: string;
@@ -237,6 +274,11 @@ export type PagedModelStudentResponseDto = {
 
 export type PagedModelExerciseResponseDto = {
     content?: Array<ExerciseResponseDto>;
+    page?: PageMetadata;
+};
+
+export type PagedModelEventResponseDto = {
+    content?: Array<EventResponseDto>;
     page?: PageMetadata;
 };
 
@@ -418,6 +460,76 @@ export type Update1Responses = {
 };
 
 export type Update1Response = Update1Responses[keyof Update1Responses];
+
+export type DeleteEventData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/events/{id}';
+};
+
+export type DeleteEventResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type FindEventByIdData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/events/{id}';
+};
+
+export type FindEventByIdResponses = {
+    /**
+     * OK
+     */
+    200: EventResponseDto;
+};
+
+export type FindEventByIdResponse = FindEventByIdResponses[keyof FindEventByIdResponses];
+
+export type PatchEventData = {
+    body: PatchEventRequestDto;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/events/{id}';
+};
+
+export type PatchEventResponses = {
+    /**
+     * OK
+     */
+    200: EventResponseDto;
+};
+
+export type PatchEventResponse = PatchEventResponses[keyof PatchEventResponses];
+
+export type UpdateEventData = {
+    body: EventRequestDto;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/events/{id}';
+};
+
+export type UpdateEventResponses = {
+    /**
+     * OK
+     */
+    200: EventResponseDto;
+};
+
+export type UpdateEventResponse = UpdateEventResponses[keyof UpdateEventResponses];
 
 export type Delete2Data = {
     body?: never;
@@ -633,6 +745,42 @@ export type Create1Responses = {
 
 export type Create1Response = Create1Responses[keyof Create1Responses];
 
+export type FindAllEventsData = {
+    body?: never;
+    path?: never;
+    query: {
+        search?: string;
+        includeInactive?: boolean;
+        pageable: Pageable;
+    };
+    url: '/events';
+};
+
+export type FindAllEventsResponses = {
+    /**
+     * OK
+     */
+    200: PagedModelEventResponseDto;
+};
+
+export type FindAllEventsResponse = FindAllEventsResponses[keyof FindAllEventsResponses];
+
+export type CreateEventData = {
+    body: EventRequestDto;
+    path?: never;
+    query?: never;
+    url: '/events';
+};
+
+export type CreateEventResponses = {
+    /**
+     * OK
+     */
+    200: EventResponseDto;
+};
+
+export type CreateEventResponse = CreateEventResponses[keyof CreateEventResponses];
+
 export type LogoutData = {
     body?: never;
     path?: never;
@@ -754,6 +902,24 @@ export type Restore1Responses = {
 };
 
 export type Restore1Response = Restore1Responses[keyof Restore1Responses];
+
+export type RestoreEventData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/events/{id}/restore';
+};
+
+export type RestoreEventResponses = {
+    /**
+     * OK
+     */
+    200: EventResponseDto;
+};
+
+export type RestoreEventResponse = RestoreEventResponses[keyof RestoreEventResponses];
 
 export type Restore2Data = {
     body?: never;

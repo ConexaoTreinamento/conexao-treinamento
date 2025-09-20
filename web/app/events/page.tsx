@@ -9,84 +9,26 @@ import { Plus, Calendar, Clock, MapPin, Users, Trophy } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import EventModal from "@/components/event-modal"
-
-// Type definitions
-interface EventParticipant {
-  id: number
-  name: string
-  avatar: string
-  enrolledAt: string
-  present: boolean
-}
-
-interface EventData {
-  id: number
-  name: string
-  date: string
-  startTime: string
-  endTime: string
-  location: string
-  status: string
-  description: string
-  instructor: string
-  participants: EventParticipant[]
-}
+import { useEvents } from "@/lib/hooks/event-queries"
+import { useCreateEvent } from "@/lib/hooks/event-mutations"
 
 export default function EventsPage() {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [events, setEvents] = useState<EventData[]>([
-    {
-      id: 1,
-      name: "Corrida no Parque",
-      date: "2024-08-15",
-      startTime: "07:00",
-      endTime: "08:00",
-      location: "Parque Ibirapuera",
-      status: "Aberto",
-      description: "Corrida matinal de 5km no parque para todos os níveis.",
-      instructor: "Prof. Carlos Santos",
-      participants: [
-        { id: 1, name: "Maria Silva", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-20", present: true },
-        { id: 2, name: "João Santos", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-21", present: false },
-        { id: 3, name: "Ana Costa", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-22", present: true },
-      ],
-    },
-    {
-      id: 2,
-      name: "Workshop de Yoga",
-      date: "2024-08-20",
-      startTime: "14:00",
-      endTime: "16:00",
-      location: "Studio Principal",
-      status: "Aberto",
-      description: "Workshop intensivo de Yoga com técnicas avançadas de respiração e posturas.",
-      instructor: "Prof. Marina Costa",
-      participants: [
-        { id: 4, name: "Patricia Oliveira", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-15", present: true },
-        { id: 5, name: "Roberto Silva", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-16", present: true },
-        { id: 6, name: "Fernanda Costa", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-17", present: false },
-      ],
-    },
-    {
-      id: 3,
-      name: "Competição de CrossFit",
-      date: "2024-08-25",
-      startTime: "09:00",
-      endTime: "12:00",
-      location: "Área Externa",
-      status: "Aberto",
-      description: "Competição amistosa de CrossFit com diferentes categorias.",
-      instructor: "Prof. Roberto Lima",
-      participants: [
-        { id: 7, name: "Carlos Lima", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-18", present: true },
-        { id: 8, name: "Lucia Ferreira", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-19", present: false },
-      ],
-    },
-  ])
 
-  // Available options for the modal
+  // Fetch events using generated client + react-query hooks
+  const { data: eventsPage } = useEvents({
+    search: searchTerm || undefined,
+    page: 0,
+    pageSize: 50,
+  })
+
+  const events = eventsPage?.content ?? []
+
+  const createEvent = useCreateEvent()
+
+  // Available options for the modal (kept same sample list)
   const availableStudents = [
     "Maria Silva",
     "João Santos",
@@ -110,31 +52,27 @@ export default function EventsPage() {
     "Prof. João Pedro"
   ]
 
-  // Handle creating new event
   const handleCreateEvent = (formData: any) => {
-    // Convert form participants to EventParticipant objects
-    const participants = formData.students.map((studentName: string, index: number) => ({
-      id: Date.now() + index,
-      name: studentName,
-      avatar: "/placeholder.svg?height=40&width=40",
-      enrolledAt: new Date().toISOString().split('T')[0],
-      present: false
-    }))
-
-    const newEvent: EventData = {
-      id: Date.now(),
+    // Map form to API payload shape expected by generated client
+    const payload = {
       name: formData.name,
       date: formData.date,
-      startTime: formData.startTime,
-      endTime: formData.endTime,
+      startTime: formData.startTime || null,
+      endTime: formData.endTime || null,
       location: formData.location,
       description: formData.description,
       instructor: formData.instructor,
-      participants: participants,
-      status: "Aberto",
+      participants: formData.students || [],
     }
 
-    setEvents(prev => [...prev, newEvent])
+    createEvent.mutate(
+      { body: payload },
+      {
+        onSuccess: () => {
+          setIsCreateModalOpen(false)
+        },
+      }
+    )
   }
 
   const getStatusColor = (status: string) => {
@@ -151,6 +89,7 @@ export default function EventsPage() {
   }
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return ""
     const date = new Date(dateString)
     return date.toLocaleDateString("pt-BR", {
       weekday: "short",
@@ -159,10 +98,10 @@ export default function EventsPage() {
     })
   }
 
-  // Filter events based on search term
-  const filteredEvents = events.filter(event =>
-    event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.location.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filter client-side by name/location when search is present (API search already supported)
+  const filteredEvents = events.filter((event: any) =>
+    (event.name ?? "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (event.location ?? "").toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   return (
@@ -196,18 +135,18 @@ export default function EventsPage() {
 
         {/* Events Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredEvents.map((event) => (
+          {filteredEvents.map((event: any) => (
             <Card
-              key={event.id}
+              key={event.id ?? event.eventId}
               className="cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => router.push(`/events/${event.id}`)}
+              onClick={() => router.push(`/events/${event.id ?? event.eventId}`)}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-lg truncate">{event.name}</CardTitle>
                   </div>
-                  <Badge className={getStatusColor(event.status)}>{event.status}</Badge>
+                  <Badge className={getStatusColor(event.status ?? "Aberto")}>{event.status ?? "Aberto"}</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -218,7 +157,7 @@ export default function EventsPage() {
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span>{event.startTime} - {event.endTime}</span>
+                    <span>{event.startTime ?? ""} - {event.endTime ?? ""}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <MapPin className="w-4 h-4 text-muted-foreground" />
@@ -226,7 +165,7 @@ export default function EventsPage() {
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Users className="w-4 h-4 text-muted-foreground" />
-                    <span>{event.participants.length} participantes</span>
+                    <span>{(event.participants ?? []).length} participantes</span>
                   </div>
                 </div>
 
