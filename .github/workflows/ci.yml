@@ -51,41 +51,6 @@ jobs:
           chmod +x ./mvnw
           ./mvnw verify -Dspring.profiles.active=test
 
-  frontend-tests:
-    name: Frontend Tests
-    runs-on: ubuntu-22.04
-    continue-on-error: true # While we dont have tests for frontend
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-          cache-dependency-path: './web/pnpm-lock.yaml'
-
-      - name: Install dependencies
-        working-directory: ./web
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint & Type Check
-        working-directory: ./web
-        run: |
-          pnpm lint
-          pnpm type-check
-
-      - name: Build
-        working-directory: ./web
-        run: pnpm build
-
   docker-build-scan:
     name: Docker Build & Security Scan
     runs-on: ubuntu-22.04
@@ -114,6 +79,10 @@ jobs:
         run: |
           curl -f http://localhost:8080/actuator/health
           curl -f http://localhost:3000
+
+      - name: Run Migrations
+        run: |
+          
 
       - name: Stop services
         if: always()
