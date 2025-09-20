@@ -31,20 +31,11 @@ public class ParticipantExercise {
     @JoinColumn(name = "exercise_id", insertable = false, updatable = false)
     private Exercise exercise;
     
-    @Column(name = "sets_assigned")
-    private Integer setsAssigned;
-    
     @Column(name = "sets_completed")
     private Integer setsCompleted;
     
-    @Column(name = "reps_assigned")
-    private Integer repsAssigned;
-    
     @Column(name = "reps_completed")
     private Integer repsCompleted;
-    
-    @Column(name = "weight_assigned")
-    private Double weightAssigned;
     
     @Column(name = "weight_completed")
     private Double weightCompleted;
@@ -78,11 +69,7 @@ public class ParticipantExercise {
         this.deletedAt = null;
         this.updatedAt = Instant.now();
     }
-    
-    public boolean isActive() {
-        return active;
-    }
-    
+
     public void updateTimestamp() {
         this.updatedAt = Instant.now();
     }
