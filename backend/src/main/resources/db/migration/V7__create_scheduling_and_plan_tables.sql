@@ -14,15 +14,8 @@ CREATE TABLE trainer_schedules (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
-    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+    active BOOLEAN NOT NULL DEFAULT TRUE
 );
-
--- Indexes for trainer_schedules
-CREATE INDEX idx_trainer_schedules_trainer ON trainer_schedules(trainer_id);
-CREATE INDEX idx_trainer_schedules_weekday ON trainer_schedules(weekday);
-CREATE INDEX idx_trainer_schedules_effective_from ON trainer_schedules(effective_from_timestamp);
-CREATE INDEX idx_trainer_schedules_deleted ON trainer_schedules(is_deleted);
-CREATE INDEX idx_trainer_schedules_series ON trainer_schedules(series_name);
 
 -- 2. Create scheduled_sessions table for lazy session instance creation
 CREATE TABLE scheduled_sessions (
@@ -40,16 +33,8 @@ CREATE TABLE scheduled_sessions (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
-    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+    active BOOLEAN NOT NULL DEFAULT TRUE
 );
-
--- Indexes for scheduled_sessions
-CREATE INDEX idx_scheduled_sessions_series ON scheduled_sessions(session_series_id);
-CREATE INDEX idx_scheduled_sessions_trainer ON scheduled_sessions(trainer_id);
-CREATE INDEX idx_scheduled_sessions_session_id ON scheduled_sessions(session_id);
-CREATE INDEX idx_scheduled_sessions_start_time ON scheduled_sessions(start_time);
-CREATE INDEX idx_scheduled_sessions_instance_override ON scheduled_sessions(instance_override);
-CREATE INDEX idx_scheduled_sessions_deleted ON scheduled_sessions(is_deleted);
 
 -- 3. Create session_participants table for participant management with diff pattern
 CREATE TABLE session_participants (
@@ -62,14 +47,8 @@ CREATE TABLE session_participants (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
-    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+    active BOOLEAN NOT NULL DEFAULT TRUE
 );
-
--- Indexes for session_participants
-CREATE INDEX idx_session_participants_session ON session_participants(scheduled_session_id);
-CREATE INDEX idx_session_participants_student ON session_participants(student_id);
-CREATE INDEX idx_session_participants_type ON session_participants(participation_type);
-CREATE INDEX idx_session_participants_deleted ON session_participants(is_deleted);
 
 -- 4. Create participant_exercises table for exercise tracking
 CREATE TABLE participant_exercises (
@@ -86,13 +65,8 @@ CREATE TABLE participant_exercises (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE,
-    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+    active BOOLEAN NOT NULL DEFAULT TRUE
 );
-
--- Indexes for participant_exercises
-CREATE INDEX idx_participant_exercises_participant ON participant_exercises(session_participant_id);
-CREATE INDEX idx_participant_exercises_exercise ON participant_exercises(exercise_id);
-CREATE INDEX idx_participant_exercises_deleted ON participant_exercises(is_deleted);
 
 -- 5. Create student_plans table as immutable plan templates
 CREATE TABLE student_plans (
@@ -101,14 +75,9 @@ CREATE TABLE student_plans (
     max_days INTEGER NOT NULL,
     duration_days INTEGER NOT NULL,
     description TEXT,
-    soft_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
--- Indexes for student_plans
-CREATE INDEX idx_student_plans_name ON student_plans(name);
-CREATE INDEX idx_student_plans_soft_deleted ON student_plans(soft_deleted);
-CREATE INDEX idx_student_plans_max_days ON student_plans(max_days);
 
 -- 6. Create student_plan_history table for temporal plan assignments
 CREATE TABLE student_plan_history (
@@ -121,13 +90,6 @@ CREATE TABLE student_plan_history (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Indexes for student_plan_history
-CREATE INDEX idx_student_plan_history_student ON student_plan_history(student_id);
-CREATE INDEX idx_student_plan_history_plan ON student_plan_history(plan_id);
-CREATE INDEX idx_student_plan_history_effective_from ON student_plan_history(effective_from_timestamp);
-CREATE INDEX idx_student_plan_history_assigned_by ON student_plan_history(assigned_by_user_id);
-CREATE INDEX idx_student_plan_history_student_effective ON student_plan_history(student_id, effective_from_timestamp);
-
 -- 7. Create student_commitments table for series-level commitments
 CREATE TABLE student_commitments (
     id UUID PRIMARY KEY,
@@ -137,13 +99,6 @@ CREATE TABLE student_commitments (
     effective_from_timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
--- Indexes for student_commitments
-CREATE INDEX idx_student_commitments_student ON student_commitments(student_id);
-CREATE INDEX idx_student_commitments_series ON student_commitments(session_series_id);
-CREATE INDEX idx_student_commitments_status ON student_commitments(commitment_status);
-CREATE INDEX idx_student_commitments_effective_from ON student_commitments(effective_from_timestamp);
-CREATE INDEX idx_student_commitments_student_effective ON student_commitments(student_id, effective_from_timestamp);
 
 -- Add foreign key constraints for session_series_id references
 ALTER TABLE scheduled_sessions ADD CONSTRAINT fk_scheduled_sessions_series 

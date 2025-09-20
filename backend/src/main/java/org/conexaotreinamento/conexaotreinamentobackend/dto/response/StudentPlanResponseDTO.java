@@ -16,6 +16,6 @@ public class StudentPlanResponseDTO {
     private Integer maxDays;
     private Integer durationDays;
     private String description;
-    private Boolean softDeleted;
+    private Boolean active;
     private Instant createdAt;
 }

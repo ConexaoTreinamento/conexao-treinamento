@@ -63,24 +63,24 @@ public class ParticipantExercise {
     @Column(name = "deleted_at")
     private Instant deletedAt;
     
-    @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false;
+    @Column(name = "active", nullable = false)
+    private boolean active = true;
     
     // Soft delete methods
     public void softDelete() {
-        this.isDeleted = true;
+        this.active = false;
         this.deletedAt = Instant.now();
         this.updatedAt = Instant.now();
     }
     
     public void restore() {
-        this.isDeleted = false;
+        this.active = true;
         this.deletedAt = null;
         this.updatedAt = Instant.now();
     }
     
     public boolean isActive() {
-        return !isDeleted;
+        return active;
     }
     
     public void updateTimestamp() {
