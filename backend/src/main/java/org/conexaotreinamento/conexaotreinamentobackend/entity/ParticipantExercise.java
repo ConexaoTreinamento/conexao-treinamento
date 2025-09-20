@@ -49,7 +49,7 @@ public class ParticipantExercise {
     @Column(name = "weight_completed")
     private Double weightCompleted;
     
-    @Column(name = "notes", columnDefinition = "TEXT")
+    @Column(name = "exercise_notes", columnDefinition = "TEXT")
     private String exerciseNotes;
     
     @CreationTimestamp
