@@ -78,10 +78,6 @@ jobs:
           curl -f http://localhost:8080/actuator/health
           curl -f http://localhost:3000
 
-      - name: Run Migrations
-        run: |
-
-
       - name: Stop services
         if: always()
         run: docker-compose -f docker-compose.test.yml --env-file .env.test down
