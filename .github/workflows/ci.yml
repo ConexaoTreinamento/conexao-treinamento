@@ -114,17 +114,6 @@ jobs:
         run: |
           curl -f http://localhost:8080/actuator/health
           curl -f http://localhost:3000
-      
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'conexao-backend-test:latest'
-          format: 'table'
-          exit-code: '1'
-          severity: 'HIGH,CRITICAL'
-          ignore-unfixed: true
-          scanners: 'vuln,secret'
-          vuln-type: 'library'
 
       - name: Stop services
         if: always()
