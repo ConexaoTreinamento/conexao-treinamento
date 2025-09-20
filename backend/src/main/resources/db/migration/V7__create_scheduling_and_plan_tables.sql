@@ -79,12 +79,13 @@ CREATE TABLE student_plans (
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- 6. Create student_plan_history table for temporal plan assignments
-CREATE TABLE student_plan_history (
+-- 6. Create student_plan_assignments table for plan assignments (consolidated from student_plan_history)
+CREATE TABLE student_plan_assignments (
     id UUID PRIMARY KEY,
     student_id UUID NOT NULL REFERENCES STUDENTS(STUDENT_ID),
     plan_id UUID NOT NULL REFERENCES student_plans(id),
-    effective_from_timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
     assigned_by_user_id UUID NOT NULL REFERENCES users(id),
     assignment_notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP

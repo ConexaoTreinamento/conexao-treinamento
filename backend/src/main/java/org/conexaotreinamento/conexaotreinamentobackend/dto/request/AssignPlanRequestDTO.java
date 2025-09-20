@@ -5,7 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
@@ -16,10 +16,8 @@ public class AssignPlanRequestDTO {
     @NotNull(message = "Plan ID is required")
     private UUID planId;
     
-    private Instant effectiveFromTimestamp;
+    @NotNull(message = "Start date is required")
+    private LocalDate startDate;
     
-    // If not provided, defaults to current timestamp
-    public Instant getEffectiveFromTimestamp() {
-        return effectiveFromTimestamp != null ? effectiveFromTimestamp : Instant.now();
-    }
+    private String assignmentNotes;
 }
