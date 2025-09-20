@@ -26,9 +26,6 @@ public class StudentPlan {
     @Column(name = "max_days", nullable = false)
     private int maxDays;
     
-    @Column(name = "cost_brl", nullable = false, precision = 10, scale = 2)
-    private BigDecimal costBrl;
-    
     @Column(name = "duration_days", nullable = false)
     private int durationDays;
     

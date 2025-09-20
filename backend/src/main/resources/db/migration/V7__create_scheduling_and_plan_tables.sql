@@ -99,7 +99,6 @@ CREATE TABLE student_plans (
     id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     max_days INTEGER NOT NULL,
-    cost_brl DECIMAL(10,2) NOT NULL,
     duration_days INTEGER NOT NULL,
     description TEXT,
     soft_deleted BOOLEAN NOT NULL DEFAULT FALSE,
