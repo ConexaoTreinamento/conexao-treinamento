@@ -153,6 +153,11 @@ public class StudentPlanService {
                 "No active plan found for student"));
     }
     
+    // Helper method for internal service use
+    public java.util.Optional<StudentPlanAssignment> getCurrentAssignment(UUID studentId) {
+        return assignmentRepository.findCurrentActiveAssignment(studentId);
+    }
+    
     public List<StudentPlanAssignmentResponseDTO> getExpiringSoonAssignments(int days) {
         LocalDate futureDate = LocalDate.now().plusDays(days);
         return assignmentRepository.findExpiringSoon(futureDate)
