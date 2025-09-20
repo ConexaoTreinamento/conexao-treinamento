@@ -10,7 +10,6 @@ jobs:
   backend-tests:
     name: Backend Tests Using Cache Maven
     runs-on: ubuntu-22.04
-    continue-on-error: true # While we dont have tests for backend
     
     services:
       postgres:
@@ -54,8 +53,7 @@ jobs:
   docker-build-scan:
     name: Docker Build & Security Scan
     runs-on: ubuntu-22.04
-    needs: [backend-tests, frontend-tests]
-    if: always() #  Always run even if the tests fail, while we dont have tests for backend and frontend.
+    needs: [backend-tests]
 
     steps:
       - name: Checkout code
@@ -82,7 +80,7 @@ jobs:
 
       - name: Run Migrations
         run: |
-          
+
 
       - name: Stop services
         if: always()
