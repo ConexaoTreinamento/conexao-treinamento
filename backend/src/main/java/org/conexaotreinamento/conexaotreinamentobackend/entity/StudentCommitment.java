@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.conexaotreinamento.conexaotreinamentobackend.enums.CommitmentStatus;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
@@ -65,11 +66,5 @@ public class StudentCommitment {
     
     public boolean isTentative() {
         return commitmentStatus == CommitmentStatus.TENTATIVE;
-    }
-    
-    public enum CommitmentStatus {
-        ATTENDING,        // "book all sessions"
-        NOT_ATTENDING,    // explicitly not participating
-        TENTATIVE         // "this and following" or conditional
     }
 }
