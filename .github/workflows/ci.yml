@@ -51,7 +51,7 @@ jobs:
           ./mvnw verify -Dspring.profiles.active=test
 
   docker-build-scan:
-    name: Docker Build & Security Scan
+    name: Docker Build
     runs-on: ubuntu-22.04
     needs: [backend-tests]
 
