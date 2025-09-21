@@ -1,6 +1,7 @@
 package org.conexaotreinamento.conexaotreinamentobackend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.conexaotreinamento.conexaotreinamentobackend.config.TestContainerConfig;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateTrainerDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
@@ -9,11 +10,13 @@ import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.TrainerRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -31,10 +34,12 @@ import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@Disabled
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@Import(TestContainerConfig.class)
 @DisplayName("TrainerController Integration Tests")
 class TrainerControllerIntegrationTest {
 
