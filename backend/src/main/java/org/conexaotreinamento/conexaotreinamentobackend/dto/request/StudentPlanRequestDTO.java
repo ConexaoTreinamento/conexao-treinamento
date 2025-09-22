@@ -25,5 +25,8 @@ public class StudentPlanRequestDTO {
     @Positive(message = "Duration days must be positive")
     private Integer durationDays;
     
+    @NotNull(message = "Cost BRL is required")
+    private java.math.BigDecimal costBrl;
+    
     private String description;
 }

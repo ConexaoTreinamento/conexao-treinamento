@@ -40,6 +40,9 @@ public class ParticipantExercise {
     @Column(name = "weight_completed")
     private Double weightCompleted;
     
+    @Column(name = "is_complete")
+    private Boolean isComplete = false;
+    
     @Column(name = "exercise_notes", columnDefinition = "TEXT")
     private String exerciseNotes;
     

@@ -41,14 +41,20 @@ public class ScheduledSession {
     @Column(name = "end_time", nullable = false)
     private LocalDateTime endTime;
     
-    @Column(name = "max_participants", nullable = false)
-    private int maxParticipants = 1;
+    @Column(name = "max_participants")
+    private Integer maxParticipants;
     
-    @Column(name = "series_name", nullable = false)
+    @Column(name = "series_name")
     private String seriesName;
     
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+    
+    @Column(name = "room")
+    private String room;
+    
+    @Column(name = "equipment")
+    private String equipment;
     
     @Column(name = "instance_override", nullable = false)
     private boolean instanceOverride = false; // True when session has instance-specific data

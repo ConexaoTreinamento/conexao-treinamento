@@ -5,19 +5,23 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import org.conexaotreinamento.conexaotreinamentobackend.enums.CommitmentStatus;
 import java.time.Instant;
 import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class AssignPlanRequestDTO {
+public class CommitmentRequestDTO {
     
-    @NotNull(message = "Plan ID is required")
-    private UUID planId;
+    @NotNull(message = "Session series ID is required")
+    private UUID sessionSeriesId;
+    
+    @NotNull(message = "Commitment status is required")
+    private CommitmentStatus commitmentStatus;
     
     @NotNull(message = "Effective from timestamp is required")
     private Instant effectiveFromTimestamp;
     
-    private String assignmentNotes;
+    private Instant effectiveToTimestamp;
 }

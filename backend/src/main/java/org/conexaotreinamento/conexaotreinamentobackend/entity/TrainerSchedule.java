@@ -41,11 +41,17 @@ public class TrainerSchedule {
     @Column(name = "interval_duration", nullable = false)
     private int intervalDuration = 60; // minutes
     
+    @Column(name = "max_participants")
+    private Integer maxParticipants = 10;
+    
     @Column(name = "series_name", nullable = false)
     private String seriesName;
     
     @Column(name = "effective_from_timestamp", nullable = false)
     private Instant effectiveFromTimestamp;
+    
+    @Column(name = "effective_to_timestamp")
+    private Instant effectiveToTimestamp;
     
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -87,5 +93,10 @@ public class TrainerSchedule {
     public void setDayOfWeek(DayOfWeek dayOfWeek) {
         // Convert from DayOfWeek enum to 0=Sunday format
         this.weekday = dayOfWeek == DayOfWeek.SUNDAY ? 0 : dayOfWeek.getValue();
+    }
+    
+    public boolean isActiveAtTimestamp(Instant timestamp) {
+        return (effectiveFromTimestamp.isBefore(timestamp) || effectiveFromTimestamp.equals(timestamp)) &&
+               (effectiveToTimestamp == null || timestamp.isBefore(effectiveToTimestamp));
     }
 }

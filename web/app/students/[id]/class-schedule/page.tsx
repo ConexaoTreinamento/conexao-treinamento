@@ -8,162 +8,94 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, Save, Calendar, Clock, User } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
+import { useCreateCommitment } from "@/lib/hooks/commitment-queries"
+import { useToast } from "@/hooks/use-toast"
+import { getScheduleOptions } from "@/lib/api-client/@tanstack/react-query.gen"
+import { apiClient } from "@/lib/client"
+import { useQuery } from "@tanstack/react-query"
+import { useEnrollStudent } from "@/lib/hooks/enrollment-queries"
+import { useStudent } from "@/lib/hooks/student-queries"
+import type { ScheduleResponseDto, ScheduledSession, StudentResponseDto, EnrollmentRequestDto } from "@/lib/api-client/types.gen"
 
 export default function ClassSchedulePage() {
   const router = useRouter()
   const params = useParams()
   const [selectedClasses, setSelectedClasses] = useState<string[]>([])
-  const [studentPlan, setStudentPlan] = useState({
-    name: "Plano Mensal",
-    daysPerWeek: 3,
-    maxClasses: 12,
-  })
+  // Get real student data instead of mocked object
+  const studentQuery = useStudent({ path: { id: String(params.id) } })
+  const student = studentQuery.data as StudentResponseDto | undefined
 
-  // Mock student data
-  const student = {
-    id: params.id,
-    name: "Maria Silva",
-    plan: "Mensal",
-    daysPerWeek: 3,
+  // Derive a minimal plan view used by this page (fallbacks kept for offline/dev)
+  const studentPlan = {
+    name: student?.activePlan?.planName ?? "Plano Mensal",
+    // approximate days per week from plan max days when available, otherwise default to 3
+    daysPerWeek: student?.activePlan?.planMaxDays ? Math.max(1, Math.min(7, Math.round((student.activePlan.planMaxDays || 0) / 4))) : 3,
+    maxClasses: student?.activePlan?.planMaxDays ?? 12,
   }
 
-  // Mock weekly schedule with classes
-  const weeklySchedule = [
-    {
-      day: "Segunda-feira",
-      classes: [
-        {
-          id: "1",
-          name: "Pilates Iniciante",
-          time: "09:00",
-          duration: 60,
-          instructor: "Prof. Ana",
-          maxStudents: 10,
-          currentStudents: 8,
-          available: true,
-        },
-        {
-          id: "2",
-          name: "CrossFit",
-          time: "18:00",
-          duration: 60,
-          instructor: "Prof. Roberto",
-          maxStudents: 8,
-          currentStudents: 6,
-          available: true,
-        },
-      ],
-    },
-    {
-      day: "Terça-feira",
-      classes: [
-        {
-          id: "3",
-          name: "Yoga Avançado",
-          time: "14:00",
-          duration: 60,
-          instructor: "Prof. Marina",
-          maxStudents: 12,
-          currentStudents: 10,
-          available: true,
-        },
-        {
-          id: "4",
-          name: "Musculação",
-          time: "16:00",
-          duration: 90,
-          instructor: "Prof. Carlos",
-          maxStudents: 15,
-          currentStudents: 12,
-          available: true,
-        },
-      ],
-    },
-    {
-      day: "Quarta-feira",
-      classes: [
-        {
-          id: "5",
-          name: "Pilates Iniciante",
-          time: "09:00",
-          duration: 60,
-          instructor: "Prof. Ana",
-          maxStudents: 10,
-          currentStudents: 8,
-          available: true,
-        },
-        {
-          id: "6",
-          name: "Zumba",
-          time: "19:00",
-          duration: 60,
-          instructor: "Prof. Carla",
-          maxStudents: 20,
-          currentStudents: 15,
-          available: true,
-        },
-      ],
-    },
-    {
-      day: "Quinta-feira",
-      classes: [
-        {
-          id: "7",
-          name: "Yoga Avançado",
-          time: "14:00",
-          duration: 60,
-          instructor: "Prof. Marina",
-          maxStudents: 12,
-          currentStudents: 10,
-          available: true,
-        },
-        {
-          id: "8",
-          name: "CrossFit",
-          time: "20:00",
-          duration: 60,
-          instructor: "Prof. Roberto",
-          maxStudents: 8,
-          currentStudents: 8,
-          available: false,
-        },
-      ],
-    },
-    {
-      day: "Sexta-feira",
-      classes: [
-        {
-          id: "7",
-          name: "CrossFit Iniciante",
-          time: "17:00",
-          duration: 60,
-          instructor: "Prof. Roberto",
-          maxStudents: 10,
-          currentStudents: 7,
-          available: true,
-        },
-      ],
-    },
-    {
-      day: "Sábado",
-      classes: [
-        {
-          id: "8",
-          name: "Yoga Relaxante",
-          time: "09:00",
-          duration: 90,
-          instructor: "Prof. Marina",
-          maxStudents: 20,
-          currentStudents: 15,
-          available: true,
-        },
-      ],
-    },
-    {
-      day: "Domingo",
-      classes: [],
-    },
+  // Fetch schedule from API (falls back to mock data when API not available)
+  const startDate = new Date().toISOString().slice(0,10)
+  const endDate = new Date(Date.now() + 7*24*60*60*1000).toISOString().slice(0,10)
+  const scheduleQuery = useQuery(getScheduleOptions({ client: apiClient, query: { startDate, endDate } }))
+
+  // Map API sessions into the weekly schedule shape if present
+  type ClassItem = {
+    id: string
+    name: string
+    time: string
+    duration: number
+    instructor: string
+    maxStudents: number
+    currentStudents: number
+    available: boolean
+    raw?: ScheduledSession
+  }
+
+  const apiSessions = (scheduleQuery.data as ScheduleResponseDto | undefined)?.sessions ?? []
+  const groupedByDay: Record<string, ClassItem[]> = {}
+
+  apiSessions.forEach((s) => {
+    if (!s || !s.startTime) return
+    try {
+      const day = new Date(s.startTime).toLocaleDateString("pt-BR", { weekday: "long" })
+      groupedByDay[day] = groupedByDay[day] || []
+      const duration =
+        Math.max(0, Math.round((new Date(s.endTime ?? s.startTime).getTime() - new Date(s.startTime).getTime()) / 60000))
+
+      groupedByDay[day].push({
+        id: String(s.sessionId ?? s.id ?? ""),
+        name: s.seriesName ?? "Aula",
+        time: new Date(s.startTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        duration,
+        instructor: s.trainer?.name ?? "—",
+        maxStudents: s.maxParticipants ?? 0,
+        currentStudents: (s.participants?.length ?? 0),
+        available: s.maxParticipants == null || (s.participants?.length ?? 0) < (s.maxParticipants ?? Infinity),
+        raw: s
+      })
+    } catch (e) {
+      // Ignore mapping errors for malformed session objects
+      // eslint-disable-next-line no-console
+      console.error("Error mapping session", e, s)
+    }
+  })
+
+  const apiWeeklySchedule = Object.keys(groupedByDay).length
+    ? Object.keys(groupedByDay).map((day) => ({ day, classes: groupedByDay[day] }))
+    : null
+
+  // Minimal fallback weekly schedule (only used when API is unavailable)
+  const weekdays = [
+    "Segunda-feira",
+    "Terça-feira",
+    "Quarta-feira",
+    "Quinta-feira",
+    "Sexta-feira",
+    "Sábado",
+    "Domingo"
   ]
+
+  const weeklySchedule = apiWeeklySchedule ?? weekdays.map((d) => ({ day: d, classes: [] as ClassItem[] }))
 
   const getSelectedDays = () => {
     const selectedDays = new Set<string>()
@@ -217,36 +149,101 @@ export default function ClassSchedulePage() {
     }
   }
 
-  const handleSave = async () => {
-    console.log("Saving selected classes:", selectedClasses)
-    console.log("Selected days:", selectedDays)
+  const createCommitment = useCreateCommitment()
+  const { toast } = useToast()
+  const enrollStudent = useEnrollStudent()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-    // Simulate API call to update student's class enrollments
-    // In a real app, this would be an API call to update the backend
+  const handleCommitSeries = async (seriesId: string) => {
+    if (!params.id) return
     try {
-      // Update local storage or global state to propagate changes
-      const enrollmentData = {
-        studentId: student.id,
-        studentName: student.name,
-        selectedClasses: selectedClasses,
-        timestamp: new Date().toISOString(),
+      await createCommitment.mutateAsync(String(params.id), {
+        sessionSeriesId: seriesId,
+        commitmentStatus: "ATTENDING",
+        effectiveFromTimestamp: new Date().toISOString()
+      })
+      toast({ title: "Compromisso criado", description: "Compromisso em série criado com sucesso.", duration: 3000 })
+    } catch (e) {
+      toast({ title: "Erro", description: "Não foi possível criar compromisso.", duration: 4000 })
+      // eslint-disable-next-line no-console
+      console.error(e)
+    }
+  }
+
+  const handleSave = async () => {
+    if (!params.id) return
+
+    // Client-side plan validation (prevent accidental over-bookings)
+    if (studentPlan.maxClasses != null && selectedClasses.length > studentPlan.maxClasses) {
+      toast({
+        title: "Limite de aulas excedido",
+        description: `Seu plano permite no máximo ${studentPlan.maxClasses} aulas. Remova ${selectedClasses.length - studentPlan.maxClasses} aula(s) antes de salvar.`,
+        duration: 5000,
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (selectedDays.length > studentPlan.daysPerWeek) {
+      toast({
+        title: "Limite de dias excedido",
+        description: `Selecione no máximo ${studentPlan.daysPerWeek} dia(s) por semana conforme seu plano.`,
+        duration: 5000,
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSubmitting(true)
+    // Build enrollment payload from selected classes
+    const sessions = selectedClasses.map((classId) => {
+      const daySchedule = weeklySchedule.find((d) => d.classes.some((c) => c.id === classId))
+      const cls = daySchedule?.classes.find((c) => c.id === classId)
+      const raw = cls?.raw
+
+      if (raw) {
+        const start = String(raw.startTime ?? `${startDate}T${cls?.time ?? "00:00"}:00`)
+        const end = String(raw.endTime ?? new Date(new Date(start).getTime() + ((cls?.duration ?? 60) * 60000)).toISOString())
+        return {
+          sessionId: String(raw.sessionId ?? raw.id ?? classId),
+          sessionSeriesId: raw.sessionSeriesId ?? undefined,
+          startTime: start,
+          endTime: end,
+          trainerId: raw.trainer?.id ?? raw.trainerId ?? undefined,
+          maxParticipants: raw.maxParticipants ?? cls?.maxStudents ?? undefined,
+          seriesName: raw.seriesName ?? cls?.name ?? undefined
+        }
+      } else {
+        // Fallback: construct ISO times from startDate and class time
+        const startIso = `${startDate}T${cls?.time ?? "00:00"}:00`
+        const endIso = new Date(new Date(startIso).getTime() + ((cls?.duration ?? 60) * 60000)).toISOString()
+        return {
+          sessionId: classId,
+          sessionSeriesId: undefined,
+          startTime: startIso,
+          endTime: endIso,
+          trainerId: undefined,
+          maxParticipants: cls?.maxStudents ?? undefined,
+          seriesName: cls?.name ?? undefined
+        }
       }
+    })
 
-      // Store the enrollment data so it can be picked up by the schedule pages
-      localStorage.setItem(`student_enrollment_${student.id}`, JSON.stringify(enrollmentData))
+    const payload: EnrollmentRequestDto = {
+      studentId: String(params.id),
+      sessions
+    }
 
-      // Also store it in a global enrollments array for easier access
-      const existingEnrollments = JSON.parse(localStorage.getItem("all_enrollments") || "[]")
-      const updatedEnrollments = existingEnrollments.filter((e: any) => e.studentId !== student.id)
-      updatedEnrollments.push(enrollmentData)
-      localStorage.setItem("all_enrollments", JSON.stringify(updatedEnrollments))
-
-      console.log("Successfully saved student enrollment data")
-
-      // Show success message or redirect
+    try {
+      await enrollStudent.mutateAsync({ client: apiClient, body: payload })
+      toast({ title: "Matrículas salvas", description: "As aulas selecionadas foram salvas no servidor.", duration: 3000 })
       router.back()
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error("Error saving enrollment:", error)
+      toast({ title: "Erro", description: "Erro ao conectar com o servidor.", duration: 4000 })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -267,7 +264,9 @@ export default function ClassSchedulePage() {
           </Button>
           <div>
             <h1 className="text-xl font-bold">Cronograma de Aulas</h1>
-            <p className="text-sm text-muted-foreground">{student.name}</p>
+            <p className="text-sm text-muted-foreground">
+              {studentQuery.isLoading ? "Carregando..." : studentQuery.isError ? "Erro ao carregar aluno" : student?.name ?? "—"}
+            </p>
           </div>
         </div>
 
@@ -368,6 +367,18 @@ export default function ClassSchedulePage() {
                                   <span>{classItem.instructor}</span>
                                 </div>
                               </div>
+
+                              {/* Series-level commitment action */}
+                              <div className="mt-2 flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleCommitSeries(classItem.id)}
+                                  disabled={!classItem.available}
+                                >
+                                  Comprometer-se (série)
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -388,10 +399,17 @@ export default function ClassSchedulePage() {
           <Button
             onClick={handleSave}
             className="bg-green-600 hover:bg-green-700 flex-1"
-            disabled={selectedClasses.length === 0}
+            disabled={
+              selectedClasses.length === 0 ||
+              studentQuery.isLoading ||
+              scheduleQuery.isLoading ||
+              isSubmitting ||
+              (studentPlan.maxClasses != null && selectedClasses.length > studentPlan.maxClasses) ||
+              selectedDays.length > studentPlan.daysPerWeek
+            }
           >
             <Save className="w-4 h-4 mr-2" />
-            Salvar Cronograma
+            {isSubmitting ? "Salvando..." : "Salvar Cronograma"}
           </Button>
         </div>
       </div>

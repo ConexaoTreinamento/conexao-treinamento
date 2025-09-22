@@ -6,37 +6,38 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface StudentPlanAssignmentRepository extends JpaRepository<StudentPlanAssignment, UUID> {
     
-    // Find current active assignment for a student
-    @Query("SELECT spa FROM StudentPlanAssignment spa WHERE spa.studentId = :studentId " +
-           "AND CURRENT_DATE BETWEEN spa.startDate AND spa.endDate")
-    Optional<StudentPlanAssignment> findCurrentActiveAssignment(@Param("studentId") UUID studentId);
+    @Query("SELECT spa FROM StudentPlanAssignment spa WHERE spa.studentId = :studentId AND spa.effectiveFromTimestamp <= :timestamp ORDER BY spa.effectiveFromTimestamp DESC")
+    List<StudentPlanAssignment> findByStudentIdAndEffectiveFromTimestampBeforeOrderByEffectiveFromTimestampDesc(
+        @Param("studentId") UUID studentId,
+        @Param("timestamp") Instant timestamp
+    );
+    
+    // Legacy queries for compatibility, update as needed
+    // Find current active assignment (update to use Instant if needed)
+    @Query("SELECT spa FROM StudentPlanAssignment spa WHERE spa.studentId = :studentId AND spa.effectiveFromTimestamp <= CURRENT_TIMESTAMP AND spa.effectiveToTimestamp >= CURRENT_TIMESTAMP")
+    List<StudentPlanAssignment> findCurrentActiveAssignment(@Param("studentId") UUID studentId);
     
     // Find all assignments for a student (history)
-    @Query("SELECT spa FROM StudentPlanAssignment spa WHERE spa.studentId = :studentId " +
-           "ORDER BY spa.startDate DESC")
-    List<StudentPlanAssignment> findByStudentIdOrderByStartDateDesc(@Param("studentId") UUID studentId);
+    List<StudentPlanAssignment> findByStudentIdOrderByEffectiveFromTimestampDesc(UUID studentId);
     
     // Find assignments expiring soon
-    @Query("SELECT spa FROM StudentPlanAssignment spa WHERE spa.endDate BETWEEN CURRENT_DATE AND :futureDate " +
-           "ORDER BY spa.endDate ASC")
-    List<StudentPlanAssignment> findExpiringSoon(@Param("futureDate") LocalDate futureDate);
+    @Query("SELECT spa FROM StudentPlanAssignment spa WHERE spa.effectiveToTimestamp BETWEEN CURRENT_TIMESTAMP AND :futureInstant ORDER BY spa.effectiveToTimestamp ASC")
+    List<StudentPlanAssignment> findExpiringSoon(@Param("futureInstant") Instant futureInstant);
     
     // Find all currently active assignments
-    @Query("SELECT spa FROM StudentPlanAssignment spa WHERE CURRENT_DATE BETWEEN spa.startDate AND spa.endDate")
+    @Query("SELECT spa FROM StudentPlanAssignment spa WHERE spa.effectiveFromTimestamp <= CURRENT_TIMESTAMP AND spa.effectiveToTimestamp >= CURRENT_TIMESTAMP")
     List<StudentPlanAssignment> findAllCurrentlyActive();
     
     // Find overlapping assignments (for validation)
-    @Query("SELECT spa FROM StudentPlanAssignment spa WHERE spa.studentId = :studentId " +
-           "AND ((spa.startDate <= :endDate AND spa.endDate >= :startDate))")
+    @Query("SELECT spa FROM StudentPlanAssignment spa WHERE spa.studentId = :studentId AND spa.effectiveFromTimestamp <= :endTimestamp AND spa.effectiveToTimestamp >= :startTimestamp")
     List<StudentPlanAssignment> findOverlappingAssignments(@Param("studentId") UUID studentId,
-                                                          @Param("startDate") LocalDate startDate,
-                                                          @Param("endDate") LocalDate endDate);
+                                                          @Param("startTimestamp") Instant startTimestamp,
+                                                          @Param("endTimestamp") Instant endTimestamp);
 }

@@ -15,6 +15,7 @@ public class StudentPlanResponseDTO {
     private String name;
     private Integer maxDays;
     private Integer durationDays;
+    private java.math.BigDecimal costBrl;
     private String description;
     private Boolean active;
     private Instant createdAt;

@@ -41,13 +41,17 @@ public class StudentCommitment {
     @Column(name = "effective_from_timestamp", nullable = false)
     private Instant effectiveFromTimestamp;
     
+    @Column(name = "effective_to_timestamp")
+    private Instant effectiveToTimestamp;
+    
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
     
     // Temporal commitment methods for event sourcing
     public boolean isActiveAtTimestamp(Instant timestamp) {
-        return !effectiveFromTimestamp.isAfter(timestamp);
+        return (effectiveFromTimestamp.isBefore(timestamp) || effectiveFromTimestamp.equals(timestamp)) &&
+               (effectiveToTimestamp == null || timestamp.isBefore(effectiveToTimestamp));
     }
     
     // Helper method to check if this is the current active commitment

@@ -7,7 +7,9 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.UUID;
 
 @Entity
@@ -34,11 +36,11 @@ public class StudentPlanAssignment {
     @JoinColumn(name = "plan_id", insertable = false, updatable = false)
     private StudentPlan plan;
     
-    @Column(name = "start_date", nullable = false)
-    private LocalDate startDate;
+    @Column(name = "effective_from_timestamp", nullable = false)
+    private Instant effectiveFromTimestamp;
     
-    @Column(name = "end_date", nullable = false)
-    private LocalDate endDate;
+    @Column(name = "effective_to_timestamp", nullable = false)
+    private Instant effectiveToTimestamp;
     
     @Column(name = "assigned_by_user_id", nullable = false)
     private UUID assignedByUserId;
@@ -54,31 +56,43 @@ public class StudentPlanAssignment {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
     
-    // Computed active status based on current date
-    public boolean isActive() {
-        LocalDate now = LocalDate.now();
-        return !now.isBefore(startDate) && !now.isAfter(endDate);
+    // Helper to convert LocalDate to Instant (start of day, system timezone)
+    private Instant toStartOfDayInstant(LocalDate date) {
+        return date.atStartOfDay(ZoneId.systemDefault()).toInstant();
     }
     
-    // Check if active on specific date
+    // Computed active status based on current time
+    public boolean isActive() {
+        Instant now = Instant.now();
+        return !now.isBefore(effectiveFromTimestamp) && !now.isAfter(effectiveToTimestamp);
+    }
+    
+    // Check if active on specific date (start of day)
     public boolean isActiveOn(LocalDate date) {
-        return !date.isBefore(startDate) && !date.isAfter(endDate);
+        Instant dateInstant = toStartOfDayInstant(date);
+        return !dateInstant.isBefore(effectiveFromTimestamp) && !dateInstant.isAfter(effectiveToTimestamp);
     }
     
     // Check if expired
     public boolean isExpired() {
-        return LocalDate.now().isAfter(endDate);
+        return Instant.now().isAfter(effectiveToTimestamp);
     }
     
     // Check if starting soon (within days)
     public boolean isStartingSoon(int days) {
         LocalDate futureDate = LocalDate.now().plusDays(days);
-        return startDate.isAfter(LocalDate.now()) && !startDate.isAfter(futureDate);
+        Instant now = Instant.now();
+        Instant futureInstant = toStartOfDayInstant(futureDate);
+        Instant startInstant = effectiveFromTimestamp;
+        return startInstant.isAfter(now) && !startInstant.isAfter(futureInstant);
     }
     
     // Check if expiring soon (within days)
     public boolean isExpiringSoon(int days) {
         LocalDate futureDate = LocalDate.now().plusDays(days);
-        return endDate.isAfter(LocalDate.now()) && !endDate.isAfter(futureDate);
+        Instant now = Instant.now();
+        Instant futureInstant = toStartOfDayInstant(futureDate);
+        Instant endInstant = effectiveToTimestamp;
+        return endInstant.isAfter(now) && !endInstant.isAfter(futureInstant);
     }
 }

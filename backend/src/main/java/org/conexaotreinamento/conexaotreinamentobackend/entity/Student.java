@@ -1,8 +1,7 @@
 package org.conexaotreinamento.conexaotreinamentobackend.entity;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
@@ -16,8 +15,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "students")
 @EntityListeners(AuditingEntityListener.class)
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Data
+@NoArgsConstructor
 public class Student {
 
     @Id
@@ -95,7 +94,6 @@ public class Student {
     private String observations;
 
     @Column(name = "registration_date", nullable = false, updatable = false)
-    @Getter
     @Setter
     private LocalDate registrationDate;
 

@@ -35,6 +35,7 @@ import {useCreateStudent, useDeleteStudent, useRestoreStudent} from "@/lib/hooks
 import {useToast} from "@/hooks/use-toast"
 import {useStudents} from "@/lib/hooks/student-queries";
 import {apiClient} from "@/lib/client";
+import { useCurrentStudentPlan } from "@/lib/hooks/plan-queries";
 
 // Type-safe filter interface
 interface StudentFilters {
@@ -89,7 +90,8 @@ const StudentCard = (props: {
   onConfirm: () => Promise<void>,
   isDeleting: boolean,
   age: number,
-  onDeleteClicked: () => void
+  onDeleteClicked: () => void,
+  planName?: string
 }) => (
     <Card
 
@@ -162,7 +164,7 @@ const StudentCard = (props: {
                 </div>
                 <div className="flex items-center gap-2">
                     <Calendar className="w-3 h-3 flex-shrink-0"/>
-                    <span>Plano Mensal</span>
+                    <span>{props.planName ?? "Sem plano"}</span>
                 </div>
             </div>
 
@@ -206,8 +208,8 @@ const StudentCard = (props: {
                         <span>{props.student.phone}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3 flex-shrink-0"/>
-                        <span>Plano Mensal</span>
+                    <Calendar className="w-3 h-3 flex-shrink-0"/>
+                    <span>{props.planName ?? "Sem plano"}</span>
                     </div>
                 </div>
 
@@ -344,8 +346,8 @@ export default function StudentsPage() {
   })
 
   // Helper data extraction with proper typing
-  const totalPages = studentsData?.page?.totalPages || 0
-  const totalElements = studentsData?.page?.totalElements || 0
+  const totalPages = studentsData?.totalPages || 0
+  const totalElements = studentsData?.totalElements || 0
 
   // Helper function to get student age from birthdate
   const getStudentAge = (birthDate: string): number => {
@@ -374,6 +376,49 @@ export default function StudentsPage() {
   // Helper function to get student full name
   const getStudentFullName = (student: StudentResponseDto): string => {
     return `${student.name || ""} ${student.surname || ""}`.trim()
+  }
+
+  const StudentListItem = ({ student }: { student: StudentResponseDto }) => {
+    const { data: planData, isLoading: planLoading } = useCurrentStudentPlan(student.id)
+    const age = getStudentAge(student.birthDate || "")
+    const fullName = getStudentFullName(student)
+    const initials = fullName
+      .split(' ')
+      .filter(Boolean)
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+
+    // Prefer plan expiration when available; fall back to registration-derived date
+    const expirationDate = planData?.effectiveToTimestamp
+      ? new Date(planData.effectiveToTimestamp)
+      : (student.registrationDate ? new Date(student.registrationDate) : new Date())
+
+    return (
+      <StudentCard
+        student={student}
+        onClick={() => router.push(`/students/${student.id}`)}
+        initials={initials}
+        fullName={fullName}
+        expirationDate={expirationDate}
+        onNewEvaluationClicked={e => {
+          e.stopPropagation()
+          router.push(`/students/${student.id}/evaluation/new`)
+        }}
+        onClickedDelete={async e => {
+          e.stopPropagation()
+          await handleRestore(student.id!)
+        }}
+        isRestoring={isRestoring}
+        onConfirm={() => handleDelete(student.id!)}
+        isDeleting={isDeleting}
+        age={age}
+        onDeleteClicked={() => {
+          void handleDelete(student.id!)
+        }}
+        planName={planLoading ? "Carregando..." : planData?.plan?.name ?? "Sem plano"}
+      />
+    )
   }
 
   // Clear filters via RHF
@@ -810,35 +855,7 @@ export default function StudentsPage() {
         {/* Students List */}
         <div className="space-y-3">
           {!isLoading && !error && (studentsData?.content || []).map((student: StudentResponseDto) => {
-            const age = getStudentAge(student.birthDate || "")
-            const fullName = getStudentFullName(student)
-            const initials = fullName
-              .split(' ')
-              .filter(Boolean)
-              .map(n => n[0])
-              .join('')
-              .toUpperCase()
-
-            // For now, use mock plan expiration since backend doesn't have this yet
-            // In real implementation, this would come from the backend
-            const expirationDate = student.registrationDate ? new Date(student.registrationDate) : new Date()
-            expirationDate.setFullYear(expirationDate.getFullYear() + 2)
-            expirationDate.setMonth(expirationDate.getMonth() + 5)
-            expirationDate.setDate(expirationDate.getDate() + 20)
-            return (
-              <StudentCard key={student.id} student={student}
-                           onClick={() => router.push(`/students/${student.id}`)} initials={initials}
-                           fullName={fullName} expirationDate={expirationDate} onNewEvaluationClicked={e => {
-                  e.stopPropagation()
-                  router.push(`/students/${student.id}/evaluation/new`)
-              }} onClickedDelete={async e => {
-                  e.stopPropagation();
-                  await handleRestore(student.id!)
-              }} isRestoring={isRestoring} onConfirm={() => handleDelete(student.id!)} isDeleting={isDeleting} age={age}
-                           onDeleteClicked={() => {
-                                    void handleDelete(student.id!)
-                                }}/>
-            )
+            return <StudentListItem key={student.id} student={student} />
           })}
         </div>
 

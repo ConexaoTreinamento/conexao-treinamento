@@ -29,6 +29,9 @@ public class StudentPlan {
     @Column(name = "duration_days", nullable = false)
     private int durationDays;
     
+    @Column(name = "cost_brl", nullable = false)
+    private BigDecimal costBrl;
+    
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
     

@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
@@ -19,8 +18,8 @@ public class StudentPlanAssignmentResponseDTO {
     private String planName; // For convenience
     private Integer planMaxDays; // For convenience
     private Integer planDurationDays; // For convenience
-    private LocalDate startDate;
-    private LocalDate endDate;
+    private Instant effectiveFromTimestamp;
+    private Instant effectiveToTimestamp;
     private UUID assignedByUserId;
     private String assignedByUserEmail; // For convenience
     private String assignmentNotes;

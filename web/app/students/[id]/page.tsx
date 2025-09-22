@@ -7,6 +7,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, Edit, CalendarDays, Trash2, RotateCcw } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
+import React, { useState } from "react"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import { usePlans, useAssignPlanToStudent, useCurrentStudentPlan } from "@/lib/hooks/plan-queries"
 import { UnifiedStatusBadge } from "@/lib/expiring-plans"
 import {hasInsomniaTypes, impairmentTypes, STUDENT_PROFILES} from "@/lib/students-data"
 import { useDeleteStudent, useRestoreStudent } from "@/lib/hooks/student-mutations";
@@ -84,6 +94,28 @@ export default function StudentProfilePage() {
   const handleRestore = async () => {
     await restoreStudent({ path: { id: String(params.id) }, client: apiClient })
     toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
+  }
+
+  // Plans data & assign mutation
+  const { data: plansData } = usePlans()
+  const { data: currentPlan } = useCurrentStudentPlan(params?.id ? String(params.id) : undefined)
+  const assignPlan = useAssignPlanToStudent()
+  const [assignOpen, setAssignOpen] = useState(false)
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null)
+  const [effectiveFrom, setEffectiveFrom] = useState<string>(new Date().toISOString().slice(0,10))
+
+  const handleAssignPlan = async () => {
+    if (!params.id || !selectedPlanId) return
+    try {
+      await assignPlan.mutateAsync(String(params.id), { planId: selectedPlanId, effectiveFromTimestamp: effectiveFrom })
+      toast({ title: "Plano atribuído", description: "O plano foi atribuído ao aluno.", duration: 3000 })
+      setAssignOpen(false)
+      router.refresh()
+    } catch (e) {
+      toast({ title: "Erro", description: "Não foi possível atribuir o plano.", duration: 4000 })
+      // eslint-disable-next-line no-console
+      console.error(e)
+    }
   }
 
   const { data: studentData, isLoading, error } = useStudent({path: {id: String(params.id)}}, {enabled: Boolean(params.id)})
@@ -267,6 +299,53 @@ export default function StudentProfilePage() {
                     <CalendarDays className="w-4 h-4 mr-2"/>
                     Cronograma
                   </Button>
+
+                  {/* Assign Plan Dialog */}
+                  <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline" className="w-full">
+                        <CalendarDays className="w-4 h-4 mr-2"/> Atribuir Plano
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Atribuir Plano ao Aluno</DialogTitle>
+                        <DialogDescription>Selecione o plano e a data de vigência</DialogDescription>
+                      </DialogHeader>
+
+                      <div className="space-y-4 mt-4">
+                        <div>
+                          <label className="text-sm text-muted-foreground block mb-1">Plano</label>
+                          <select
+                            className="w-full border rounded px-2 py-1"
+                            value={selectedPlanId ?? ""}
+                            onChange={(e) => setSelectedPlanId(e.target.value || null)}
+                          >
+                            <option value="">Selecione um plano</option>
+                            {(plansData || []).map((p: any) => (
+                              <option key={p.id} value={p.id}>{p.name} - {p.durationDays} dias</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-sm text-muted-foreground block mb-1">Data de Início</label>
+                          <input
+                            type="date"
+                            className="w-full border rounded px-2 py-1"
+                            value={effectiveFrom}
+                            onChange={(e) => setEffectiveFrom(e.target.value)}
+                          />
+                        </div>
+
+                        <div className="flex gap-2 justify-end">
+                          <Button variant="outline" onClick={() => setAssignOpen(false)}>Cancelar</Button>
+                          <Button disabled={!selectedPlanId} onClick={handleAssignPlan}>Confirmar</Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+
                   {/*TODO (Santiago Firpo): replace with deletedAt != null check*/}
                   {studentMockData?.status === 'Inativo' ? (
                       <Button

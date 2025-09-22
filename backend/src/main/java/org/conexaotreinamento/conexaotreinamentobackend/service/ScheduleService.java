@@ -1,77 +1,67 @@
 package org.conexaotreinamento.conexaotreinamentobackend.service;
 
 import org.conexaotreinamento.conexaotreinamentobackend.entity.*;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.EnrollmentRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.repository.ScheduledSessionRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.repository.TrainerScheduleRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentPlanAssignmentRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentPlanRepository;
 
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class ScheduleService {
     
-    private final List<TrainerSchedule> trainerSchedules = new ArrayList<>();
-    private final Map<String, List<SessionParticipant>> sessionParticipants = new HashMap<>();
-    private final Map<String, String> sessionNotes = new HashMap<>();
+    private final TrainerScheduleRepository trainerScheduleRepository;
+    private final ScheduledSessionRepository scheduledSessionRepository;
+    private final StudentPlanAssignmentRepository planAssignmentRepository;
+    private final StudentPlanRepository studentPlanRepository;
     
-    public ScheduleService() {
-        initializeMockData();
+    @Autowired
+    public ScheduleService(TrainerScheduleRepository trainerScheduleRepository, 
+                           ScheduledSessionRepository scheduledSessionRepository,
+                           StudentPlanAssignmentRepository planAssignmentRepository,
+                           StudentPlanRepository studentPlanRepository) {
+        this.trainerScheduleRepository = trainerScheduleRepository;
+        this.scheduledSessionRepository = scheduledSessionRepository;
+        this.planAssignmentRepository = planAssignmentRepository;
+        this.studentPlanRepository = studentPlanRepository;
     }
     
     public List<ScheduledSession> getScheduledSessions(LocalDate startDate, LocalDate endDate) {
+        Instant now = Instant.now();
         List<ScheduledSession> sessions = new ArrayList<>();
         
         for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
             
-            // Find all trainer schedules for this day of week (convert to database format)
+            // Find all active trainer schedules effective at now for this day of week
             int weekday = date.getDayOfWeek() == DayOfWeek.SUNDAY ? 0 : date.getDayOfWeek().getValue();
-            List<TrainerSchedule> daySchedules = trainerSchedules.stream()
-                .filter(schedule -> schedule.getWeekday() == weekday)
-                .toList();
+            List<TrainerSchedule> daySchedules = trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampBeforeAndActive(
+                weekday, now, true);
             
-            // Create scheduled sessions for each schedule
+            // Create merged scheduled sessions for each schedule (lazy materialization with diffs)
             for (TrainerSchedule schedule : daySchedules) {
-                String sessionId = generateSessionId(schedule, date);
-                LocalDateTime startTime = LocalDateTime.of(date, schedule.getStartTime());
-                LocalDateTime endTime = LocalDateTime.of(date, schedule.getEndTime());
+                Optional<ScheduledSession> overrideOpt = scheduledSessionRepository.findBySessionSeriesIdAndStartTime(
+                    schedule.getId(), LocalDateTime.of(date, schedule.getStartTime()));
                 
-                List<SessionParticipant> participants = sessionParticipants.getOrDefault(sessionId, new ArrayList<>());
-                String notes = sessionNotes.get(sessionId);
-                boolean hasOverrides = notes != null || !participants.isEmpty();
-                
-                ScheduledSession session = new ScheduledSession();
-                session.setId(UUID.randomUUID());
-                session.setSessionSeriesId(UUID.randomUUID()); // Would be from schedule series
-                session.setSessionId(sessionId);
-                session.setTrainerId(schedule.getTrainerId());
-                session.setStartTime(startTime);
-                session.setEndTime(endTime);
-                session.setMaxParticipants(10); // Default value
-                session.setSeriesName(schedule.getSeriesName());
-                session.setNotes(notes);
-                session.setInstanceOverride(hasOverrides);
-                session.setEffectiveFromTimestamp(Instant.now());
-                session.setParticipants(participants);
-                
-                sessions.add(session);
+                sessions.add(merge(schedule, overrideOpt, date));
             }
         }
         
         return sessions.stream()
             .sorted(Comparator.comparing(ScheduledSession::getStartTime))
             .collect(Collectors.toList());
-    }
-    
-    public void updateSessionParticipants(String sessionId, List<SessionParticipant> participants) {
-        sessionParticipants.put(sessionId, participants);
-    }
-    
-    public void updateSessionNotes(String sessionId, String notes) {
-        sessionNotes.put(sessionId, notes);
     }
     
     private String generateSessionId(TrainerSchedule schedule, LocalDate date) {
@@ -82,137 +72,190 @@ public class ScheduleService {
         );
     }
     
-    private void initializeMockData() {
-        // Mock trainer IDs (you can replace with real trainer IDs from your database)
-        UUID trainer1 = UUID.randomUUID();
-        UUID trainer2 = UUID.randomUUID();
-        UUID trainer3 = UUID.randomUUID();
+    private ScheduledSession merge(TrainerSchedule schedule, Optional<ScheduledSession> overrideOpt, LocalDate date) {
+        ScheduledSession override = overrideOpt.orElse(null);
+        ScheduledSession merged = new ScheduledSession();
+        merged.setId(UUID.randomUUID()); // Virtual ID for virtual
+        merged.setSessionSeriesId(schedule.getId());
+        merged.setSessionId(generateSessionId(schedule, date));
+        LocalDateTime startTime = LocalDateTime.of(date, schedule.getStartTime());
+        LocalDateTime endTime = LocalDateTime.of(date, schedule.getEndTime());
+        merged.setStartTime(startTime);
+        merged.setEndTime(endTime);
         
-        // Mock trainer schedules using the new entity structure
-        TrainerSchedule yogaMonday = new TrainerSchedule();
-        yogaMonday.setId(UUID.randomUUID());
-        yogaMonday.setTrainerId(trainer1);
-        yogaMonday.setWeekday(1); // Monday
-        yogaMonday.setStartTime(LocalTime.of(9, 0));
-        yogaMonday.setEndTime(LocalTime.of(10, 0));
-        yogaMonday.setIntervalDuration(60);
-        yogaMonday.setSeriesName("Yoga");
-        yogaMonday.setEffectiveFromTimestamp(Instant.now().minusSeconds(86400));
-        trainerSchedules.add(yogaMonday);
+        // Merge trainerId: override if set (including null for no trainer), else schedule
+        if (override != null) {
+            merged.setTrainerId(override.getTrainerId());
+        } else {
+            merged.setTrainerId(schedule.getTrainerId());
+        }
         
-        TrainerSchedule yogaWednesday = new TrainerSchedule();
-        yogaWednesday.setId(UUID.randomUUID());
-        yogaWednesday.setTrainerId(trainer1);
-        yogaWednesday.setWeekday(3); // Wednesday
-        yogaWednesday.setStartTime(LocalTime.of(9, 0));
-        yogaWednesday.setEndTime(LocalTime.of(10, 0));
-        yogaWednesday.setIntervalDuration(60);
-        yogaWednesday.setSeriesName("Yoga");
-        yogaWednesday.setEffectiveFromTimestamp(Instant.now().minusSeconds(86400));
-        trainerSchedules.add(yogaWednesday);
+        // Merge maxParticipants: override if set, else schedule or default
+        if (override != null && override.getMaxParticipants() != null) {
+            merged.setMaxParticipants(override.getMaxParticipants());
+        } else if (schedule.getMaxParticipants() != null) {
+            merged.setMaxParticipants(schedule.getMaxParticipants());
+        } else {
+            merged.setMaxParticipants(10);
+        }
         
-        TrainerSchedule yogaFriday = new TrainerSchedule();
-        yogaFriday.setId(UUID.randomUUID());
-        yogaFriday.setTrainerId(trainer1);
-        yogaFriday.setWeekday(5); // Friday
-        yogaFriday.setStartTime(LocalTime.of(9, 0));
-        yogaFriday.setEndTime(LocalTime.of(10, 0));
-        yogaFriday.setIntervalDuration(60);
-        yogaFriday.setSeriesName("Yoga");
-        yogaFriday.setEffectiveFromTimestamp(Instant.now().minusSeconds(86400));
-        trainerSchedules.add(yogaFriday);
+        // Merge seriesName: override if set, else schedule
+        if (override != null && override.getSeriesName() != null) {
+            merged.setSeriesName(override.getSeriesName());
+        } else {
+            merged.setSeriesName(schedule.getSeriesName());
+        }
         
-        TrainerSchedule crossfitTuesday = new TrainerSchedule();
-        crossfitTuesday.setId(UUID.randomUUID());
-        crossfitTuesday.setTrainerId(trainer2);
-        crossfitTuesday.setWeekday(2); // Tuesday
-        crossfitTuesday.setStartTime(LocalTime.of(7, 0));
-        crossfitTuesday.setEndTime(LocalTime.of(8, 0));
-        crossfitTuesday.setIntervalDuration(60);
-        crossfitTuesday.setSeriesName("CrossFit");
-        crossfitTuesday.setEffectiveFromTimestamp(Instant.now().minusSeconds(86400));
-        trainerSchedules.add(crossfitTuesday);
+        // Merge notes: override if set, else null
+        if (override != null && override.getNotes() != null) {
+            merged.setNotes(override.getNotes());
+        } else {
+            merged.setNotes(null);
+        }
         
-        TrainerSchedule crossfitThursday = new TrainerSchedule();
-        crossfitThursday.setId(UUID.randomUUID());
-        crossfitThursday.setTrainerId(trainer2);
-        crossfitThursday.setWeekday(4); // Thursday
-        crossfitThursday.setStartTime(LocalTime.of(7, 0));
-        crossfitThursday.setEndTime(LocalTime.of(8, 0));
-        crossfitThursday.setIntervalDuration(60);
-        crossfitThursday.setSeriesName("CrossFit");
-        crossfitThursday.setEffectiveFromTimestamp(Instant.now().minusSeconds(86400));
-        trainerSchedules.add(crossfitThursday);
+        // Merge room: override if set, else null
+        if (override != null && override.getRoom() != null) {
+            merged.setRoom(override.getRoom());
+        } else {
+            merged.setRoom(null);
+        }
         
-        TrainerSchedule pilatesMonday = new TrainerSchedule();
-        pilatesMonday.setId(UUID.randomUUID());
-        pilatesMonday.setTrainerId(trainer3);
-        pilatesMonday.setWeekday(1); // Monday
-        pilatesMonday.setStartTime(LocalTime.of(18, 0));
-        pilatesMonday.setEndTime(LocalTime.of(19, 0));
-        pilatesMonday.setIntervalDuration(60);
-        pilatesMonday.setSeriesName("Pilates");
-        pilatesMonday.setEffectiveFromTimestamp(Instant.now().minusSeconds(86400));
-        trainerSchedules.add(pilatesMonday);
+        // Merge equipment: override if set, else null
+        if (override != null && override.getEquipment() != null) {
+            merged.setEquipment(override.getEquipment());
+        } else {
+            merged.setEquipment(null);
+        }
         
-        TrainerSchedule pilatesWednesday = new TrainerSchedule();
-        pilatesWednesday.setId(UUID.randomUUID());
-        pilatesWednesday.setTrainerId(trainer3);
-        pilatesWednesday.setWeekday(3); // Wednesday
-        pilatesWednesday.setStartTime(LocalTime.of(18, 0));
-        pilatesWednesday.setEndTime(LocalTime.of(19, 0));
-        pilatesWednesday.setIntervalDuration(60);
-        pilatesWednesday.setSeriesName("Pilates");
-        pilatesWednesday.setEffectiveFromTimestamp(Instant.now().minusSeconds(86400));
-        trainerSchedules.add(pilatesWednesday);
+        merged.setInstanceOverride(override != null);
+        merged.setEffectiveFromTimestamp(Instant.now());
         
-        // Mock some session participants
-        UUID student1 = UUID.randomUUID();
-        UUID student2 = UUID.randomUUID();
-        UUID exercise1 = UUID.randomUUID();
-        UUID exercise2 = UUID.randomUUID();
+        return merged;
+    }
+    
+    // Example method for creating one-off session (persist)
+    public ScheduledSession createOneOffSession(ScheduledSession session) {
+        session.setInstanceOverride(true);
+        session.setEffectiveFromTimestamp(Instant.now());
+        return scheduledSessionRepository.save(session);
+    }
+    
+    // Method for updating schedule (temporal split)
+    public TrainerSchedule updateSchedule(TrainerSchedule updatedSchedule, Instant newEffectiveFrom) {
+        // Create new schedule for future
+        TrainerSchedule newSchedule = new TrainerSchedule();
+        // Copy fields from updated
+        newSchedule.setTrainerId(updatedSchedule.getTrainerId());
+        newSchedule.setWeekday(updatedSchedule.getWeekday());
+        newSchedule.setStartTime(updatedSchedule.getStartTime());
+        newSchedule.setEndTime(updatedSchedule.getEndTime());
+        newSchedule.setIntervalDuration(updatedSchedule.getIntervalDuration());
+        newSchedule.setSeriesName(updatedSchedule.getSeriesName());
+        newSchedule.setEffectiveFromTimestamp(newEffectiveFrom);
+        newSchedule.setActive(true);
         
-        SessionParticipant participant1 = new SessionParticipant();
-        participant1.setId(UUID.randomUUID());
-        participant1.setStudentId(student1);
-        participant1.setParticipationType(SessionParticipant.ParticipationType.INCLUDED);
-        participant1.setPresent(true);
+        TrainerSchedule savedNew = trainerScheduleRepository.save(newSchedule);
         
-        // Create mock exercises for participant1
-        ParticipantExercise exercise1Progress = new ParticipantExercise();
-        exercise1Progress.setId(UUID.randomUUID());
-        exercise1Progress.setSessionParticipant(participant1);
-        exercise1Progress.setExerciseId(exercise1);
-        exercise1Progress.setSetsAssigned(3);
-        exercise1Progress.setSetsCompleted(3);
-        exercise1Progress.setRepsAssigned(10);
-        exercise1Progress.setRepsCompleted(10);
+        // Update old effective_to if needed (add field if not)
+        // For now, old remains effective until manual end
         
-        ParticipantExercise exercise2Progress = new ParticipantExercise();
-        exercise2Progress.setId(UUID.randomUUID());
-        exercise2Progress.setSessionParticipant(participant1);
-        exercise2Progress.setExerciseId(exercise2);
-        exercise2Progress.setSetsAssigned(2);
-        exercise2Progress.setSetsCompleted(1);
-        exercise2Progress.setRepsAssigned(15);
-        exercise2Progress.setRepsCompleted(15);
-        
-        participant1.setExercises(Arrays.asList(exercise1Progress, exercise2Progress));
-        
-        SessionParticipant participant2 = new SessionParticipant();
-        participant2.setId(UUID.randomUUID());
-        participant2.setStudentId(student2);
-        participant2.setParticipationType(SessionParticipant.ParticipationType.INCLUDED);
-        participant2.setPresent(false);
-        
-        List<SessionParticipant> yogaParticipants = Arrays.asList(participant1, participant2);
-        
-        // Add participants to a specific yoga session (today's Monday session if it exists)
-        LocalDate today = LocalDate.now();
-        if (today.getDayOfWeek() == DayOfWeek.MONDAY) {
-            String todayYogaSession = generateSessionId(yogaMonday, today);
-            sessionParticipants.put(todayYogaSession, yogaParticipants);
-            sessionNotes.put(todayYogaSession, "Focus on breathing techniques");
+        return savedNew;
+    }
+    
+    public void updateSessionParticipants(String sessionId, List<SessionParticipant> participants) {
+        Optional<ScheduledSession> optSession = scheduledSessionRepository.findBySessionId(sessionId);
+        ScheduledSession session = optSession.orElseThrow(() -> new IllegalArgumentException("Session not found: " + sessionId));
+        session.setInstanceOverride(true);
+        for (SessionParticipant participant : participants) {
+            participant.setScheduledSession(session);
+        }
+        session.setParticipants(participants);
+        scheduledSessionRepository.save(session);
+    }
+    
+    public void updateSessionNotes(String sessionId, String notes) {
+        Optional<ScheduledSession> optSession = scheduledSessionRepository.findBySessionId(sessionId);
+        ScheduledSession session = optSession.orElseThrow(() -> new IllegalArgumentException("Session not found: " + sessionId));
+        session.setNotes(notes);
+        session.setInstanceOverride(true);
+        scheduledSessionRepository.save(session);
+    }
+
+    /**
+     * Persist student enrollments for a set of session descriptors.
+     * Creates a persisted session override when the sessionId does not exist yet.
+     */
+    public void enrollStudentToSessions(EnrollmentRequestDTO request) {
+        if (request == null || request.getSessions() == null || request.getSessions().isEmpty()) return;
+
+        UUID studentId = request.getStudentId();
+
+        // Resolve current active plan assignment for student
+        List<StudentPlanAssignment> currentAssignments = planAssignmentRepository.findCurrentActiveAssignment(studentId);
+        if (currentAssignments == null || currentAssignments.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Student has no active plan assignment");
+        }
+        StudentPlanAssignment assignment = currentAssignments.get(0);
+
+        // Resolve plan and its limits
+        StudentPlan plan = studentPlanRepository.findByIdAndActiveTrue(assignment.getPlanId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assigned plan not found"));
+
+        int maxDays = plan.getMaxDays(); // primitive in entity, always present
+ 
+        // Compute existing enrollments within assignment window
+        LocalDateTime startRange = LocalDateTime.ofInstant(assignment.getEffectiveFromTimestamp(), ZoneId.systemDefault());
+        LocalDateTime endRange = LocalDateTime.ofInstant(assignment.getEffectiveToTimestamp(), ZoneId.systemDefault());
+ 
+        long existingEnrollments = scheduledSessionRepository.countSessionsWithParticipantInRange(studentId, startRange, endRange);
+
+        // Count unique new session ids in this request
+        Set<String> newSessionIds = new HashSet<>();
+        for (EnrollmentRequestDTO.EnrollmentSessionDTO s : request.getSessions()) {
+            newSessionIds.add(s.getSessionId());
+        }
+        long newEnrollments = newSessionIds.size();
+
+        if (existingEnrollments + newEnrollments > maxDays) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "Plan limit exceeded for student: maxDays=" + maxDays + " (existing=" + existingEnrollments + ", requested=" + newEnrollments + ")");
+        }
+
+        // Proceed with enrollment persistence (same behavior as before)
+        for (EnrollmentRequestDTO.EnrollmentSessionDTO s : request.getSessions()) {
+            Optional<ScheduledSession> opt = scheduledSessionRepository.findBySessionId(s.getSessionId());
+            ScheduledSession session;
+            if (opt.isPresent()) {
+                session = opt.get();
+            } else {
+                // Create a persisted override for this specific session
+                session = new ScheduledSession();
+                session.setSessionSeriesId(s.getSessionSeriesId());
+                session.setSessionId(s.getSessionId());
+                session.setTrainerId(s.getTrainerId());
+                session.setStartTime(s.getStartTime());
+                session.setEndTime(s.getEndTime());
+                session.setMaxParticipants(s.getMaxParticipants());
+                session.setSeriesName(s.getSeriesName());
+                session.setInstanceOverride(true);
+                session.setEffectiveFromTimestamp(Instant.now());
+            }
+
+            // Create participant entry
+            SessionParticipant participant = new SessionParticipant();
+            participant.setStudentId(request.getStudentId());
+            participant.setParticipationType(SessionParticipant.ParticipationType.INCLUDED);
+            participant.setPresent(false);
+            participant.setScheduledSession(session);
+
+            List<SessionParticipant> participants = session.getParticipants();
+            if (participants == null) {
+                participants = new ArrayList<>();
+            }
+            participants.add(participant);
+            session.setParticipants(participants);
+
+            scheduledSessionRepository.save(session);
         }
     }
 }

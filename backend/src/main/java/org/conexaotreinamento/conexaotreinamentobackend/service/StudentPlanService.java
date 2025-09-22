@@ -18,7 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -105,12 +107,12 @@ public class StudentPlanService {
         User assigningUser = userRepository.findById(assignedByUserId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assigning user not found"));
         
-        LocalDate startDate = requestDTO.getStartDate();
-        LocalDate endDate = startDate.plusDays(plan.getDurationDays());
+        Instant effectiveFrom = requestDTO.getEffectiveFromTimestamp();
+        Instant effectiveTo = effectiveFrom.plusSeconds(ChronoUnit.DAYS.getDuration().getSeconds() * plan.getDurationDays());
         
         // Check for overlapping assignments
         List<StudentPlanAssignment> overlapping = assignmentRepository.findOverlappingAssignments(
-            studentId, startDate, endDate);
+            studentId, effectiveFrom, effectiveTo);
         
         if (!overlapping.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, 
@@ -122,8 +124,8 @@ public class StudentPlanService {
         assignment.setId(UUID.randomUUID());
         assignment.setStudentId(studentId);
         assignment.setPlanId(requestDTO.getPlanId());
-        assignment.setStartDate(startDate);
-        assignment.setEndDate(endDate);
+        assignment.setEffectiveFromTimestamp(effectiveFrom);
+        assignment.setEffectiveToTimestamp(effectiveTo);
         assignment.setAssignedByUserId(assignedByUserId);
         assignment.setAssignmentNotes(requestDTO.getAssignmentNotes());
         
@@ -136,7 +138,7 @@ public class StudentPlanService {
         studentRepository.findById(studentId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
         
-        return assignmentRepository.findByStudentIdOrderByStartDateDesc(studentId)
+        return assignmentRepository.findByStudentIdOrderByEffectiveFromTimestampDesc(studentId)
             .stream()
             .map(this::mapToAssignmentResponseDTO)
             .toList();
@@ -147,15 +149,17 @@ public class StudentPlanService {
         studentRepository.findById(studentId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
         
-        return assignmentRepository.findCurrentActiveAssignment(studentId)
-            .map(this::mapToAssignmentResponseDTO)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
-                "No active plan found for student"));
+        List<StudentPlanAssignment> current = assignmentRepository.findCurrentActiveAssignment(studentId);
+        if (current.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, 
+                "No active plan found for student");
+        }
+        return mapToAssignmentResponseDTO(current.get(0));
     }
     
     public List<StudentPlanAssignmentResponseDTO> getExpiringSoonAssignments(int days) {
-        LocalDate futureDate = LocalDate.now().plusDays(days);
-        return assignmentRepository.findExpiringSoon(futureDate)
+        Instant futureInstant = Instant.now().plusSeconds(ChronoUnit.DAYS.getDuration().getSeconds() * days);
+        return assignmentRepository.findExpiringSoon(futureInstant)
             .stream()
             .map(this::mapToAssignmentResponseDTO)
             .toList();
@@ -193,8 +197,8 @@ public class StudentPlanService {
         dto.setId(assignment.getId());
         dto.setStudentId(assignment.getStudentId());
         dto.setPlanId(assignment.getPlanId());
-        dto.setStartDate(assignment.getStartDate());
-        dto.setEndDate(assignment.getEndDate());
+        dto.setEffectiveFromTimestamp(assignment.getEffectiveFromTimestamp());
+        dto.setEffectiveToTimestamp(assignment.getEffectiveToTimestamp());
         dto.setAssignedByUserId(assignment.getAssignedByUserId());
         dto.setAssignmentNotes(assignment.getAssignmentNotes());
         dto.setCreatedAt(assignment.getCreatedAt());
@@ -219,7 +223,7 @@ public class StudentPlanService {
         
         // Calculate days remaining
         if (assignment.isActive()) {
-            dto.setDaysRemaining(ChronoUnit.DAYS.between(LocalDate.now(), assignment.getEndDate()));
+            dto.setDaysRemaining((int) ChronoUnit.DAYS.between(assignment.getEffectiveFromTimestamp(), assignment.getEffectiveToTimestamp()));
         } else {
             dto.setDaysRemaining(0);
         }

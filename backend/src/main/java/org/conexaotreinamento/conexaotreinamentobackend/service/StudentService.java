@@ -6,12 +6,14 @@ import org.conexaotreinamento.conexaotreinamentobackend.dto.request.AnamnesisReq
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.StudentRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AnamnesisResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.PhysicalImpairmentResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentPlanAssignmentResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Anamnesis;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.PhysicalImpairment;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.AnamnesisRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.PhysicalImpairmentRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.service.StudentPlanService;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.specification.StudentSpecifications;
 import org.springframework.data.domain.Page;
@@ -37,6 +39,7 @@ public class StudentService {
     private final StudentRepository studentRepository;
     private final AnamnesisRepository anamnesisRepository;
     private final PhysicalImpairmentRepository physicalImpairmentRepository;
+    private final StudentPlanService studentPlanService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -97,32 +100,14 @@ public class StudentService {
                         .map(PhysicalImpairmentResponseDTO::fromEntity)
                         .toList();
 
-        return new StudentResponseDTO(
-                student.getId(),
-                student.getEmail(),
-                student.getName(),
-                student.getSurname(),
-                student.getGender(),
-                student.getBirthDate(),
-                student.getPhone(),
-                student.getProfession(),
-                student.getStreet(),
-                student.getNumber(),
-                student.getComplement(),
-                student.getNeighborhood(),
-                student.getCep(),
-                student.getEmergencyContactName(),
-                student.getEmergencyContactPhone(),
-                student.getEmergencyContactRelationship(),
-                student.getObjectives(),
-                student.getObservations(),
-                student.getRegistrationDate(),
-                student.getCreatedAt(),
-                student.getUpdatedAt(),
-                student.getDeletedAt(),
-                anamnesisDto,
-                physicalImpairments
-        );
+        StudentPlanAssignmentResponseDTO activePlan = null;
+        try {
+            activePlan = studentPlanService.getCurrentStudentPlan(student.getId());
+        } catch (ResponseStatusException e) {
+            // No active plan
+        }
+
+        return StudentResponseDTO.fromEntity(student, activePlan);
     }
 
     public Page<StudentResponseDTO> findAll(
@@ -158,7 +143,7 @@ public class StudentService {
         
         Page<Student> students = studentRepository.findAll(spec, pageable);
         
-        return students.map(StudentResponseDTO::fromEntity);
+        return students.map(s -> StudentResponseDTO.fromEntity(s, null));
     }
 
     @Transactional
@@ -241,7 +226,7 @@ public class StudentService {
             physicalImpairmentRepository.saveAll(toSave);
         }
 
-        return StudentResponseDTO.fromEntity(savedStudent);
+        return StudentResponseDTO.fromEntity(savedStudent, null);
     }
 
     @Transactional
@@ -267,6 +252,6 @@ public class StudentService {
 
         studentRepository.save(student);
 
-        return StudentResponseDTO.fromEntity(student);
+        return StudentResponseDTO.fromEntity(student, null);
     }
 }
