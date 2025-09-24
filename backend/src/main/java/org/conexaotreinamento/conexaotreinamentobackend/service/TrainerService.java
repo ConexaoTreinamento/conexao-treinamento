@@ -11,6 +11,7 @@ import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.TrainerRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.repository.ScheduledSessionRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class TrainerService {
     private final TrainerRepository trainerRepository;
     private final UserRepository userRepository;
     private final UserService userService;
+    private final ScheduledSessionRepository scheduledSessionRepository;
 
     @Transactional
     public ListTrainersDTO create(CreateTrainerDTO request) {
@@ -44,12 +46,23 @@ public class TrainerService {
     }
 
     public ListTrainersDTO findById(UUID id) {
-        return trainerRepository.findActiveTrainerProfileById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trainer not found"));
+    ListTrainersDTO dto = trainerRepository.findActiveTrainerProfileById(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trainer not found"));
+    // Replace hoursWorked with actual calculation based on attendance
+    Integer hoursWorked = calculateTrainerHoursWorked(id);
+    return new org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainersDTO(
+        dto.id(), dto.name(), dto.email(), dto.phone(), dto.address(), dto.birthDate(), dto.specialties(),
+        dto.compensationType(), dto.active(), dto.joinDate(), hoursWorked
+    );
     }
 
     public List<ListTrainersDTO> findAll() {
-        return trainerRepository.findAllTrainerProfiles(true);
+        List<ListTrainersDTO> base = trainerRepository.findAllTrainerProfiles(true);
+        // Map to replace hoursWorked with actual calculated value per trainer
+        return base.stream().map(dto -> new org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainersDTO(
+                dto.id(), dto.name(), dto.email(), dto.phone(), dto.address(), dto.birthDate(), dto.specialties(),
+                dto.compensationType(), dto.active(), dto.joinDate(), calculateTrainerHoursWorked(dto.id())
+        )).toList();
     }
 
     @Transactional
@@ -78,12 +91,23 @@ public class TrainerService {
         // Buscar o User para obter o createdAt (joinDate)
         User user = userRepository.findById(trainer.getUserId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        return TrainerResponseDTO.fromEntity(savedTrainer, updatedUser.email(), user.getCreatedAt());
+        
+        // Calculate actual hours worked based on sessions with at least one present student
+        Integer hoursWorked = calculateTrainerHoursWorked(id);
+        
+        return TrainerResponseDTO.fromEntity(savedTrainer, updatedUser.email(), user.getCreatedAt(), hoursWorked);
     }
 
     @Transactional
     public void delete(UUID trainerId) {
         Optional<Trainer> trainer = trainerRepository.findById(trainerId);
         trainer.ifPresent(value -> userService.delete(value.getUserId()));
+    }
+    
+    /**
+     * Calculate trainer hours worked based on sessions with at least one present student
+     */
+    private Integer calculateTrainerHoursWorked(UUID trainerId) {
+        return scheduledSessionRepository.calculateTrainerHoursWorked(trainerId);
     }
 }

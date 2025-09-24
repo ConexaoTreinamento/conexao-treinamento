@@ -19,4 +19,11 @@ public interface TrainerScheduleRepository extends JpaRepository<TrainerSchedule
         @Param("timestamp") Instant timestamp,
         @Param("active") boolean active
     );
+
+    @Query("SELECT ts FROM TrainerSchedule ts WHERE ts.trainerId = :trainerId AND ts.weekday IN :weekdays AND ts.effectiveFromTimestamp <= :now AND (ts.effectiveToTimestamp IS NULL OR ts.effectiveToTimestamp > :now) AND ts.active = true")
+    List<TrainerSchedule> findActiveSeriesByTrainerAndWeekdaysAt(
+        @Param("trainerId") UUID trainerId,
+        @Param("weekdays") List<Integer> weekdays,
+        @Param("now") Instant now
+    );
 }

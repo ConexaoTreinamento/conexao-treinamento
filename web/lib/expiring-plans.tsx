@@ -3,6 +3,7 @@ import { getStudentById } from "@/lib/students-data"
 import { useQuery } from "@tanstack/react-query"
 import { apiClient } from "@/lib/client"
 import { getCurrentStudentPlanOptions } from "@/lib/api-client/@tanstack/react-query.gen"
+import { StudentPlanAssignmentResponseDto } from "@/lib/api-client/types.gen"
 
 export interface ExpiringPlanData {
   planExpirationDate?: string
@@ -42,15 +43,14 @@ export function useStudentPlanExpiration(studentId?: string) {
     }
   }
 
-  // Use generated options but cast to any to avoid strict overload typing issues,
-  // then normalize the returned payload into a simple YYYY-MM-DD date string.
-  const query = useQuery(getCurrentStudentPlanOptions({ client: apiClient, path: { studentId } }) as any)
+  // Query the current student plan assignment using the generated options.
+  const query = useQuery(getCurrentStudentPlanOptions({ client: apiClient, path: { studentId } }))
 
   // Normalize expiration date from the generated client's response shape
   const normalized = (() => {
-    const assignment = (query.data as any)?.data ?? query.data
+    const assignment = query.data as StudentPlanAssignmentResponseDto | undefined
     if (!assignment) return undefined
-    const raw = assignment.effectiveToTimestamp || assignment.effectiveTo || assignment.effective_to_timestamp
+    const raw = assignment.effectiveToTimestamp
     if (!raw) return undefined
     try {
       const d = new Date(raw)

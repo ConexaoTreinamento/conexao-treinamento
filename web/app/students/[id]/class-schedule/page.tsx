@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, Save, Calendar, Clock, User } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
-import { useCreateCommitment } from "@/lib/hooks/commitment-queries"
+import { useCreateCommitment, useCommitmentsForSeries, useSplitCommitment } from "@/lib/hooks/commitment-queries"
 import { useToast } from "@/hooks/use-toast"
 import { getScheduleOptions } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
@@ -16,6 +16,70 @@ import { useQuery } from "@tanstack/react-query"
 import { useEnrollStudent } from "@/lib/hooks/enrollment-queries"
 import { useStudent } from "@/lib/hooks/student-queries"
 import type { ScheduleResponseDto, ScheduledSession, StudentResponseDto, EnrollmentRequestDto } from "@/lib/api-client/types.gen"
+
+function SeriesCommitActions({ studentId, seriesId, sessionStart, available }: { studentId?: string; seriesId?: string; sessionStart?: string; available?: boolean }) {
+  const createCommitment = useCreateCommitment()
+  const splitCommitment = useSplitCommitment()
+  const commitmentsQuery = useCommitmentsForSeries(studentId, seriesId)
+  const { toast } = useToast()
+
+  const existingCommitment = (commitmentsQuery.data && commitmentsQuery.data.length > 0) ? commitmentsQuery.data[0] : undefined
+
+  const handleCreateSeriesCommitment = async () => {
+    if (!studentId || !seriesId) return
+    try {
+      await createCommitment.mutateAsync(studentId, {
+        sessionSeriesId: seriesId,
+        commitmentStatus: "ATTENDING",
+        effectiveFromTimestamp: new Date().toISOString()
+      })
+      toast({ title: "Compromisso criado", description: "Compromisso em série criado com sucesso.", duration: 3000 })
+    } catch (e) {
+      toast({ title: "Erro", description: "Não foi possível criar compromisso.", duration: 4000 })
+      // eslint-disable-next-line no-console
+      console.error(e)
+    }
+  }
+
+  const handleSplit = async () => {
+    if (!existingCommitment || !existingCommitment.id || !sessionStart) return
+    try {
+      // SplitRequestDto expects `splitFrom` (ISO string) per generated types
+      await splitCommitment.mutateAsync(existingCommitment.id, {
+        splitFrom: String(sessionStart)
+      })
+      toast({ title: "Compromisso dividido", description: "O compromisso foi dividido a partir desta aula.", duration: 3000 })
+    } catch (e) {
+      toast({ title: "Erro", description: "Não foi possível dividir o compromisso.", duration: 4000 })
+      // eslint-disable-next-line no-console
+      console.error(e)
+    }
+  }
+
+  return (
+    <div className="mt-2 flex gap-2">
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={handleCreateSeriesCommitment}
+        disabled={!available}
+      >
+        Comprometer-se (série)
+      </Button>
+
+      {existingCommitment && (
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={handleSplit}
+          disabled={!available || splitCommitment.isPending}
+        >
+          Esta e seguintes
+        </Button>
+      )}
+    </div>
+  )
+}
 
 export default function ClassSchedulePage() {
   const router = useRouter()
@@ -150,15 +214,17 @@ export default function ClassSchedulePage() {
   }
 
   const createCommitment = useCreateCommitment()
+  const splitCommitment = useSplitCommitment()
   const { toast } = useToast()
   const enrollStudent = useEnrollStudent()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const studentId = String(params.id)
 
   const handleCommitSeries = async (seriesId: string) => {
-    if (!params.id) return
+    if (!studentId) return
     try {
-      await createCommitment.mutateAsync(String(params.id), {
-        sessionSeriesId: seriesId,
+      await createCommitment.mutateAsync(studentId, {
+        sessionSeriesId: apiSessions.find(s => s.sessionSeriesId === seriesId)?.sessionId || seriesId,
         commitmentStatus: "ATTENDING",
         effectiveFromTimestamp: new Date().toISOString()
       })
@@ -170,8 +236,22 @@ export default function ClassSchedulePage() {
     }
   }
 
+  const handleSplit = async (commitmentId: string) => {
+    if (!commitmentId) return
+    try {
+      await splitCommitment.mutateAsync(commitmentId, {
+        splitFrom: new Date().toISOString()
+      })
+      toast({ title: "Compromisso dividido", description: "O compromisso foi dividido.", duration: 3000 })
+    } catch (e) {
+      toast({ title: "Erro", description: "Não foi possível dividir o compromisso.", duration: 4000 })
+      // eslint-disable-next-line no-console
+      console.error(e)
+    }
+  }
+
   const handleSave = async () => {
-    if (!params.id) return
+    if (!studentId) return
 
     // Client-side plan validation (prevent accidental over-bookings)
     if (studentPlan.maxClasses != null && selectedClasses.length > studentPlan.maxClasses) {
@@ -230,12 +310,12 @@ export default function ClassSchedulePage() {
     })
 
     const payload: EnrollmentRequestDto = {
-      studentId: String(params.id),
+      studentId,
       sessions
     }
 
     try {
-      await enrollStudent.mutateAsync({ client: apiClient, body: payload })
+      await enrollStudent.mutateAsync(payload)
       toast({ title: "Matrículas salvas", description: "As aulas selecionadas foram salvas no servidor.", duration: 3000 })
       router.back()
     } catch (error) {
@@ -368,17 +448,12 @@ export default function ClassSchedulePage() {
                                 </div>
                               </div>
 
-                              {/* Series-level commitment action */}
-                              <div className="mt-2 flex gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleCommitSeries(classItem.id)}
-                                  disabled={!classItem.available}
-                                >
-                                  Comprometer-se (série)
-                                </Button>
-                              </div>
+                              <SeriesCommitActions
+                                studentId={String(params.id)}
+                                seriesId={classItem.raw?.sessionSeriesId ? String(classItem.raw.sessionSeriesId) : undefined}
+                                sessionStart={classItem.raw?.startTime ? String(classItem.raw.startTime) : undefined}
+                                available={classItem.available}
+                              />
                             </div>
                           </div>
                         </div>

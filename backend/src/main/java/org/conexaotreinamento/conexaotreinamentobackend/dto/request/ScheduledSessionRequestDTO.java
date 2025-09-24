@@ -40,4 +40,11 @@ public class ScheduledSessionRequestDTO {
     private Instant effectiveFromTimestamp;
     
     private Boolean retroactive = false;
+
+    /**
+     * Optional compact JSON diff that explicitly lists overridden fields for an instance.
+     * - Example: {"trainerId": null, "room":"Studio A", "maxParticipants": 12}
+     * This allows callers to explicitly clear inherited values by sending nulls.
+     */
+    private String diff;
 }

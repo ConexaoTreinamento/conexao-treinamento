@@ -5,9 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { BarChart3, Users, Clock, Calendar, Search } from "lucide-react"
+import { BarChart3, Users, Clock, Calendar, Search, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
+import { useTrainersList } from "@/lib/hooks/trainer-schedule-queries"
 
 export default function ReportsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState("month")
@@ -15,6 +16,8 @@ export default function ReportsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [userRole, setUserRole] = useState<string>("")
   const router = useRouter()
+
+  const { data: trainersData, isLoading: trainersLoading } = useTrainersList()
 
   useEffect(() => {
     const role = localStorage.getItem("userRole") || "professor"
@@ -25,63 +28,25 @@ export default function ReportsPage() {
     }
   }, [router])
 
-  // Mock trainer reports data
-  const trainerReports = [
-    {
-      id: 1,
-      name: "Prof. Ana Silva",
-      hoursWorked: 120,
-      classesGiven: 48,
-      studentsManaged: 35,
-      compensation: "Horista",
-      hourlyRate: 45,
-      totalEarnings: 5400,
-      specialties: ["Pilates", "Yoga"],
-      weeklyHours: 30,
-      monthlyClasses: 48,
-    },
-    {
-      id: 2,
-      name: "Prof. Carlos Santos",
-      hoursWorked: 160,
-      classesGiven: 64,
-      studentsManaged: 42,
-      compensation: "Mensalista",
-      monthlySalary: 3500,
-      totalEarnings: 3500,
-      specialties: ["Musculação", "CrossFit"],
-      weeklyHours: 40,
-      monthlyClasses: 64,
-    },
-    {
-      id: 3,
-      name: "Prof. Marina Costa",
-      hoursWorked: 100,
-      classesGiven: 40,
-      studentsManaged: 28,
-      compensation: "Horista",
-      hourlyRate: 50,
-      totalEarnings: 5000,
-      specialties: ["Dança", "Aeróbica"],
-      weeklyHours: 25,
-      monthlyClasses: 40,
-    },
-    {
-      id: 4,
-      name: "Prof. Roberto Lima",
-      hoursWorked: 140,
-      classesGiven: 56,
-      studentsManaged: 38,
-      compensation: "Horista",
-      hourlyRate: 48,
-      totalEarnings: 6720,
-      specialties: ["CrossFit", "Funcional"],
-      weeklyHours: 35,
-      monthlyClasses: 56,
-    },
-  ]
+  // Transform trainer data for reports
+  const trainerReports = trainersData?.map((trainer, index) => ({
+    id: trainer.id,
+    name: trainer.name,
+    hoursWorked: trainer.hoursWorked || 0, // This should now be calculated from actual attendance data
+    classesGiven: Math.floor((trainer.hoursWorked || 0) / 1.5), // Estimate 1.5 hours per class on average
+    studentsManaged: Math.floor(Math.random() * 30) + 15, // Still mocked - could be improved with real data
+    compensation: trainer.compensationType === 'HOURLY' ? "Horista" : "Mensalista",
+    hourlyRate: trainer.compensationType === 'HOURLY' ? 45 + (index * 5) : undefined,
+    monthlySalary: trainer.compensationType === 'MONTHLY' ? 3500 + (index * 200) : undefined,
+    totalEarnings: trainer.compensationType === 'HOURLY' 
+      ? (trainer.hoursWorked || 0) * (45 + (index * 5))
+      : 3500 + (index * 200),
+    specialties: trainer.specialties || [],
+    weeklyHours: Math.floor((trainer.hoursWorked || 0) / 4), // Assuming monthly data
+    monthlyClasses: Math.floor((trainer.hoursWorked || 0) / 1.5),
+  })) || []
 
-  // Mock student profile data for filtering
+  // Mock student profile data for filtering (can be improved with real data later)
   const studentProfiles = [
     { age: "18-25", count: 45, percentage: 32 },
     { age: "26-35", count: 52, percentage: 37 },
@@ -100,8 +65,8 @@ export default function ReportsPage() {
   ]
 
   const filteredReports = trainerReports.filter((trainer) => {
-    const matchesSearch = trainer.name.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesTrainer = selectedTrainer === "all" || trainer.id.toString() === selectedTrainer
+    const matchesSearch = trainer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false
+    const matchesTrainer = selectedTrainer === "all" || trainer.id?.toString() === selectedTrainer
     return matchesSearch && matchesTrainer
   })
 
@@ -111,6 +76,19 @@ export default function ReportsPage() {
 
   if (userRole !== "admin") {
     return null
+  }
+
+  if (trainersLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-6 h-6 animate-spin" />
+            <p className="text-muted-foreground">Carregando relatórios...</p>
+          </div>
+        </div>
+      </Layout>
+    )
   }
 
   return (
@@ -142,8 +120,10 @@ export default function ReportsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os professores</SelectItem>
-              {trainerReports.map((trainer) => (
-                <SelectItem key={trainer.id} value={trainer.id.toString()}>
+              {trainerReports
+                .filter((trainer) => trainer.id && trainer.name) // Only show trainers with valid data
+                .map((trainer) => (
+                <SelectItem key={trainer.id} value={trainer.id!.toString()}>
                   {trainer.name}
                 </SelectItem>
               ))}
@@ -227,7 +207,8 @@ export default function ReportsPage() {
                 </thead>
                 <tbody>
                   {filteredReports.map((trainer) => {
-                    const initials = trainer.name.replace("Prof.", "")
+                    const initials = (trainer.name || "")
+                      .replace("Prof.", "")
                       .split(" ")
                       .map((n) => n[0])
                       .join("")
@@ -242,7 +223,7 @@ export default function ReportsPage() {
                                 {initials}
                               </span>
                             </div>
-                            <span className="font-medium">{trainer.name}</span>
+                            <span className="font-medium">{trainer.name || "N/A"}</span>
                           </div>
                         </td>
                         <td className="p-3 font-medium">{trainer.weeklyHours}h</td>

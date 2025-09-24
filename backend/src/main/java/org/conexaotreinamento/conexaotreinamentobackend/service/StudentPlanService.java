@@ -43,11 +43,13 @@ public class StudentPlanService {
         }
         
         StudentPlan plan = new StudentPlan();
-        plan.setId(UUID.randomUUID());
+        // let JPA generate the id (do not assign UUID manually to avoid merge/detached-entity issues)
         plan.setName(requestDTO.getName());
         plan.setMaxDays(requestDTO.getMaxDays());
         plan.setDurationDays(requestDTO.getDurationDays());
         plan.setDescription(requestDTO.getDescription());
+        // Map cost from request — required by DB (not-null)
+        plan.setCostBrl(requestDTO.getCostBrl());
         plan.setActive(true);
         
         StudentPlan savedPlan = studentPlanRepository.save(plan);
@@ -81,12 +83,39 @@ public class StudentPlanService {
             .toList();
     }
     
+    /**
+     * Return all plans. This is used when caller requests inactive (soft-deleted) plans as well.
+     */
+    public List<StudentPlanResponseDTO> getAllPlans() {
+        return studentPlanRepository.findAll()
+            .stream()
+            .map(this::mapToResponseDTO)
+            .toList();
+    }
+    
     public StudentPlanResponseDTO getPlanById(UUID planId) {
         StudentPlan plan = studentPlanRepository.findByIdAndActiveTrue(planId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
                 "Plan not found or inactive"));
         
         return mapToResponseDTO(plan);
+    }
+    
+    /**
+     * Restore (reactivate) a soft-deleted plan.
+     */
+    @Transactional
+    public void restorePlan(UUID planId) {
+        StudentPlan plan = studentPlanRepository.findById(planId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Plan not found"));
+        
+        if (plan.isActive()) {
+            // already active — no-op
+            return;
+        }
+        
+        plan.setActive(true);
+        studentPlanRepository.save(plan);
     }
     
     @Transactional
@@ -161,14 +190,14 @@ public class StudentPlanService {
         Instant futureInstant = Instant.now().plusSeconds(ChronoUnit.DAYS.getDuration().getSeconds() * days);
         return assignmentRepository.findExpiringSoon(futureInstant)
             .stream()
-            .map(this::mapToAssignmentResponseDTO)
+            .map(this::mapAssignmentWithEntities)
             .toList();
     }
     
     public List<StudentPlanAssignmentResponseDTO> getAllCurrentlyActiveAssignments() {
         return assignmentRepository.findAllCurrentlyActive()
             .stream()
-            .map(this::mapToAssignmentResponseDTO)
+            .map(this::mapAssignmentWithEntities)
             .toList();
     }
     
@@ -221,13 +250,44 @@ public class StudentPlanService {
         dto.setExpired(assignment.isExpired());
         dto.setExpiringSoon(assignment.isExpiringSoon(7));
         
-        // Calculate days remaining
+        // Calculate days remaining (from today to effectiveTo when active) — use zone-aware LocalDate for correctness
         if (assignment.isActive()) {
-            dto.setDaysRemaining((int) ChronoUnit.DAYS.between(assignment.getEffectiveFromTimestamp(), assignment.getEffectiveToTimestamp()));
+            if (assignment.getEffectiveToTimestamp() == null) {
+                // No explicit end -> treat as 0 remaining (or could use a sentinel)
+                dto.setDaysRemaining(0);
+            } else {
+                LocalDate today = Instant.now().atZone(ZoneId.systemDefault()).toLocalDate();
+                LocalDate endDate = assignment.getEffectiveToTimestamp().atZone(ZoneId.systemDefault()).toLocalDate();
+                long daysBetween = ChronoUnit.DAYS.between(today, endDate);
+                // Include the end date as a remaining day when endDate >= today
+                int daysRemaining = (int) Math.max(0, daysBetween + 1);
+                dto.setDaysRemaining(daysRemaining);
+            }
         } else {
             dto.setDaysRemaining(0);
         }
         
         return dto;
+    }
+
+    private StudentPlanAssignmentResponseDTO mapAssignmentWithEntities(StudentPlanAssignment assignment) {
+        // Attempt to load related entities to enrich the response
+        Student student = null;
+        StudentPlan plan = null;
+        User assigningUser = null;
+        try {
+            if (assignment.getStudentId() != null) {
+                student = studentRepository.findById(assignment.getStudentId()).orElse(null);
+            }
+            if (assignment.getPlanId() != null) {
+                plan = studentPlanRepository.findById(assignment.getPlanId()).orElse(null);
+            }
+            if (assignment.getAssignedByUserId() != null) {
+                assigningUser = userRepository.findById(assignment.getAssignedByUserId()).orElse(null);
+            }
+        } catch (Exception ignored) {
+            // fall back to minimal mapping on any error
+        }
+        return mapToAssignmentResponseDTO(assignment, student, plan, assigningUser);
     }
 }

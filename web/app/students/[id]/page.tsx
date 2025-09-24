@@ -107,7 +107,8 @@ export default function StudentProfilePage() {
   const handleAssignPlan = async () => {
     if (!params.id || !selectedPlanId) return
     try {
-      await assignPlan.mutateAsync(String(params.id), { planId: selectedPlanId, effectiveFromTimestamp: effectiveFrom })
+      // Send full ISO instant to backend (frontend date input returns YYYY-MM-DD)
+      await assignPlan.mutateAsync(String(params.id), { planId: selectedPlanId, effectiveFromTimestamp: new Date(effectiveFrom).toISOString() })
       toast({ title: "Plano atribuído", description: "O plano foi atribuído ao aluno.", duration: 3000 })
       setAssignOpen(false)
       router.refresh()
@@ -243,9 +244,14 @@ export default function StudentProfilePage() {
               <div className="space-y-2">
                 <CardTitle className="text-lg">{getFullName(studentData)}</CardTitle>
                 <div className="flex flex-wrap justify-center gap-2">
-                  <UnifiedStatusBadge expirationDate={formatDate("2026-05-15")} />
-                  <Badge variant="outline">Plano {studentMockData.plan ?? "Plano Anual"}</Badge>
-                  {/*Mock value, switch to real one when implemented*/}
+                  <UnifiedStatusBadge 
+                    expirationDate={currentPlan?.effectiveToTimestamp ? formatDate(currentPlan.effectiveToTimestamp) : "N/A"} 
+                  />
+                  {currentPlan ? (
+                    <Badge variant="outline">Plano {currentPlan.planName}</Badge>
+                  ) : (
+                    <Badge variant="secondary">Sem plano ativo</Badge>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -404,8 +410,14 @@ export default function StudentProfilePage() {
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex justify-between ">
-                      <span className="font-medium">Plano {studentMockData.plan}</span>
-                      <Badge variant="outline">{studentMockData.classSchedule.daysPerWeek} dias/semana</Badge>
+                      <span className="font-medium">
+                        {currentPlan ? `Plano ${currentPlan.planName}` : "Sem plano ativo"}
+                      </span>
+                      {currentPlan && (
+                        <Badge variant="outline">
+                          {currentPlan.daysRemaining ? `${currentPlan.daysRemaining} dias restantes` : 'Período indefinido'}
+                        </Badge>
+                      )}
                     </div>
                     <div className="space-y-2">
                       {studentMockData.classSchedule.selectedClasses.map((classItem: ScheduleClass, index: number) => (

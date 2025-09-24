@@ -175,10 +175,12 @@ export default function TrainersPage() {
             <p className="text-sm text-muted-foreground">Gerencie professores e instrutores</p>
           </div>
           {userRole === "admin" && (
-            <Button onClick={handleCreateTrainer} className="bg-green-600 hover:bg-green-700">
-              <UserPlus className="w-4 h-4 mr-2" />
-              Novo Professor
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleCreateTrainer} className="bg-green-600 hover:bg-green-700">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Novo Professor
+              </Button>
+            </div>
           )}
         </div>
 

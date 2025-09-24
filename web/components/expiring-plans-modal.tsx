@@ -1,21 +1,23 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useMemo } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { AlertTriangle, Calendar, User, Phone, Mail } from "lucide-react"
+import { AlertTriangle, Calendar, User } from "lucide-react"
 import Link from "next/link"
-import { getStudentPlanExpirationDate, calculateDaysUntilExpiration, UnifiedStatusBadge } from "@/lib/expiring-plans"
-import { STUDENTS, getStudentFullName } from "@/lib/students-data"
+import { UnifiedStatusBadge } from "@/lib/expiring-plans"
+import { useQuery } from "@tanstack/react-query"
+import { getExpiringSoonAssignmentsOptions } from "@/lib/api-client/@tanstack/react-query.gen"
+import { apiClient } from "@/lib/client"
 
-interface Student {
-  id: number
-  name: string
-  email: string
-  phone: string
-  planExpirationDate: string
-  daysUntilExpiration: number
+type Assignment = {
+  id: string
+  studentId: string
+  studentName?: string
+  planName?: string
+  assignedByUserEmail?: string
+  effectiveToTimestamp?: string
 }
 
 interface ExpiringPlansModalProps {
@@ -24,38 +26,22 @@ interface ExpiringPlansModalProps {
 }
 
 export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansModalProps) {
-  const [expiringStudents, setExpiringStudents] = useState<Student[]>([])
+  const { data, isLoading } = useQuery(
+    getExpiringSoonAssignmentsOptions({ client: apiClient, query: { days: 7 } })
+  )
 
-  useEffect(() => {
-    if (isOpen) {
-      // Process students and get their expiration data
-      const studentsWithExpiration = STUDENTS.map(student => {
-        const planExpirationDate = getStudentPlanExpirationDate(student.id)
-        const daysUntilExpiration = calculateDaysUntilExpiration(planExpirationDate)
+  const assignments = (data ?? []) as Assignment[]
 
-        return {
-          id: student.id,
-          name: getStudentFullName(student),
-          email: student.email,
-          phone: student.phone,
-          planExpirationDate,
-          daysUntilExpiration
-        }
-      })
+  const sorted = useMemo(() => {
+    return [...assignments].sort((a, b) => {
+      const ad = a.effectiveToTimestamp ? new Date(a.effectiveToTimestamp).getTime() : Infinity
+      const bd = b.effectiveToTimestamp ? new Date(b.effectiveToTimestamp).getTime() : Infinity
+      return ad - bd
+    })
+  }, [assignments])
 
-      // Filter students whose plans expire within 7 days or are already expired
-      const expiring = studentsWithExpiration.filter(student =>
-        student.daysUntilExpiration <= 7
-      )
-
-      // Sort by expiration date - earliest first (expired plans first)
-      expiring.sort((a, b) => a.daysUntilExpiration - b.daysUntilExpiration)
-
-      setExpiringStudents(expiring)
-    }
-  }, [isOpen])
-
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "—"
     return new Date(dateString).toLocaleDateString("pt-BR")
   }
 
@@ -73,16 +59,14 @@ export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansMod
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex flex-col space-y-4">
-          {expiringStudents.length === 0 ? (
+          {isLoading ? (
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">Carregando…</div>
+          ) : sorted.length === 0 ? (
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
               <div className="text-center">
                 <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-green-500" />
-                <p className="text-lg font-medium text-green-600 dark:text-green-400">
-                  Nenhum plano próximo ao vencimento
-                </p>
-                <p className="text-sm">
-                  Todos os planos estão em dia!
-                </p>
+                <p className="text-lg font-medium text-green-600 dark:text-green-400">Nenhum plano próximo ao vencimento</p>
+                <p className="text-sm">Todos os planos estão em dia!</p>
               </div>
             </div>
           ) : (
@@ -90,70 +74,49 @@ export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansMod
               <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 flex-shrink-0">
                 <div className="flex items-center gap-2 mb-2">
                   <AlertTriangle className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                  <span className="font-medium text-orange-800 dark:text-orange-200">
-                    {expiringStudents.length} aluno(s) necessitam atenção
-                  </span>
+                  <span className="font-medium text-orange-800 dark:text-orange-200">{sorted.length} aluno(s) necessitam atenção</span>
                 </div>
-                <p className="text-sm text-orange-700 dark:text-orange-300">
-                  Entre em contato para renovação dos planos
-                </p>
+                <p className="text-sm text-orange-700 dark:text-orange-300">Entre em contato para renovação dos planos</p>
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-3 pr-2">
-                {expiringStudents.map((student) => (
-                  <Link
-                    key={student.id}
-                    href={`/students/${student.id}`}
-                    onClick={onClose}
-                    className="block"
-                  >
-                    <div className="border rounded-lg p-4 bg-card hover:shadow-md transition-shadow cursor-pointer">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-medium">
-                            {student.name}
-                          </span>
+                {sorted.map((a) => {
+                  const expiration = a.effectiveToTimestamp
+                  return (
+                    <Link key={a.id} href={`/students/${a.studentId}`} onClick={onClose} className="block">
+                      <div className="border rounded-lg p-4 bg-card hover:shadow-md transition-shadow cursor-pointer">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-muted-foreground" />
+                            <span className="font-medium">{a.studentName ?? a.studentId}</span>
+                            {a.planName && (
+                              <Badge variant="secondary" className="ml-2">{a.planName}</Badge>
+                            )}
+                          </div>
+                          <UnifiedStatusBadge expirationDate={expiration} />
                         </div>
-                        <UnifiedStatusBadge expirationDate={student.planExpirationDate}/>
-                      </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground mb-3">
-                        <div className="flex items-center gap-2">
-                          <Mail className="w-3 h-3" />
-                          <span className="hover:underline">
-                            {student.email}
-                          </span>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="w-3 h-3 text-muted-foreground" />
+                          <span className="text-muted-foreground">Vencimento:</span>
+                          <span className="font-medium">{formatDate(expiration)}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Phone className="w-3 h-3" />
-                          <span className="hover:underline">
-                            {student.phone}
-                          </span>
-                        </div>
+                        {a.assignedByUserEmail && (
+                          <div className="mt-1 text-xs text-muted-foreground">Atribuído por: {a.assignedByUserEmail}</div>
+                        )}
                       </div>
-
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-3 h-3 text-muted-foreground" />
-                        <span className="text-muted-foreground">Vencimento:</span>
-                        <span className="font-medium">{formatDate(student.planExpirationDate)}</span>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  )
+                })}
               </div>
             </>
           )}
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0">
-          <Button variant="outline" onClick={onClose}>
-            Fechar
-          </Button>
+          <Button variant="outline" onClick={onClose}>Fechar</Button>
           <Button asChild>
-            <Link href="/students" onClick={onClose}>
-              Ver Todos os Alunos
-            </Link>
+            <Link href="/students" onClick={onClose}>Ver Todos os Alunos</Link>
           </Button>
         </div>
       </DialogContent>

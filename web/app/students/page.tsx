@@ -20,8 +20,9 @@ import {
     DialogHeader,
     DialogTitle,
     DialogTrigger,
+    DialogFooter,
 } from "@/components/ui/dialog"
-import {Activity, Calendar, Filter, Mail, Phone, Plus, RotateCcw, Search, Trash2, X} from "lucide-react"
+import { Activity, Filter, Mail, Phone, Plus, RotateCcw, Search, Trash2, X } from "lucide-react"
 import {useRouter, useSearchParams} from "next/navigation"
 import Layout from "@/components/layout"
 import StudentForm, {type StudentFormData} from "@/components/student-form"
@@ -35,7 +36,20 @@ import {useCreateStudent, useDeleteStudent, useRestoreStudent} from "@/lib/hooks
 import {useToast} from "@/hooks/use-toast"
 import {useStudents} from "@/lib/hooks/student-queries";
 import {apiClient} from "@/lib/client";
-import { useCurrentStudentPlan } from "@/lib/hooks/plan-queries";
+import { useAssignPlanToStudent, usePlans, useCurrentStudentPlan } from "@/lib/hooks/plan-queries";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { Calendar } from "@/components/ui/calendar"
+import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
+import { CalendarIcon } from "lucide-react"
+import { AssignPlanRequestDto, StudentPlanResponseDto } from "@/lib/api-client/types.gen"
+import { Label } from "@/components/ui/label"
+import { toast } from "@/hooks/use-toast"
 
 // Type-safe filter interface
 interface StudentFilters {
@@ -163,7 +177,7 @@ const StudentCard = (props: {
                     <span>{props.student.phone}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Calendar className="w-3 h-3 flex-shrink-0"/>
+                    <CalendarIcon className="w-3 h-3 flex-shrink-0"/>
                     <span>{props.planName ?? "Sem plano"}</span>
                 </div>
             </div>
@@ -208,7 +222,7 @@ const StudentCard = (props: {
                         <span>{props.student.phone}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3 flex-shrink-0"/>
+                    <CalendarIcon className="w-3 h-3 flex-shrink-0"/>
                     <span>{props.planName ?? "Sem plano"}</span>
                     </div>
                 </div>
@@ -378,23 +392,146 @@ export default function StudentsPage() {
     return `${student.name || ""} ${student.surname || ""}`.trim()
   }
 
-  const StudentListItem = ({ student }: { student: StudentResponseDto }) => {
-    const { data: planData, isLoading: planLoading } = useCurrentStudentPlan(student.id)
-    const age = getStudentAge(student.birthDate || "")
-    const fullName = getStudentFullName(student)
-    const initials = fullName
-      .split(' ')
-      .filter(Boolean)
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
+const AssignmentDialog = ({ studentId, onClose }: { studentId?: string, onClose?: () => void }) => {
+    const [open, setOpen] = useState(false)
+    const { data: plans, isLoading: plansLoading } = usePlans(false) // active plans only
+    const assignMutation = useAssignPlanToStudent()
+    const [date, setDate] = useState<Date | undefined>(new Date())
+    const [planId, setPlanId] = useState<string | null>(null)
 
-    // Prefer plan expiration when available; fall back to registration-derived date
-    const expirationDate = planData?.effectiveToTimestamp
-      ? new Date(planData.effectiveToTimestamp)
-      : (student.registrationDate ? new Date(student.registrationDate) : new Date())
+    const handleSubmit = () => {
+      if (!planId || !date) return
+
+      const body: AssignPlanRequestDto = {
+        planId,
+        effectiveFromTimestamp: date.toISOString(),
+      }
+
+      if (!studentId) return;
+      
+      assignMutation.mutate(studentId, body, {
+        onSuccess: () => {
+          toast({
+            title: "Plano atribuído",
+            description: "O plano foi atribuído com sucesso ao aluno.",
+          })
+          setOpen(false)
+          onClose?.()
+        },
+        onError: (error) => {
+          toast({
+            title: "Erro ao atribuir plano",
+            description: "Falha ao atribuir o plano ao aluno.",
+            variant: "destructive",
+          })
+        }
+      })
+    }
 
     return (
+      <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { onClose?.() } }}>
+        <DialogTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              setOpen(true)
+            }}
+          >
+            Atribuir Plano
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Atribuir Plano ao Aluno</DialogTitle>
+            <DialogDescription>
+              Selecione um plano e a data de efetivação.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="plan">Plano</Label>
+              <Select value={planId ?? undefined} onValueChange={(v) => setPlanId(v)}>
+                <SelectTrigger id="plan">
+                  <SelectValue placeholder="Escolha um plano" />
+                </SelectTrigger>
+                <SelectContent>
+                  {plansLoading ? (
+                    <SelectItem value="loading" disabled>Carregando planos...</SelectItem>
+                  ) : plans && plans.length > 0 ? (
+                    plans.map((plan: StudentPlanResponseDto) => (
+                      <SelectItem key={plan.id} value={plan.id!}>
+                        {plan.name} - R$ {plan.costBrl?.toFixed(2)} ({plan.maxDays} dias máx)
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>Nenhum plano disponível</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="date">Data de Efetivação</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    locale={ptBR}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => { setOpen(false); onClose?.(); }}>Cancelar</Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={!planId || !date || assignMutation.isPending || plansLoading}
+            >
+              Atribuir Plano
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
+  const StudentListItem = ({ student }: { student: StudentResponseDto }) => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  const { data: planData, isLoading: planLoading } = useCurrentStudentPlan(student.id)
+  const age = getStudentAge(student.birthDate || "")
+  const fullName = getStudentFullName(student)
+  const initials = fullName
+    .split(' ')
+    .filter(Boolean)
+    .map(n => n[0])
+    .join('')
+    .toUpperCase()
+
+  // Prefer plan expiration when available; fall back to registration-derived date
+  const expirationDate = planData?.effectiveToTimestamp
+    ? new Date(planData.effectiveToTimestamp)
+    : (student.registrationDate ? new Date(student.registrationDate) : new Date())
+
+  return (
+    <>
       <StudentCard
         student={student}
         onClick={() => router.push(`/students/${student.id}`)}
@@ -416,10 +553,12 @@ export default function StudentsPage() {
         onDeleteClicked={() => {
           void handleDelete(student.id!)
         }}
-        planName={planLoading ? "Carregando..." : planData?.plan?.name ?? "Sem plano"}
+        planName={planLoading ? "Carregando..." : (planData as any)?.plan?.name ?? "Sem plano"}
       />
-    )
-  }
+  <AssignmentDialog studentId={student.id} onClose={() => setIsDialogOpen(false)} />
+    </>
+  )
+}
 
   // Clear filters via RHF
   const clearFilters = () => {
@@ -430,7 +569,10 @@ export default function StudentsPage() {
   const hasActiveFilters = countActiveFilters(watchedFilters) > 0
 
   // Get unique professions from API data for filter dropdown
-  const uniqueProfessions = (studentsData?.content || []).map(s => s.profession).filter((p, i, arr) => p && arr.indexOf(p) === i)
+  const uniqueProfessions = Array.from(new Set((studentsData?.content || [])
+    .map(s => s.profession)
+    .filter((p): p is string => Boolean(p))
+  ))
 
   const handleCreateStudent = async (formData: StudentFormData) => {
     setIsCreating(true)

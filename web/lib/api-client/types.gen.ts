@@ -286,6 +286,8 @@ export type ScheduledSession = {
     equipment?: string;
     instanceOverride?: boolean;
     effectiveFromTimestamp?: string;
+    effectiveToTimestamp?: string;
+    diff?: string;
     createdAt?: string;
     updatedAt?: string;
     deletedAt?: string;
@@ -366,6 +368,7 @@ export type ScheduledSessionRequestDto = {
     instanceOverride?: boolean;
     effectiveFromTimestamp: string;
     retroactive?: boolean;
+    diff?: string;
 };
 
 export type ParticipantExerciseResponseDto = {
@@ -462,10 +465,10 @@ export type StudentCommitment = {
     effectiveFromTimestamp?: string;
     effectiveToTimestamp?: string;
     createdAt?: string;
-    currentlyActive?: boolean;
-    notAttending?: boolean;
     tentative?: boolean;
     attending?: boolean;
+    notAttending?: boolean;
+    currentlyActive?: boolean;
 };
 
 export type TrainerSchedule = {
@@ -519,23 +522,23 @@ export type Pageable = {
 export type PageUserResponseDto = {
     totalPages?: number;
     totalElements?: number;
+    first?: boolean;
+    last?: boolean;
     size?: number;
     content?: Array<UserResponseDto>;
     number?: number;
-    first?: boolean;
-    last?: boolean;
     numberOfElements?: number;
-    pageable?: PageableObject;
     sort?: SortObject;
+    pageable?: PageableObject;
     empty?: boolean;
 };
 
 export type PageableObject = {
     offset?: number;
-    pageSize?: number;
-    pageNumber?: number;
     paged?: boolean;
     sort?: SortObject;
+    pageSize?: number;
+    pageNumber?: number;
     unpaged?: boolean;
 };
 
@@ -548,28 +551,28 @@ export type SortObject = {
 export type PageStudentResponseDto = {
     totalPages?: number;
     totalElements?: number;
+    first?: boolean;
+    last?: boolean;
     size?: number;
     content?: Array<StudentResponseDto>;
     number?: number;
-    first?: boolean;
-    last?: boolean;
     numberOfElements?: number;
-    pageable?: PageableObject;
     sort?: SortObject;
+    pageable?: PageableObject;
     empty?: boolean;
 };
 
 export type PageExerciseResponseDto = {
     totalPages?: number;
     totalElements?: number;
+    first?: boolean;
+    last?: boolean;
     size?: number;
     content?: Array<ExerciseResponseDto>;
     number?: number;
-    first?: boolean;
-    last?: boolean;
     numberOfElements?: number;
-    pageable?: PageableObject;
     sort?: SortObject;
+    pageable?: PageableObject;
     empty?: boolean;
 };
 
@@ -580,14 +583,14 @@ export type ScheduleResponseDto = {
 export type PageAdministratorResponseDto = {
     totalPages?: number;
     totalElements?: number;
+    first?: boolean;
+    last?: boolean;
     size?: number;
     content?: Array<AdministratorResponseDto>;
     number?: number;
-    first?: boolean;
-    last?: boolean;
     numberOfElements?: number;
-    pageable?: PageableObject;
     sort?: SortObject;
+    pageable?: PageableObject;
     empty?: boolean;
 };
 
@@ -784,6 +787,22 @@ export type UpdateScheduleResponses = {
 };
 
 export type UpdateScheduleResponse = UpdateScheduleResponses[keyof UpdateScheduleResponses];
+
+export type RestorePlanData = {
+    body?: never;
+    path: {
+        planId: string;
+    };
+    query?: never;
+    url: '/api/plans/{planId}/restore';
+};
+
+export type RestorePlanResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
 
 export type Delete2Data = {
     body?: never;
@@ -1049,6 +1068,40 @@ export type UpdateSessionResponses = {
 
 export type UpdateSessionResponse = UpdateSessionResponses[keyof UpdateSessionResponses];
 
+export type GetSeriesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        trainerId?: string;
+    };
+    url: '/api/schedule/series';
+};
+
+export type GetSeriesResponses = {
+    /**
+     * OK
+     */
+    200: Array<TrainerScheduleResponseDto>;
+};
+
+export type GetSeriesResponse = GetSeriesResponses[keyof GetSeriesResponses];
+
+export type CreateSeriesData = {
+    body: TrainerScheduleRequestDto;
+    path?: never;
+    query?: never;
+    url: '/api/schedule/series';
+};
+
+export type CreateSeriesResponses = {
+    /**
+     * OK
+     */
+    200: TrainerScheduleResponseDto;
+};
+
+export type CreateSeriesResponse = CreateSeriesResponses[keyof CreateSeriesResponses];
+
 export type CreateOneOffSessionData = {
     body: ScheduledSessionRequestDto;
     path?: never;
@@ -1084,7 +1137,9 @@ export type EnrollStudentResponse = EnrollStudentResponses[keyof EnrollStudentRe
 export type GetAllPlansData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        includeInactive?: boolean;
+    };
     url: '/api/plans';
 };
 

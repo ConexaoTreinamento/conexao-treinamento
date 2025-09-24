@@ -5,6 +5,7 @@ import org.conexaotreinamento.conexaotreinamentobackend.dto.request.ScheduledSes
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.SessionUpdateRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.TrainerScheduleRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.EnrollmentRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.WeekSplitRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ScheduleResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ScheduledSessionResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerScheduleResponseDTO;
@@ -41,10 +42,25 @@ public class ScheduleController {
         return ResponseEntity.ok(new ScheduleResponseDTO(sessions));
     }
     
+    @GetMapping("/series")
+    public ResponseEntity<List<TrainerScheduleResponseDTO>> getSeries(@RequestParam(required = false) UUID trainerId) {
+        List<TrainerSchedule> series = scheduleService.findAllSeries(trainerId);
+        List<TrainerScheduleResponseDTO> dtos = series.stream().map(this::mapToTrainerScheduleResponseDTO).toList();
+        return ResponseEntity.ok(dtos);
+    }
+    
+    @PostMapping("/series")
+    public ResponseEntity<TrainerScheduleResponseDTO> createSeries(@Valid @RequestBody TrainerScheduleRequestDTO request) {
+        TrainerSchedule created = scheduleService.createTrainerSchedule(mapToTrainerScheduleEntity(request));
+        // Return 200 OK to align with generated client expectations
+        return ResponseEntity.ok(mapToTrainerScheduleResponseDTO(created));
+    }
+    
     @PostMapping("/one-off")
     public ResponseEntity<ScheduledSessionResponseDTO> createOneOffSession(@Valid @RequestBody ScheduledSessionRequestDTO request) {
         ScheduledSession session = scheduleService.createOneOffSession(mapToEntity(request));
-        return ResponseEntity.status(HttpStatus.CREATED).body(mapToResponseDTO(session));
+        // Return 200 OK to align with generated client expectations
+        return ResponseEntity.ok(mapToResponseDTO(session));
     }
     
     @PutMapping("/series/{seriesId}")
@@ -53,8 +69,38 @@ public class ScheduleController {
             @Valid @RequestBody TrainerScheduleRequestDTO request,
             @RequestParam Instant newEffectiveFrom) {
         
-        TrainerSchedule updated = scheduleService.updateSchedule(mapToTrainerScheduleEntity(request), newEffectiveFrom);
+        // Ensure the provided path seriesId is applied to the mapped entity so the service
+        // can perform the "this and following" split by updating the existing series' effectiveTo.
+        TrainerSchedule entity = mapToTrainerScheduleEntity(request);
+        entity.setId(seriesId);
+        TrainerSchedule updated = scheduleService.updateSchedule(entity, newEffectiveFrom);
         return ResponseEntity.ok(mapToTrainerScheduleResponseDTO(updated));
+    }
+
+    @PostMapping("/series/split-week")
+    public ResponseEntity<List<TrainerScheduleResponseDTO>> splitWeek(@Valid @RequestBody WeekSplitRequestDTO request) {
+        List<TrainerSchedule> created = scheduleService.splitWeek(
+            request.getTrainerId(),
+            request.getNewEffectiveFrom(),
+            request.getSeriesName(),
+            request.getIntervalDuration(),
+            request.getDays()
+        );
+        return ResponseEntity.ok(created.stream().map(this::mapToTrainerScheduleResponseDTO).toList());
+    }
+
+    public static class DeactivateWeekdaysRequest {
+        public UUID trainerId;
+        public List<Integer> weekdays;
+    }
+
+    @PostMapping("/series/deactivate-weekdays")
+    public ResponseEntity<List<TrainerScheduleResponseDTO>> deactivateWeekdays(@RequestBody DeactivateWeekdaysRequest request) {
+        if (request == null || request.trainerId == null || request.weekdays == null || request.weekdays.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        List<TrainerSchedule> updated = scheduleService.deactivateCurrentWeekdays(request.trainerId, request.weekdays);
+        return ResponseEntity.ok(updated.stream().map(this::mapToTrainerScheduleResponseDTO).toList());
     }
     
     // Legacy update for compatibility
@@ -62,15 +108,14 @@ public class ScheduleController {
     public ResponseEntity<String> updateSession(
             @PathVariable String sessionId,
             @RequestBody SessionUpdateRequestDTO request) {
-        
+
         if (request.getParticipants() != null) {
             scheduleService.updateSessionParticipants(sessionId, request.getParticipants());
         }
-        
-        if (request.getNotes() != null) {
-            scheduleService.updateSessionNotes(sessionId, request.getNotes());
-        }
-        
+
+        // Persist override fields (notes, trainer, capacity, cancellation, room/equipment) via diff
+        scheduleService.updateSessionOverrides(sessionId, request);
+
         return ResponseEntity.ok("Session updated successfully");
     }
     
@@ -91,8 +136,12 @@ public class ScheduleController {
         entity.setMaxParticipants(dto.getMaxParticipants());
         entity.setSeriesName(dto.getSeriesName());
         entity.setNotes(dto.getNotes());
+        entity.setRoom(dto.getRoom());
+        entity.setEquipment(dto.getEquipment());
         entity.setInstanceOverride(dto.isInstanceOverride());
         entity.setEffectiveFromTimestamp(dto.getEffectiveFromTimestamp());
+        // Persist explicit diff when provided so callers can send nulls to clear inherited values
+        entity.setDiff(dto.getDiff());
         return entity;
     }
     

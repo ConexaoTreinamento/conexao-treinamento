@@ -1,918 +1,193 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
+import Layout from "@/components/layout"
+import { useParams, useRouter } from "next/navigation"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { apiClient } from "@/lib/client"
+import { getScheduleOptions, updateSessionMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import type { ScheduleResponseDto, ScheduledSession, SessionParticipant, SessionUpdateRequestDto } from "@/lib/api-client/types.gen"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  ArrowLeft,
-  Clock,
-  MapPin,
-  Users,
-  Activity,
-  Save,
-  Calendar,
-  CheckCircle,
-  XCircle,
-  Plus,
-  X,
-  Edit,
-} from "lucide-react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ArrowLeft, CheckCircle, XCircle, Save } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useRouter, useParams } from "next/navigation"
-import Layout from "@/components/layout"
-import AddStudentDialog from "@/components/add-student-dialog"
-import ClassModal from "@/components/class-modal"
-
-// Type definitions
-interface ClassStudent {
-  id: number
-  name: string
-  present: boolean
-  exercises: Array<{
-    exercise: string
-    sets: number
-    reps: number
-    completed: boolean
-    weight: number
-  }>
-  avatar?: string
-}
-
-interface ClassData {
-  id: number
-  name: string
-  instructor: string
-  time: string
-  date: string
-  maxStudents: number
-  currentStudents: number
-  weekDays: string[]
-  times: Array<{
-    day: string
-    startTime: string
-    endTime: string
-  }>
-  description: string
-  students: ClassStudent[]
-}
-
-// Mock functions for demonstration purposes
-const getStudentSchedule = (studentId: number) => {
-  return { daysPerWeek: 5 }
-}
-
-const getStudentSelectedDays = (studentId: number) => {
-  return ["Segunda-feira", "Terça-feira"]
-}
-
-const updateStudentSchedule = (studentId: number, classId: number, classDate: string) => {
-  console.log(`Updated student ${studentId} schedule for class ${classId} on ${classDate}`)
-}
+import { useTrainersList } from "@/lib/hooks/trainer-schedule-queries"
 
 export default function ClassDetailPage() {
-  const router = useRouter()
   const params = useParams()
-  const [classData, setClassData] = useState<ClassData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [isAddStudentOpen, setIsAddStudentOpen] = useState(false)
-  const [isExerciseOpen, setIsExerciseOpen] = useState(false)
-  const [isNewExerciseOpen, setIsNewExerciseOpen] = useState(false)
-  const [isEditClassOpen, setIsEditClassOpen] = useState(false)
-  const [isEditModalityOpen, setIsEditModalityOpen] = useState(false)
-  const [selectedStudent, setSelectedStudent] = useState<ClassStudent | null>(null)
-  const [studentSearchTerm, setStudentSearchTerm] = useState("")
-  const [exerciseSearchTerm, setExerciseSearchTerm] = useState("")
+  const router = useRouter()
+  const qc = useQueryClient()
+  const idParam = params.id as string
 
-  // Edit form state - initialize with empty values first
-  const [editForm, setEditForm] = useState({
-    instructor: ""
-  })
+  // Query a window that likely contains the session; Agenda navigation will already have the data cached
+  const today = new Date()
+  const startDate = new Date(today); startDate.setDate(today.getDate() - 30)
+  const endDate = new Date(today); endDate.setDate(today.getDate() + 30)
 
-  const [availableExercises, setAvailableExercises] = useState([
-    "Prancha",
-    "Roll Up",
-    "Hundred",
-    "Single Leg Stretch",
-    "Teaser",
-    "Swan Dive",
-    "Leg Circles",
-    "Criss Cross",
-    "Double Leg Stretch",
-  ])
+  const scheduleQ = useQuery(getScheduleOptions({ client: apiClient, query: { startDate: startDate.toISOString().slice(0,10), endDate: endDate.toISOString().slice(0,10) } }))
 
-  const [exerciseForm, setExerciseForm] = useState({
-    exercise: "",
-    sets: "",
-    reps: "",
-    weight: "",
-    completed: false,
-  })
+  const session: ScheduledSession | undefined = useMemo(() => {
+    const sessions = (scheduleQ.data as ScheduleResponseDto | undefined)?.sessions ?? []
+    return sessions.find(s => String(s.sessionId ?? "") === idParam || String(s.id ?? "") === idParam)
+  }, [scheduleQ.data, idParam])
 
-  const [newExerciseForm, setNewExerciseForm] = useState({
-    name: "",
-    category: "",
-    equipment: "",
-    muscle: "",
-    difficulty: "",
-    description: "",
-  })
-
-  // Mock classes data - this should eventually be replaced with API calls
-  const mockClasses: ClassData[] = [
-    {
-      id: 1,
-      name: "Pilates Iniciante",
-      instructor: "Prof. Ana Silva",
-      time: "09:00 - 10:00",
-      date: "Segunda-feira",
-      maxStudents: 10,
-      currentStudents: 5,
-      weekDays: ["monday", "wednesday", "friday"],
-      times: [
-        { day: "monday", startTime: "09:00", endTime: "10:00" },
-        { day: "wednesday", startTime: "09:00", endTime: "10:00" },
-        { day: "friday", startTime: "09:00", endTime: "10:00" }
-      ],
-      description: "Aula de Pilates para iniciantes focada em fortalecimento do core e flexibilidade.",
-      students: [
-        {
-          id: 1,
-          name: "Maria Silva",
-          present: true,
-          exercises: [
-            { exercise: "Prancha", sets: 3, reps: 30, completed: true, weight: 70.0 },
-            { exercise: "Roll Up", sets: 2, reps: 10, completed: true, weight: 40.0 },
-          ],
-        },
-        {
-          id: 2,
-          name: "João Santos",
-          present: true,
-          exercises: [
-            { exercise: "Hundred", sets: 1, reps: 100, completed: false, weight: 40.0 },
-            { exercise: "Single Leg Stretch", sets: 2, reps: 10, completed: true, weight: 50.0 },
-          ],
-        },
-        {
-          id: 3,
-          name: "Ana Costa",
-          present: false,
-          exercises: [],
-        },
-        {
-          id: 4,
-          name: "Carlos Lima",
-          present: true,
-          exercises: [
-            { exercise: "Prancha", sets: 2, reps: 20, completed: true, weight: 0 },
-          ],
-        },
-        {
-          id: 5,
-          name: "Lucia Ferreira",
-          present: false,
-          exercises: [],
-        },
-      ],
-    },
-    {
-      id: 2,
-      name: "Yoga Avançado",
-      instructor: "Prof. Marina Costa",
-      time: "18:00 - 19:00",
-      date: "Terça-feira",
-      maxStudents: 12,
-      currentStudents: 2,
-      weekDays: ["tuesday", "thursday"],
-      times: [
-        { day: "tuesday", startTime: "18:00", endTime: "19:00" },
-        { day: "thursday", startTime: "18:00", endTime: "19:00" }
-      ],
-      description: "Aula de Yoga para praticantes avançados com foco em posturas desafiadoras.",
-      students: [
-        {
-          id: 6,
-          name: "Patricia Oliveira",
-          present: true,
-          exercises: [
-            { exercise: "Warrior III", sets: 3, reps: 5, completed: true, weight: 0 },
-            { exercise: "Crow Pose", sets: 2, reps: 30, completed: false, weight: 0 },
-          ],
-        },
-        {
-          id: 7,
-          name: "Roberto Silva",
-          present: true,
-          exercises: [
-            { exercise: "Handstand", sets: 3, reps: 10, completed: true, weight: 0 },
-            { exercise: "Scorpion Pose", sets: 1, reps: 5, completed: false, weight: 0 },
-          ],
-        },
-      ],
-    },
-    {
-      id: 3,
-      name: "CrossFit",
-      instructor: "Prof. Roberto Lima",
-      time: "07:00 - 08:00",
-      date: "Segunda a Sexta",
-      maxStudents: 8,
-      currentStudents: 0,
-      weekDays: ["monday", "tuesday", "wednesday", "thursday", "friday"],
-      times: [
-        { day: "monday", startTime: "07:00", endTime: "08:00" },
-        { day: "tuesday", startTime: "07:00", endTime: "08:00" },
-        { day: "wednesday", startTime: "07:00", endTime: "08:00" },
-        { day: "thursday", startTime: "07:00", endTime: "08:00" },
-        { day: "friday", startTime: "07:00", endTime: "08:00" }
-      ],
-      description: "Treino funcional de alta intensidade com exercícios variados.",
-      students: [],
-    },
-  ]
+  const [notes, setNotes] = useState<string>("")
+  const [participants, setParticipants] = useState<SessionParticipant[]>([])
+  const [maxParticipants, setMaxParticipants] = useState<number | undefined>(undefined)
+  const [canceled, setCanceled] = useState<boolean>(false)
+  const [trainerIdOverride, setTrainerIdOverride] = useState<string>("")
 
   useEffect(() => {
-    // Simulate fetching class data based on ID
-    const fetchClassData = async () => {
-      setLoading(true)
-      try {
-        // In a real application, this would be an API call
-        // const response = await fetch(`/api/classes/${params.id}`)
-        // const data = await response.json()
+    if (session) {
+      setNotes(session.notes ?? "")
+      setParticipants(session.participants ?? [])
+      setMaxParticipants((session as any).maxParticipants ?? undefined)
+      setCanceled(Boolean((session as any).canceled))
+      setTrainerIdOverride(String((session as any).trainerId ?? ""))
+    }
+  }, [session])
 
-        // For now, find the class from mock data
-        const classId = parseInt(params.id as string)
-        const foundClass = mockClasses.find(c => c.id === classId)
+  const updateMutation = useMutation(updateSessionMutation({ client: apiClient }))
+  const trainersQ = useTrainersList()
 
-        if (foundClass) {
-          setClassData(foundClass)
-          // Update edit form with the loaded class data
-          setEditForm({
-            instructor: foundClass.instructor,
-          })
-        } else {
-          // Handle class not found
-          console.error('Class not found')
-          router.push('/schedule')
-        }
-      } catch (error) {
-        console.error('Error fetching class data:', error)
-        router.push('/schedule')
-      } finally {
-        setLoading(false)
+  const togglePresence = (participantId?: string) => {
+    if (!participantId) return
+    setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, present: !p.present } : p))
+  }
+
+  const save = () => {
+    if (!session) return
+    const sid = session.sessionId ?? session.id
+    if (!sid) return
+
+    const body: SessionUpdateRequestDto = {
+      notes,
+      participants: participants.map(p => ({
+        id: p.id,
+        studentId: p.studentId,
+        participationType: p.participationType,
+        attendanceNotes: p.attendanceNotes,
+        present: p.present,
+      })) as any,
+      // Extended fields understood by backend via diff
+      ...(trainerIdOverride ? { trainerId: trainerIdOverride as any } : {}),
+      ...(typeof maxParticipants === 'number' ? { maxParticipants: maxParticipants as any } : {}),
+      ...(canceled ? { canceled: true as any } : {}),
+    }
+
+    updateMutation.mutate({
+      path: { sessionId: String(sid) },
+      body,
+      client: apiClient,
+    }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'getSchedule' })
+        router.back()
       }
-    }
+    })
+  }
 
-    if (params.id) {
-      fetchClassData()
-    }
-  }, [params.id, router])
-
-  if (loading) {
+  if (scheduleQ.isLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-            <p className="mt-2 text-sm text-muted-foreground">Carregando dados da aula...</p>
-          </div>
+        <div className="p-6 text-sm text-muted-foreground">Carregando aula…</div>
+      </Layout>
+    )
+  }
+
+  if (!session) {
+    return (
+      <Layout>
+        <div className="p-6">
+          <div className="text-lg font-semibold mb-2">Aula não encontrada</div>
+          <Button variant="outline" onClick={() => router.push('/schedule')}>Voltar</Button>
         </div>
       </Layout>
     )
   }
 
-  if (!classData) {
-    return (
-      <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <p className="text-lg font-semibold">Aula não encontrada</p>
-            <Button
-              variant="outline"
-              onClick={() => router.push('/schedule')}
-              className="mt-4"
-            >
-              Voltar para cronograma
-            </Button>
-          </div>
-        </div>
-      </Layout>
-    )
-  }
-
-  const availableTrainers = [
-    "Prof. Ana Silva",
-    "Prof. Marina Costa",
-    "Prof. Roberto Lima",
-    "Prof. Carlos Santos",
-    "Prof. Lucia Ferreira"
-  ]
-
-  const availableStudents = [
-    "Carlos Lima",
-    "Lucia Ferreira",
-    "Pedro Oliveira",
-    "Fernanda Santos",
-    "Ricardo Costa",
-    "Amanda Silva"
-  ]
-
-  // Handle class edit
-  const handleEditClass = () => {
-    setClassData(prev => {
-      if (!prev) return prev
-      return {
-        ...prev,
-        instructor: editForm.instructor,
-      }
-    })
-    setIsEditClassOpen(false)
-  }
-
-  // Handle modality edit - Updated to handle weekdays and times
-  const handleEditModality = (formData: any) => {
-    setClassData(prev => {
-      if (!prev) return prev
-      return {
-        ...prev,
-        name: formData.name,
-        instructor: formData.instructor,
-        weekDays: formData.weekDays, // Update weekdays
-        times: formData.times, // Update times
-        description: formData.description,
-        // Update currentStudents to reflect actual count
-        currentStudents: prev.students.length
-      }
-    })
-  }
-
-  const handleCloseModalityModal = () => {
-    setIsEditModalityOpen(false)
-  }
-
-  // Reset edit form when opening dialog
-  const openEditDialog = () => {
-    setEditForm({
-      instructor: classData.instructor,
-    })
-    setIsEditClassOpen(true)
-  }
-
-  const togglePresence = (studentId: number) => {
-    setClassData((prev) => {
-      if (!prev) return prev
-      return {
-        ...prev,
-        students: prev.students.map((student) =>
-          student.id === studentId ? { ...student, present: !student.present } : student,
-        ),
-      }
-    })
-  }
-
-  const handleAddExercise = () => {
-    if (selectedStudent && exerciseForm.exercise) {
-      setClassData((prev) => {
-        if (!prev) return prev
-        return {
-          ...prev,
-          students: prev.students.map((student) =>
-            student.id === selectedStudent.id
-              ? {
-                  ...student,
-                  exercises: [...student.exercises, {
-                    exercise: exerciseForm.exercise,
-                    sets: parseInt(exerciseForm.sets) || 0,
-                    reps: parseInt(exerciseForm.reps) || 0,
-                    weight: parseInt(exerciseForm.weight) || 0, // weight/load for the exercise
-                    completed: exerciseForm.completed
-                  }],
-                }
-              : student,
-          ),
-        }
-      })
-
-      setExerciseForm({
-        exercise: "",
-        sets: "",
-        reps: "",
-        weight: "",
-        completed: false,
-      })
-      setIsExerciseOpen(false)
-    }
-  }
-
-  const handleCreateNewExercise = () => {
-    if (newExerciseForm.name) {
-      setAvailableExercises((prev) => [...prev, newExerciseForm.name])
-      setExerciseForm((prev) => ({ ...prev, exercise: newExerciseForm.name }))
-      setNewExerciseForm({
-        name: "",
-        category: "",
-        equipment: "",
-        muscle: "",
-        difficulty: "",
-        description: "",
-      })
-      setIsNewExerciseOpen(false)
-    }
-  }
-
-  const toggleExerciseCompletion = (studentId: number, exerciseIndex: number) => {
-    setClassData((prev) => {
-      if (!prev) return prev
-      return {
-        ...prev,
-        students: prev.students.map((student) =>
-          student.id === studentId
-            ? {
-                ...student,
-                exercises: student.exercises.map((ex, idx) =>
-                  idx === exerciseIndex ? { ...ex, completed: !ex.completed } : ex,
-                ),
-              }
-            : student,
-        ),
-      }
-    })
-  }
-
-  const removeStudent = (studentId: number) => {
-    setClassData((prev) => {
-      if (!prev) return prev
-      return {
-        ...prev,
-        students: prev.students.filter((student) => student.id !== studentId),
-        currentStudents: prev.currentStudents - 1,
-      }
-    })
-  }
-
-  // Filter students based on search term
-  const filteredStudents = classData.students.filter(student =>
-    student.name.toLowerCase().includes(studentSearchTerm.toLowerCase())
-  )
-
-  // Filter exercises based on search term
-  const filteredExercises = availableExercises.filter(exercise =>
-    exercise.toLowerCase().includes(exerciseSearchTerm.toLowerCase())
-  )
+  const start = session.startTime ? new Date(session.startTime) : undefined
+  const end = session.endTime ? new Date(session.endTime) : undefined
 
   return (
     <Layout>
       <div className="space-y-4">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="w-4 h-4" />
+        <div className="flex items-center justify-between">
+          <Button variant="outline" onClick={() => router.back()}>
+            <ArrowLeft className="w-4 h-4 mr-1" /> Voltar
           </Button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold truncate">{classData.name}</h1>
-            <p className="text-sm text-muted-foreground">
-              {classData.date} • {classData.time}
-            </p>
-          </div>
+          <Button onClick={save} disabled={updateMutation.isPending}>
+            <Save className="w-4 h-4 mr-1" /> Salvar alterações
+          </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Class Info */}
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Activity className="w-5 h-5" />
-                  Informações da Aula
-                </CardTitle>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={openEditDialog}
-                  className="h-8 px-2"
-                >
-                  <Edit className="w-3 h-3 mr-1" />
-                  Editar
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span>{classData.time}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Users className="w-4 h-4 text-muted-foreground" />
-                  <span>
-                    {classData.students.length}/{classData.maxStudents} alunos
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span>{classData.instructor}</span>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t">
-                <p className="text-sm text-muted-foreground">{classData.description}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Students List */}
-          <Card className="lg:col-span-2">
-            <CardHeader className="pb-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Alunos da Aula
-                </CardTitle>
-                <AddStudentDialog
-                  students={availableStudents}
-                  onAddStudent={(student) => {
-                    setClassData((prev) => {
-                      if (!prev) return prev
-                      return {
-                        ...prev,
-                        students: [...prev.students, {
-                          id: Date.now(),
-                          name: student,
-                          present: false,
-                          exercises: [],
-                        }],
-                        currentStudents: prev.currentStudents + 1,
-                      }
-                    })
-                  }}
-                  excludeStudents={classData.students.map(s => s.name)}
-                />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {/* Search Input */}
-                <div>
-                  <Label htmlFor="studentSearch">Buscar Aluno</Label>
-                  <Input
-                    id="studentSearch"
-                    placeholder="Digite o nome do aluno..."
-                    value={studentSearchTerm}
-                    onChange={(e) => setStudentSearchTerm(e.target.value)}
-                  />
-                </div>
-
-                {filteredStudents.map((student) => (
-                  <div key={student.id} className="p-3 rounded-lg border bg-card">
-                    <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${student.exercises.length > 0 ? 'mb-3' : ''}`}>
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
-                            {student.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{student.name}</p>
-                        </div>
-                      </div>
-                      <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-                        <div className="flex gap-2 w-full sm:w-auto">
-                          <Button
-                            size="sm"
-                            variant={student.present ? "default" : "outline"}
-                            onClick={() => togglePresence(student.id)}
-                            className={`w-full sm:w-28 h-8 text-xs ${
-                              student.present
-                                ? "bg-green-600 hover:bg-green-700"
-                                : "border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
-                            }`}
-                          >
-                            {student.present ? (
-                              <>
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                Presente
-                              </>
-                            ) : (
-                              <>
-                                <XCircle className="w-3 h-3 mr-1" />
-                                Ausente
-                              </>
-                            )}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedStudent(student)
-                              setIsExerciseOpen(true)
-                            }}
-                            className="w-full sm:w-28 h-8 text-xs"
-                          >
-                            <Activity className="w-3 h-3 mr-1" />
-                            Exercícios
-                          </Button>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => removeStudent(student.id)}
-                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 flex-shrink-0"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Student Exercises */}
-                    {student.exercises.length > 0 && (
-                      <div className="space-y-2 pt-2 border-t">
-                        <p className="text-sm font-medium">Exercícios realizados:</p>
-                        <div className="space-y-1">
-                          {student.exercises.map((exercise, idx) => (
-                            <div
-                              key={idx}
-                              className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm"
-                            >
-                              <span className="flex-1 min-w-0 truncate">
-                                {exercise.exercise} - {exercise.sets}x{exercise.reps}
-                                {exercise.weight && ` - ${exercise.weight}kg`}
-                              </span>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => toggleExerciseCompletion(student.id, idx)}
-                                className={`h-6 w-6 p-0 flex-shrink-0 ml-2 ${exercise.completed ? "text-green-600" : "text-gray-400"}`}
-                              >
-                                <CheckCircle className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {/* Empty state flavor text - handles both no students and no search results */}
-                {filteredStudents.length === 0 && (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Users className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                    {classData.students.length === 0 ? (
-                      // No students enrolled at all
-                      <div className="space-y-2">
-                        <h3 className="text-lg font-medium">Nenhum aluno matriculado</h3>
-                        <p className="text-sm max-w-md mx-auto">
-                          Esta aula ainda não possui alunos inscritos. Use o botão "Adicionar Aluno" acima para matricular estudantes nesta turma.
-                        </p>
-                      </div>
-                    ) : (
-                      // Search returned no results
-                      <div className="space-y-2">
-                        <h3 className="text-lg font-medium">Nenhum aluno encontrado</h3>
-                        <p className="text-sm max-w-md mx-auto">
-                          Não encontramos nenhum aluno com o termo "{studentSearchTerm}". Tente buscar por outro nome ou limpe o filtro para ver todos os alunos.
-                        </p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setStudentSearchTerm("")}
-                          className="mt-2"
-                        >
-                          Limpar filtro
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Exercise Dialog */}
-        <Dialog open={isExerciseOpen} onOpenChange={setIsExerciseOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Registrar Exercício - {selectedStudent?.name}</DialogTitle>
-              <DialogDescription>Adicione um exercício realizado pelo aluno</DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Label>Exercício</Label>
-                <div className="flex gap-2">
-                  <div className="flex-1">
-                    <Select
-                      value={exerciseForm.exercise}
-                      onValueChange={(value) => {
-                        setExerciseForm((prev) => ({ ...prev, exercise: value }))
-                        setExerciseSearchTerm("") // Clear search when selecting
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Buscar e selecionar exercício..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <div className="px-3 py-2 border-b">
-                          <Input
-                            placeholder="Digite para buscar..."
-                            value={exerciseSearchTerm}
-                            onChange={(e) => setExerciseSearchTerm(e.target.value)}
-                            className="h-8"
-                            onClick={(e) => e.stopPropagation()}
-                            onKeyDown={(e) => e.stopPropagation()}
-                          />
-                        </div>
-                        {filteredExercises.length > 0 ? (
-                          filteredExercises.map((exercise) => (
-                            <SelectItem key={exercise} value={exercise}>
-                              {exercise}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <div className="px-3 py-2 text-sm text-muted-foreground text-center">
-                            Nenhum exercício encontrado
-                          </div>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Dialog open={isNewExerciseOpen} onOpenChange={setIsNewExerciseOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="icon" variant="outline" className="flex-shrink-0">
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Novo Exercício</DialogTitle>
-                        <DialogDescription>Crie um novo exercício</DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="exerciseName">Nome do Exercício</Label>
-                          <Input
-                            id="exerciseName"
-                            value={newExerciseForm.name}
-                            onChange={(e) => setNewExerciseForm((prev) => ({ ...prev, name: e.target.value }))}
-                            placeholder="Ex: Supino Inclinado"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="exerciseDescription">Descrição</Label>
-                          <Input
-                            id="exerciseDescription"
-                            value={newExerciseForm.description}
-                            onChange={(e) => setNewExerciseForm((prev) => ({ ...prev, description: e.target.value }))}
-                            placeholder="Descrição do exercício..."
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsNewExerciseOpen(false)}>
-                          Cancelar
-                        </Button>
-                        <Button onClick={handleCreateNewExercise} className="bg-green-600 hover:bg-green-700">
-                          Criar e Usar
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <Label>Séries</Label>
-                  <Input
-                    type="number"
-                    value={exerciseForm.sets}
-                    onChange={(e) => setExerciseForm((prev) => ({ ...prev, sets: e.target.value }))}
-                    placeholder="3"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Repetições</Label>
-                  <Input
-                    value={exerciseForm.reps}
-                    onChange={(e) => setExerciseForm((prev) => ({ ...prev, reps: e.target.value }))}
-                    placeholder="10"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label>Carga (kg)</Label>
-                  <Input
-                    type="number"
-                    step="0.5"
-                    value={exerciseForm.weight}
-                    onChange={(e) => setExerciseForm((prev) => ({ ...prev, weight: e.target.value }))}
-                    placeholder="20"
-                  />
-                </div>
-              </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>{session.seriesName ?? 'Aula'}</CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Professor</Label>
+              <Select value={trainerIdOverride || undefined} onValueChange={(v) => setTrainerIdOverride(v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {trainersQ.isLoading && <SelectItem value="loading" disabled>Carregando...</SelectItem>}
+                  {trainersQ.data?.map((t: any) => (
+                    <SelectItem key={t.id} value={t.id!}>{t.name}</SelectItem>
+                  ))}
+                  <SelectItem value="">—</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+            <div>
+              <Label>Data e Horário</Label>
+              <Input value={start ? `${start.toLocaleDateString()} ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}${end ? ` - ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}` : ''} readOnly />
+            </div>
+            <div>
+              <Label>Capacidade (max alunos)</Label>
+              <Input type="number" min={1} value={typeof maxParticipants === 'number' ? String(maxParticipants) : ''} onChange={(e) => setMaxParticipants(e.target.value ? parseInt(e.target.value) : undefined)} placeholder="ex: 10" />
+            </div>
+            <div className="flex items-center gap-2 mt-6">
+              <Checkbox checked={canceled} onCheckedChange={(v) => setCanceled(Boolean(v))} id="canceled" />
+              <Label htmlFor="canceled">Cancelar esta aula</Label>
+            </div>
+            <div className="md:col-span-2">
+              <Label>Observações</Label>
+              <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas desta aula" />
+            </div>
+          </CardContent>
+        </Card>
 
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsExerciseOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleAddExercise} className="bg-green-600 hover:bg-green-700">
-                <Save className="w-4 h-4 mr-2" />
-                Registrar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit Class Dialog */}
-        <Dialog open={isEditClassOpen} onOpenChange={setIsEditClassOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Editar Aula</DialogTitle>
-              <DialogDescription>Altere o professor desta aula</DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4">
-              {/* Modality/Name Field with Edit Button - Now as Label */}
-              <div className="space-y-2">
-                <Label>Modalidade</Label>
-                <div className="flex gap-2 items-center">
-                  <div className="flex-1 px-3 py-2 border rounded-md bg-muted/50 text-sm">
-                    {classData.name}
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setIsEditModalityOpen(true)}
-                    className="flex-shrink-0"
-                  >
-                    <Edit className="w-3 h-3 mr-1" />
-                    Editar
-                  </Button>
+        <Card>
+          <CardHeader>
+            <CardTitle>Alunos</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {(participants ?? []).length === 0 && (
+              <div className="text-sm text-muted-foreground">Nenhum aluno inscrito</div>
+            )}
+            {participants?.map(p => (
+              <div key={p.id} className="flex items-center justify-between border rounded p-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">{p.student?.name ?? p.studentId}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {p.present ? (
+                    <span className="text-green-700 text-xs flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> Presente</span>
+                  ) : (
+                    <span className="text-red-700 text-xs flex items-center"><XCircle className="w-3 h-3 mr-1" /> Ausente</span>
+                  )}
+                  <Button size="sm" variant="outline" onClick={() => togglePresence(p.id)}>Alternar</Button>
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="editInstructor">Professor</Label>
-                <Select
-                  value={editForm.instructor}
-                  onValueChange={(value) => setEditForm(prev => ({ ...prev, instructor: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecionar professor..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableTrainers.map((trainer) => (
-                      <SelectItem key={trainer} value={trainer}>
-                        {trainer}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <DialogFooter className="gap-y-2">
-              <Button variant="outline" onClick={() => setIsEditClassOpen(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleEditClass} className="bg-green-600 hover:bg-green-700">
-                <Save className="w-4 h-4 mr-2" />
-                Salvar Alterações
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit Modality Modal */}
-        <ClassModal
-          open={isEditModalityOpen}
-          mode="edit"
-          initialData={{
-            name: classData.name,
-            instructor: classData.instructor,
-            maxStudents: classData.maxStudents.toString(),
-            description: classData.description,
-            weekDays: classData.weekDays || [], // Pass existing weekdays
-            times: classData.times || [] // Pass existing times
-          }}
-          onClose={handleCloseModalityModal}
-          onSubmitData={handleEditModality}
-          trainers={availableTrainers}
-        />
+            ))}
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   )

@@ -61,6 +61,16 @@ public class ScheduledSession {
     
     @Column(name = "effective_from_timestamp", nullable = false)
     private Instant effectiveFromTimestamp;
+
+    // Optional end of applicability for this series/instance (used when splitting "this and following")
+    @Column(name = "effective_to_timestamp")
+    private Instant effectiveToTimestamp;
+    
+    // Explicit per-instance diff stored as JSON (only present when instanceOverride = true).
+    // - null/empty = inherit all fields from series
+    // - JSON with fields present => overrides (including explicit null values to clear inherited fields)
+    @Column(name = "diff", columnDefinition = "TEXT")
+    private String diff;
     
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -78,6 +88,9 @@ public class ScheduledSession {
     
     @OneToMany(mappedBy = "scheduledSession", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<SessionParticipant> participants;
+
+    @Transient
+    private Boolean canceled; // Derived flag, not persisted; exposed in API responses
     
     // Soft delete methods
     public void softDelete() {

@@ -8,104 +8,146 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Calendar, Clock, Plus, User, CheckCircle, XCircle, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
-import ClassModal from "@/components/class-modal"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { apiClient } from "@/lib/client"
+import { getScheduleOptions, createOneOffSessionMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import type { ScheduledSession, ScheduleResponseDto } from "@/lib/api-client/types.gen"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useTrainersList } from "@/lib/hooks/trainer-schedule-queries"
+
+type SessionListItem = {
+  id: string
+  sessionId?: string
+  name: string
+  trainerName: string
+  time: string
+  endTime?: string
+  duration: number
+  maxStudents: number
+  currentStudents: number
+  raw: ScheduledSession
+}
+
+function OneOffClassModal({ open, onOpenChange, defaultDate }: { open: boolean; onOpenChange: (v: boolean) => void; defaultDate: Date }) {
+  const qc = useQueryClient()
+  const trainersQ = useTrainersList()
+  const base = createOneOffSessionMutation({ client: apiClient })
+  const mutation = useMutation(base)
+
+  const [name, setName] = useState("")
+  const [trainerId, setTrainerId] = useState<string | undefined>(undefined)
+  const [date, setDate] = useState<string>(() => defaultDate.toISOString().slice(0, 10))
+  const [startTime, setStartTime] = useState("09:00")
+  const [duration, setDuration] = useState<number>(60)
+  const [maxParticipants, setMaxParticipants] = useState<number>(10)
+
+  useEffect(() => {
+    setDate(defaultDate.toISOString().slice(0, 10))
+  }, [defaultDate])
+
+  const submit = () => {
+    if (!name || !trainerId || !date || !startTime || !duration) return
+    const startIso = new Date(`${date}T${startTime}:00`).toISOString()
+    const endIso = new Date(new Date(startIso).getTime() + duration * 60000).toISOString()
+    mutation.mutate({
+      body: {
+        trainerId,
+        startTime: startIso,
+        endTime: endIso,
+        maxParticipants,
+        seriesName: name,
+        effectiveFromTimestamp: startIso,
+      },
+      client: apiClient,
+    }, {
+      onSuccess: () => {
+        qc.invalidateQueries({ predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'getSchedule' })
+        onOpenChange(false)
+        // reset basic fields
+        setName("")
+        setStartTime("09:00")
+        setDuration(60)
+      }
+    })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Criar turma avulsa</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label>Nome</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Aula Experimental" />
+          </div>
+          <div className="space-y-1">
+            <Label>Professor</Label>
+            <Select value={trainerId} onValueChange={(v) => setTrainerId(v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                {trainersQ.isLoading && <SelectItem value="loading" disabled>Carregando...</SelectItem>}
+                {trainersQ.data?.map((t: any) => (
+                  <SelectItem key={t.id} value={t.id!}>{t.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label>Data</Label>
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Início</Label>
+              <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label>Duração (min)</Label>
+              <Input type="number" value={duration} onChange={(e) => setDuration(Number(e.target.value) || 0)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Máx. alunos</Label>
+              <Input type="number" value={maxParticipants} onChange={(e) => setMaxParticipants(Number(e.target.value) || 0)} />
+            </div>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">Cancelar</Button>
+            <Button onClick={submit} disabled={!name || !trainerId || mutation.isPending} className="flex-1 bg-green-600 hover:bg-green-700">Criar</Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 export default function SchedulePage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [currentMonth, setCurrentMonth] = useState(new Date()) // Track current month/year
   const [userRole, setUserRole] = useState<string>("")
   const [isNewClassOpen, setIsNewClassOpen] = useState(false)
-  const [modalInitialData, setModalInitialData] = useState({
-    name: "",
-    instructor: "",
-    maxStudents: "2",
-    description: "",
-    weekDays: [] as string[],
-    times: [] as { day: string; startTime: string; endTime: string }[],
-  })
   const router = useRouter()
+  const qc = useQueryClient()
 
   useEffect(() => {
     const role = localStorage.getItem("userRole") || "professor"
     setUserRole(role)
   }, [])
 
-  // Mock classes data - Updated to include weekdays and times for recurrent classes
-  const [classes, setClasses] = useState([
-    {
-      id: 1,
-      name: "Pilates Iniciante",
-      instructor: "Prof. Ana",
-      time: "09:00",
-      duration: 60,
-      maxStudents: 10,
-      currentStudents: 8,
-      weekDays: ["monday", "wednesday", "friday"], // Added weekdays
-      times: [
-        { day: "monday", startTime: "09:00", endTime: "10:00" },
-        { day: "wednesday", startTime: "09:00", endTime: "10:00" },
-        { day: "friday", startTime: "09:00", endTime: "10:00" }
-      ], // Added times
-      description: "Aula de Pilates para iniciantes focada em fortalecimento do core e flexibilidade.",
-      students: [
-        { id: 1, name: "Maria Silva", avatar: "/placeholder.svg?height=32&width=32", present: true },
-        { id: 2, name: "João Santos", avatar: "/placeholder.svg?height=32&width=32", present: true },
-        { id: 3, name: "Ana Costa", avatar: "/placeholder.svg?height=32&width=32", present: false },
-        { id: 4, name: "Carlos Lima", avatar: "/placeholder.svg?height=32&width=32", present: true },
-        { id: 5, name: "Lucia Ferreira", avatar: "/placeholder.svg?height=32&width=32", present: false },
-      ],
-    },
-    {
-      id: 2,
-      name: "Yoga Avançado",
-      instructor: "Prof. Marina",
-      time: "18:00",
-      duration: 60,
-      maxStudents: 12,
-      currentStudents: 6,
-      weekDays: ["tuesday", "thursday"], // Added weekdays
-      times: [
-        { day: "tuesday", startTime: "18:00", endTime: "19:00" },
-        { day: "thursday", startTime: "18:00", endTime: "19:00" }
-      ], // Added times
-      description: "Aula de Yoga para praticantes avançados.",
-      students: [
-        { id: 6, name: "Patricia Oliveira", avatar: "/placeholder.svg?height=32&width=32", present: true },
-        { id: 7, name: "Roberto Silva", avatar: "/placeholder.svg?height=32&width=32", present: true },
-      ],
-    },
-    {
-      id: 3,
-      name: "CrossFit",
-      instructor: "Prof. Roberto",
-      time: "07:00",
-      duration: 60,
-      maxStudents: 8,
-      currentStudents: 8,
-      weekDays: ["monday", "tuesday", "wednesday", "thursday", "friday"], // Added weekdays
-      times: [
-        { day: "monday", startTime: "07:00", endTime: "08:00" },
-        { day: "tuesday", startTime: "07:00", endTime: "08:00" },
-        { day: "wednesday", startTime: "07:00", endTime: "08:00" },
-        { day: "thursday", startTime: "07:00", endTime: "08:00" },
-        { day: "friday", startTime: "07:00", endTime: "08:00" }
-      ], // Added times
-      description: "Treino funcional de alta intensidade.",
-      students: [],
-    },
-  ])
-
-  const trainers = ["Prof. Ana", "Prof. Marina", "Prof. Roberto", "Prof. Carlos"]
-
-  // Generate dates for horizontal scroll based on current month (14 days around middle of month)
+  // Compute range for schedule query based on scroll dates window
   const getScrollDates = () => {
-    const dates = []
+    const dates: Date[] = []
     const year = currentMonth.getFullYear()
     const month = currentMonth.getMonth()
-
-    // Start from the 15th of the current month and show 14 days around it
     const baseDate = new Date(year, month, 15)
-
     for (let i = -7; i <= 6; i++) {
       const date = new Date(baseDate)
       date.setDate(baseDate.getDate() + i)
@@ -115,6 +157,40 @@ export default function SchedulePage() {
   }
 
   const scrollDates = getScrollDates()
+  const rangeStart = scrollDates[0]
+  const rangeEnd = scrollDates[scrollDates.length - 1]
+  const startDate = rangeStart.toISOString().slice(0, 10)
+  const endDate = rangeEnd.toISOString().slice(0, 10)
+
+  const scheduleQ = useQuery(getScheduleOptions({ client: apiClient, query: { startDate, endDate } }))
+
+  const sessions: SessionListItem[] = ((scheduleQ.data as ScheduleResponseDto | undefined)?.sessions ?? [])
+    .filter((s) => s && s.startTime)
+    .map((s) => {
+      const duration = Math.max(0, Math.round((new Date(s.endTime ?? s.startTime!).getTime() - new Date(s.startTime!).getTime()) / 60000))
+      return {
+        // Prefer the stable sessionId for routing and updates; fall back to id when missing
+        id: String(s.sessionId ?? s.id ?? ""),
+        sessionId: s.sessionId,
+        name: s.seriesName ?? "Aula",
+        trainerName: (s as any).trainerName ?? (s as any).trainer?.name ?? "—",
+        time: new Date(s.startTime!).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        endTime: s.endTime ? new Date(s.endTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : undefined,
+        duration,
+        maxStudents: s.maxParticipants ?? 0,
+        currentStudents: s.participants?.length ?? 0,
+        raw: s,
+      }
+    })
+
+  const getClassesForDate = (date: Date) => {
+    const sameDay = (d1: Date, d2: Date) => d1.toDateString() === d2.toDateString()
+    return sessions
+      .filter((s) => (s.raw.startTime ? sameDay(new Date(s.raw.startTime), date) : false))
+      .sort((a, b) => a.time.localeCompare(b.time))
+  }
+
+  
 
   const formatDayName = (date: Date) => {
     const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
@@ -136,33 +212,7 @@ export default function SchedulePage() {
     return days[date.getDay()]
   }
 
-  const getClassesForDate = (date: Date) => {
-    const dayOfWeek = getDayOfWeekValue(date)
-
-    // Filter classes that occur on this day of the week and map them with correct times
-    return classes
-      .filter((cls) => {
-        // Check if class has weekDays and includes the current day
-        return cls.weekDays && cls.weekDays.includes(dayOfWeek)
-      })
-      .map((cls) => {
-        // Map each class to include the correct time for the selected day
-        const timeForDay = cls.times?.find(t => t.day === dayOfWeek)
-        return {
-          ...cls,
-          time: timeForDay?.startTime || cls.time,
-          endTime: timeForDay?.endTime,
-          // Dynamically calculate current students count
-          currentStudents: cls.students ? cls.students.length : 0
-        }
-      })
-      .sort((a, b) => {
-        // Sort classes by start time from earliest to latest
-        const timeA = a.time || "00:00"
-        const timeB = b.time || "00:00"
-        return timeA.localeCompare(timeB)
-      })
-  }
+  
 
   const getOccupancyColor = (current: number, max: number) => {
     const percentage = (current / max) * 100
@@ -171,43 +221,7 @@ export default function SchedulePage() {
     return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
   }
 
-  const handleCreateClass = (formData: any) => {
-    if (formData.name && formData.instructor && formData.weekDays.length > 0) {
-      const newClass = {
-        id: Date.now() + Math.random(),
-        name: formData.name,
-        instructor: formData.instructor,
-        duration: 60,
-        maxStudents: Number.parseInt(formData.maxStudents) || 10,
-        currentStudents: 0,
-        weekDays: formData.weekDays, // Store weekdays
-        times: formData.times, // Store times
-        description: formData.description || "",
-        students: [],
-      }
-      setClasses((prev: any) => [...prev, newClass])
-    }
-  }
-
-  const handleCloseClassModal = () => {
-    setIsNewClassOpen(false)
-  }
-
   const handleOpenClassModal = () => {
-    // Get the weekday value for the currently selected date
-    const selectedDayOfWeek = getDayOfWeekValue(selectedDate)
-
-    // Pre-populate the modal with the selected day and empty time
-    const initialData = {
-      name: "",
-      instructor: "",
-      maxStudents: "2",
-      description: "",
-      weekDays: [selectedDayOfWeek], // Pre-select current day
-      times: [{ day: selectedDayOfWeek, startTime: "", endTime: "" }] // Add empty time for selected day
-    }
-
-    setModalInitialData(initialData)
     setIsNewClassOpen(true)
   }
 
@@ -331,7 +345,9 @@ export default function SchedulePage() {
 
         {/* Classes for Selected Date */}
         <div className="space-y-3">
-          {getClassesForDate(selectedDate).length === 0 ? (
+          {scheduleQ.isLoading ? (
+            <Card><CardContent className="py-8 text-center">Carregando...</CardContent></Card>
+          ) : getClassesForDate(selectedDate).length === 0 ? (
             <Card>
               <CardContent className="text-center py-8">
                 <Calendar className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
@@ -359,11 +375,11 @@ export default function SchedulePage() {
                       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
-                          <span>{classItem.time}</span>
+                          <span>{classItem.time}{classItem.endTime ? ` - ${classItem.endTime}` : ""}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <User className="w-3 h-3" />
-                          <span>{classItem.instructor}</span>
+                          <span>{classItem.trainerName}</span>
                         </div>
                       </div>
                     </div>
@@ -373,7 +389,7 @@ export default function SchedulePage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {classItem.students.length > 0 && (
+                  {classItem.currentStudents > 0 && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Alunos</span>
@@ -386,29 +402,10 @@ export default function SchedulePage() {
                           Gerenciar
                         </Button>
                       </div>
-                      <div className="max-h-32 overflow-y-auto space-y-1" style={{ scrollbarWidth: "thin" }}>
-                        {classItem.students.map((student) => (
-                          <div key={student.id} className="flex items-center gap-2 p-1">
-                            <Avatar className="w-6 h-6">
-                              <AvatarFallback className="text-xs">
-                                {student.name
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm flex-1 min-w-0 truncate">{student.name}</span>
-                            {student.present ? (
-                              <CheckCircle className="w-4 h-4 text-green-500" />
-                            ) : (
-                              <XCircle className="w-4 h-4 text-red-500" />
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                      <div className="text-sm text-muted-foreground">{classItem.currentStudents} aluno(s) matriculado(s)</div>
                     </div>
                   )}
-                  {classItem.students.length === 0 && (
+                  {classItem.currentStudents === 0 && (
                     <div className="text-center py-2">
                       <p className="text-sm text-muted-foreground">Nenhum aluno inscrito</p>
                       <Button
@@ -426,16 +423,7 @@ export default function SchedulePage() {
             ))
           )}
         </div>
-
-        {/* Class Modal */}
-        <ClassModal
-          open={isNewClassOpen}
-          mode="create"
-          initialData={modalInitialData}
-          onClose={handleCloseClassModal}
-          onSubmitData={handleCreateClass}
-          trainers={trainers}
-        />
+        <OneOffClassModal open={isNewClassOpen} onOpenChange={setIsNewClassOpen} defaultDate={selectedDate} />
       </div>
     </Layout>
   )

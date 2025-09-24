@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import jakarta.validation.constraints.NotNull;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,10 +29,10 @@ public class EnrollmentRequestDTO {
         private UUID sessionSeriesId; // optional, null for one-off
 
         @NotNull
-        private LocalDateTime startTime;
+        private Instant startTime;
 
         @NotNull
-        private LocalDateTime endTime;
+        private Instant endTime;
 
         private UUID trainerId;
 

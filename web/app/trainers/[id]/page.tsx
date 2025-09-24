@@ -204,6 +204,17 @@ export default function TrainerProfilePage() {
                   Editar Perfil
                 </Button>
               </div>
+              <div className="w-full flex flex-row justify-center">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full mt-2"
+                  onClick={() => router.push(`/trainers/${params.id}/schedules`)}
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Gerenciar Horários
+                </Button>
+              </div>
             </CardContent>
           </Card>
 

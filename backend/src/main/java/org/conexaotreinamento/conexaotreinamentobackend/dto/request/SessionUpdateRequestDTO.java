@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.SessionParticipant;
 
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -13,4 +14,10 @@ import java.util.List;
 public class SessionUpdateRequestDTO {
     private List<SessionParticipant> participants;
     private String notes;
+    // Optional per-session override fields
+    private UUID trainerId;
+    private Integer maxParticipants;
+    private Boolean canceled;
+    private String room;
+    private String equipment;
 }

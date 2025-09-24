@@ -7,20 +7,24 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
-import { Menu, BarChart3, Users, Calendar, UserCheck, Dumbbell, User, Sun, Moon, LogOut, Shield } from "lucide-react"
+import { Menu, BarChart3, Users, Calendar, UserCheck, Dumbbell, User, Sun, Moon, LogOut, Shield, AlertTriangle } from "lucide-react"
 import { useTheme } from "next-themes"
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import Image from "next/image"
 import ExpiringPlansModal from "@/components/expiring-plans-modal"
+import { useQuery } from "@tanstack/react-query"
+import { getExpiringSoonAssignmentsOptions } from "@/lib/api-client/@tanstack/react-query.gen"
+import { apiClient } from "@/lib/client"
 
 const navigation = [
-	{ name: "Agenda", href: "/schedule", icon: Calendar },
-	{ name: "Alunos", href: "/students", icon: Users },
-	{ name: "Professores", href: "/trainers", icon: UserCheck, adminOnly: true },
-	{ name: "Administradores", href: "/administrators", icon: Shield, adminOnly: true },
-	{ name: "Exercícios", href: "/exercises", icon: Dumbbell },
-	{ name: "Eventos", href: "/events", icon: Calendar },
-	{ name: "Relatórios", href: "/reports", icon: BarChart3, adminOnly: true },
+{ name: "Agenda", href: "/schedule", icon: Calendar },
+{ name: "Alunos", href: "/students", icon: Users },
+{ name: "Planos", href: "/plans", icon: User, adminOnly: true },
+{ name: "Professores", href: "/trainers", icon: UserCheck, adminOnly: true },
+{ name: "Administradores", href: "/administrators", icon: Shield, adminOnly: true },
+{ name: "Exercícios", href: "/exercises", icon: Dumbbell },
+{ name: "Eventos", href: "/events", icon: Calendar },
+{ name: "Relatórios", href: "/reports", icon: BarChart3, adminOnly: true },
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -31,6 +35,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 	const [userName, setUserName] = useState<string>("")
 	const [mounted, setMounted] = useState(false)
 	const [showExpiringPlansModal, setShowExpiringPlansModal] = useState(false)
+	const [hasAutoOpened, setHasAutoOpened] = useState(false)
+
+	// Prefetch expiring assignments and auto-open modal on first load when any exist
+	const expiringQ = useQuery(getExpiringSoonAssignmentsOptions({ client: apiClient, query: { days: 7 } }))
+	useEffect(() => {
+		if (!mounted || hasAutoOpened) return
+		if (expiringQ.data && Array.isArray(expiringQ.data) && expiringQ.data.length > 0) {
+			setShowExpiringPlansModal(true)
+			setHasAutoOpened(true)
+		}
+	}, [mounted, expiringQ.data, hasAutoOpened])
 
 	useEffect(() => {
 		setMounted(true)
@@ -191,6 +206,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 						})}
 					</nav>
 					<div className="absolute bottom-0 left-0 w-64 bg-card border-t border-r p-4 space-y-2">
+						<Button
+							variant="ghost"
+							onClick={() => setShowExpiringPlansModal(true)}
+							className="w-full justify-start gap-2 px-3 text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950 whitespace-normal text-left"
+						>
+							<AlertTriangle className="w-5 h-5 flex-shrink-0" />
+							<span className="leading-snug">Planos próximos ao vencimento</span>
+						</Button>
 						<Link
 							href="/profile"
 							className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"

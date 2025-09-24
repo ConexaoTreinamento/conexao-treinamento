@@ -25,24 +25,23 @@ public class CommitmentService {
     }
     
     public StudentCommitment createSeriesCommitment(UUID studentId, UUID sessionSeriesId, CommitmentStatus status, Instant effectiveFrom, Instant effectiveTo) {
-        // Validate against current plan limits
-        Instant now = Instant.now();
-        StudentPlanAssignment activePlan = getActivePlanAt(studentId, now);
+        // Validate plan active at the commitment effectiveFrom timestamp (temporal consistency)
+        StudentPlanAssignment activePlan = getActivePlanAt(studentId, effectiveFrom);
         if (activePlan == null) {
-            throw new IllegalStateException("No active plan for student");
+            throw new IllegalStateException("No active plan for student at the provided effectiveFrom timestamp");
         }
-        
-        // Count existing commitments in plan period
+
+        // Count existing commitments in the assignment (plan) period
         long currentCommitments = countActiveCommitmentsInPeriod(studentId, activePlan.getEffectiveFromTimestamp(), activePlan.getEffectiveToTimestamp());
         if (currentCommitments >= activePlan.getPlan().getMaxDays()) {
             throw new IllegalStateException("Exceeds plan limit");
         }
-        
+
         // Validate timestamps
         if (effectiveTo != null && effectiveTo.isBefore(effectiveFrom)) {
             throw new IllegalArgumentException("effectiveTo must be after effectiveFrom");
         }
-        
+
         StudentCommitment commitment = new StudentCommitment();
         commitment.setStudentId(studentId);
         commitment.setSessionSeriesId(sessionSeriesId);
@@ -50,7 +49,7 @@ public class CommitmentService {
         commitment.setEffectiveFromTimestamp(effectiveFrom);
         commitment.setEffectiveToTimestamp(effectiveTo);
         commitment.setCreatedAt(Instant.now());
-        
+
         return studentCommitmentRepository.save(commitment);
     }
     

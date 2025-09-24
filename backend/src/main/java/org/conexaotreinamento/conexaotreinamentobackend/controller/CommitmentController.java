@@ -70,11 +70,16 @@ public class CommitmentController {
         }
         StudentCommitment original = originalOpt.get();
 
-        if (splitRequest.splitFrom == null || splitRequest.commitmentStatus == null) {
+        if (splitRequest.splitFrom == null) {
             return ResponseEntity.badRequest().build();
         }
 
-        StudentCommitment created = commitmentService.splitCommitment(original, splitRequest.splitFrom, splitRequest.commitmentStatus);
+        // If no new status provided, keep the original status for the new commitment
+        CommitmentStatus status = splitRequest.commitmentStatus != null
+                ? splitRequest.commitmentStatus
+                : original.getCommitmentStatus();
+
+        StudentCommitment created = commitmentService.splitCommitment(original, splitRequest.splitFrom, status);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 }

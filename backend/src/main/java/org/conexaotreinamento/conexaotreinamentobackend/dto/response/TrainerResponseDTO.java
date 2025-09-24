@@ -35,4 +35,19 @@ public record TrainerResponseDTO(
                 120 // hoursWorked mockado
         );
     }
+    
+    public static TrainerResponseDTO fromEntity(Trainer trainer, String email, Instant joinDate, Integer hoursWorked) {
+        return new TrainerResponseDTO(
+                trainer.getId(),
+                trainer.getName(),
+                email,
+                trainer.getPhone(),
+                trainer.getAddress(),
+                trainer.getBirthDate(),
+                trainer.getSpecialties(),
+                trainer.getCompensationType(),
+                joinDate,
+                hoursWorked != null ? hoursWorked : 0
+        );
+    }
 }
