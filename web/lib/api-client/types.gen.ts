@@ -546,77 +546,73 @@ export type Pageable = {
 };
 
 export type PageUserResponseDto = {
-    totalPages?: number;
     totalElements?: number;
+    totalPages?: number;
+    first?: boolean;
+    last?: boolean;
+    pageable?: PageableObject;
     size?: number;
     content?: Array<UserResponseDto>;
     number?: number;
-    first?: boolean;
-    last?: boolean;
-    numberOfElements?: number;
     sort?: SortObject;
-    pageable?: PageableObject;
+    numberOfElements?: number;
     empty?: boolean;
 };
 
 export type PageableObject = {
-    offset?: number;
-    sort?: SortObject;
     pageNumber?: number;
     pageSize?: number;
-    unpaged?: boolean;
+    offset?: number;
+    sort?: SortObject;
     paged?: boolean;
+    unpaged?: boolean;
 };
 
 export type SortObject = {
     empty?: boolean;
-    unsorted?: boolean;
     sorted?: boolean;
+    unsorted?: boolean;
 };
 
 export type PageStudentResponseDto = {
-    totalPages?: number;
     totalElements?: number;
+    totalPages?: number;
+    first?: boolean;
+    last?: boolean;
+    pageable?: PageableObject;
     size?: number;
     content?: Array<StudentResponseDto>;
     number?: number;
-    first?: boolean;
-    last?: boolean;
-    numberOfElements?: number;
     sort?: SortObject;
-    pageable?: PageableObject;
+    numberOfElements?: number;
     empty?: boolean;
 };
 
 export type PageExerciseResponseDto = {
-    totalPages?: number;
     totalElements?: number;
+    totalPages?: number;
+    first?: boolean;
+    last?: boolean;
+    pageable?: PageableObject;
     size?: number;
     content?: Array<ExerciseResponseDto>;
     number?: number;
-    first?: boolean;
-    last?: boolean;
-    numberOfElements?: number;
     sort?: SortObject;
-    pageable?: PageableObject;
+    numberOfElements?: number;
     empty?: boolean;
 };
 
-export type ScheduleResponseDto = {
-    sessions?: Array<ScheduledSession>;
-};
-
 export type PageAdministratorResponseDto = {
-    totalPages?: number;
     totalElements?: number;
+    totalPages?: number;
+    first?: boolean;
+    last?: boolean;
+    pageable?: PageableObject;
     size?: number;
     content?: Array<AdministratorResponseDto>;
     number?: number;
-    first?: boolean;
-    last?: boolean;
-    numberOfElements?: number;
     sort?: SortObject;
-    pageable?: PageableObject;
+    numberOfElements?: number;
     empty?: boolean;
 };
 

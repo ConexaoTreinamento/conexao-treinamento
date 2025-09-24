@@ -337,14 +337,6 @@ export default function StudentsPage() {
   const hasInvalidDateRange = Boolean(watchedFilters.startDate && watchedFilters.endDate && watchedFilters.startDate > watchedFilters.endDate)
   const debouncedInvalidDateRange = Boolean(debouncedFilters.startDate && debouncedFilters.endDate && debouncedFilters.startDate > debouncedFilters.endDate)
 
-  React.useEffect(() => {
-    if (currentPage !== 0) {
-      setCurrentPage(0)
-    }
-    //We want to reset page only when debounced values change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchTerm, debouncedFilters])
-
   // Fetch students using React Query with debounced values
   const { data: studentsData, isLoading, error } = useStudents({
     ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
