@@ -55,7 +55,8 @@ public class UserService {
 
     @Transactional
     public UserResponseDTO patch(UUID id, PatchUserRoleRequestDTO request) {
-        User user = userRepository.findByIdAndDeletedAtIsNull(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        User user = userRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         if (request.role() != null) {
             user.setRole(request.role());
         }
@@ -72,7 +73,7 @@ public class UserService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         if (!user.getEmail().equals(newEmail)) {
-            Optional<User> existingUser = userRepository.findByEmail(newEmail);
+            Optional<User> existingUser = userRepository.findByEmailAndDeletedAtIsNull(newEmail);
             if (existingUser.isPresent() && !existingUser.get().getId().equals(userId)) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
             }
