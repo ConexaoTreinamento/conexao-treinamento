@@ -218,31 +218,75 @@ export type Pageable = {
     sort?: Array<string>;
 };
 
-export type PageMetadata = {
-    size?: number;
-    number?: number;
+export type PageUserResponseDto = {
     totalElements?: number;
     totalPages?: number;
-};
-
-export type PagedModelUserResponseDto = {
+    first?: boolean;
+    last?: boolean;
+    pageable?: PageableObject;
+    size?: number;
     content?: Array<UserResponseDto>;
-    page?: PageMetadata;
+    number?: number;
+    sort?: SortObject;
+    numberOfElements?: number;
+    empty?: boolean;
 };
 
-export type PagedModelStudentResponseDto = {
+export type PageableObject = {
+    pageNumber?: number;
+    pageSize?: number;
+    offset?: number;
+    sort?: SortObject;
+    paged?: boolean;
+    unpaged?: boolean;
+};
+
+export type SortObject = {
+    empty?: boolean;
+    sorted?: boolean;
+    unsorted?: boolean;
+};
+
+export type PageStudentResponseDto = {
+    totalElements?: number;
+    totalPages?: number;
+    first?: boolean;
+    last?: boolean;
+    pageable?: PageableObject;
+    size?: number;
     content?: Array<StudentResponseDto>;
-    page?: PageMetadata;
+    number?: number;
+    sort?: SortObject;
+    numberOfElements?: number;
+    empty?: boolean;
 };
 
-export type PagedModelExerciseResponseDto = {
+export type PageExerciseResponseDto = {
+    totalElements?: number;
+    totalPages?: number;
+    first?: boolean;
+    last?: boolean;
+    pageable?: PageableObject;
+    size?: number;
     content?: Array<ExerciseResponseDto>;
-    page?: PageMetadata;
+    number?: number;
+    sort?: SortObject;
+    numberOfElements?: number;
+    empty?: boolean;
 };
 
-export type PagedModelAdministratorResponseDto = {
+export type PageAdministratorResponseDto = {
+    totalElements?: number;
+    totalPages?: number;
+    first?: boolean;
+    last?: boolean;
+    pageable?: PageableObject;
+    size?: number;
     content?: Array<AdministratorResponseDto>;
-    page?: PageMetadata;
+    number?: number;
+    sort?: SortObject;
+    numberOfElements?: number;
+    empty?: boolean;
 };
 
 export type SoftDeleteTrainerUserData = {
@@ -502,7 +546,7 @@ export type GetAllUsersSimpleResponses = {
     /**
      * OK
      */
-    200: PagedModelUserResponseDto;
+    200: PageUserResponseDto;
 };
 
 export type GetAllUsersSimpleResponse = GetAllUsersSimpleResponses[keyof GetAllUsersSimpleResponses];
@@ -576,7 +620,7 @@ export type FindAllResponses = {
     /**
      * OK
      */
-    200: PagedModelStudentResponseDto;
+    200: PageStudentResponseDto;
 };
 
 export type FindAllResponse = FindAllResponses[keyof FindAllResponses];
@@ -612,7 +656,7 @@ export type FindAll1Responses = {
     /**
      * OK
      */
-    200: PagedModelExerciseResponseDto;
+    200: PageExerciseResponseDto;
 };
 
 export type FindAll1Response = FindAll1Responses[keyof FindAll1Responses];
@@ -680,7 +724,7 @@ export type FindAll2Responses = {
     /**
      * OK
      */
-    200: PagedModelAdministratorResponseDto;
+    200: PageAdministratorResponseDto;
 };
 
 export type FindAll2Response = FindAll2Responses[keyof FindAll2Responses];

@@ -321,14 +321,6 @@ export default function StudentsPage() {
   const hasInvalidDateRange = Boolean(watchedFilters.startDate && watchedFilters.endDate && watchedFilters.startDate > watchedFilters.endDate)
   const debouncedInvalidDateRange = Boolean(debouncedFilters.startDate && debouncedFilters.endDate && debouncedFilters.startDate > debouncedFilters.endDate)
 
-  React.useEffect(() => {
-    if (currentPage !== 0) {
-      setCurrentPage(0)
-    }
-    //We want to reset page only when debounced values change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearchTerm, debouncedFilters])
-
   // Fetch students using React Query with debounced values
   const { data: studentsData, isLoading, error } = useStudents({
     ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
@@ -344,8 +336,8 @@ export default function StudentsPage() {
   })
 
   // Helper data extraction with proper typing
-  const totalPages = studentsData?.page?.totalPages || 0
-  const totalElements = studentsData?.page?.totalElements || 0
+  const totalPages = studentsData?.totalPages || 0
+  const totalElements = studentsData?.totalElements || 0
 
   // Helper function to get student age from birthdate
   const getStudentAge = (birthDate: string): number => {
