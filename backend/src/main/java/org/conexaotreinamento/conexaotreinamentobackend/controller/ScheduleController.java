@@ -19,6 +19,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -43,6 +44,7 @@ public class ScheduleController {
     }
     
     @GetMapping("/series")
+    @Transactional(readOnly = true)
     public ResponseEntity<List<TrainerScheduleResponseDTO>> getSeries(@RequestParam(required = false) UUID trainerId) {
         List<TrainerSchedule> series = scheduleService.findAllSeries(trainerId);
         List<TrainerScheduleResponseDTO> dtos = series.stream().map(this::mapToTrainerScheduleResponseDTO).toList();

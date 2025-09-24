@@ -1,16 +1,19 @@
 import { apiClient } from "@/lib/client";
 import { jsonBodySerializer } from "@/lib/api-client/core/bodySerializer";
 
-export type DeactivateWeekdaysRequest = {
+export type WeekSplitRequest = {
   trainerId: string;
-  weekdays: number[];
+  seriesName?: string;
+  intervalDuration?: number;
+  newEffectiveFrom: string; // ISO string
+  days: Array<{ weekday: number; active: boolean; startTime?: string; endTime?: string }>;
 };
 
-export async function deactivateWeekdays(req: DeactivateWeekdaysRequest) {
+export async function splitWeek(req: WeekSplitRequest) {
   return apiClient.post({
-    url: "/api/schedule/series/deactivate-weekdays",
+    url: "/api/schedule/series/split-week",
     body: req,
-  ...jsonBodySerializer,
+    ...jsonBodySerializer,
     headers: new Headers({ "Content-Type": "application/json" }),
   });
 }

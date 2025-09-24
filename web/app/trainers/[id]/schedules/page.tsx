@@ -16,7 +16,9 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { toast } from "@/hooks/use-toast"
 import { useTrainerSeries, useCreateTrainerSeries, useUpdateTrainerSeries, useTrainersList } from "@/lib/hooks/trainer-schedule-queries"
-import { deactivateWeekdays } from "@/lib/api-extras/schedule"
+import { useMutation } from "@tanstack/react-query"
+import { splitWeekMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { apiClient } from "@/lib/client"
 
 const formSchema = z.object({
   weekday: z.number().min(0).max(6),
@@ -175,6 +177,9 @@ export default function TrainerSchedulesPage() {
     }
   }
 
+  const splitWeekBase = splitWeekMutation({ client: apiClient })
+  const splitWeekMut = useMutation(splitWeekBase)
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -225,29 +230,30 @@ export default function TrainerSchedulesPage() {
                     return
                   }
                   try {
-                    // First, deactivate any currently active series for disabled weekdays so refresh won't resurrect them
-                    const disabledDays = WEEKDAYS.filter(d => !genDays[d.value]?.enabled).map(d => d.value)
-                    if (disabledDays.length > 0) {
-                      await deactivateWeekdays({ trainerId, weekdays: disabledDays })
-                    }
-                    await Promise.all(daysToCreate.map(d => createMutation.mutateAsync({
-                      trainerId,
-                      weekday: d.value,
-                      startTime: genDays[d.value].startTime,
-                      endTime: genDays[d.value].endTime,
-                      intervalDuration: genDuration,
-                      seriesName: genSeriesName || "Aula",
-                      effectiveFromTimestamp: nowIso,
-                    } as any)))
-                    toast({ title: "Séries criadas", description: `${daysToCreate.length} dia(s) configurado(s).` })
+                    // Single atomic split request including active and inactive days
+                    await splitWeekMut.mutateAsync({
+                      body: {
+                        trainerId,
+                        seriesName: genSeriesName || "Aula",
+                        intervalDuration: genDuration,
+                        newEffectiveFrom: nowIso,
+                        days: WEEKDAYS.map(d => ({
+                          weekday: d.value,
+                          active: Boolean(genDays[d.value]?.enabled),
+                          startTime: genDays[d.value].startTime,
+                          endTime: genDays[d.value].endTime,
+                        }))
+                      }
+                    })
+                    toast({ title: "Horários atualizados", description: `Semana configurada (${enabledCount} dia(s) ativo(s)).` })
                     // Ensure latest data is fetched immediately
                     await seriesQuery.refetch()
                   } catch (e: any) {
-                    toast({ title: "Erro ao criar séries", description: e?.message || String(e), variant: "destructive" })
+                    toast({ title: "Erro ao atualizar semana", description: e?.message || String(e), variant: "destructive" })
                   }
                 }}
               >
-                <Plus className="w-4 h-4 mr-1" /> Gerar séries ({enabledCount})
+                <Plus className="w-4 h-4 mr-1" /> Atualizar semana ({enabledCount} ativos)
               </Button>
             </div>
           </div>

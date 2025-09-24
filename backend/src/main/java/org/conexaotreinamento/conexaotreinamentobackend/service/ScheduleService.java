@@ -320,15 +320,10 @@ public class ScheduleService {
         return created;
     }
     
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public List<TrainerSchedule> findAllSeries(UUID trainerId) {
-    List<TrainerSchedule> all = trainerScheduleRepository.findAll();
-    Instant now = Instant.now();
-    return all.stream()
-        .filter(ts -> ts.isActive()
-            && (trainerId == null || trainerId.equals(ts.getTrainerId()))
-            && (ts.getEffectiveFromTimestamp() == null || !ts.getEffectiveFromTimestamp().isAfter(now))
-            && (ts.getEffectiveToTimestamp() == null || now.isBefore(ts.getEffectiveToTimestamp())))
-        .collect(Collectors.toList());
+        Instant now = Instant.now();
+        return trainerScheduleRepository.findActiveSeriesAt(trainerId, now);
     }
 
     /**

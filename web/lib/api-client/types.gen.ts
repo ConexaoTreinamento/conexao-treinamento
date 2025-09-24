@@ -293,6 +293,7 @@ export type ScheduledSession = {
     deletedAt?: string;
     active?: boolean;
     participants?: Array<SessionParticipant>;
+    canceled?: boolean;
 };
 
 export type SessionParticipant = {
@@ -315,6 +316,11 @@ export type SessionParticipant = {
 export type SessionUpdateRequestDto = {
     participants?: Array<SessionParticipant>;
     notes?: string;
+    trainerId?: string;
+    maxParticipants?: number;
+    canceled?: boolean;
+    room?: string;
+    equipment?: string;
 };
 
 export type Student = {
@@ -353,6 +359,26 @@ export type Trainer = {
     birthDate?: string;
     specialties?: Array<string>;
     compensationType?: 'HOURLY' | 'MONTHLY';
+};
+
+export type DayConfig = {
+    weekday: number;
+    active: boolean;
+    startTime?: string;
+    endTime?: string;
+};
+
+export type WeekSplitRequestDto = {
+    trainerId: string;
+    seriesName?: string;
+    intervalDuration?: number;
+    newEffectiveFrom: string;
+    days: Array<DayConfig>;
+};
+
+export type DeactivateWeekdaysRequest = {
+    trainerId?: string;
+    weekdays?: Array<number>;
 };
 
 export type ScheduledSessionRequestDto = {
@@ -465,10 +491,10 @@ export type StudentCommitment = {
     effectiveFromTimestamp?: string;
     effectiveToTimestamp?: string;
     createdAt?: string;
+    currentlyActive?: boolean;
+    notAttending?: boolean;
     tentative?: boolean;
     attending?: boolean;
-    notAttending?: boolean;
-    currentlyActive?: boolean;
 };
 
 export type TrainerSchedule = {
@@ -522,11 +548,11 @@ export type Pageable = {
 export type PageUserResponseDto = {
     totalPages?: number;
     totalElements?: number;
-    first?: boolean;
-    last?: boolean;
     size?: number;
     content?: Array<UserResponseDto>;
     number?: number;
+    first?: boolean;
+    last?: boolean;
     numberOfElements?: number;
     sort?: SortObject;
     pageable?: PageableObject;
@@ -535,27 +561,27 @@ export type PageUserResponseDto = {
 
 export type PageableObject = {
     offset?: number;
-    paged?: boolean;
     sort?: SortObject;
-    pageSize?: number;
     pageNumber?: number;
+    pageSize?: number;
     unpaged?: boolean;
+    paged?: boolean;
 };
 
 export type SortObject = {
     empty?: boolean;
-    sorted?: boolean;
     unsorted?: boolean;
+    sorted?: boolean;
 };
 
 export type PageStudentResponseDto = {
     totalPages?: number;
     totalElements?: number;
-    first?: boolean;
-    last?: boolean;
     size?: number;
     content?: Array<StudentResponseDto>;
     number?: number;
+    first?: boolean;
+    last?: boolean;
     numberOfElements?: number;
     sort?: SortObject;
     pageable?: PageableObject;
@@ -565,11 +591,11 @@ export type PageStudentResponseDto = {
 export type PageExerciseResponseDto = {
     totalPages?: number;
     totalElements?: number;
-    first?: boolean;
-    last?: boolean;
     size?: number;
     content?: Array<ExerciseResponseDto>;
     number?: number;
+    first?: boolean;
+    last?: boolean;
     numberOfElements?: number;
     sort?: SortObject;
     pageable?: PageableObject;
@@ -583,11 +609,11 @@ export type ScheduleResponseDto = {
 export type PageAdministratorResponseDto = {
     totalPages?: number;
     totalElements?: number;
-    first?: boolean;
-    last?: boolean;
     size?: number;
     content?: Array<AdministratorResponseDto>;
     number?: number;
+    first?: boolean;
+    last?: boolean;
     numberOfElements?: number;
     sort?: SortObject;
     pageable?: PageableObject;
@@ -1101,6 +1127,38 @@ export type CreateSeriesResponses = {
 };
 
 export type CreateSeriesResponse = CreateSeriesResponses[keyof CreateSeriesResponses];
+
+export type SplitWeekData = {
+    body: WeekSplitRequestDto;
+    path?: never;
+    query?: never;
+    url: '/api/schedule/series/split-week';
+};
+
+export type SplitWeekResponses = {
+    /**
+     * OK
+     */
+    200: Array<TrainerScheduleResponseDto>;
+};
+
+export type SplitWeekResponse = SplitWeekResponses[keyof SplitWeekResponses];
+
+export type DeactivateWeekdaysData = {
+    body: DeactivateWeekdaysRequest;
+    path?: never;
+    query?: never;
+    url: '/api/schedule/series/deactivate-weekdays';
+};
+
+export type DeactivateWeekdaysResponses = {
+    /**
+     * OK
+     */
+    200: Array<TrainerScheduleResponseDto>;
+};
+
+export type DeactivateWeekdaysResponse = DeactivateWeekdaysResponses[keyof DeactivateWeekdaysResponses];
 
 export type CreateOneOffSessionData = {
     body: ScheduledSessionRequestDto;
