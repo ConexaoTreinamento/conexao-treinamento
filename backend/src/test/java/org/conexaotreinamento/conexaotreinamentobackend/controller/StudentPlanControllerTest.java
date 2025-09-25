@@ -90,7 +90,7 @@ class StudentPlanControllerTest {
         ));
 
         // Act + Assert
-        mockMvc.perform(get("/api/plans"))
+        mockMvc.perform(get("/plans"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].name").value("Gold"))
@@ -104,7 +104,7 @@ class StudentPlanControllerTest {
         when(studentPlanService.getPlanById(planId)).thenReturn(dto);
 
         // Act + Assert
-        mockMvc.perform(get("/api/plans/{planId}", planId))
+        mockMvc.perform(get("/plans/{planId}", planId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(planId.toString()))
                 .andExpect(jsonPath("$.name").value("Prime"))
@@ -124,7 +124,7 @@ class StudentPlanControllerTest {
         when(studentPlanService.createPlan(any(StudentPlanRequestDTO.class))).thenReturn(saved);
 
         // Act + Assert
-        mockMvc.perform(post("/api/plans")
+        mockMvc.perform(post("/plans")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isCreated())
@@ -135,7 +135,7 @@ class StudentPlanControllerTest {
     @Test
     void deletePlan_returns204_andInvokesService() throws Exception {
         // Act + Assert
-        mockMvc.perform(delete("/api/plans/{planId}", planId))
+        mockMvc.perform(delete("/plans/{planId}", planId))
                 .andExpect(status().isNoContent());
 
         verify(studentPlanService).deletePlan(planId);
@@ -162,7 +162,7 @@ class StudentPlanControllerTest {
                 + "}";
 
         // Act + Assert
-        mockMvc.perform(post("/api/plans/students/{studentId}/assign", studentId)
+        mockMvc.perform(post("/plans/students/{studentId}/assign", studentId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isCreated())
@@ -182,7 +182,7 @@ class StudentPlanControllerTest {
         when(studentPlanService.getStudentPlanHistory(studentId)).thenReturn(List.of(a));
 
         // Act + Assert
-        mockMvc.perform(get("/api/plans/students/{studentId}/history", studentId))
+        mockMvc.perform(get("/plans/students/{studentId}/history", studentId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].studentId").value(studentId.toString()));
     }
@@ -194,7 +194,7 @@ class StudentPlanControllerTest {
         when(studentPlanService.getCurrentStudentPlan(studentId)).thenReturn(a);
 
         // Act + Assert
-        mockMvc.perform(get("/api/plans/students/{studentId}/current", studentId))
+        mockMvc.perform(get("/plans/students/{studentId}/current", studentId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.planId").value(planId.toString()))
                 .andExpect(jsonPath("$.active").value(true));
@@ -207,7 +207,7 @@ class StudentPlanControllerTest {
         when(studentPlanService.getExpiringSoonAssignments(7)).thenReturn(List.of(a));
 
         // Act + Assert
-        mockMvc.perform(get("/api/plans/assignments/expiring-soon")
+        mockMvc.perform(get("/plans/assignments/expiring-soon")
                         .param("days", "7"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].daysRemaining").value(10));
@@ -220,7 +220,7 @@ class StudentPlanControllerTest {
         when(studentPlanService.getAllCurrentlyActiveAssignments()).thenReturn(List.of(a));
 
         // Act + Assert
-        mockMvc.perform(get("/api/plans/assignments/active"))
+        mockMvc.perform(get("/plans/assignments/active"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].studentId").value(studentId.toString()));
     }

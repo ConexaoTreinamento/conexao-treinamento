@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/plans")
+@RequestMapping("/plans")
 public class StudentPlanController {
     
     @Autowired

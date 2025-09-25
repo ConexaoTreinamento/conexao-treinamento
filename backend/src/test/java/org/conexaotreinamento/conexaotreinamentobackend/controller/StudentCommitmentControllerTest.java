@@ -99,7 +99,7 @@ class StudentCommitmentControllerTest {
         String body = "{ \"commitmentStatus\": \"ATTENDING\", \"effectiveFromTimestamp\": \"2025-09-01T00:00:00Z\" }";
 
         // Act + Assert
-        mockMvc.perform(post("/api/commitments/students/{studentId}/sessions/{sessionSeriesId}", studentId, seriesId)
+        mockMvc.perform(post("/commitments/students/{studentId}/sessions/{sessionSeriesId}", studentId, seriesId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isCreated())
@@ -117,7 +117,7 @@ class StudentCommitmentControllerTest {
 
         String body = "{ \"commitmentStatus\": \"ATTENDING\" }";
 
-        mockMvc.perform(post("/api/commitments/students/{studentId}/sessions/{sessionSeriesId}", studentId, seriesId)
+        mockMvc.perform(post("/commitments/students/{studentId}/sessions/{sessionSeriesId}", studentId, seriesId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isBadRequest());
@@ -130,7 +130,7 @@ class StudentCommitmentControllerTest {
                 .thenReturn(CommitmentStatus.TENTATIVE);
 
         // Act + Assert
-        mockMvc.perform(get("/api/commitments/students/{studentId}/sessions/{sessionSeriesId}/status", studentId, seriesId))
+        mockMvc.perform(get("/commitments/students/{studentId}/sessions/{sessionSeriesId}/status", studentId, seriesId))
                 .andExpect(status().isOk())
                 .andExpect(content().string("\"TENTATIVE\""));
     }
@@ -145,7 +145,7 @@ class StudentCommitmentControllerTest {
         when(trainerScheduleRepository.findById(seriesId)).thenReturn(Optional.of(schedule(seriesId, "Power Yoga")));
 
         // Act + Assert
-        mockMvc.perform(get("/api/commitments/students/{studentId}", studentId))
+        mockMvc.perform(get("/commitments/students/{studentId}", studentId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].studentId").value(studentId.toString()))
@@ -163,7 +163,7 @@ class StudentCommitmentControllerTest {
         when(trainerScheduleRepository.findById(seriesId)).thenReturn(Optional.of(schedule(seriesId, "Pilates")));
 
         // Act + Assert
-        mockMvc.perform(get("/api/commitments/sessions/{sessionSeriesId}", seriesId))
+        mockMvc.perform(get("/commitments/sessions/{sessionSeriesId}", seriesId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].commitmentStatus").value("NOT_ATTENDING"))
                 .andExpect(jsonPath("$[0].seriesName").value("Pilates"));
@@ -180,7 +180,7 @@ class StudentCommitmentControllerTest {
         when(trainerScheduleRepository.findById(seriesId)).thenReturn(Optional.of(schedule(seriesId, "Evening Flow")));
 
         // Act + Assert
-        mockMvc.perform(get("/api/commitments/students/{studentId}/active", studentId))
+        mockMvc.perform(get("/commitments/students/{studentId}/active", studentId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].commitmentStatus").value("ATTENDING"))
                 .andExpect(jsonPath("$[0].studentName").value("Dave"));
@@ -196,7 +196,7 @@ class StudentCommitmentControllerTest {
         when(trainerScheduleRepository.findById(seriesId)).thenReturn(Optional.of(schedule(seriesId, "Morning Strength")));
 
         // Act + Assert
-        mockMvc.perform(get("/api/commitments/students/{studentId}/sessions/{sessionSeriesId}/history", studentId, seriesId))
+        mockMvc.perform(get("/commitments/students/{studentId}/sessions/{sessionSeriesId}/history", studentId, seriesId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].commitmentStatus").value("TENTATIVE"))
                 .andExpect(jsonPath("$[0].seriesName").value("Morning Strength"));
@@ -218,7 +218,7 @@ class StudentCommitmentControllerTest {
         String body = "{ \"sessionSeriesIds\": [\"" + s1 + "\", \"" + s2 + "\"], \"commitmentStatus\": \"ATTENDING\", \"effectiveFromTimestamp\": \"2025-09-01T00:00:00Z\" }";
 
         // Act + Assert
-        mockMvc.perform(post("/api/commitments/students/{studentId}/bulk", studentId)
+        mockMvc.perform(post("/commitments/students/{studentId}/bulk", studentId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isCreated())
@@ -233,7 +233,7 @@ class StudentCommitmentControllerTest {
 
         String body = "{ \"sessionSeriesIds\": [\"" + UUID.randomUUID() + "\"], \"commitmentStatus\": \"NOT_ATTENDING\" }";
 
-        mockMvc.perform(post("/api/commitments/students/{studentId}/bulk", studentId)
+        mockMvc.perform(post("/commitments/students/{studentId}/bulk", studentId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isBadRequest());
@@ -248,7 +248,7 @@ class StudentCommitmentControllerTest {
         when(trainerScheduleRepository.findByActiveTrue()).thenReturn(List.of(ts));
 
         // Act + Assert
-        mockMvc.perform(get("/api/commitments/available-sessions"))
+        mockMvc.perform(get("/commitments/available-sessions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].seriesName").value("Public Series"));
 

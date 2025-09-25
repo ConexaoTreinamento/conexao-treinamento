@@ -26,7 +26,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/commitments")
+@RequestMapping("/commitments")
 public class StudentCommitmentController {
     
     @Autowired

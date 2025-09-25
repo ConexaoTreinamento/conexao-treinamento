@@ -15,7 +15,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/trainer-schedules")
+@RequestMapping("/trainer-schedules")
 public class TrainerScheduleController {
     
     @Autowired

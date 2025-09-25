@@ -52,7 +52,7 @@ class ScheduleControllerTest {
                 .thenReturn(sessions);
 
         // Act + Assert
-        mockMvc.perform(get("/api/schedule")
+        mockMvc.perform(get("/schedule")
                 .param("startDate", "2025-09-26")
                 .param("endDate", "2025-09-26"))
                 .andExpect(status().isOk())
@@ -70,7 +70,7 @@ class ScheduleControllerTest {
         String body = "{ \"notes\": \"Bring water\" }";
 
         // Act
-        mockMvc.perform(post("/api/schedule/sessions/{sessionId}", sessionId)
+        mockMvc.perform(post("/schedule/sessions/{sessionId}", sessionId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
                 .andExpect(status().isOk())
@@ -89,7 +89,7 @@ class ScheduleControllerTest {
         String body = "{ \"participants\": [ { \"studentId\": \"" + studentId + "\", \"participationType\": \"INCLUDED\", \"present\": true } ] }";
 
         // Act
-        mockMvc.perform(post("/api/schedule/sessions/{sessionId}", sessionId)
+        mockMvc.perform(post("/schedule/sessions/{sessionId}", sessionId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
                 .andExpect(status().isOk())
@@ -111,7 +111,7 @@ class ScheduleControllerTest {
         String body = "{ \"notes\": \"Bring towel\", \"participants\": [ { \"studentId\": \"" + studentId + "\", \"participationType\": \"INCLUDED\", \"present\": false } ] }";
 
         // Act
-        mockMvc.perform(post("/api/schedule/sessions/{sessionId}", sessionId)
+        mockMvc.perform(post("/schedule/sessions/{sessionId}", sessionId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
                 .andExpect(status().isOk())
@@ -129,7 +129,7 @@ class ScheduleControllerTest {
         String body = "{}";
 
         // Act
-        mockMvc.perform(post("/api/schedule/sessions/{sessionId}", sessionId)
+        mockMvc.perform(post("/schedule/sessions/{sessionId}", sessionId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
                 .andExpect(status().isOk())
