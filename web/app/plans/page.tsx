@@ -16,6 +16,7 @@ import {useForm} from 'react-hook-form'
 import {z} from 'zod'
 import {zodResolver} from '@hookform/resolvers/zod'
 import {useToast} from '@/hooks/use-toast'
+import { StudentPlanResponseDto } from '@/lib/api-client'
 
 const planSchema = z.object({
   name: z.string().min(2,'Nome obrigatório'),
@@ -46,16 +47,16 @@ export default function PlansPage(){
   const deletePlan = useMutation({
     ...deletePlanMutation({client: apiClient}),
     // optimistic update
-    onMutate: async (vars: any) => {
+    onMutate: async (vars) => {
       await qc.cancelQueries({queryKey: plansQueryOptions.queryKey})
-      const prev = qc.getQueryData<any[]>(plansQueryOptions.queryKey)
+      const prev = qc.getQueryData(plansQueryOptions.queryKey)
       if(prev){
-        qc.setQueryData<any[]>(plansQueryOptions.queryKey, prev.filter(p=> p.planId !== vars?.path?.planId))
+        qc.setQueryData(plansQueryOptions.queryKey, prev.filter(p=> p.id !== vars.path.planId))
       }
       return {prev}
     },
-    onError: (_err: unknown,_vars: any,ctx: any) => {
-      if(ctx?.prev) qc.setQueryData(plansQueryOptions.queryKey, ctx.prev)
+    onError: (_err: Error, context: any) => {
+      if(context?.prev) qc.setQueryData(plansQueryOptions.queryKey, context.prev)
       toast({title:'Erro ao excluir plano', variant:'destructive'})
     },
     onSuccess: () => toast({title:'Plano excluído'}),
@@ -66,16 +67,28 @@ export default function PlansPage(){
   const [editingId, setEditingId] = useState<string|null>(null)
   const [editValues, setEditValues] = useState<{name:string; maxDays:number; durationDays:number}>({name:'', maxDays:1, durationDays:30})
 
-  const startEdit = (p:any)=> {
-    setEditingId(p.planId)
-    setEditValues({name: p.planName, maxDays: p.planMaxDays, durationDays: p.planDurationDays})
+  const startEdit = (p: StudentPlanResponseDto)=> {
+    setEditingId(p.id!)
+    setEditValues({name: p.name!, maxDays: p.maxDays!, durationDays: p.durationDays!})
   }
 
   const cancelEdit = ()=> {
     setEditingId(null)
   }
 
-  const plans = useMemo(()=> (data||[]).sort((a:any,b:any)=> a.planName.localeCompare(b.planName)),[data])
+  // Normalize plans: support both API field naming variants (planId/planName or id/name)
+  const plans = useMemo(()=> {
+    const list = (data||[]) as any[]
+    const normalized = list.map(p => ({
+      _raw: p,
+      id: p.planId ?? p.id,
+      name: p.planName ?? p.name ?? '',
+      maxDays: p.planMaxDays ?? p.maxDays,
+      durationDays: p.planDurationDays ?? p.durationDays
+    })).filter(p=> !!p.id)
+    normalized.sort((a,b)=> a.name.localeCompare(b.name))
+    return normalized
+  },[data])
 
   const [open,setOpen] = useState(false)
   const form = useForm<PlanForm>({resolver: zodResolver(planSchema), defaultValues:{name:'', maxDays:3, durationDays:30}})
@@ -138,10 +151,10 @@ export default function PlansPage(){
         {error && <Card><CardContent className="p-6 text-sm text-red-600">Erro ao carregar planos.</CardContent></Card>}
         {isLoading && <div className="space-y-2">{[...Array(3)].map((_,i)=><Card key={i} className="animate-pulse"><CardContent className="h-16"/></Card>)}</div>}
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {plans.map((p:any)=> {
-            const isEditing = editingId === p.planId
+          {plans.map(({_raw: p, id, name, maxDays, durationDays})=> {
+            const isEditing = editingId === id
             return (
-              <Card key={p.planId} className={`border-l-4 ${isEditing? 'border-l-orange-500':'border-l-green-600'}`}>
+              <Card key={id} className={`border-l-4 ${isEditing? 'border-l-orange-500':'border-l-green-600'}`}>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center justify-between gap-2">
                     {isEditing ? (
@@ -151,14 +164,14 @@ export default function PlansPage(){
                         className="h-8 text-sm"
                       />
                     ) : (
-                      <span className="truncate" title={p.planName}>{p.planName}</span>
+                      <span className="truncate" title={name}>{name}</span>
                     )}
-                    <Badge variant="outline" className="text-xs whitespace-nowrap">{isEditing? editValues.maxDays : p.planMaxDays}d/sem</Badge>
+                    <Badge variant="outline" className="text-xs whitespace-nowrap">{isEditing? editValues.maxDays : maxDays}d/sem</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Duração: {isEditing? editValues.durationDays : p.planDurationDays} dias</span>
+                    <span>Duração: {isEditing? editValues.durationDays : durationDays} dias</span>
                   </div>
                   {isEditing && (
                     <div className="grid grid-cols-2 gap-2 text-xs">
@@ -180,14 +193,14 @@ export default function PlansPage(){
                       </>
                     ) : (
                       <>
-                        <Button size="sm" variant="outline" className="h-8 px-2" onClick={()=> startEdit(p)}><Pencil className="w-3 h-3"/></Button>
+                        <Button size="sm" variant="outline" className="h-8 px-2" onClick={()=> startEdit({id, name, maxDays, durationDays})}><Pencil className="w-3 h-3"/></Button>
                         <ConfirmDeleteButton
                           size="sm"
                           variant="outline"
                           className="h-8 px-2"
                           title="Excluir Plano"
-                          description={`Tem certeza que deseja excluir o plano "${p.planName}"?`}
-                          onConfirm={()=> deletePlan.mutate({path:{planId: p.planId}, client: apiClient})}
+                          description={`Tem certeza que deseja excluir o plano "${name}"?`}
+                          onConfirm={()=> deletePlan.mutate({path:{planId: id}, client: apiClient})}
                           disabled={deletePlan.isPending}
                         >
                           <Trash2 className="w-3 h-3"/>
