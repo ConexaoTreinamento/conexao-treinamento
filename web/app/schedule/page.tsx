@@ -44,19 +44,37 @@ export default function DailySchedulePage(){
   const [openNew, setOpenNew] = useState(false)
   const form = useForm<OneOffForm>({resolver: zodResolver(oneOffSchema), defaultValues:{seriesName:'Nova Aula', startTime:'08:00', endTime:'09:00', trainerName:''}})
 
+  // Types for schedule API (minimal subset used by this page)
+  interface SessionStudent {
+    studentId?: string
+    studentName?: string
+    commitmentStatus?: string
+  }
+  interface ScheduleSession {
+    sessionId?: string
+    startTime?: string
+    endTime?: string
+    seriesName?: string
+    trainerName?: string
+    students?: SessionStudent[]
+  }
+  interface ScheduleResponseShape {
+    sessions?: ScheduleSession[]
+  }
+
   const submitOneOff = (values: OneOffForm) => {
     // Since create session endpoint not present in SDK, we optimistically inject a local item.
     // This prevents blocking UI until backend supports one-off creation.
     const fakeId = `oneoff-${Date.now()}`
     const startISO = `${date}T${values.startTime}:00`
     const endISO = `${date}T${values.endTime}:00`
-    const optimistic = {sessionId: fakeId, startTime: startISO, endTime: endISO, seriesName: values.seriesName, trainerName: values.trainerName, students: []}
-    qc.setQueryData(scheduleQueryOptions.queryKey, (old: any)=> ({...old, sessions:[...(old?.sessions||[]), optimistic]}))
+  const optimistic: ScheduleSession = {sessionId: fakeId, startTime: startISO, endTime: endISO, seriesName: values.seriesName, trainerName: values.trainerName || undefined, students: []}
+  qc.setQueryData<ScheduleResponseShape | undefined>(scheduleQueryOptions.queryKey, (old)=> ({...(old||{}), sessions:[...((old?.sessions)||[]), optimistic]}))
     toast({title:'Aula criada', description:'Aula avulsa adicionada localmente.'})
     setOpenNew(false)
   }
 
-  const sessions = useMemo(()=> data?.sessions || [], [data])
+  const sessions = useMemo<ScheduleSession[]>(()=> (data?.sessions as ScheduleSession[]) || [], [data])
 
   return (
     <Layout>
@@ -117,14 +135,14 @@ export default function DailySchedulePage(){
         )}
 
         <div className="space-y-3">
-          {sessions.sort((a:any,b:any)=> (a.startTime||'').localeCompare(b.startTime||'')).map((s:any)=> {
+          {sessions.sort((a,b)=> (a.startTime||'').localeCompare(b.startTime||'')).map((s)=> {
             const start = s.startTime?.slice(11,16)
             const end = s.endTime?.slice(11,16)
             const total = (s.students||[]).length
-            const attending = (s.students||[]).filter((st:any)=> st.commitmentStatus==='ATTENDING').length
+            const attending = (s.students||[]).filter(st=> st.commitmentStatus==='ATTENDING').length
             const occupancy = `${attending}/${total}`
             return (
-              <Card key={s.sessionId} onClick={()=> router.push(`/schedule/${encodeURIComponent(s.sessionId)}?date=${date}`)} className="cursor-pointer hover:shadow-md transition border-l-4 border-l-green-600">
+              <Card key={s.sessionId || `${s.seriesName}-${start}`} onClick={()=> s.sessionId && router.push(`/schedule/${encodeURIComponent(s.sessionId)}?date=${date}`)} className="cursor-pointer hover:shadow-md transition border-l-4 border-l-green-600">
                 <CardHeader className="py-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base flex items-center gap-2">

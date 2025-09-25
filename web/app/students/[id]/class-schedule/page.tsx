@@ -11,6 +11,7 @@ import Layout from "@/components/layout"
 import {apiClient} from "@/lib/client"
 import {getAvailableSessionSeriesOptions, getStudentCommitmentsOptions, bulkUpdateCommitmentsMutation, getCurrentStudentPlanOptions} from "@/lib/api-client/@tanstack/react-query.gen"
 import {useQueryClient, useMutation, useQuery} from "@tanstack/react-query"
+import { TrainerSchedule } from "@/lib/api-client"
 
 const weekdayMap: Record<number,string> = {0:"Domingo",1:"Segunda-feira",2:"Terça-feira",3:"Quarta-feira",4:"Quinta-feira",5:"Sexta-feira",6:"Sábado"}
 
@@ -37,28 +38,87 @@ export default function ClassSchedulePage() {
     }
   }, [commitmentsQuery.data])
 
-  const weeklyByWeekday = useMemo(()=> {
-    const series = (availableQuery.data || []).filter((s:any)=> s.active)
-    const grouped: Record<number, any[]> = {}
-    series.forEach((s:any)=> { grouped[s.weekday] = grouped[s.weekday] || []; grouped[s.weekday].push(s) })
-    return Object.entries(grouped).sort(([a],[b])=> Number(a)-Number(b)).map(([weekday,list])=> ({weekday: Number(weekday), day: weekdayMap[Number(weekday)], classes: list.sort((x:any,y:any)=> (x.startTime||'').localeCompare(y.startTime||''))}))
+  interface NormalizedSeries {
+    id: string
+    weekday: number
+    startTime?: string
+    endTime?: string
+    seriesName: string
+    active: boolean
+    intervalDuration?: number
+    capacity?: number
+    enrolledCount?: number
+  }
+
+  interface WeekdayGroup { weekday: number; day: string; classes: NormalizedSeries[] }
+
+  const normalizedSeries: NormalizedSeries[] = useMemo(()=> {
+    interface LegacyTrainerSchedule { dayOfWeek?: number; name?: string }
+    const synonym = {
+      weekday: (s: TrainerSchedule & LegacyTrainerSchedule) => s.weekday ?? s.dayOfWeek,
+      seriesName: (s: TrainerSchedule & LegacyTrainerSchedule) => s.seriesName ?? s.name ?? 'Série'
+    }
+    const pickNumber = <K extends string>(s: unknown, key: K): number | undefined => (
+      typeof s === 'object' && s !== null && key in (s as Record<string, unknown>) && typeof (s as Record<string, unknown>)[key] === 'number'
+        ? (s as Record<string, number>)[key]
+        : undefined
+    )
+    const raw = (availableQuery.data || []) as (TrainerSchedule & LegacyTrainerSchedule)[]
+    return raw
+      .filter(s => !!s && !!s.id && !!s.active && typeof synonym.weekday(s) === 'number')
+      .map(s => ({
+        id: s.id!,
+        weekday: synonym.weekday(s)!,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        seriesName: synonym.seriesName(s),
+        active: true,
+        intervalDuration: pickNumber(s, 'intervalDuration'),
+        capacity: pickNumber(s, 'capacity'),
+        enrolledCount: pickNumber(s, 'enrolledCount')
+      }))
   }, [availableQuery.data])
+
+  const weeklyByWeekday: WeekdayGroup[] = useMemo(()=> {
+    const grouped: Record<number, NormalizedSeries[]> = {}
+    for (const s of normalizedSeries) {
+      if (!grouped[s.weekday]) grouped[s.weekday] = []
+      grouped[s.weekday].push(s)
+    }
+    return Object.keys(grouped)
+      .map(k => Number(k))
+      .sort((a,b)=> a-b)
+      .map(weekday => ({
+        weekday,
+        day: weekdayMap[weekday],
+        classes: grouped[weekday].slice().sort((x,y)=> (x.startTime||'').localeCompare(y.startTime||''))
+      }))
+  }, [normalizedSeries])
+
+  const seriesById = useMemo(()=> {
+    const m = new Map<string, NormalizedSeries>()
+    for (const s of normalizedSeries) m.set(s.id, s)
+    return m
+  }, [normalizedSeries])
 
   const selectedDays = useMemo(()=> {
     const selectedWeekdays = new Set<number>()
-    selectedSeries.forEach(id=> {
-      const series = (availableQuery.data||[]).find((s:any)=> s.id===id)
-      if(series) selectedWeekdays.add(series.weekday!)
-    })
+    for (const id of selectedSeries) {
+      const s = seriesById.get(id)
+      if (s) selectedWeekdays.add(s.weekday)
+    }
     return Array.from(selectedWeekdays).map(w=> weekdayMap[w])
-  }, [selectedSeries, availableQuery.data])
+  }, [selectedSeries, seriesById])
 
   const canSelectSeries = (seriesId: string) => {
     if(selectedSeries.includes(seriesId)) return true
-    const series = (availableQuery.data||[]).find((s:any)=> s.id===seriesId)
+    const series = seriesById.get(seriesId)
     if(!series) return false
     // If day already selected
-    if(selectedSeries.some(id=> (availableQuery.data||[]).find((s:any)=> s.id===id && s.weekday===series.weekday))) return true
+    if(selectedSeries.some(id=> {
+      const other = seriesById.get(id)
+      return other?.weekday === series.weekday
+    })) return true
     return selectedDays.length < planDays
   }
 
@@ -67,21 +127,23 @@ export default function ClassSchedulePage() {
   }
 
   const toggleDay = (weekday: number) => {
-    const daySeries = (availableQuery.data||[]).filter((s:any)=> s.weekday===weekday)
-    const ids = daySeries.map((s:any)=> s.id)
-  const anySelected = ids.some((id: string)=> selectedSeries.includes(id))
+    const ids = normalizedSeries.filter(s => s.weekday === weekday).map(s => s.id)
+    const anySelected = ids.some(id => selectedSeries.includes(id))
     if(anySelected){
       setSelectedSeries(prev=> prev.filter(id=> !ids.includes(id)))
     } else if(selectedDays.length < planDays) {
-      setSelectedSeries(prev=> [...prev, ...ids])
+      setSelectedSeries(prev=> [...prev, ...ids.filter(id => !prev.includes(id))])
     }
   }
 
   const handleSave = async () => {
     // Determine adds/removals
-    const currentAttending = (commitmentsQuery.data||[]).filter((c:any)=> c.commitmentStatus==='ATTENDING').map((c:any)=> c.sessionSeriesId)
+    const currentAttending = (commitmentsQuery.data||[])
+      .filter((c)=> c.commitmentStatus==='ATTENDING')
+      .map((c)=> c.sessionSeriesId)
+      .filter((id): id is string => !!id)
     const toAttend = selectedSeries.filter(id=> !currentAttending.includes(id))
-    const toRemove = currentAttending.filter((id:string)=> !selectedSeries.includes(id))
+    const toRemove = currentAttending.filter(id => !selectedSeries.includes(id))
     try {
       if(toAttend.length){
         await mutation.mutateAsync({path:{studentId}, body:{sessionSeriesIds: toAttend, commitmentStatus:'ATTENDING'}, client: apiClient})
@@ -127,7 +189,10 @@ export default function ClassSchedulePage() {
         {availableQuery.isLoading && <div className="space-y-2">{[...Array(3)].map((_,i)=><Card key={i} className="animate-pulse"><CardContent className="h-16"/></Card>)}</div>}
         <div className="space-y-3">
           {weeklyByWeekday.map(day=> {
-            const isDaySelected = selectedSeries.some(id=> (availableQuery.data||[]).find((s:any)=> s.id===id && s.weekday===day.weekday))
+            const isDaySelected = selectedSeries.some(id=> {
+              const s = seriesById.get(id)
+              return s?.weekday === day.weekday
+            })
             const canSelectDay = selectedDays.includes(day.day) || selectedDays.length < planDays
             return (
               <Card key={day.weekday}>
@@ -144,8 +209,8 @@ export default function ClassSchedulePage() {
                   {day.classes.map(cls=> {
                     const isSelected = selectedSeries.includes(cls.id)
                     const canSelect = canSelectSeries(cls.id)
-                    const max =  cls.intervalDuration || 1
-                    const current = 0
+                    const max =  cls.intervalDuration || cls.capacity || 1
+                    const current = cls.enrolledCount || 0
                     return (
                       <div key={cls.id} className={`p-3 rounded border transition-colors ${isSelected? 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800':'hover:bg-muted/50'}`}>
                         <div className="flex items-start gap-3">

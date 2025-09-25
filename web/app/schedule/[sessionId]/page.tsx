@@ -24,7 +24,7 @@ export default function SessionDetailPage(){
   const qc = useQueryClient()
   const {data, isLoading, error} = useQuery(
     getScheduleOptions({query:{startDate:date, endDate:date}, client: apiClient})
-  ) as any
+  )
   const updateSession = useMutation(updateSessionMutation({client: apiClient}))
   const [notes, setNotes] = useState('')
   const [overrideTrainer, setOverrideTrainer] = useState<string>('')
@@ -34,14 +34,29 @@ export default function SessionDetailPage(){
   const [adding, setAdding] = useState(false)
   const [newStudentId, setNewStudentId] = useState('')
 
-  const session = useMemo(()=> (data?.sessions||[]).find((s:any)=> s.sessionId === params.sessionId), [data, params.sessionId])
+  type ParticipationType = 'INCLUDED' | 'EXCLUDED'
+  interface SessionParticipant {
+    studentId: string
+    studentName?: string
+    participationType?: ParticipationType
+    present?: boolean
+    commitmentStatus?: string
+  }
+  interface SessionShape {
+    sessionId?: string
+    trainerName?: string
+    seriesName?: string
+    notes?: string
+    students?: SessionParticipant[]
+  }
+  const session = useMemo<SessionShape | undefined>(()=> (data?.sessions||[]).find((s)=> s.sessionId === params.sessionId) as SessionShape | undefined, [data, params.sessionId])
 
-  const [participants, setParticipants] = useState<any[]>([])
+  const [participants, setParticipants] = useState<SessionParticipant[]>([])
 
   // Populate participants when session arrives the first time
   useEffect(()=>{
     if(session && participants.length === 0){
-      setParticipants(session.students?.map((sp:any)=> ({...sp, present:false})) || [])
+      setParticipants(session.students?.map((sp)=> ({...sp, present:false})) || [])
       setOverrideTrainer(session.trainerName || '')
       // Parse exercises from notes if previously encoded (#EX: name|reps lines)
       if(session.notes){
@@ -86,13 +101,13 @@ export default function SessionDetailPage(){
     const exerciseLines = exercises.map(e=> `#EX: ${e.name}${e.reps? `|${e.reps}`:''}`)
     const combinedNotes = [notes, ...exerciseLines].filter(Boolean).join('\n')
     await updateSession.mutateAsync({
-      path:{sessionId: session.sessionId},
+      path:{sessionId: session.sessionId!},
       body:{
         participants: participants.map(p=> ({
           studentId: p.studentId,
-          participationType: p.participationType,
-          present: p.present
-        })),
+          participationType: p.participationType as ParticipationType | undefined,
+          present: p.present ?? false
+        })) as SessionParticipant[],
         notes: combinedNotes
       }
     })

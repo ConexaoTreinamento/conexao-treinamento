@@ -88,7 +88,6 @@ interface StudentFormProps {
 }
 
 // Plans will be loaded from backend
-const fallbackPlans: any[] = []
 const statuses = ["Ativo", "Inativo", "Vencido"]
 const trainers = ["Prof. Ana", "Prof. Carlos", "Prof. Marina", "Prof. Roberto"]
 
@@ -139,21 +138,20 @@ export default function StudentForm({
 
   // Load plans from API
   const plansQueryOptions = getAllPlansOptions({client: apiClient})
-  const {data:plansData} = useQuery(plansQueryOptions)
-  const plans = (plansData || fallbackPlans)
+  const {data: plansData} = useQuery(plansQueryOptions)
   // If creating and no plan selected yet but we have plans, preselect first
   useEffect(()=>{
     if(mode==='create'){
-      const current = plans[0]?.planId
+      const current = plansData![0]?.id
       if(current){
-        const value = plans[0].planId
+        const value = plansData![0].id
         // only set if not already chosen
         if(!((document.getElementById(`plan-${id}`) as HTMLSelectElement)?.value)){
           setValue('plan', value)
         }
       }
     }
-  },[plans, mode, setValue, id])
+  },[plansData, mode, setValue, id])
 
   // Plan assignment handled at page level after create; we only select plan here.
 
@@ -312,12 +310,12 @@ export default function StudentForm({
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
                     <SelectTrigger>
-                      <SelectValue placeholder={plans.length? 'Selecione o plano':'Carregando...'} />
+                      <SelectValue placeholder={plansData!.length? 'Selecione o plano':'Carregando...'} />
                     </SelectTrigger>
                     <SelectContent>
-                      {plans.map((plan: any) => (
-                        <SelectItem key={plan.planId} value={plan.planId}>
-                          {plan.planName} ({plan.planMaxDays}d/sem)
+                      {plansData!.map((plan) => (
+                        <SelectItem key={plan.id} value={plan.id!}>
+                          {plan.name} ({plan.maxDays}d/sem)
                         </SelectItem>
                       ))}
                     </SelectContent>
