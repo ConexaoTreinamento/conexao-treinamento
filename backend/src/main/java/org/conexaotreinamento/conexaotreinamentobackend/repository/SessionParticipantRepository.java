@@ -13,4 +13,6 @@ public interface SessionParticipantRepository extends JpaRepository<SessionParti
     List<SessionParticipant> findByScheduledSession_IdAndActiveTrue(UUID scheduledSessionId);
     
     List<SessionParticipant> findByStudentIdAndActiveTrue(UUID studentId);
+    
+    List<SessionParticipant> findByScheduledSession_IdAndStudentIdAndActiveTrue(UUID scheduledSessionId, UUID studentId);
 }

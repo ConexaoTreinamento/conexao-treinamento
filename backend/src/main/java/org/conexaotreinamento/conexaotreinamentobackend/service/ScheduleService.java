@@ -1,6 +1,10 @@
 package org.conexaotreinamento.conexaotreinamentobackend.service;
 
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.SessionResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ExerciseResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentCommitmentResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.*;
+import org.conexaotreinamento.conexaotreinamentobackend.enums.CommitmentStatus;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -10,6 +14,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,8 +30,17 @@ public class ScheduleService {
     @Autowired
     private SessionParticipantRepository sessionParticipantRepository;
     
-    public List<ScheduledSession> getScheduledSessions(LocalDate startDate, LocalDate endDate) {
-        List<ScheduledSession> sessions = new ArrayList<>();
+    @Autowired
+    private StudentCommitmentRepository studentCommitmentRepository;
+    
+    @Autowired
+    private StudentRepository studentRepository;
+    
+    @Autowired
+    private TrainerRepository trainerRepository;
+    
+    public List<SessionResponseDTO> getScheduledSessions(LocalDate startDate, LocalDate endDate) {
+        List<SessionResponseDTO> sessions = new ArrayList<>();
         LocalDateTime startDateTime = startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
         
@@ -35,36 +49,60 @@ public class ScheduleService {
             .findByStartTimeBetweenAndActiveTrue(startDateTime, endDateTime);
         
         // Create a map to track which dates/schedules already have instances
-        Set<String> existingSessionIds = existingSessions.stream()
-            .map(ScheduledSession::getSessionId)
-            .collect(Collectors.toSet());
+        Map<String, ScheduledSession> existingSessionMap = existingSessions.stream()
+            .collect(Collectors.toMap(ScheduledSession::getSessionId, s -> s));
         
-        sessions.addAll(existingSessions);
-        
-        // Generate sessions from trainer schedules for dates that don't have instances
+        // Generate sessions from trainer schedules for all dates in range
         for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
             int weekday = date.getDayOfWeek() == DayOfWeek.SUNDAY ? 0 : date.getDayOfWeek().getValue();
-            Instant dateInstant = date.atStartOfDay().toInstant(java.time.ZoneOffset.UTC);
+            Instant sessionInstant = date.atStartOfDay().toInstant(ZoneOffset.UTC);
             
-            // Get all active schedules for this weekday
+            // Get all active schedules for this weekday at this point in time
             List<TrainerSchedule> daySchedules = trainerScheduleRepository
-                .findByWeekdayAndEffectiveFromTimestampLessThanEqual(weekday, dateInstant);
+                .findByWeekdayAndEffectiveFromTimestampLessThanEqual(weekday, sessionInstant);
             
             for (TrainerSchedule schedule : daySchedules) {
                 String sessionId = generateSessionId(schedule, date);
+                LocalDateTime sessionStartTime = LocalDateTime.of(date, schedule.getStartTime());
+                LocalDateTime sessionEndTime = LocalDateTime.of(date, schedule.getEndTime());
                 
-                // Only generate if no instance exists (lazy creation)
-                if (!existingSessionIds.contains(sessionId)) {
-                    ScheduledSession session = generateSessionFromSchedule(schedule, date);
-                    sessions.add(session);
+                // Check if there's an existing session instance
+                ScheduledSession existingSession = existingSessionMap.get(sessionId);
+                
+                // Create session DTO
+                SessionResponseDTO session = new SessionResponseDTO();
+                session.setSessionId(sessionId);
+                session.setTrainerId(schedule.getTrainerId());
+                session.setStartTime(sessionStartTime);
+                session.setEndTime(sessionEndTime);
+                session.setSeriesName(schedule.getSeriesName());
+                
+                // Set trainer name
+                trainerRepository.findById(schedule.getTrainerId())
+                    .ifPresent(trainer -> session.setTrainerName(trainer.getName()));
+                
+                // Set instance-specific data if exists
+                if (existingSession != null) {
+                    session.setNotes(existingSession.getNotes());
+                    session.setInstanceOverride(existingSession.isInstanceOverride());
+                } else {
+                    session.setInstanceOverride(false);
                 }
+                
+                // Get student commitments for this session series at this point in time
+                List<StudentCommitmentResponseDTO> studentCommitments = getStudentCommitmentsForSession(
+                    schedule.getId(), sessionInstant, existingSession);
+                session.setStudents(studentCommitments);
+                
+                sessions.add(session);
             }
         }
         
         return sessions.stream()
-            .sorted(Comparator.comparing(ScheduledSession::getStartTime))
+            .sorted(Comparator.comparing(SessionResponseDTO::getStartTime))
             .collect(Collectors.toList());
     }
+    
     
     public void updateSessionParticipants(String sessionId, List<SessionParticipant> participants) {
         // Create or update scheduled session instance
@@ -146,6 +184,63 @@ public class ScheduleService {
                 }
                 throw new RuntimeException("Could not create session instance for sessionId: " + sessionId);
             });
+    }
+    
+    private List<StudentCommitmentResponseDTO> getStudentCommitmentsForSession(UUID sessionSeriesId, Instant sessionInstant, ScheduledSession existingSession) {
+        List<StudentCommitmentResponseDTO> studentCommitments = new ArrayList<>();
+        
+        // Get all commitments for this session series
+        List<StudentCommitment> allCommitments = studentCommitmentRepository.findBySessionSeriesId(sessionSeriesId);
+        
+        // Group by student to get the most recent commitment for each student at session time
+        Map<UUID, StudentCommitment> latestCommitmentsPerStudent = new HashMap<>();
+        
+        for (StudentCommitment commitment : allCommitments) {
+            if (commitment.getEffectiveFromTimestamp().isBefore(sessionInstant) || 
+                commitment.getEffectiveFromTimestamp().equals(sessionInstant)) {
+                
+                UUID studentId = commitment.getStudentId();
+                StudentCommitment existing = latestCommitmentsPerStudent.get(studentId);
+                
+                if (existing == null || commitment.getEffectiveFromTimestamp().isAfter(existing.getEffectiveFromTimestamp())) {
+                    latestCommitmentsPerStudent.put(studentId, commitment);
+                }
+            }
+        }
+        
+        // Convert to DTOs and include exercise data if available
+        for (StudentCommitment commitment : latestCommitmentsPerStudent.values()) {
+            StudentCommitmentResponseDTO dto = new StudentCommitmentResponseDTO();
+            dto.setStudentId(commitment.getStudentId());
+            dto.setCommitmentStatus(commitment.getCommitmentStatus());
+            
+            // Get student name
+            studentRepository.findById(commitment.getStudentId())
+                .ifPresent(student -> dto.setStudentName(student.getName()));
+            
+            // Get exercises if this session has been materialized and student has exercises
+            List<ExerciseResponseDTO> exercises = new ArrayList<>();
+            if (existingSession != null) {
+                List<SessionParticipant> participants = sessionParticipantRepository
+                    .findByScheduledSession_IdAndStudentIdAndActiveTrue(existingSession.getId(), commitment.getStudentId());
+                
+                for (SessionParticipant participant : participants) {
+                    if (participant.getExercises() != null) {
+                        for (ParticipantExercise participantExercise : participant.getExercises()) {
+                            if (participantExercise.getExercise() != null) {
+                                ExerciseResponseDTO exerciseDto = ExerciseResponseDTO.fromEntity(participantExercise.getExercise());
+                                exercises.add(exerciseDto);
+                            }
+                        }
+                    }
+                }
+            }
+            dto.setExercises(exercises);
+            
+            studentCommitments.add(dto);
+        }
+        
+        return studentCommitments;
     }
     
 }

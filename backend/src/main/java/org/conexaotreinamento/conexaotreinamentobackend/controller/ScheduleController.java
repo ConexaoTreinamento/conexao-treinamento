@@ -1,8 +1,8 @@
 package org.conexaotreinamento.conexaotreinamentobackend.controller;
 
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.SessionUpdateRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.SessionResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ScheduleResponseDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.entity.ScheduledSession;
 import org.conexaotreinamento.conexaotreinamentobackend.service.ScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -24,7 +24,7 @@ public class ScheduleController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         
-        List<ScheduledSession> sessions = scheduleService.getScheduledSessions(startDate, endDate);
+        List<SessionResponseDTO> sessions = scheduleService.getScheduledSessions(startDate, endDate);
         
         return ResponseEntity.ok(new ScheduleResponseDTO(sessions));
     }
