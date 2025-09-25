@@ -38,6 +38,11 @@ public class StudentCommitmentService {
     
     // Update student commitment (event sourcing - creates new record)
     public StudentCommitment updateCommitment(UUID studentId, UUID sessionSeriesId, CommitmentStatus status) {
+        return updateCommitment(studentId, sessionSeriesId, status, null);
+    }
+    
+    // Update student commitment with custom effective timestamp (event sourcing - creates new record)
+    public StudentCommitment updateCommitment(UUID studentId, UUID sessionSeriesId, CommitmentStatus status, Instant effectiveFromTimestamp) {
         // Validate against current plan limits
         if (status == CommitmentStatus.ATTENDING) {
             validatePlanLimits(studentId);
@@ -47,7 +52,7 @@ public class StudentCommitmentService {
         commitment.setStudentId(studentId);
         commitment.setSessionSeriesId(sessionSeriesId);
         commitment.setCommitmentStatus(status);
-        commitment.setEffectiveFromTimestamp(Instant.now());
+        commitment.setEffectiveFromTimestamp(effectiveFromTimestamp != null ? effectiveFromTimestamp : Instant.now());
         
         return studentCommitmentRepository.save(commitment);
     }
@@ -100,12 +105,18 @@ public class StudentCommitmentService {
     // Bulk update commitments (e.g., "book all sessions", "this and following")
     public List<StudentCommitment> bulkUpdateCommitments(UUID studentId, List<UUID> sessionSeriesIds, 
                                                          CommitmentStatus status) {
+        return bulkUpdateCommitments(studentId, sessionSeriesIds, status, null);
+    }
+    
+    // Bulk update commitments with custom effective timestamp
+    public List<StudentCommitment> bulkUpdateCommitments(UUID studentId, List<UUID> sessionSeriesIds, 
+                                                         CommitmentStatus status, Instant effectiveFromTimestamp) {
         if (status == CommitmentStatus.ATTENDING) {
             validateBulkPlanLimits(studentId, sessionSeriesIds);
         }
         
         return sessionSeriesIds.stream()
-            .map(seriesId -> updateCommitment(studentId, seriesId, status))
+            .map(seriesId -> updateCommitment(studentId, seriesId, status, effectiveFromTimestamp))
             .collect(Collectors.toList());
     }
     
