@@ -71,6 +71,7 @@ public class StudentPlanService {
         studentPlanRepository.save(plan);
     }
     
+    @Transactional(readOnly = true)
     public List<StudentPlanResponseDTO> getAllActivePlans() {
         return studentPlanRepository.findByActiveTrueOrderByNameAsc()
             .stream()
@@ -78,6 +79,7 @@ public class StudentPlanService {
             .toList();
     }
     
+    @Transactional(readOnly = true)
     public StudentPlanResponseDTO getPlanById(UUID planId) {
         StudentPlan plan = studentPlanRepository.findByIdAndActiveTrue(planId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
@@ -130,6 +132,7 @@ public class StudentPlanService {
         return mapToAssignmentResponseDTO(savedAssignment, student, plan, assigningUser);
     }
     
+    @Transactional(readOnly = true)
     public List<StudentPlanAssignmentResponseDTO> getStudentPlanHistory(UUID studentId) {
         // Validate student exists
         studentRepository.findById(studentId)
@@ -141,6 +144,7 @@ public class StudentPlanService {
             .toList();
     }
     
+    @Transactional(readOnly = true)
     public StudentPlanAssignmentResponseDTO getCurrentStudentPlan(UUID studentId) {
         // Validate student exists
         studentRepository.findById(studentId)
@@ -153,10 +157,12 @@ public class StudentPlanService {
     }
     
     // Helper method for internal service use
+    @Transactional(readOnly = true)
     public java.util.Optional<StudentPlanAssignment> getCurrentAssignment(UUID studentId) {
         return assignmentRepository.findCurrentActiveAssignment(studentId);
     }
     
+    @Transactional(readOnly = true)
     public List<StudentPlanAssignmentResponseDTO> getExpiringSoonAssignments(int days) {
         LocalDate futureDate = LocalDate.now().plusDays(days);
         return assignmentRepository.findExpiringSoon(futureDate)
@@ -165,6 +171,7 @@ public class StudentPlanService {
             .toList();
     }
     
+    @Transactional(readOnly = true)
     public List<StudentPlanAssignmentResponseDTO> getAllCurrentlyActiveAssignments() {
         return assignmentRepository.findAllCurrentlyActive()
             .stream()
