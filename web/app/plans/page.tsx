@@ -30,7 +30,7 @@ export default function PlansPage(){
   const qc = useQueryClient()
   const {toast} = useToast()
   const plansQueryOptions = getAllPlansOptions({client: apiClient})
-  const {data, isLoading, isFetching, refetch, error} = useQuery(plansQueryOptions)
+  const {data, isLoading, error} = useQuery(plansQueryOptions)
 
   const createPlan = useMutation({
     ...createPlanMutation({client: apiClient}),
@@ -117,7 +117,6 @@ export default function PlansPage(){
             <p className="text-sm text-muted-foreground">Gerencie os planos de assinatura</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={()=>refetch()} disabled={isFetching}>{isFetching? <Loader2 className="w-4 h-4 animate-spin"/>:<RefreshCcw className="w-4 h-4"/>}</Button>
             <Dialog open={open} onOpenChange={(o)=> {setOpen(o); if(!o) form.reset()}}>
               <DialogTrigger asChild>
                 <Button className="bg-green-600 hover:bg-green-700"><Plus className="w-4 h-4 mr-2"/> Novo Plano</Button>
