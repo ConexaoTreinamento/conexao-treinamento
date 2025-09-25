@@ -2,11 +2,12 @@
 
 import React, {type MouseEventHandler, useState} from "react"
 import type {
-    AnamnesisResponseDto,
-    StudentRequestDto,
-    StudentResponseDto
+  AnamnesisResponseDto,
+  StudentRequestDto,
+  StudentResponseDto,
+  StudentPlanAssignmentResponseDto
 } from "@/lib/api-client/types.gen"
-import {UnifiedStatusBadge} from "@/lib/expiring-plans"
+import {PlanAssignmentStatusBadge} from "@/lib/expiring-plans"
 import {Card, CardContent} from "@/components/ui/card"
 import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
@@ -33,10 +34,12 @@ import {Checkbox} from "@/components/ui/checkbox"
 import ConfirmDeleteButton from "@/components/confirm-delete-button"
 import {useCreateStudent, useDeleteStudent, useRestoreStudent} from "@/lib/hooks/student-mutations"
 import {assignPlanToStudentMutation} from '@/lib/api-client/@tanstack/react-query.gen'
-import {useMutation, useQueryClient} from '@tanstack/react-query'
+import {useMutation, useQueryClient, useQueries} from '@tanstack/react-query'
 import {useToast} from "@/hooks/use-toast"
 import {useStudents} from "@/lib/hooks/student-queries";
 import {apiClient} from "@/lib/client";
+import {getExpiringSoonAssignmentsOptions, getCurrentStudentPlanOptions} from '@/lib/api-client/@tanstack/react-query.gen'
+import {useQuery} from '@tanstack/react-query'
 
 // Type-safe filter interface
 interface StudentFilters {
@@ -84,7 +87,7 @@ const StudentCard = (props: {
   onClick: () => void,
   initials: string,
   fullName: string,
-  expirationDate: Date,
+  badge: React.ReactNode,
   onNewEvaluationClicked: MouseEventHandler<HTMLButtonElement>,
   onClickedDelete: MouseEventHandler<HTMLButtonElement>,
   isRestoring: boolean,
@@ -112,7 +115,7 @@ const StudentCard = (props: {
                     <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-base leading-tight">{props.fullName}</h3>
                         <div className="flex flex-wrap gap-1 mt-1">
-                            <UnifiedStatusBadge expirationDate={props.expirationDate.toISOString()}/>
+                            {props.badge}
                         </div>
                     </div>
                 </div>
@@ -193,7 +196,7 @@ const StudentCard = (props: {
                     <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-lg flex-1 min-w-0 truncate">{props.fullName}</h3>
                         <div className="flex gap-2 flex-shrink-0">
-                            <UnifiedStatusBadge expirationDate={props.expirationDate.toISOString()}/>
+                            {props.badge}
                         </div>
                     </div>
                 </div>
@@ -283,8 +286,14 @@ export default function StudentsPage() {
     ...assignPlanToStudentMutation({client: apiClient}),
     onSuccess: async (...args) => {
       // call generated onSuccess if exists
-      try { const onSuccess = assignPlanToStudentMutation({ client: apiClient }).onSuccess
-if (onSuccess) { await onSuccess(...args) } } catch { /* ignore */ }
+      try {
+        const onSuccess = assignPlanToStudentMutation({ client: apiClient }).onSuccess
+        if (onSuccess) {
+          await onSuccess(...args)
+        }
+      } catch {
+        /* ignore */
+      }
       await queryClient.invalidateQueries({ predicate: (q) => Array.isArray(q.queryKey) && String(q.queryKey[0]).includes('getCurrentStudentPlan') })
     }
   })
@@ -345,6 +354,36 @@ if (onSuccess) { await onSuccess(...args) } } catch { /* ignore */ }
     includeInactive: debouncedFilters.includeInactive,
     page: currentPage,
     pageSize: pageSize
+  })
+
+  // Fetch expiring soon assignments (e.g. next 7 days) & all current plans for mapping
+  const { data: expiringSoonAssignments } = useQuery({
+    ...getExpiringSoonAssignmentsOptions({ client: apiClient, query: { days: 7 } }),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  })
+
+  // We'll lazily fetch current plan per student only if needed for fallback (optional optimization skipped)
+  // Build quick lookup maps
+  const expiringMap = new Map<string, StudentPlanAssignmentResponseDto>()
+  expiringSoonAssignments?.forEach(a => { if (a.studentId) expiringMap.set(a.studentId, a) })
+
+  // Prepare current plan queries only for students on the current page that are NOT in expiringMap
+  const studentIdsNeedingCurrentPlan = (studentsData?.content || [])
+    .map(s => s.id)
+    .filter((id): id is string => Boolean(id) && !expiringMap.has(id!))
+
+  const currentPlanQueries = useQueries({
+    queries: studentIdsNeedingCurrentPlan.map(studentId => ({
+      ...getCurrentStudentPlanOptions({ client: apiClient, path: { studentId } }),
+      staleTime: 30_000,
+    }))
+  })
+
+  const currentPlanMap = new Map<string, StudentPlanAssignmentResponseDto | null>()
+  currentPlanQueries.forEach((q, idx) => {
+    const sid = studentIdsNeedingCurrentPlan[idx]
+    if (sid) currentPlanMap.set(sid, (q.data as StudentPlanAssignmentResponseDto | null | undefined) ?? null)
   })
 
   // Helper data extraction with proper typing
@@ -844,16 +883,13 @@ if (onSuccess) { await onSuccess(...args) } } catch { /* ignore */ }
               .join('')
               .toUpperCase()
 
-            // For now, use mock plan expiration since backend doesn't have this yet
-            // In real implementation, this would come from the backend
-            const expirationDate = student.registrationDate ? new Date(student.registrationDate) : new Date()
-            expirationDate.setFullYear(expirationDate.getFullYear() + 2)
-            expirationDate.setMonth(expirationDate.getMonth() + 5)
-            expirationDate.setDate(expirationDate.getDate() + 20)
+            const expiring = student.id ? expiringMap.get(student.id) : undefined
+            const currentPlan = student.id ? currentPlanMap.get(student.id) : undefined
+            const badgeNode = <PlanAssignmentStatusBadge assignment={expiring || currentPlan || null} />
             return (
               <StudentCard key={student.id} student={student}
                            onClick={() => router.push(`/students/${student.id}`)} initials={initials}
-                           fullName={fullName} expirationDate={expirationDate} onNewEvaluationClicked={e => {
+                           fullName={fullName} badge={badgeNode} onNewEvaluationClicked={e => {
                   e.stopPropagation()
                   router.push(`/students/${student.id}/evaluation/new`)
               }} onClickedDelete={async e => {

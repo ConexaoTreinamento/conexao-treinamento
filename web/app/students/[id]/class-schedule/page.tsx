@@ -9,9 +9,11 @@ import { ArrowLeft, Save, Calendar, Clock, User, Loader2 } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
 import {apiClient} from "@/lib/client"
-import {getAvailableSessionSeriesOptions, getStudentCommitmentsOptions, bulkUpdateCommitmentsMutation, getCurrentStudentPlanOptions} from "@/lib/api-client/@tanstack/react-query.gen"
+import {getAvailableSessionSeriesOptions, getStudentCommitmentsOptions, bulkUpdateCommitmentsMutation, getCurrentStudentPlanOptions, getSessionSeriesCommitmentsOptions, getCommitmentHistoryOptions, getCurrentActiveCommitmentsOptions, updateCommitmentMutation, getStudentCommitmentsQueryKey, getCurrentActiveCommitmentsQueryKey} from "@/lib/api-client/@tanstack/react-query.gen"
 import {useQueryClient, useMutation, useQuery} from "@tanstack/react-query"
-import { TrainerSchedule } from "@/lib/api-client"
+import { TrainerSchedule, CommitmentDetailResponseDto } from "@/lib/api-client"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { History, Users, AlertTriangle } from "lucide-react"
 
 const weekdayMap: Record<number,string> = {0:"Domingo",1:"Segunda-feira",2:"Terça-feira",3:"Quarta-feira",4:"Quinta-feira",5:"Sexta-feira",6:"Sábado"}
 
@@ -21,12 +23,49 @@ export default function ClassSchedulePage() {
   const studentId = params.id as string
   const qc = useQueryClient()
   const [selectedSeries, setSelectedSeries] = useState<string[]>([])
+  const [openParticipantsFor, setOpenParticipantsFor] = useState<string | null>(null)
+  const [openHistoryFor, setOpenHistoryFor] = useState<string | null>(null)
+  const [participantsFilter, setParticipantsFilter] = useState<'ALL'|'ATTENDING'>('ALL')
 
   // Queries
   const availableQuery = useQuery(getAvailableSessionSeriesOptions({client: apiClient}))
-  const commitmentsQuery = useQuery(getStudentCommitmentsOptions({path:{studentId}, client: apiClient}))
-  const planQuery = useQuery(getCurrentStudentPlanOptions({path:{studentId}, client: apiClient}))
+  const studentIdQueryOptions = { path: { studentId }, client: apiClient }
+
+  const commitmentsQuery = useQuery(getStudentCommitmentsOptions(studentIdQueryOptions))
+  const planQuery = useQuery(getCurrentStudentPlanOptions(studentIdQueryOptions))
   const mutation = useMutation(bulkUpdateCommitmentsMutation({client: apiClient}))
+  const singleMutation = useMutation(updateCommitmentMutation({client: apiClient}))
+  const activeCommitmentsQuery = useQuery(getCurrentActiveCommitmentsOptions(studentIdQueryOptions))
+  const participantsQuery = useQuery({
+    ...getSessionSeriesCommitmentsOptions({
+      path: { sessionSeriesId: openParticipantsFor || "placeholder" },
+      client: apiClient,
+    }),
+    enabled: !!openParticipantsFor,
+    queryKey: [
+      {
+        path: { sessionSeriesId: openParticipantsFor || "placeholder" },
+        _id: `sessionSeriesCommitments-${openParticipantsFor || 'none'}`,
+      },
+    ],
+  })
+  const historyQuery = useQuery({
+    ...getCommitmentHistoryOptions({
+      path: { studentId, sessionSeriesId: openHistoryFor || "placeholder" },
+      client: apiClient,
+    }),
+    enabled: !!openHistoryFor,
+    queryKey: [
+      {
+        path: { studentId, sessionSeriesId: openHistoryFor || "placeholder" },
+        _id: `commitmentHistory-${openHistoryFor || 'none'}`,
+      },
+    ],
+  })
+
+  const participantsData: CommitmentDetailResponseDto[] = Array.isArray(participantsQuery.data) ? participantsQuery.data : []
+  const historyData: CommitmentDetailResponseDto[] = Array.isArray(historyQuery.data) ? historyQuery.data : []
+  const activeSeriesIds = new Set((Array.isArray(activeCommitmentsQuery.data)? activeCommitmentsQuery.data: []).filter(c=> c.commitmentStatus==='ATTENDING').map(c=> c.sessionSeriesId))
 
   const planDays = planQuery.data?.planMaxDays || 3
 
@@ -122,6 +161,39 @@ export default function ClassSchedulePage() {
     return selectedDays.length < planDays
   }
 
+  // Detect time conflicts for visual warnings
+  const hasConflict = (series: NormalizedSeries) => {
+
+  // Poll active commitments & participants when dialogs open (simple refetch interval)
+  useEffect(()=> {
+    const interval = setInterval(()=> {
+      if(openParticipantsFor){ participantsQuery.refetch() }
+      if(openHistoryFor){ historyQuery.refetch() }
+      activeCommitmentsQuery.refetch()
+    }, 15000)
+    return ()=> clearInterval(interval)
+  }, [openParticipantsFor, openHistoryFor, participantsQuery, historyQuery, activeCommitmentsQuery])
+    if(!series.startTime || !series.endTime) return false
+    return selectedSeries.some(id=> {
+      if(id===series.id) return false
+      const other = seriesById.get(id)
+      if(!other || other.weekday !== series.weekday) return false
+      if(!other.startTime || !other.endTime) return false
+      return (other.startTime < (series.endTime||'')) && ((series.startTime||'') < other.endTime)
+    })
+  }
+
+  const handleQuickToggle = async (seriesId: string, currentlySelected: boolean) => {
+    const target = seriesById.get(seriesId)
+    if(!target) return
+    try {
+      await singleMutation.mutateAsync({ path:{ studentId, sessionSeriesId: seriesId}, body:{ commitmentStatus: currentlySelected? 'NOT_ATTENDING':'ATTENDING' }, client: apiClient })
+      await qc.invalidateQueries({queryKey:[getStudentCommitmentsQueryKey(studentIdQueryOptions)]})
+      await qc.invalidateQueries({queryKey:[getCurrentActiveCommitmentsQueryKey(studentIdQueryOptions)]})
+      setSelectedSeries(prev=> currentlySelected? prev.filter(i=> i!==seriesId): [...prev, seriesId])
+    } catch(e){/* ignore */}
+  }
+
   const toggleSeries = (seriesId: string) => {
     setSelectedSeries(prev=> prev.includes(seriesId)? prev.filter(i=> i!==seriesId): canSelectSeries(seriesId)? [...prev, seriesId]: prev)
   }
@@ -151,7 +223,7 @@ export default function ClassSchedulePage() {
       if(toRemove.length){
         await mutation.mutateAsync({path:{studentId}, body:{sessionSeriesIds: toRemove, commitmentStatus:'NOT_ATTENDING'}, client: apiClient})
       }
-      await qc.invalidateQueries({queryKey:['getStudentCommitments']})
+      await qc.invalidateQueries({queryKey:[getStudentCommitmentsQueryKey(studentIdQueryOptions)]})
       router.back()
     } catch(e){/* no-op */}
   }
@@ -209,22 +281,41 @@ export default function ClassSchedulePage() {
                   {day.classes.map(cls=> {
                     const isSelected = selectedSeries.includes(cls.id)
                     const canSelect = canSelectSeries(cls.id)
-                    const max =  cls.intervalDuration || cls.capacity || 1
-                    const current = cls.enrolledCount || 0
+                    const max =  cls.capacity ?? 0
+                    const current = cls.enrolledCount ?? 0
+                    const conflict = isSelected && hasConflict(cls)
                     return (
-                      <div key={cls.id} className={`p-3 rounded border transition-colors ${isSelected? 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800':'hover:bg-muted/50'}`}>
+                      <div key={cls.id} className={`p-3 rounded border transition-colors space-y-2 ${isSelected? 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800':'hover:bg-muted/50'}`}>
                         <div className="flex items-start gap-3">
                           <Checkbox checked={isSelected} onCheckedChange={()=> toggleSeries(cls.id)} disabled={!isSelected && !canSelect} className="mt-0.5"/>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <h4 className="font-medium text-sm">{cls.seriesName}</h4>
-                              <Badge className={`${getOccupancyColor(current, max)} text-xs`}>{current}/{max}</Badge>
+                              {max>0 && <Badge className={`${getOccupancyColor(current, max)} text-xs`}>{current}/{max}</Badge>}
+                              {activeSeriesIds.has(cls.id) && <Badge variant="secondary" className="text-[10px]">Ativo</Badge>}
+                              {conflict && <Badge variant="destructive" className="flex items-center gap-1 text-[10px]" title={`Conflito de horário com outra série selecionada no mesmo dia.`}><AlertTriangle className="w-3 h-3"/> Conflito</Badge>}
                             </div>
                             <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                               <div className="flex items-center gap-1"><Clock className="w-3 h-3"/><span>{cls.startTime?.slice(0,5)} - {cls.endTime?.slice(0,5)}</span></div>
                             </div>
                           </div>
+                          <div className="flex flex-col gap-1">
+                            <Button variant="outline" size="icon" className="h-7 w-7" onClick={()=> handleQuickToggle(cls.id, isSelected)} title={isSelected? 'Remover compromisso':'Adicionar compromisso'} disabled={singleMutation.isPending}>
+                              {isSelected? <Save className="w-3 h-3 rotate-45"/>: <Save className="w-3 h-3"/>}
+                            </Button>
+                            <Button variant="outline" size="icon" className="h-7 w-7" onClick={()=> setOpenParticipantsFor(cls.id)} title="Participantes">
+                              <Users className="w-3 h-3"/>
+                            </Button>
+                            {isSelected && (
+                              <Button variant="outline" size="icon" className="h-7 w-7" onClick={()=> setOpenHistoryFor(cls.id)} title="Histórico">
+                                <History className="w-3 h-3"/>
+                              </Button>
+                            )}
+                          </div>
                         </div>
+                        {max>0 && <div className="h-1.5 rounded bg-muted overflow-hidden">
+                          <div className="h-full bg-green-600 transition-all" style={{width: `${Math.min(100, Math.round((current/(max||1))*100))}%`}} />
+                        </div>}
                       </div>
                     )
                   })}
@@ -233,10 +324,65 @@ export default function ClassSchedulePage() {
             )
           })}
         </div>
-        <div className="flex gap-2 pt-4">
-          <Button variant="outline" className="flex-1" onClick={()=> router.back()}>Cancelar</Button>
-          <Button onClick={handleSave} className="flex-1 bg-green-600 hover:bg-green-700" disabled={mutation.isPending || selectedSeries.length===0}>{mutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin"/>}<Save className="w-4 h-4 mr-2"/> Salvar</Button>
+        <div className="flex flex-col gap-3 pt-6 border-t mt-6">
+          <div className="flex flex-wrap gap-4 text-xs">
+            <span><span className="font-medium">Dias selecionados:</span> {selectedDays.length}/{planDays}</span>
+            <span><span className="font-medium">Séries:</span> {selectedSeries.length}</span>
+            <span><span className="font-medium">Ativas:</span> {activeSeriesIds.size}</span>
+            {activeCommitmentsQuery.isLoading && <span>Compromissos: carregando...</span>}
+            {activeCommitmentsQuery.data && <span>Atualizado: {new Date().toLocaleTimeString('pt-BR')}</span>}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1" onClick={()=> router.back()}>Cancelar</Button>
+            <Button onClick={handleSave} className="flex-1 bg-green-600 hover:bg-green-700" disabled={mutation.isPending || selectedSeries.length===0}>{mutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin"/>}<Save className="w-4 h-4 mr-2"/> Salvar</Button>
+          </div>
         </div>
+        {/* Participants Dialog */}
+        <Dialog open={!!openParticipantsFor} onOpenChange={(o)=> { if(!o) setOpenParticipantsFor(null)}}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Participantes da Série</DialogTitle>
+            </DialogHeader>
+            <div className="flex items-center justify-between mb-2 text-xs">
+              <div className="flex gap-2">
+                <Button variant={participantsFilter==='ALL'?'secondary':'outline'} size="sm" className="h-6 px-2" onClick={()=> setParticipantsFilter('ALL')}>Todos</Button>
+                <Button variant={participantsFilter==='ATTENDING'?'secondary':'outline'} size="sm" className="h-6 px-2" onClick={()=> setParticipantsFilter('ATTENDING')}>Ativos</Button>
+              </div>
+              <Badge variant="outline" className="text-[10px]">{participantsData.length} total</Badge>
+            </div>
+            <div className="space-y-2 max-h-72 overflow-auto pr-1 text-sm">
+              {participantsQuery.isLoading && <p className="text-xs text-muted-foreground">Carregando...</p>}
+              {!participantsQuery.isLoading && participantsData.filter(p=> participantsFilter==='ALL' || p.commitmentStatus==='ATTENDING').length===0 && <p className="text-xs text-muted-foreground">Nenhum participante.</p>}
+              {participantsData.filter(p=> participantsFilter==='ALL' || p.commitmentStatus==='ATTENDING').map(p=> (
+                <div key={p.id} className="flex items-center justify-between p-2 rounded border">
+                  <span className="truncate font-medium" title={p.seriesName}>{p.studentName || p.seriesName}</span>
+                  <Badge variant={p.commitmentStatus==='ATTENDING'? 'secondary':'outline'} className="text-[10px]">{p.commitmentStatus}</Badge>
+                </div>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+        {/* History Dialog */}
+        <Dialog open={!!openHistoryFor} onOpenChange={(o)=> { if(!o) setOpenHistoryFor(null)}}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Histórico de Compromissos</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2 max-h-72 overflow-auto pr-1 text-sm">
+              {historyQuery.isLoading && <p className="text-xs text-muted-foreground">Carregando...</p>}
+              {!historyQuery.isLoading && historyData.length===0 && <p className="text-xs text-muted-foreground">Sem histórico.</p>}
+              {historyData.map(h=> (
+                <div key={h.id} className="p-2 rounded border space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-xs">{h.seriesName}</span>
+                    <Badge variant={h.commitmentStatus==='ATTENDING'? 'secondary':'outline'} className="text-[10px]">{h.commitmentStatus}</Badge>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">Atualizado: {h.createdAt ? new Date(h.createdAt).toLocaleDateString('pt-BR'): '—'}</p>
+                </div>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   )

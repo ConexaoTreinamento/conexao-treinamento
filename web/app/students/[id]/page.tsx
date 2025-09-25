@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, Edit, CalendarDays, Trash2, RotateCcw } from "lucide-react"
+import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, Edit, CalendarDays, Trash2, RotateCcw, History, PlusCircle } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
 import { UnifiedStatusBadge } from "@/lib/expiring-plans"
@@ -15,6 +15,13 @@ import ConfirmDeleteButton from "@/components/confirm-delete-button";
 import { useToast } from "@/hooks/use-toast";
 import type { StudentResponseDto } from "@/lib/api-client/types.gen"
 import {useStudent} from "@/lib/hooks/student-queries";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
+import { getCurrentStudentPlanOptions, getStudentPlanHistoryOptions, getAllPlansOptions, assignPlanToStudentMutation, getStudentCommitmentsOptions, getCurrentStudentPlanQueryKey, getStudentPlanHistoryQueryKey, getStudentCommitmentsQueryKey } from '@/lib/api-client/@tanstack/react-query.gen'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 // Type definitions
 interface Evaluation {
@@ -70,7 +77,32 @@ export default function StudentProfilePage() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
-  const studentMockData = STUDENT_PROFILES[0] //used for fields that don't exist on studentResponseDTO
+  const studentMockData = STUDENT_PROFILES[0]
+  const qc = useQueryClient()
+  const studentId = String(params.id)
+
+  const currentPlanOptions = { path: { studentId }, client: apiClient }
+
+  const currentPlanQuery = useQuery({
+    ...getCurrentStudentPlanOptions(currentPlanOptions),
+    enabled: !!studentId,
+  })
+  const planHistoryQuery = useQuery({
+    ...getStudentPlanHistoryOptions(currentPlanOptions),
+    enabled: !!studentId,
+  })
+  const commitmentsQuery = useQuery({
+    ...getStudentCommitmentsOptions(currentPlanOptions),
+    enabled: !!studentId,
+  })
+  const allPlansQuery = useQuery({
+    ...getAllPlansOptions({ client: apiClient })
+  })
+  const assignPlanMutation = useMutation(assignPlanToStudentMutation({ client: apiClient }))
+  const [openAssignDialog, setOpenAssignDialog] = useState(false)
+  const [assignPlanId, setAssignPlanId] = useState<string>("")
+  const [assignStartDate, setAssignStartDate] = useState<string>(()=> new Date().toISOString().slice(0,10))
+  const [assignNotes, setAssignNotes] = useState("")
 
   const { mutateAsync: deleteStudent, isPending: isDeleting } = useDeleteStudent()
   const { mutateAsync: restoreStudent, isPending: isRestoring } = useRestoreStudent()
@@ -87,6 +119,31 @@ export default function StudentProfilePage() {
   }
 
   const { data: studentData, isLoading, error } = useStudent({path: {id: String(params.id)}}, {enabled: Boolean(params.id)})
+
+  const handleAssignPlan = async () => {
+    if(!assignPlanId) {
+      toast({ title: 'Selecione um plano', variant: 'destructive' })
+      return
+    }
+    try {
+      await assignPlanMutation.mutateAsync({
+        path: { studentId },
+        body: { planId: assignPlanId, startDate: assignStartDate, assignmentNotes: assignNotes || undefined },
+        client: apiClient
+      })
+      toast({ title: 'Plano atribuído', description: 'O plano foi atribuído/renovado com sucesso.' })
+      setOpenAssignDialog(false)
+      setAssignNotes('')
+      setAssignPlanId('')
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: [getCurrentStudentPlanQueryKey(currentPlanOptions)] }),
+        qc.invalidateQueries({ queryKey: [getStudentPlanHistoryQueryKey(currentPlanOptions)] }),
+        qc.invalidateQueries({ queryKey: [getStudentCommitmentsQueryKey(currentPlanOptions)] }),
+      ])
+    } catch (e:any) {
+      toast({ title: 'Erro ao atribuir plano', description: e?.message || 'Tente novamente', variant: 'destructive' })
+    }
+  }
 
   const getFullName = (student: StudentResponseDto | undefined) => {
     if (!student) return ""
@@ -182,6 +239,7 @@ export default function StudentProfilePage() {
   }
 
   return (
+    <>
     <Layout>
       <div className="space-y-4">
         {/* Header */}
@@ -211,9 +269,15 @@ export default function StudentProfilePage() {
               <div className="space-y-2">
                 <CardTitle className="text-lg">{getFullName(studentData)}</CardTitle>
                 <div className="flex flex-wrap justify-center gap-2">
-                  <UnifiedStatusBadge expirationDate={formatDate("2026-05-15")} />
-                  <Badge variant="outline">Plano {studentMockData.plan ?? "Plano Anual"}</Badge>
-                  {/*Mock value, switch to real one when implemented*/}
+                  {currentPlanQuery.data && (
+                    <>
+                      {currentPlanQuery.data.endDate && (
+                        <UnifiedStatusBadge expirationDate={currentPlanQuery.data.endDate} />
+                      )}
+                      <Badge variant="outline">{currentPlanQuery.data.planName}</Badge>
+                    </>
+                  )}
+                  {!currentPlanQuery.data && <Badge variant="secondary">Sem Plano</Badge>}
                 </div>
               </div>
             </CardHeader>
@@ -267,6 +331,15 @@ export default function StudentProfilePage() {
                     <CalendarDays className="w-4 h-4 mr-2"/>
                     Cronograma
                   </Button>
+                  <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setOpenAssignDialog(true)}
+                  >
+                    <PlusCircle className="w-4 h-4 mr-2"/>
+                    {currentPlanQuery.data ? 'Renovar/Atribuir Plano' : 'Atribuir Plano'}
+                  </Button>
                   {/*TODO (Santiago Firpo): replace with deletedAt != null check*/}
                   {studentMockData?.status === 'Inativo' ? (
                       <Button
@@ -299,59 +372,43 @@ export default function StudentProfilePage() {
 
           {/* Content Tabs */}
           <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4 h-auto">
-              <TabsTrigger value="overview" className="text-xs px-2 py-2">
-                Geral
-              </TabsTrigger>
-              <TabsTrigger value="evaluations" className="text-xs px-2 py-2">
-                Avaliações
-              </TabsTrigger>
-              <TabsTrigger value="exercises" className="text-xs px-2 py-2">
-                Exercícios
-              </TabsTrigger>
-              <TabsTrigger value="details" className="text-xs px-2 py-2">
-                Detalhes
-              </TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5 h-auto">
+              <TabsTrigger value="overview" className="text-xs px-2 py-2">Geral</TabsTrigger>
+              <TabsTrigger value="evaluations" className="text-xs px-2 py-2">Avaliações</TabsTrigger>
+              <TabsTrigger value="exercises" className="text-xs px-2 py-2">Exercícios</TabsTrigger>
+              <TabsTrigger value="details" className="text-xs px-2 py-2">Detalhes</TabsTrigger>
+              <TabsTrigger value="plans" className="text-xs px-2 py-2 flex items-center gap-1"><History className="w-3 h-3"/> Planos</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <CalendarDays className="w-4 h-4" />
-                    Cronograma de Aulas
-                  </CardTitle>
+                  <CardTitle className="flex items-center gap-2 text-base"><CalendarDays className="w-4 h-4" /> Cronograma de Aulas</CardTitle>
+                  <CardDescription>{currentPlanQuery.data ? `${currentPlanQuery.data.planMaxDays} dias máx / semana` : 'Atribua um plano para selecionar aulas'}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex justify-between ">
-                      <span className="font-medium">Plano {studentMockData.plan}</span>
-                      <Badge variant="outline">{studentMockData.classSchedule.daysPerWeek} dias/semana</Badge>
+                      <span className="font-medium">{currentPlanQuery.data ? currentPlanQuery.data.planName : 'Sem Plano'}</span>
+                      <Badge variant="outline">{commitmentsQuery.data ? new Set(commitmentsQuery.data.filter(c=> c.commitmentStatus==='ATTENDING').map(c=> c.sessionSeriesId)).size : 0}/{currentPlanQuery.data?.planMaxDays ?? 0} dias</Badge>
                     </div>
-                    <div className="space-y-2">
-                      {studentMockData.classSchedule.selectedClasses.map((classItem: ScheduleClass, index: number) => (
-                        <div key={index} className="flex items-center justify-between p-2 rounded border bg-muted/50">
-                          <div>
-                            <p className="font-medium text-sm">{classItem.class}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {classItem.day} - {classItem.time} • {classItem.instructor}
-                            </p>
-                          </div>
+                    <div className="space-y-2 max-h-64 overflow-auto pr-1">
+                      {commitmentsQuery.isLoading && <p className="text-xs text-muted-foreground">Carregando compromissos...</p>}
+                      {!commitmentsQuery.isLoading && commitmentsQuery.data && commitmentsQuery.data.filter(c=> c.commitmentStatus==='ATTENDING').length===0 && <p className="text-xs text-muted-foreground">Nenhuma série selecionada.</p>}
+                      {commitmentsQuery.data && commitmentsQuery.data.filter(c=> c.commitmentStatus==='ATTENDING').map(c=> (
+                        <div key={c.id} className="flex items-center justify-between p-2 rounded border bg-muted/50 text-xs">
+                          <span className="font-medium truncate" title={c.seriesName}>{c.seriesName}</span>
+                          <Badge variant="secondary">Ativo</Badge>
                         </div>
                       ))}
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full bg-transparent"
-                      onClick={() => router.push(`/students/${params.id}/class-schedule`)}
-                    >
-                      Gerenciar Cronograma
-                    </Button>
+                    <div className="grid grid-cols-2 gap-2 pt-2">
+                      <Button variant="outline" size="sm" className="w-full bg-transparent" onClick={() => router.push(`/students/${params.id}/class-schedule`)}>Gerenciar</Button>
+                      <Button variant="outline" size="sm" className="w-full" onClick={() => setOpenAssignDialog(true)}>{currentPlanQuery.data ? 'Renovar Plano' : 'Atribuir Plano'}</Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Aulas Recentes</CardTitle>
@@ -363,13 +420,50 @@ export default function StudentProfilePage() {
                       <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
                         <div>
                           <p className="font-medium text-sm">{classItem.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(classItem.date).toLocaleDateString("pt-BR")} • {classItem.instructor}
-                          </p>
+                          <p className="text-xs text-muted-foreground">{new Date(classItem.date).toLocaleDateString('pt-BR')} • {classItem.instructor}</p>
                         </div>
                         <Badge className={getAttendanceColor(classItem.status)}>{classItem.status}</Badge>
                       </div>
                     ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="plans" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2"><History className="w-4 h-4"/> Histórico de Planos</CardTitle>
+                  <CardDescription>Renovações e atribuições anteriores</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {planHistoryQuery.isLoading && <p className="text-xs text-muted-foreground">Carregando histórico...</p>}
+                  {!planHistoryQuery.isLoading && planHistoryQuery.data && planHistoryQuery.data.length===0 && <p className="text-xs text-muted-foreground">Nenhum histórico encontrado.</p>}
+                  <div className="space-y-2 max-h-72 overflow-auto pr-1">
+                    {planHistoryQuery.data?.map(h => (
+                      <div key={h.id} className="p-3 rounded border flex items-center justify-between text-xs bg-muted/50">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-medium">{h.planName}</span>
+                            {h.active && <Badge variant="outline">Atual</Badge>}
+                            {h.expiringSoon && !h.expired && <Badge className="bg-yellow-500/20 text-yellow-700 dark:text-yellow-300" variant="secondary">Expira em breve</Badge>}
+                            {h.expired && <Badge variant="destructive">Expirado</Badge>}
+                          </div>
+                          <div className="text-muted-foreground flex flex-wrap gap-2">
+                            <span>Início: {h.startDate ? new Date(h.startDate).toLocaleDateString('pt-BR') : 'N/A'}</span>
+                            <span>Fim: {h.endDate ? new Date(h.endDate).toLocaleDateString('pt-BR') : 'N/A'}</span>
+                            <span>Dias: {h.planMaxDays}</span>
+                            <span>Restantes: {h.daysRemaining}</span>
+                          </div>
+                        </div>
+                        <div className="text-right min-w-[110px]">
+                          <Badge variant="secondary" className="text-[10px]">Criado {h.createdAt ? new Date(h.createdAt).toLocaleDateString('pt-BR') : 'N/A'}</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="pt-4">
+                    <Button size="sm" variant="outline" onClick={()=> setOpenAssignDialog(true)}>Atribuir / Renovar Plano</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -655,6 +749,39 @@ export default function StudentProfilePage() {
           </Tabs>
         </div>
       </div>
-    </Layout>
+  </Layout>
+  <Dialog open={openAssignDialog} onOpenChange={setOpenAssignDialog}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{currentPlanQuery.data ? 'Renovar / Trocar Plano' : 'Atribuir Plano'}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label className="text-xs">Plano</Label>
+            <Select value={assignPlanId} onValueChange={setAssignPlanId}>
+              <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione um plano"/></SelectTrigger>
+              <SelectContent className="text-xs max-h-72">
+                {allPlansQuery.data?.map(p=> (
+                  <SelectItem key={p.id} value={p.id!}>{p.name} • {p.maxDays} dias/sem</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs">Data de Início</Label>
+            <Input type="date" value={assignStartDate} onChange={e=> setAssignStartDate(e.target.value)} className="h-8 text-xs"/>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs">Observações (opcional)</Label>
+            <Input value={assignNotes} onChange={e=> setAssignNotes(e.target.value)} placeholder="Notas..." className="h-8 text-xs"/>
+          </div>
+        </div>
+        <DialogFooter className="flex gap-2 sm:justify-end">
+          <Button variant="outline" size="sm" onClick={()=> setOpenAssignDialog(false)}>Cancelar</Button>
+          <Button size="sm" onClick={handleAssignPlan} disabled={assignPlanMutation.isPending}>{assignPlanMutation.isPending ? 'Salvando...' : 'Confirmar'}</Button>
+        </DialogFooter>
+      </DialogContent>
+  </Dialog>
+  </>
 )
 }
