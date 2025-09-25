@@ -162,8 +162,6 @@ export default function ClassSchedulePage() {
   }
 
   // Detect time conflicts for visual warnings
-  const hasConflict = (series: NormalizedSeries) => {
-
   // Poll active commitments & participants when dialogs open (simple refetch interval)
   useEffect(()=> {
     const interval = setInterval(()=> {
@@ -173,6 +171,8 @@ export default function ClassSchedulePage() {
     }, 15000)
     return ()=> clearInterval(interval)
   }, [openParticipantsFor, openHistoryFor, participantsQuery, historyQuery, activeCommitmentsQuery])
+
+  const hasConflict = (series: NormalizedSeries) => {
     if(!series.startTime || !series.endTime) return false
     return selectedSeries.some(id=> {
       if(id===series.id) return false
