@@ -20,6 +20,7 @@ const navigation = [
 	{ name: "Administradores", href: "/administrators", icon: Shield, adminOnly: true },
 	{ name: "Exercícios", href: "/exercises", icon: Dumbbell },
 	{ name: "Eventos", href: "/events", icon: Calendar },
+	{ name: "Planos", href: "/plans", icon: Calendar },
 	{ name: "Relatórios", href: "/reports", icon: BarChart3, adminOnly: true },
 ]
 

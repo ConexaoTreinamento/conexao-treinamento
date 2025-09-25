@@ -11,6 +11,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { User, Plus, Trash2 } from "lucide-react"
+import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query'
+import {apiClient} from '@/lib/client'
+import {getAllPlansOptions} from '@/lib/api-client/@tanstack/react-query.gen'
 import {hasInsomniaTypes, impairmentTypes} from "@/lib/students-data";
 
 interface PhysicalImpairment {
@@ -84,7 +87,8 @@ interface StudentFormProps {
   mode: "create" | "edit"
 }
 
-const plans = ["Mensal", "Trimestral", "Semestral", "Anual"]
+// Plans will be loaded from backend
+const fallbackPlans: any[] = []
 const statuses = ["Ativo", "Inativo", "Vencido"]
 const trainers = ["Prof. Ana", "Prof. Carlos", "Prof. Marina", "Prof. Roberto"]
 
@@ -132,6 +136,26 @@ export default function StudentForm({
     control,
     name: "physicalImpairments"
   })
+
+  // Load plans from API
+  const plansQueryOptions = getAllPlansOptions({client: apiClient})
+  const {data:plansData} = useQuery(plansQueryOptions)
+  const plans = (plansData || fallbackPlans)
+  // If creating and no plan selected yet but we have plans, preselect first
+  useEffect(()=>{
+    if(mode==='create'){
+      const current = plans[0]?.planId
+      if(current){
+        const value = plans[0].planId
+        // only set if not already chosen
+        if(!((document.getElementById(`plan-${id}`) as HTMLSelectElement)?.value)){
+          setValue('plan', value)
+        }
+      }
+    }
+  },[plans, mode, setValue, id])
+
+  // Plan assignment handled at page level after create; we only select plan here.
 
 
 
@@ -288,12 +312,12 @@ export default function StudentForm({
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione o plano" />
+                      <SelectValue placeholder={plans.length? 'Selecione o plano':'Carregando...'} />
                     </SelectTrigger>
                     <SelectContent>
-                      {plans.map((plan) => (
-                        <SelectItem key={plan} value={plan}>
-                          {plan}
+                      {plans.map((plan: any) => (
+                        <SelectItem key={plan.planId} value={plan.planId}>
+                          {plan.planName} ({plan.planMaxDays}d/sem)
                         </SelectItem>
                       ))}
                     </SelectContent>

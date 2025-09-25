@@ -32,6 +32,8 @@ import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui
 import {Checkbox} from "@/components/ui/checkbox"
 import ConfirmDeleteButton from "@/components/confirm-delete-button"
 import {useCreateStudent, useDeleteStudent, useRestoreStudent} from "@/lib/hooks/student-mutations"
+import {assignPlanToStudentMutation} from '@/lib/api-client/@tanstack/react-query.gen'
+import {useMutation, useQueryClient} from '@tanstack/react-query'
 import {useToast} from "@/hooks/use-toast"
 import {useStudents} from "@/lib/hooks/student-queries";
 import {apiClient} from "@/lib/client";
@@ -276,6 +278,16 @@ export default function StudentsPage() {
   const { mutateAsync: deleteStudent, isPending: isDeleting } = useDeleteStudent()
   const { mutateAsync: restoreStudent, isPending: isRestoring } = useRestoreStudent()
   const { mutateAsync: createStudent } = useCreateStudent()
+  const queryClient = useQueryClient()
+  const assignPlan = useMutation({
+    ...assignPlanToStudentMutation({client: apiClient}),
+    onSuccess: async (...args) => {
+      // call generated onSuccess if exists
+      try { const onSuccess = assignPlanToStudentMutation({ client: apiClient }).onSuccess
+if (onSuccess) { await onSuccess(...args) } } catch { /* ignore */ }
+      await queryClient.invalidateQueries({ predicate: (q) => Array.isArray(q.queryKey) && String(q.queryKey[0]).includes('getCurrentStudentPlan') })
+    }
+  })
   
   // Get current page from URL query params or default to 0
   // This allows users to share URLs with specific page numbers and maintains page state on refresh
@@ -428,6 +440,8 @@ export default function StudentsPage() {
         emergencyContactRelationship: formData.emergencyRelationship,
         objectives: formData.objectives,
         observations: formData.impairmentObservations,
+  // pass through selected plan id for backend if endpoint supports embedding (ignored if not used server side)
+  planId: formData.plan,
         anamnesis: hasAnamnesis ? {
           medication: formData.medication,
           isDoctorAwareOfPhysicalActivity: formData.isDoctorAwareOfPhysicalActivity,
@@ -464,8 +478,27 @@ export default function StudentsPage() {
           }))
       } as StudentRequestDto;
 
-      await createStudent({ body: requestBody, client: apiClient })
-      toast({ title: "Aluno criado", description: "Aluno cadastrado com sucesso.", duration: 3000 })
+      const created = await createStudent({ body: requestBody, client: apiClient })
+
+      // Automatic plan assignment (fire and forget with basic error handling)
+      if (created?.id && formData.plan) {
+        try {
+          await assignPlan.mutateAsync({
+            path: { studentId: created.id },
+            body: {
+              planId: formData.plan,
+              startDate: new Date().toISOString().substring(0,10),
+              assignmentNotes: 'Assinado automaticamente no cadastro.'
+            },
+            client: apiClient
+          })
+        } catch (e) {
+          // Non-blocking: just notify
+          toast({title:'Aluno criado, mas falha ao atribuir plano', variant:'destructive', duration:4000})
+        }
+      }
+
+      toast({ title: "Aluno criado", description: assignPlan.isSuccess ? "Aluno e plano atribuídos." : "Aluno cadastrado com sucesso.", duration: 3000 })
       setIsCreateOpen(false)
     } catch (e) {
       toast({ title: "Erro ao criar aluno", description: "Não foi possível criar o aluno.", duration: 4000 })

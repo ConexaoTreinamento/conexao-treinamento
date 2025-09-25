@@ -1,398 +1,176 @@
 "use client"
 
-import { useState } from "react"
+import {useEffect, useMemo, useState} from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, Save, Calendar, Clock, User } from "lucide-react"
+import { ArrowLeft, Save, Calendar, Clock, User, Loader2 } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
+import {apiClient} from "@/lib/client"
+import {getAvailableSessionSeriesOptions, getStudentCommitmentsOptions, bulkUpdateCommitmentsMutation, getCurrentStudentPlanOptions} from "@/lib/api-client/@tanstack/react-query.gen"
+import {useQueryClient, useMutation, useQuery} from "@tanstack/react-query"
+
+const weekdayMap: Record<number,string> = {0:"Domingo",1:"Segunda-feira",2:"Terça-feira",3:"Quarta-feira",4:"Quinta-feira",5:"Sexta-feira",6:"Sábado"}
 
 export default function ClassSchedulePage() {
   const router = useRouter()
-  const params = useParams()
-  const [selectedClasses, setSelectedClasses] = useState<string[]>([])
-  const [studentPlan, setStudentPlan] = useState({
-    name: "Plano Mensal",
-    daysPerWeek: 3,
-    maxClasses: 12,
-  })
+  const params = useParams<{id:string}>()
+  const studentId = params.id as string
+  const qc = useQueryClient()
+  const [selectedSeries, setSelectedSeries] = useState<string[]>([])
 
-  // Mock student data
-  const student = {
-    id: params.id,
-    name: "Maria Silva",
-    plan: "Mensal",
-    daysPerWeek: 3,
-  }
+  // Queries
+  const availableQuery = useQuery(getAvailableSessionSeriesOptions({client: apiClient}))
+  const commitmentsQuery = useQuery(getStudentCommitmentsOptions({path:{studentId}, client: apiClient}))
+  const planQuery = useQuery(getCurrentStudentPlanOptions({path:{studentId}, client: apiClient}))
+  const mutation = useMutation(bulkUpdateCommitmentsMutation({client: apiClient}))
 
-  // Mock weekly schedule with classes
-  const weeklySchedule = [
-    {
-      day: "Segunda-feira",
-      classes: [
-        {
-          id: "1",
-          name: "Pilates Iniciante",
-          time: "09:00",
-          duration: 60,
-          instructor: "Prof. Ana",
-          maxStudents: 10,
-          currentStudents: 8,
-          available: true,
-        },
-        {
-          id: "2",
-          name: "CrossFit",
-          time: "18:00",
-          duration: 60,
-          instructor: "Prof. Roberto",
-          maxStudents: 8,
-          currentStudents: 6,
-          available: true,
-        },
-      ],
-    },
-    {
-      day: "Terça-feira",
-      classes: [
-        {
-          id: "3",
-          name: "Yoga Avançado",
-          time: "14:00",
-          duration: 60,
-          instructor: "Prof. Marina",
-          maxStudents: 12,
-          currentStudents: 10,
-          available: true,
-        },
-        {
-          id: "4",
-          name: "Musculação",
-          time: "16:00",
-          duration: 90,
-          instructor: "Prof. Carlos",
-          maxStudents: 15,
-          currentStudents: 12,
-          available: true,
-        },
-      ],
-    },
-    {
-      day: "Quarta-feira",
-      classes: [
-        {
-          id: "5",
-          name: "Pilates Iniciante",
-          time: "09:00",
-          duration: 60,
-          instructor: "Prof. Ana",
-          maxStudents: 10,
-          currentStudents: 8,
-          available: true,
-        },
-        {
-          id: "6",
-          name: "Zumba",
-          time: "19:00",
-          duration: 60,
-          instructor: "Prof. Carla",
-          maxStudents: 20,
-          currentStudents: 15,
-          available: true,
-        },
-      ],
-    },
-    {
-      day: "Quinta-feira",
-      classes: [
-        {
-          id: "7",
-          name: "Yoga Avançado",
-          time: "14:00",
-          duration: 60,
-          instructor: "Prof. Marina",
-          maxStudents: 12,
-          currentStudents: 10,
-          available: true,
-        },
-        {
-          id: "8",
-          name: "CrossFit",
-          time: "20:00",
-          duration: 60,
-          instructor: "Prof. Roberto",
-          maxStudents: 8,
-          currentStudents: 8,
-          available: false,
-        },
-      ],
-    },
-    {
-      day: "Sexta-feira",
-      classes: [
-        {
-          id: "7",
-          name: "CrossFit Iniciante",
-          time: "17:00",
-          duration: 60,
-          instructor: "Prof. Roberto",
-          maxStudents: 10,
-          currentStudents: 7,
-          available: true,
-        },
-      ],
-    },
-    {
-      day: "Sábado",
-      classes: [
-        {
-          id: "8",
-          name: "Yoga Relaxante",
-          time: "09:00",
-          duration: 90,
-          instructor: "Prof. Marina",
-          maxStudents: 20,
-          currentStudents: 15,
-          available: true,
-        },
-      ],
-    },
-    {
-      day: "Domingo",
-      classes: [],
-    },
-  ]
+  const planDays = planQuery.data?.planMaxDays || 3
 
-  const getSelectedDays = () => {
-    const selectedDays = new Set<string>()
-    selectedClasses.forEach((classId) => {
-      const daySchedule = weeklySchedule.find((day) => day.classes.some((cls) => cls.id === classId))
-      if (daySchedule) {
-        selectedDays.add(daySchedule.day)
-      }
+  // Pre-select existing ATTENDING commitments
+  useEffect(()=> {
+    if(commitmentsQuery.data){
+      const attending = (commitmentsQuery.data).filter(c=> c.commitmentStatus==='ATTENDING').map(c=> c.sessionSeriesId!)
+      setSelectedSeries(attending)
+    }
+  }, [commitmentsQuery.data])
+
+  const weeklyByWeekday = useMemo(()=> {
+    const series = (availableQuery.data || []).filter((s:any)=> s.active)
+    const grouped: Record<number, any[]> = {}
+    series.forEach((s:any)=> { grouped[s.weekday] = grouped[s.weekday] || []; grouped[s.weekday].push(s) })
+    return Object.entries(grouped).sort(([a],[b])=> Number(a)-Number(b)).map(([weekday,list])=> ({weekday: Number(weekday), day: weekdayMap[Number(weekday)], classes: list.sort((x:any,y:any)=> (x.startTime||'').localeCompare(y.startTime||''))}))
+  }, [availableQuery.data])
+
+  const selectedDays = useMemo(()=> {
+    const selectedWeekdays = new Set<number>()
+    selectedSeries.forEach(id=> {
+      const series = (availableQuery.data||[]).find((s:any)=> s.id===id)
+      if(series) selectedWeekdays.add(series.weekday!)
     })
-    return Array.from(selectedDays)
+    return Array.from(selectedWeekdays).map(w=> weekdayMap[w])
+  }, [selectedSeries, availableQuery.data])
+
+  const canSelectSeries = (seriesId: string) => {
+    if(selectedSeries.includes(seriesId)) return true
+    const series = (availableQuery.data||[]).find((s:any)=> s.id===seriesId)
+    if(!series) return false
+    // If day already selected
+    if(selectedSeries.some(id=> (availableQuery.data||[]).find((s:any)=> s.id===id && s.weekday===series.weekday))) return true
+    return selectedDays.length < planDays
   }
 
-  const selectedDays = getSelectedDays()
-
-  const canSelectClass = (classId: string) => {
-    if (selectedClasses.includes(classId)) return true // Already selected
-
-    const daySchedule = weeklySchedule.find((day) => day.classes.some((cls) => cls.id === classId))
-
-    if (!daySchedule) return false
-
-    // If this day is already selected, allow more classes from same day
-    if (selectedDays.includes(daySchedule.day)) return true
-
-    // If selecting this class would add a new day, check day limit
-    return selectedDays.length < studentPlan.daysPerWeek
+  const toggleSeries = (seriesId: string) => {
+    setSelectedSeries(prev=> prev.includes(seriesId)? prev.filter(i=> i!==seriesId): canSelectSeries(seriesId)? [...prev, seriesId]: prev)
   }
 
-  const handleClassToggle = (classId: string) => {
-    setSelectedClasses((prev) => {
-      if (prev.includes(classId)) {
-        return prev.filter((id) => id !== classId)
-      } else if (canSelectClass(classId)) {
-        return [...prev, classId]
-      }
-      return prev
-    })
-  }
-
-  const handleDayToggle = (day: string) => {
-    const dayClasses = weeklySchedule.find((d) => d.day === day)?.classes || []
-    const availableClasses = dayClasses.filter((cls) => cls.available)
-
-    if (selectedDays.includes(day)) {
-      // Remove all classes from this day
-      setSelectedClasses((prev) => prev.filter((classId) => !availableClasses.some((cls) => cls.id === classId)))
-    } else if (selectedDays.length < studentPlan.daysPerWeek) {
-      // Add all available classes from this day
-      const newClassIds = availableClasses.map((cls) => cls.id)
-      setSelectedClasses((prev) => [...prev, ...newClassIds])
+  const toggleDay = (weekday: number) => {
+    const daySeries = (availableQuery.data||[]).filter((s:any)=> s.weekday===weekday)
+    const ids = daySeries.map((s:any)=> s.id)
+  const anySelected = ids.some((id: string)=> selectedSeries.includes(id))
+    if(anySelected){
+      setSelectedSeries(prev=> prev.filter(id=> !ids.includes(id)))
+    } else if(selectedDays.length < planDays) {
+      setSelectedSeries(prev=> [...prev, ...ids])
     }
   }
 
   const handleSave = async () => {
-    console.log("Saving selected classes:", selectedClasses)
-    console.log("Selected days:", selectedDays)
-
-    // Simulate API call to update student's class enrollments
-    // In a real app, this would be an API call to update the backend
+    // Determine adds/removals
+    const currentAttending = (commitmentsQuery.data||[]).filter((c:any)=> c.commitmentStatus==='ATTENDING').map((c:any)=> c.sessionSeriesId)
+    const toAttend = selectedSeries.filter(id=> !currentAttending.includes(id))
+    const toRemove = currentAttending.filter((id:string)=> !selectedSeries.includes(id))
     try {
-      // Update local storage or global state to propagate changes
-      const enrollmentData = {
-        studentId: student.id,
-        studentName: student.name,
-        selectedClasses: selectedClasses,
-        timestamp: new Date().toISOString(),
+      if(toAttend.length){
+        await mutation.mutateAsync({path:{studentId}, body:{sessionSeriesIds: toAttend, commitmentStatus:'ATTENDING'}, client: apiClient})
       }
-
-      // Store the enrollment data so it can be picked up by the schedule pages
-      localStorage.setItem(`student_enrollment_${student.id}`, JSON.stringify(enrollmentData))
-
-      // Also store it in a global enrollments array for easier access
-      const existingEnrollments = JSON.parse(localStorage.getItem("all_enrollments") || "[]")
-      const updatedEnrollments = existingEnrollments.filter((e: any) => e.studentId !== student.id)
-      updatedEnrollments.push(enrollmentData)
-      localStorage.setItem("all_enrollments", JSON.stringify(updatedEnrollments))
-
-      console.log("Successfully saved student enrollment data")
-
-      // Show success message or redirect
+      if(toRemove.length){
+        await mutation.mutateAsync({path:{studentId}, body:{sessionSeriesIds: toRemove, commitmentStatus:'NOT_ATTENDING'}, client: apiClient})
+      }
+      await qc.invalidateQueries({queryKey:['getStudentCommitments']})
       router.back()
-    } catch (error) {
-      console.error("Error saving enrollment:", error)
-    }
+    } catch(e){/* no-op */}
   }
 
   const getOccupancyColor = (current: number, max: number) => {
-    const percentage = (current / max) * 100
-    if (percentage >= 90) return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-    if (percentage >= 70) return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+    if(max===0) return "bg-muted"
+    const pct = (current/max)*100
+    if(pct>=90) return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+    if(pct>=70) return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
     return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
   }
 
   return (
     <Layout>
       <div className="space-y-4">
-        {/* Header */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
+          <Button variant="ghost" size="icon" onClick={()=> router.back()}><ArrowLeft className="w-4 h-4"/></Button>
           <div>
             <h1 className="text-xl font-bold">Cronograma de Aulas</h1>
-            <p className="text-sm text-muted-foreground">{student.name}</p>
+            <p className="text-sm text-muted-foreground">Selecione as séries que deseja frequentar</p>
           </div>
         </div>
-
-        {/* Plan Info */}
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold">{studentPlan.name}</h3>
-                <p className="text-sm text-muted-foreground">Selecione até {studentPlan.daysPerWeek} dias por semana</p>
-              </div>
-              <div className="text-right">
-                <Badge variant="outline" className="mb-1">
-                  {selectedDays.length}/{studentPlan.daysPerWeek} dias
-                </Badge>
-                <p className="text-xs text-muted-foreground">{selectedClasses.length} aulas selecionadas</p>
-              </div>
+          <CardContent className="p-4 flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold">Plano Atual</h3>
+              <p className="text-sm text-muted-foreground">Limite de {planDays} dias por semana</p>
+            </div>
+            <div className="text-right">
+              <Badge variant="outline" className="mb-1">{selectedDays.length}/{planDays} dias</Badge>
+              <p className="text-xs text-muted-foreground">{selectedSeries.length} séries</p>
             </div>
           </CardContent>
         </Card>
-
-        {/* Weekly Schedule */}
+        {availableQuery.isLoading && <div className="space-y-2">{[...Array(3)].map((_,i)=><Card key={i} className="animate-pulse"><CardContent className="h-16"/></Card>)}</div>}
         <div className="space-y-3">
-          {weeklySchedule.map((daySchedule) => {
-            const isDaySelected = selectedDays.includes(daySchedule.day)
-            const canSelectDay = selectedDays.length < studentPlan.daysPerWeek || isDaySelected
-
+          {weeklyByWeekday.map(day=> {
+            const isDaySelected = selectedSeries.some(id=> (availableQuery.data||[]).find((s:any)=> s.id===id && s.weekday===day.weekday))
+            const canSelectDay = selectedDays.includes(day.day) || selectedDays.length < planDays
             return (
-              <Card key={daySchedule.day}>
+              <Card key={day.weekday}>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base flex items-center gap-2">
-                      <Checkbox
-                        checked={isDaySelected}
-                        onCheckedChange={() => handleDayToggle(daySchedule.day)}
-                        disabled={daySchedule.classes.length === 0 || !canSelectDay}
-                      />
-                      <Calendar className="w-4 h-4" />
-                      {daySchedule.day}
+                      <Checkbox checked={isDaySelected} onCheckedChange={()=> toggleDay(day.weekday)} disabled={!canSelectDay && !isDaySelected}/>
+                      <Calendar className="w-4 h-4"/> {day.day}
                     </CardTitle>
-                    <Badge variant="outline" className="text-xs">
-                      {daySchedule.classes.length} aulas
-                    </Badge>
+                    <Badge variant="outline" className="text-xs">{day.classes.length} séries</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  {daySchedule.classes.length === 0 ? (
-                    <div className="text-center py-4 text-muted-foreground">
-                      <p className="text-sm">Nenhuma aula disponível</p>
-                    </div>
-                  ) : (
-                    daySchedule.classes.map((classItem) => {
-                      const isClassSelected = selectedClasses.includes(classItem.id)
-                      const canSelect = canSelectClass(classItem.id)
-
-                      return (
-                        <div
-                          key={classItem.id}
-                          className={`p-3 rounded-lg border transition-colors ${
-                            !classItem.available
-                              ? "opacity-50 bg-muted/50"
-                              : isClassSelected
-                                ? "bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800"
-                                : "hover:bg-muted/50"
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <Checkbox
-                              checked={isClassSelected}
-                              onCheckedChange={() => handleClassToggle(classItem.id)}
-                              disabled={!classItem.available || (!isClassSelected && !canSelect)}
-                              className="mt-0.5"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-medium text-sm">{classItem.name}</h4>
-                                <Badge
-                                  className={`${getOccupancyColor(classItem.currentStudents, classItem.maxStudents)} text-xs`}
-                                >
-                                  {classItem.currentStudents}/{classItem.maxStudents}
-                                </Badge>
-                                {!classItem.available && (
-                                  <Badge variant="destructive" className="text-xs">
-                                    Lotada
-                                  </Badge>
-                                )}
-                              </div>
-
-                              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  <span>
-                                    {classItem.time} ({classItem.duration}min)
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <User className="w-3 h-3" />
-                                  <span>{classItem.instructor}</span>
-                                </div>
-                              </div>
+                  {day.classes.map(cls=> {
+                    const isSelected = selectedSeries.includes(cls.id)
+                    const canSelect = canSelectSeries(cls.id)
+                    const max =  cls.intervalDuration || 1
+                    const current = 0
+                    return (
+                      <div key={cls.id} className={`p-3 rounded border transition-colors ${isSelected? 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800':'hover:bg-muted/50'}`}>
+                        <div className="flex items-start gap-3">
+                          <Checkbox checked={isSelected} onCheckedChange={()=> toggleSeries(cls.id)} disabled={!isSelected && !canSelect} className="mt-0.5"/>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-medium text-sm">{cls.seriesName}</h4>
+                              <Badge className={`${getOccupancyColor(current, max)} text-xs`}>{current}/{max}</Badge>
+                            </div>
+                            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1"><Clock className="w-3 h-3"/><span>{cls.startTime?.slice(0,5)} - {cls.endTime?.slice(0,5)}</span></div>
                             </div>
                           </div>
                         </div>
-                      )
-                    })
-                  )}
+                      </div>
+                    )
+                  })}
                 </CardContent>
               </Card>
             )
           })}
         </div>
-
-        {/* Action Buttons */}
         <div className="flex gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={() => router.back()} className="flex-1">
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleSave}
-            className="bg-green-600 hover:bg-green-700 flex-1"
-            disabled={selectedClasses.length === 0}
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Salvar Cronograma
-          </Button>
+          <Button variant="outline" className="flex-1" onClick={()=> router.back()}>Cancelar</Button>
+          <Button onClick={handleSave} className="flex-1 bg-green-600 hover:bg-green-700" disabled={mutation.isPending || selectedSeries.length===0}>{mutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin"/>}<Save className="w-4 h-4 mr-2"/> Salvar</Button>
         </div>
       </div>
     </Layout>

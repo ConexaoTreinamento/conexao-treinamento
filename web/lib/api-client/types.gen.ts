@@ -24,6 +24,30 @@ export type TrainerResponseDto = {
     hoursWorked?: number;
 };
 
+export type TrainerScheduleRequestDto = {
+    trainerId: string;
+    weekday: number;
+    startTime: string;
+    endTime: string;
+    intervalDuration?: number;
+    seriesName: string;
+};
+
+export type TrainerScheduleResponseDto = {
+    id?: string;
+    trainerId?: string;
+    weekday?: number;
+    startTime?: string;
+    endTime?: string;
+    intervalDuration?: number;
+    seriesName?: string;
+    effectiveFromTimestamp?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    active?: boolean;
+    weekdayName?: string;
+};
+
 export type AnamnesisRequestDto = {
     medication?: string;
     isDoctorAwareOfPhysicalActivity?: boolean;
@@ -186,6 +210,177 @@ export type ListTrainersDto = {
     hoursWorked?: number;
 };
 
+export type Exercise = {
+    id?: string;
+    name?: string;
+    description?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    deletedAt?: string;
+    active?: boolean;
+    inactive?: boolean;
+};
+
+export type ParticipantExercise = {
+    id?: string;
+    sessionParticipant?: SessionParticipant;
+    exerciseId?: string;
+    exercise?: Exercise;
+    setsCompleted?: number;
+    repsCompleted?: number;
+    weightCompleted?: number;
+    exerciseNotes?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    deletedAt?: string;
+    active?: boolean;
+};
+
+export type ScheduledSession = {
+    id?: string;
+    sessionSeriesId?: string;
+    sessionId?: string;
+    trainerId?: string;
+    trainer?: Trainer;
+    startTime?: string;
+    endTime?: string;
+    maxParticipants?: number;
+    seriesName?: string;
+    notes?: string;
+    instanceOverride?: boolean;
+    effectiveFromTimestamp?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    deletedAt?: string;
+    active?: boolean;
+    participants?: Array<SessionParticipant>;
+};
+
+export type SessionParticipant = {
+    id?: string;
+    scheduledSession?: ScheduledSession;
+    studentId?: string;
+    student?: Student;
+    participationType?: 'INCLUDED' | 'EXCLUDED';
+    attendanceNotes?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    deletedAt?: string;
+    active?: boolean;
+    exercises?: Array<ParticipantExercise>;
+    present?: boolean;
+    included?: boolean;
+    excluded?: boolean;
+};
+
+export type SessionUpdateRequestDto = {
+    participants?: Array<SessionParticipant>;
+    notes?: string;
+};
+
+export type Student = {
+    id?: string;
+    email?: string;
+    name?: string;
+    surname?: string;
+    gender?: 'M' | 'F' | 'O';
+    birthDate?: string;
+    phone?: string;
+    profession?: string;
+    street?: string;
+    number?: string;
+    complement?: string;
+    neighborhood?: string;
+    cep?: string;
+    emergencyContactName?: string;
+    emergencyContactPhone?: string;
+    emergencyContactRelationship?: string;
+    objectives?: string;
+    observations?: string;
+    registrationDate?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    deletedAt?: string;
+    active?: boolean;
+    inactive?: boolean;
+};
+
+export type Trainer = {
+    id?: string;
+    userId?: string;
+    name?: string;
+    phone?: string;
+    address?: string;
+    birthDate?: string;
+    specialties?: Array<string>;
+    compensationType?: 'HOURLY' | 'MONTHLY';
+};
+
+export type StudentPlanRequestDto = {
+    name: string;
+    maxDays: number;
+    durationDays: number;
+    description?: string;
+};
+
+export type StudentPlanResponseDto = {
+    id?: string;
+    name?: string;
+    maxDays?: number;
+    durationDays?: number;
+    description?: string;
+    active?: boolean;
+    createdAt?: string;
+};
+
+export type AssignPlanRequestDto = {
+    planId: string;
+    startDate: string;
+    assignmentNotes?: string;
+};
+
+export type StudentPlanAssignmentResponseDto = {
+    id?: string;
+    studentId?: string;
+    studentName?: string;
+    planId?: string;
+    planName?: string;
+    planMaxDays?: number;
+    planDurationDays?: number;
+    startDate?: string;
+    endDate?: string;
+    assignedByUserId?: string;
+    assignedByUserEmail?: string;
+    assignmentNotes?: string;
+    createdAt?: string;
+    active?: boolean;
+    expired?: boolean;
+    expiringSoon?: boolean;
+    daysRemaining?: number;
+};
+
+export type StudentCommitmentRequestDto = {
+    commitmentStatus: 'ATTENDING' | 'NOT_ATTENDING' | 'TENTATIVE';
+    effectiveFromTimestamp?: string;
+};
+
+export type CommitmentDetailResponseDto = {
+    id?: string;
+    studentId?: string;
+    studentName?: string;
+    sessionSeriesId?: string;
+    seriesName?: string;
+    commitmentStatus?: 'ATTENDING' | 'NOT_ATTENDING' | 'TENTATIVE';
+    effectiveFromTimestamp?: string;
+    createdAt?: string;
+};
+
+export type BulkCommitmentRequestDto = {
+    sessionSeriesIds: Array<string>;
+    commitmentStatus: 'ATTENDING' | 'NOT_ATTENDING' | 'TENTATIVE';
+    effectiveFromTimestamp?: string;
+};
+
 export type LoginRequestDto = {
     email: string;
     password: string;
@@ -219,25 +414,25 @@ export type Pageable = {
 };
 
 export type PageUserResponseDto = {
-    totalElements?: number;
     totalPages?: number;
-    first?: boolean;
-    last?: boolean;
-    pageable?: PageableObject;
+    totalElements?: number;
     size?: number;
     content?: Array<UserResponseDto>;
     number?: number;
-    sort?: SortObject;
+    first?: boolean;
+    last?: boolean;
+    pageable?: PageableObject;
     numberOfElements?: number;
+    sort?: SortObject;
     empty?: boolean;
 };
 
 export type PageableObject = {
-    pageNumber?: number;
-    pageSize?: number;
     offset?: number;
     sort?: SortObject;
     paged?: boolean;
+    pageSize?: number;
+    pageNumber?: number;
     unpaged?: boolean;
 };
 
@@ -248,44 +443,84 @@ export type SortObject = {
 };
 
 export type PageStudentResponseDto = {
-    totalElements?: number;
     totalPages?: number;
-    first?: boolean;
-    last?: boolean;
-    pageable?: PageableObject;
+    totalElements?: number;
     size?: number;
     content?: Array<StudentResponseDto>;
     number?: number;
-    sort?: SortObject;
+    first?: boolean;
+    last?: boolean;
+    pageable?: PageableObject;
     numberOfElements?: number;
+    sort?: SortObject;
     empty?: boolean;
+};
+
+export type ScheduleResponseDto = {
+    sessions?: Array<SessionResponseDto>;
+};
+
+export type SessionResponseDto = {
+    sessionId?: string;
+    trainerId?: string;
+    trainerName?: string;
+    startTime?: string;
+    endTime?: string;
+    seriesName?: string;
+    notes?: string;
+    instanceOverride?: boolean;
+    students?: Array<StudentCommitmentResponseDto>;
+};
+
+export type StudentCommitmentResponseDto = {
+    studentId?: string;
+    studentName?: string;
+    commitmentStatus?: 'ATTENDING' | 'NOT_ATTENDING' | 'TENTATIVE';
+    exercises?: Array<ExerciseResponseDto>;
 };
 
 export type PageExerciseResponseDto = {
-    totalElements?: number;
     totalPages?: number;
-    first?: boolean;
-    last?: boolean;
-    pageable?: PageableObject;
+    totalElements?: number;
     size?: number;
     content?: Array<ExerciseResponseDto>;
     number?: number;
-    sort?: SortObject;
-    numberOfElements?: number;
-    empty?: boolean;
-};
-
-export type PageAdministratorResponseDto = {
-    totalElements?: number;
-    totalPages?: number;
     first?: boolean;
     last?: boolean;
     pageable?: PageableObject;
+    numberOfElements?: number;
+    sort?: SortObject;
+    empty?: boolean;
+};
+
+export type TrainerSchedule = {
+    id?: string;
+    trainerId?: string;
+    trainer?: Trainer;
+    weekday?: number;
+    startTime?: string;
+    endTime?: string;
+    intervalDuration?: number;
+    seriesName?: string;
+    effectiveFromTimestamp?: string;
+    createdAt?: string;
+    updatedAt?: string;
+    deletedAt?: string;
+    active?: boolean;
+    dayOfWeek?: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+};
+
+export type PageAdministratorResponseDto = {
+    totalPages?: number;
+    totalElements?: number;
     size?: number;
     content?: Array<AdministratorResponseDto>;
     number?: number;
-    sort?: SortObject;
+    first?: boolean;
+    last?: boolean;
+    pageable?: PageableObject;
     numberOfElements?: number;
+    sort?: SortObject;
     empty?: boolean;
 };
 
@@ -340,6 +575,58 @@ export type UpdateTrainerAndUserResponses = {
 };
 
 export type UpdateTrainerAndUserResponse = UpdateTrainerAndUserResponses[keyof UpdateTrainerAndUserResponses];
+
+export type DeleteScheduleData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/trainer-schedules/{id}';
+};
+
+export type DeleteScheduleResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetScheduleByIdData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/trainer-schedules/{id}';
+};
+
+export type GetScheduleByIdResponses = {
+    /**
+     * OK
+     */
+    200: TrainerScheduleResponseDto;
+};
+
+export type GetScheduleByIdResponse = GetScheduleByIdResponses[keyof GetScheduleByIdResponses];
+
+export type UpdateScheduleData = {
+    body: TrainerScheduleRequestDto;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/trainer-schedules/{id}';
+};
+
+export type UpdateScheduleResponses = {
+    /**
+     * OK
+     */
+    200: TrainerScheduleResponseDto;
+};
+
+export type UpdateScheduleResponse = UpdateScheduleResponses[keyof UpdateScheduleResponses];
 
 export type DeleteData = {
     body?: never;
@@ -599,6 +886,38 @@ export type CreateTrainerAndUserResponses = {
 
 export type CreateTrainerAndUserResponse = CreateTrainerAndUserResponses[keyof CreateTrainerAndUserResponses];
 
+export type GetAllSchedulesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/trainer-schedules';
+};
+
+export type GetAllSchedulesResponses = {
+    /**
+     * OK
+     */
+    200: Array<TrainerScheduleResponseDto>;
+};
+
+export type GetAllSchedulesResponse = GetAllSchedulesResponses[keyof GetAllSchedulesResponses];
+
+export type CreateScheduleData = {
+    body: TrainerScheduleRequestDto;
+    path?: never;
+    query?: never;
+    url: '/trainer-schedules';
+};
+
+export type CreateScheduleResponses = {
+    /**
+     * OK
+     */
+    200: TrainerScheduleResponseDto;
+};
+
+export type CreateScheduleResponse = CreateScheduleResponses[keyof CreateScheduleResponses];
+
 export type FindAllData = {
     body?: never;
     path?: never;
@@ -641,6 +960,74 @@ export type CreateResponses = {
 
 export type CreateResponse = CreateResponses[keyof CreateResponses];
 
+export type UpdateSessionData = {
+    body: SessionUpdateRequestDto;
+    path: {
+        sessionId: string;
+    };
+    query?: never;
+    url: '/schedule/sessions/{sessionId}';
+};
+
+export type UpdateSessionResponses = {
+    /**
+     * OK
+     */
+    200: string;
+};
+
+export type UpdateSessionResponse = UpdateSessionResponses[keyof UpdateSessionResponses];
+
+export type GetAllPlansData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/plans';
+};
+
+export type GetAllPlansResponses = {
+    /**
+     * OK
+     */
+    200: Array<StudentPlanResponseDto>;
+};
+
+export type GetAllPlansResponse = GetAllPlansResponses[keyof GetAllPlansResponses];
+
+export type CreatePlanData = {
+    body: StudentPlanRequestDto;
+    path?: never;
+    query?: never;
+    url: '/plans';
+};
+
+export type CreatePlanResponses = {
+    /**
+     * OK
+     */
+    200: StudentPlanResponseDto;
+};
+
+export type CreatePlanResponse = CreatePlanResponses[keyof CreatePlanResponses];
+
+export type AssignPlanToStudentData = {
+    body: AssignPlanRequestDto;
+    path: {
+        studentId: string;
+    };
+    query?: never;
+    url: '/plans/students/{studentId}/assign';
+};
+
+export type AssignPlanToStudentResponses = {
+    /**
+     * OK
+     */
+    200: StudentPlanAssignmentResponseDto;
+};
+
+export type AssignPlanToStudentResponse = AssignPlanToStudentResponses[keyof AssignPlanToStudentResponses];
+
 export type FindAll1Data = {
     body?: never;
     path?: never;
@@ -676,6 +1063,43 @@ export type Create1Responses = {
 };
 
 export type Create1Response = Create1Responses[keyof Create1Responses];
+
+export type UpdateCommitmentData = {
+    body: StudentCommitmentRequestDto;
+    path: {
+        studentId: string;
+        sessionSeriesId: string;
+    };
+    query?: never;
+    url: '/commitments/students/{studentId}/sessions/{sessionSeriesId}';
+};
+
+export type UpdateCommitmentResponses = {
+    /**
+     * OK
+     */
+    200: CommitmentDetailResponseDto;
+};
+
+export type UpdateCommitmentResponse = UpdateCommitmentResponses[keyof UpdateCommitmentResponses];
+
+export type BulkUpdateCommitmentsData = {
+    body: BulkCommitmentRequestDto;
+    path: {
+        studentId: string;
+    };
+    query?: never;
+    url: '/commitments/students/{studentId}/bulk';
+};
+
+export type BulkUpdateCommitmentsResponses = {
+    /**
+     * OK
+     */
+    200: Array<CommitmentDetailResponseDto>;
+};
+
+export type BulkUpdateCommitmentsResponse = BulkUpdateCommitmentsResponses[keyof BulkUpdateCommitmentsResponses];
 
 export type LogoutData = {
     body?: never;
@@ -816,6 +1240,259 @@ export type Restore2Responses = {
 };
 
 export type Restore2Response = Restore2Responses[keyof Restore2Responses];
+
+export type GetSchedulesByTrainerData = {
+    body?: never;
+    path: {
+        trainerId: string;
+    };
+    query?: never;
+    url: '/trainer-schedules/trainer/{trainerId}';
+};
+
+export type GetSchedulesByTrainerResponses = {
+    /**
+     * OK
+     */
+    200: Array<TrainerScheduleResponseDto>;
+};
+
+export type GetSchedulesByTrainerResponse = GetSchedulesByTrainerResponses[keyof GetSchedulesByTrainerResponses];
+
+export type GetScheduleData = {
+    body?: never;
+    path?: never;
+    query: {
+        startDate: string;
+        endDate: string;
+    };
+    url: '/schedule';
+};
+
+export type GetScheduleResponses = {
+    /**
+     * OK
+     */
+    200: ScheduleResponseDto;
+};
+
+export type GetScheduleResponse = GetScheduleResponses[keyof GetScheduleResponses];
+
+export type DeletePlanData = {
+    body?: never;
+    path: {
+        planId: string;
+    };
+    query?: never;
+    url: '/plans/{planId}';
+};
+
+export type DeletePlanResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetPlanByIdData = {
+    body?: never;
+    path: {
+        planId: string;
+    };
+    query?: never;
+    url: '/plans/{planId}';
+};
+
+export type GetPlanByIdResponses = {
+    /**
+     * OK
+     */
+    200: StudentPlanResponseDto;
+};
+
+export type GetPlanByIdResponse = GetPlanByIdResponses[keyof GetPlanByIdResponses];
+
+export type GetStudentPlanHistoryData = {
+    body?: never;
+    path: {
+        studentId: string;
+    };
+    query?: never;
+    url: '/plans/students/{studentId}/history';
+};
+
+export type GetStudentPlanHistoryResponses = {
+    /**
+     * OK
+     */
+    200: Array<StudentPlanAssignmentResponseDto>;
+};
+
+export type GetStudentPlanHistoryResponse = GetStudentPlanHistoryResponses[keyof GetStudentPlanHistoryResponses];
+
+export type GetCurrentStudentPlanData = {
+    body?: never;
+    path: {
+        studentId: string;
+    };
+    query?: never;
+    url: '/plans/students/{studentId}/current';
+};
+
+export type GetCurrentStudentPlanResponses = {
+    /**
+     * OK
+     */
+    200: StudentPlanAssignmentResponseDto;
+};
+
+export type GetCurrentStudentPlanResponse = GetCurrentStudentPlanResponses[keyof GetCurrentStudentPlanResponses];
+
+export type GetExpiringSoonAssignmentsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        days?: number;
+    };
+    url: '/plans/assignments/expiring-soon';
+};
+
+export type GetExpiringSoonAssignmentsResponses = {
+    /**
+     * OK
+     */
+    200: Array<StudentPlanAssignmentResponseDto>;
+};
+
+export type GetExpiringSoonAssignmentsResponse = GetExpiringSoonAssignmentsResponses[keyof GetExpiringSoonAssignmentsResponses];
+
+export type GetAllActiveAssignmentsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/plans/assignments/active';
+};
+
+export type GetAllActiveAssignmentsResponses = {
+    /**
+     * OK
+     */
+    200: Array<StudentPlanAssignmentResponseDto>;
+};
+
+export type GetAllActiveAssignmentsResponse = GetAllActiveAssignmentsResponses[keyof GetAllActiveAssignmentsResponses];
+
+export type GetStudentCommitmentsData = {
+    body?: never;
+    path: {
+        studentId: string;
+    };
+    query?: never;
+    url: '/commitments/students/{studentId}';
+};
+
+export type GetStudentCommitmentsResponses = {
+    /**
+     * OK
+     */
+    200: Array<CommitmentDetailResponseDto>;
+};
+
+export type GetStudentCommitmentsResponse = GetStudentCommitmentsResponses[keyof GetStudentCommitmentsResponses];
+
+export type GetCurrentCommitmentStatusData = {
+    body?: never;
+    path: {
+        studentId: string;
+        sessionSeriesId: string;
+    };
+    query?: {
+        timestamp?: string;
+    };
+    url: '/commitments/students/{studentId}/sessions/{sessionSeriesId}/status';
+};
+
+export type GetCurrentCommitmentStatusResponses = {
+    /**
+     * OK
+     */
+    200: 'ATTENDING' | 'NOT_ATTENDING' | 'TENTATIVE';
+};
+
+export type GetCurrentCommitmentStatusResponse = GetCurrentCommitmentStatusResponses[keyof GetCurrentCommitmentStatusResponses];
+
+export type GetCommitmentHistoryData = {
+    body?: never;
+    path: {
+        studentId: string;
+        sessionSeriesId: string;
+    };
+    query?: never;
+    url: '/commitments/students/{studentId}/sessions/{sessionSeriesId}/history';
+};
+
+export type GetCommitmentHistoryResponses = {
+    /**
+     * OK
+     */
+    200: Array<CommitmentDetailResponseDto>;
+};
+
+export type GetCommitmentHistoryResponse = GetCommitmentHistoryResponses[keyof GetCommitmentHistoryResponses];
+
+export type GetCurrentActiveCommitmentsData = {
+    body?: never;
+    path: {
+        studentId: string;
+    };
+    query?: {
+        timestamp?: string;
+    };
+    url: '/commitments/students/{studentId}/active';
+};
+
+export type GetCurrentActiveCommitmentsResponses = {
+    /**
+     * OK
+     */
+    200: Array<CommitmentDetailResponseDto>;
+};
+
+export type GetCurrentActiveCommitmentsResponse = GetCurrentActiveCommitmentsResponses[keyof GetCurrentActiveCommitmentsResponses];
+
+export type GetSessionSeriesCommitmentsData = {
+    body?: never;
+    path: {
+        sessionSeriesId: string;
+    };
+    query?: never;
+    url: '/commitments/sessions/{sessionSeriesId}';
+};
+
+export type GetSessionSeriesCommitmentsResponses = {
+    /**
+     * OK
+     */
+    200: Array<CommitmentDetailResponseDto>;
+};
+
+export type GetSessionSeriesCommitmentsResponse = GetSessionSeriesCommitmentsResponses[keyof GetSessionSeriesCommitmentsResponses];
+
+export type GetAvailableSessionSeriesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/commitments/available-sessions';
+};
+
+export type GetAvailableSessionSeriesResponses = {
+    /**
+     * OK
+     */
+    200: Array<TrainerSchedule>;
+};
+
+export type GetAvailableSessionSeriesResponse = GetAvailableSessionSeriesResponses[keyof GetAvailableSessionSeriesResponses];
 
 export type ClientOptions = {
     baseUrl: 'http://localhost:8080' | (string & {});
