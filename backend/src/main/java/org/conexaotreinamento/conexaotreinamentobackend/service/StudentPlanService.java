@@ -40,8 +40,7 @@ public class StudentPlanService {
                 "Plan with name '" + requestDTO.getName() + "' already exists");
         }
         
-        StudentPlan plan = new StudentPlan();
-        plan.setId(UUID.randomUUID());
+    StudentPlan plan = new StudentPlan(); // Leave id null so @GeneratedValue treats as new
         plan.setName(requestDTO.getName());
         plan.setMaxDays(requestDTO.getMaxDays());
         plan.setDurationDays(requestDTO.getDurationDays());
