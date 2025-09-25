@@ -186,7 +186,7 @@ public class StudentPlanService {
     }
     
     private StudentPlanAssignmentResponseDTO mapToAssignmentResponseDTO(StudentPlanAssignment assignment) {
-        return mapToAssignmentResponseDTO(assignment, null, null, null);
+        return mapToAssignmentResponseDTO(assignment, assignment.getStudent(), assignment.getPlan(), assignment.getAssignedByUser());
     }
     
     private StudentPlanAssignmentResponseDTO mapToAssignmentResponseDTO(StudentPlanAssignment assignment,
