@@ -4,6 +4,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -34,5 +35,6 @@ public class TrainerScheduleRequestDTO {
     private Integer intervalDuration = 60;
     
     @NotBlank(message = "Series name is required")
+    @Pattern(regexp = "^(?!.*__).*$", message = "Series name cannot contain double underscore '__'")
     private String seriesName;
 }

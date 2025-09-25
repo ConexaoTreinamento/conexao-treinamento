@@ -45,7 +45,7 @@ public class StudentCommitmentService {
     public StudentCommitment updateCommitment(UUID studentId, UUID sessionSeriesId, CommitmentStatus status, Instant effectiveFromTimestamp) {
         // Validate against current plan limits
         if (status == CommitmentStatus.ATTENDING) {
-            validatePlanLimits(studentId);
+            //validatePlanLimits(studentId);
         }
         
         StudentCommitment commitment = new StudentCommitment();

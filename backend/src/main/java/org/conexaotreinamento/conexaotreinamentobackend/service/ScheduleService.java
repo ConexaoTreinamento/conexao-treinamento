@@ -135,7 +135,7 @@ public class ScheduleService {
     }
     
     private String generateSessionId(TrainerSchedule schedule, LocalDate date) {
-        return String.format("%s-%s-%s", 
+        return String.format("%s__%s__%s",
             schedule.getSeriesName().toLowerCase().replace(" ", "-"),
             date.toString(),
             schedule.getStartTime().toString()
@@ -161,11 +161,13 @@ public class ScheduleService {
         return scheduledSessionRepository.findBySessionIdAndActiveTrue(sessionId)
             .orElseGet(() -> {
                 // Parse sessionId to extract date and find the schedule
-                String[] parts = sessionId.split("-");
-                if (parts.length >= 4) {
+                String[] parts = sessionId.split("__");
+                if (parts.length == 3) {
                     try {
-                        LocalDate date = LocalDate.parse(parts[1] + "-" + parts[2] + "-" + parts[3]);
-                        LocalTime time = LocalTime.parse(parts[4]);
+                        String dateStr = parts[1];
+                        String timeStr = parts[2];
+                        LocalDate date = LocalDate.parse(dateStr);
+                        LocalTime time = LocalTime.parse(timeStr);
                         int weekday = date.getDayOfWeek() == DayOfWeek.SUNDAY ? 0 : date.getDayOfWeek().getValue();
                         
                         // Find the schedule that matches
@@ -179,7 +181,7 @@ public class ScheduleService {
                             }
                         }
                     } catch (Exception e) {
-                        // If parsing fails, create a basic session
+                        // Parsing failed
                     }
                 }
                 throw new RuntimeException("Could not create session instance for sessionId: " + sessionId);
