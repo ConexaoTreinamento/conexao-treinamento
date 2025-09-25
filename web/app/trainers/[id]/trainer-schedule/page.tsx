@@ -1,76 +1,107 @@
 "use client"
 
-import {useState, useMemo} from "react"
-import {useParams, useRouter} from "next/navigation"
+import {useState, useMemo, useEffect} from "react"
+import {useParams} from "next/navigation"
 import Layout from "@/components/layout"
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
 import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
 import {Badge} from "@/components/ui/badge"
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog"
-import {Trash2, Plus, Save, Loader2, Calendar as CalendarIcon, Clock, RefreshCcw} from "lucide-react"
-import {useForm, FormProvider, Controller} from "react-hook-form"
-import {z} from "zod"
-import {zodResolver} from "@hookform/resolvers/zod"
+import {Checkbox} from "@/components/ui/checkbox"
+import {Save, Loader2, Calendar as CalendarIcon, Clock, RefreshCcw, Settings2} from "lucide-react"
 import {useQueryClient, useMutation} from "@tanstack/react-query"
 import {apiClient} from "@/lib/client"
-import {getSchedulesByTrainerOptions, createScheduleMutation, updateScheduleMutation, deleteScheduleMutation} from "@/lib/api-client/@tanstack/react-query.gen"
+import {getSchedulesByTrainerOptions, getSchedulesByTrainerQueryKey, createScheduleMutation, updateScheduleMutation, deleteScheduleMutation} from "@/lib/api-client/@tanstack/react-query.gen"
 import {useQuery} from "@tanstack/react-query"
 import {type TrainerScheduleResponseDto, type TrainerScheduleRequestDto} from "@/lib/api-client/types.gen"
 
 const weekdayNames: Record<number,string> = {0:"Domingo",1:"Segunda",2:"Terça",3:"Quarta",4:"Quinta",5:"Sexta",6:"Sábado"}
 
-const scheduleSchema = z.object({
-  weekday: z.number().int().min(0).max(6),
-  startTime: z.string(),
-  endTime: z.string(),
-  intervalDuration: z.coerce.number().int().min(15).max(240).default(60),
-  seriesName: z.string().min(1, "Obrigatório")
-})
-
-type ScheduleFormData = z.infer<typeof scheduleSchema>
+interface WeekConfigRow {
+  weekday: number
+  enabled: boolean
+  seriesName: string
+  startTime: string
+  endTime: string
+  intervalDuration: number
+  existingId?: string
+  dirty?: boolean
+}
 
 export default function TrainerSchedulePage(){
   const params = useParams<{id:string}>()
   const trainerId = params.id as string
-  const router = useRouter()
   const qc = useQueryClient()
-  const [open, setOpen] = useState(false)
-  const [editing, setEditing] = useState<TrainerScheduleResponseDto | null>(null)
+  const [bulkOpen, setBulkOpen] = useState(false)
+  const [weekConfig, setWeekConfig] = useState<WeekConfigRow[]>([])
+  const [saving, setSaving] = useState(false)
 
   const schedulesQueryOptions = getSchedulesByTrainerOptions({path:{trainerId}, client: apiClient})
-  const {data, isLoading:loadingList, error: listError, refetch: refetchList, isFetching: fetchingList} = useQuery(schedulesQueryOptions)
+  const {data, isLoading:loadingList, error: listError, isFetching: fetchingList} = useQuery(schedulesQueryOptions)
 
   const createMutation = useMutation(createScheduleMutation({client: apiClient}))
   const updateMutation = useMutation(updateScheduleMutation({client: apiClient}))
   const deleteMutation = useMutation(deleteScheduleMutation({client: apiClient}))
 
-  const methods = useForm<ScheduleFormData>({resolver: zodResolver(scheduleSchema), defaultValues:{weekday:1,startTime:"08:00", endTime:"12:00", intervalDuration:60, seriesName:"Treino"}})
-
-  const onSubmit = async (values: ScheduleFormData) => {
-    const payload: TrainerScheduleRequestDto = {trainerId, ...values}
-    try {
-      if(editing?.id){
-        await updateMutation.mutateAsync({path:{id: editing.id}, body: payload})
-      } else {
-        await createMutation.mutateAsync({body: payload})
+  // Initialize weekConfig from backend schedules when dialog opens
+  useEffect(()=>{
+    if(!bulkOpen) return
+    const list: TrainerScheduleResponseDto[] = (data as TrainerScheduleResponseDto[] | undefined) || []
+    const byWeekday: Record<number, TrainerScheduleResponseDto> = {}
+    list.forEach(s=> { if(s.weekday!==undefined) byWeekday[s.weekday]=s })
+    const defaults: WeekConfigRow[] = Array.from({length:7}, (_,i)=>{
+      const existing = byWeekday[i]
+      return {
+        weekday: i,
+        enabled: !!existing,
+        seriesName: existing?.seriesName || 'Treino',
+        startTime: existing?.startTime?.slice(0,5) || '08:00',
+        endTime: existing?.endTime?.slice(0,5) || '09:00',
+        intervalDuration: existing?.intervalDuration || 60,
+        existingId: existing?.id,
+        dirty: false
       }
-      setOpen(false); setEditing(null); methods.reset()
-      await qc.invalidateQueries({queryKey:['getSchedulesByTrainer']})
-    } catch(e){/* no-op */}
-  }
+    })
+    setWeekConfig(defaults)
+  }, [bulkOpen, data])
 
-  const handleEdit = (sch: TrainerScheduleResponseDto) => { 
-    setEditing(sch)
-    methods.reset({weekday: sch.weekday ?? 1, startTime: sch.startTime?.slice(0,5) || "08:00", endTime: sch.endTime?.slice(0,5) || "09:00", intervalDuration: sch.intervalDuration ?? 60, seriesName: sch.seriesName || ""})
-    setOpen(true)
-  }
+  const toggleEnabled = (weekday:number) => setWeekConfig(prev=> prev.map(r=> r.weekday===weekday ? {...r, enabled:!r.enabled, dirty:true}: r))
+  const updateRow = (weekday:number, patch: Partial<WeekConfigRow>) => setWeekConfig(prev=> prev.map(r=> r.weekday===weekday ? {...r, ...patch, dirty:true}: r))
 
-  const handleDelete = async (id?: string) => {
-    if(!id) return
-  await deleteMutation.mutateAsync({path:{id}})
-    await qc.invalidateQueries({queryKey:['getSchedulesByTrainer']})
+  const weekdayLabel = (n:number)=> weekdayNames[n]
+
+  const rowsInvalid = useMemo(()=> weekConfig.some(r=> r.enabled && (!r.seriesName || !r.startTime || !r.endTime || r.endTime <= r.startTime)), [weekConfig])
+
+  const handleSaveWeek = async () => {
+    setSaving(true)
+    try {
+      for(const row of weekConfig){
+        // Delete disabled existing
+        if(!row.enabled && row.existingId){
+          await deleteMutation.mutateAsync({path:{id: row.existingId}})
+          continue
+        }
+        if(!row.enabled) continue
+        const payload: TrainerScheduleRequestDto = {
+          trainerId,
+          weekday: row.weekday,
+          startTime: row.startTime+':00',
+          endTime: row.endTime+':00',
+          intervalDuration: row.intervalDuration,
+          seriesName: row.seriesName
+        }
+        if(row.existingId){
+          await updateMutation.mutateAsync({path:{id: row.existingId}, body: payload})
+        } else {
+          await createMutation.mutateAsync({body: payload})
+        }
+      }
+  await qc.invalidateQueries({queryKey: getSchedulesByTrainerQueryKey({path:{trainerId}, client: apiClient})})
+      setBulkOpen(false)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const grouped = useMemo(()=>{
@@ -87,57 +118,62 @@ export default function TrainerSchedulePage(){
             <p className="text-muted-foreground text-sm">Configure os horários semanais e séries geradas</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={()=>refetchList?.()} disabled={fetchingList}>
-              {fetchingList ? <Loader2 className="w-4 h-4 mr-2 animate-spin"/>:<RefreshCcw className="w-4 h-4 mr-2"/>}
-              Atualizar
-            </Button>
-            <Dialog open={open} onOpenChange={(o)=>{setOpen(o); if(!o){setEditing(null); methods.reset()}}}>
+            <Dialog open={bulkOpen} onOpenChange={(o)=>{setBulkOpen(o)}}>
               <DialogTrigger asChild>
                 <Button className="bg-green-600 hover:bg-green-700">
-                  <Plus className="w-4 h-4 mr-2"/> Novo Horário
+                  <Settings2 className="w-4 h-4 mr-2"/> Configurar Semana
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-3xl">
                 <DialogHeader>
-                  <DialogTitle>{editing? 'Editar Horário':'Novo Horário'}</DialogTitle>
+                  <DialogTitle>Configuração Semanal</DialogTitle>
                 </DialogHeader>
-                <FormProvider {...methods}>
-                  <form onSubmit={methods.handleSubmit(onSubmit)} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-xs font-medium">Dia</label>
-                        <Controller name="weekday" control={methods.control} render={({field})=> (
-                          <Select value={String(field.value)} onValueChange={(v)=>field.onChange(Number(v))}>
-                            <SelectTrigger><SelectValue/></SelectTrigger>
-                            <SelectContent>
-                              {Object.entries(weekdayNames).map(([n,label])=> <SelectItem key={n} value={n}>{label}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        )}/>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-medium">Série</label>
-                        <Input {...methods.register('seriesName')}/>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-medium">Início</label>
-                        <Input type="time" {...methods.register('startTime')}/>
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-xs font-medium">Fim</label>
-                        <Input type="time" {...methods.register('endTime')}/>
-                      </div>
-                      <div className="space-y-1 col-span-2">
-                        <label className="text-xs font-medium">Duração por aula (min)</label>
-                        <Input type="number" {...methods.register('intervalDuration',{valueAsNumber:true})}/>
-                      </div>
-                    </div>
-                    <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={createMutation.isPending || updateMutation.isPending}>
-                      {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="w-4 h-4 mr-2 animate-spin"/>}
-                      <Save className="w-4 h-4 mr-2"/> Salvar
+                <div className="space-y-4">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr className="text-xs text-muted-foreground">
+                          <th className="p-2 text-left">Ativo</th>
+                          <th className="p-2 text-left">Dia</th>
+                          <th className="p-2 text-left">Série</th>
+                          <th className="p-2 text-left">Início</th>
+                          <th className="p-2 text-left">Fim</th>
+                          <th className="p-2 text-left">Duração (min)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {weekConfig.map(r=> (
+                          <tr key={r.weekday} className={r.enabled ? "" : "opacity-50"}>
+                            <td className="p-2 align-middle">
+                              <Checkbox checked={r.enabled} onCheckedChange={()=>toggleEnabled(r.weekday)}/>
+                            </td>
+                            <td className="p-2 align-middle font-medium">{weekdayLabel(r.weekday)}</td>
+                            <td className="p-2 align-middle">
+                              <Input disabled={!r.enabled} value={r.seriesName} onChange={e=>updateRow(r.weekday,{seriesName:e.target.value})} className="h-8"/>
+                            </td>
+                            <td className="p-2 align-middle">
+                              <Input type="time" disabled={!r.enabled} value={r.startTime} onChange={e=>updateRow(r.weekday,{startTime:e.target.value})} className="h-8"/>
+                            </td>
+                            <td className="p-2 align-middle">
+                              <Input type="time" disabled={!r.enabled} value={r.endTime} onChange={e=>updateRow(r.weekday,{endTime:e.target.value})} className="h-8"/>
+                            </td>
+                            <td className="p-2 align-middle">
+                              <Input type="number" disabled={!r.enabled} value={r.intervalDuration} onChange={e=>updateRow(r.weekday,{intervalDuration:Number(e.target.value)})} className="h-8 w-24"/>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {rowsInvalid && <p className="text-xs text-red-500">Verifique horários e séries: fim deve ser após início e todos os campos obrigatórios preenchidos.</p>}
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button variant="outline" onClick={()=>setBulkOpen(false)} disabled={saving}>Cancelar</Button>
+                    <Button onClick={handleSaveWeek} disabled={saving || rowsInvalid} className="bg-green-600 hover:bg-green-700 min-w-[140px]">
+                      {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin"/>}
+                      <Save className="w-4 h-4 mr-2"/> Salvar Semana
                     </Button>
-                  </form>
-                </FormProvider>
+                  </div>
+                </div>
               </DialogContent>
             </Dialog>
           </div>
@@ -161,8 +197,6 @@ export default function TrainerSchedulePage(){
                   </CardTitle>
                   <div className="flex gap-2">
                     <Badge variant="outline" className="text-xs flex items-center gap-1"><Clock className="w-3 h-3"/> {s.startTime?.slice(0,5)} - {s.endTime?.slice(0,5)}</Badge>
-                    <Button size="sm" variant="outline" onClick={()=>handleEdit(s)}>Editar</Button>
-                    <Button size="icon" variant="outline" onClick={()=>handleDelete(s.id)} disabled={deleteMutation.isPending}><Trash2 className="w-4 h-4"/></Button>
                   </div>
                 </div>
               </CardHeader>

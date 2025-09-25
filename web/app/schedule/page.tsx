@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import ClassModal from "@/components/class-modal"
 import { apiClient } from "@/lib/client"
-import { getScheduleOptions } from "@/lib/api-client/@tanstack/react-query.gen"
+import { getScheduleOptions, findAllTrainersOptions } from "@/lib/api-client/@tanstack/react-query.gen"
 import { useQuery } from "@tanstack/react-query"
 
 export default function SchedulePage() {
@@ -26,7 +26,7 @@ export default function SchedulePage() {
     weekDays: [] as string[],
     times: [] as { day: string; startTime: string; endTime: string }[],
   })
-  const [localSessions, setLocalSessions] = useState<any[]>([])
+  const [localSessions, setLocalSessions] = useState<any[]>([]) // legacy fallback until backend supports true one-off session entity
   const router = useRouter()
 
   useEffect(() => {
@@ -60,7 +60,13 @@ export default function SchedulePage() {
       .sort((a,b)=> (a.time||'').localeCompare(b.time||''))
   }, [backendClasses, localSessions, selectedIso])
 
-  const trainers = ["Prof. Ana", "Prof. Marina", "Prof. Roberto", "Prof. Carlos"]
+  // Trainers (real backend)
+  const trainersQuery = useQuery({
+    ...findAllTrainersOptions({ client: apiClient })
+  })
+  const trainerOptions = (trainersQuery.data || []).map(t => ({ id: t.id || '', name: t.name || '—' })).filter(t => t.id)
+
+  // We limit modal usage here to creating a one-off (standalone) scheduled session representation (only client-side until backend exposes endpoint)
 
   // Generate dates for horizontal scroll based on current month (14 days around middle of month)
   const getScrollDates = () => {
@@ -97,21 +103,21 @@ export default function SchedulePage() {
   }
 
   const handleCreateClass = (formData: any) => {
-    if (formData.name && formData.instructor && formData.weekDays.length > 0) {
-      const firstTime = formData.times?.[0]
-      const newLocal = {
-        id: `local-${Date.now()}`,
-        name: formData.name,
-        instructor: formData.instructor,
-        time: firstTime?.startTime || '',
-        endTime: firstTime?.endTime || '',
-        maxStudents: Number.parseInt(formData.maxStudents) || 10,
-        currentStudents: 0,
-        students: [],
-        date: selectedIso
-      }
-      setLocalSessions(prev => [...prev, newLocal])
+    if (!formData.name || !formData.instructor) return
+    const first = formData.times[0]
+    if (!first?.startTime || !first?.endTime) return
+    const newLocal = {
+      id: `oneoff-${Date.now()}`,
+      name: formData.name,
+      instructor: trainerOptions.find(t=>t.id===formData.instructor)?.name || '—',
+      time: first.startTime,
+      endTime: first.endTime,
+      maxStudents: Number.parseInt(formData.maxStudents) || 10,
+      currentStudents: 0,
+      students: [],
+      date: selectedIso
     }
+    setLocalSessions(prev => [...prev, newLocal])
   }
 
   const handleCloseClassModal = () => setIsNewClassOpen(false)
@@ -249,7 +255,7 @@ export default function SchedulePage() {
             ))
           )}
         </div>
-        <ClassModal open={isNewClassOpen} mode="create" initialData={modalInitialData} onClose={handleCloseClassModal} onSubmitData={handleCreateClass} trainers={trainers} />
+        <ClassModal open={isNewClassOpen} mode="create" initialData={modalInitialData} onClose={handleCloseClassModal} onSubmitData={handleCreateClass} />
       </div>
     </Layout>
   )
