@@ -43,6 +43,9 @@ public class ScheduledSession {
     
     @Column(name = "max_participants", nullable = false)
     private int maxParticipants = 1;
+
+    @Column(name = "canceled", nullable = false)
+    private boolean canceled = false; // explicit cancellation separate from soft delete
     
     @Column(name = "series_name", nullable = false)
     private String seriesName;

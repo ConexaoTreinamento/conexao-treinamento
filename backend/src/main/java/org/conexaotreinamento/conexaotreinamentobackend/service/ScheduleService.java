@@ -1,7 +1,9 @@
 package org.conexaotreinamento.conexaotreinamentobackend.service;
 
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.SessionResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.*;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ExerciseResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ParticipantExerciseResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentCommitmentResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.*;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.CommitmentStatus;
@@ -38,6 +40,9 @@ public class ScheduleService {
     
     @Autowired
     private TrainerRepository trainerRepository;
+
+    @Autowired
+    private ParticipantExerciseRepository participantExerciseRepository;
     
     public List<SessionResponseDTO> getScheduledSessions(LocalDate startDate, LocalDate endDate) {
         List<SessionResponseDTO> sessions = new ArrayList<>();
@@ -85,14 +90,19 @@ public class ScheduleService {
                 if (existingSession != null) {
                     session.setNotes(existingSession.getNotes());
                     session.setInstanceOverride(existingSession.isInstanceOverride());
+                    session.setCanceled(existingSession.isCanceled());
+                    session.setMaxParticipants(existingSession.getMaxParticipants());
                 } else {
                     session.setInstanceOverride(false);
+                    session.setCanceled(false);
+                    session.setMaxParticipants(schedule.getIntervalDuration()); // temporary placeholder for capacity mapping
                 }
                 
                 // Get student commitments for this session series at this point in time
                 List<StudentCommitmentResponseDTO> studentCommitments = getStudentCommitmentsForSession(
                     schedule.getId(), sessionInstant, existingSession);
                 session.setStudents(studentCommitments);
+                session.setPresentCount((int) studentCommitments.stream().filter(sc -> sc.getCommitmentStatus() == CommitmentStatus.ATTENDING).count());
                 
                 sessions.add(session);
             }
@@ -132,6 +142,142 @@ public class ScheduleService {
         session.setNotes(notes);
         session.setInstanceOverride(true);
         scheduledSessionRepository.save(session);
+    }
+
+    public SessionResponseDTO getSessionById(String sessionId) {
+        ScheduledSession sessionEntity = getOrCreateSessionInstance(sessionId);
+        // derive date for commitments
+        LocalDate date = sessionEntity.getStartTime().toLocalDate();
+        Instant sessionInstant = date.atStartOfDay().toInstant(ZoneOffset.UTC);
+        SessionResponseDTO dto = new SessionResponseDTO();
+        dto.setSessionId(sessionEntity.getSessionId());
+        dto.setTrainerId(sessionEntity.getTrainerId());
+        if (sessionEntity.getTrainerId() != null) {
+            trainerRepository.findById(sessionEntity.getTrainerId()).ifPresent(t -> dto.setTrainerName(t.getName()));
+        }
+        dto.setStartTime(sessionEntity.getStartTime());
+        dto.setEndTime(sessionEntity.getEndTime());
+        dto.setSeriesName(sessionEntity.getSeriesName());
+        dto.setNotes(sessionEntity.getNotes());
+        dto.setInstanceOverride(sessionEntity.isInstanceOverride());
+        dto.setCanceled(sessionEntity.isCanceled());
+        dto.setMaxParticipants(sessionEntity.getMaxParticipants());
+        // commitments + participants info
+        List<StudentCommitmentResponseDTO> students = getStudentCommitmentsForSession(sessionEntity.getSessionSeriesId(), sessionInstant, sessionEntity);
+        dto.setStudents(students);
+        dto.setPresentCount((int) students.stream().filter(sc -> sc.getCommitmentStatus() == CommitmentStatus.ATTENDING).count());
+        return dto;
+    }
+
+    public void updateSessionTrainer(String sessionId, UUID trainerId) {
+        ScheduledSession session = getOrCreateSessionInstance(sessionId);
+        session.setTrainerId(trainerId);
+        session.setInstanceOverride(true);
+        scheduledSessionRepository.save(session);
+    }
+
+    public void cancelOrRestoreSession(String sessionId, boolean cancel) {
+        ScheduledSession session = getOrCreateSessionInstance(sessionId);
+        session.setCanceled(cancel);
+        session.setInstanceOverride(true);
+        scheduledSessionRepository.save(session);
+    }
+
+    public void addParticipant(String sessionId, UUID studentId) {
+        ScheduledSession session = getOrCreateSessionInstance(sessionId);
+        SessionParticipant participant = new SessionParticipant();
+        participant.setScheduledSession(session);
+        participant.setStudentId(studentId);
+        participant.setParticipationType(SessionParticipant.ParticipationType.INCLUDED);
+        sessionParticipantRepository.save(participant);
+        session.setInstanceOverride(true);
+        scheduledSessionRepository.save(session);
+    }
+
+    public void removeParticipant(String sessionId, UUID studentId) {
+        ScheduledSession session = getOrCreateSessionInstance(sessionId);
+        List<SessionParticipant> participants = sessionParticipantRepository
+            .findByScheduledSession_IdAndStudentIdAndActiveTrue(session.getId(), studentId);
+        participants.forEach(p -> { p.softDelete(); sessionParticipantRepository.save(p); });
+        session.setInstanceOverride(true);
+        scheduledSessionRepository.save(session);
+    }
+
+    public void updateParticipantPresence(String sessionId, UUID studentId, boolean present, String notes) {
+        ScheduledSession session = getOrCreateSessionInstance(sessionId);
+        List<SessionParticipant> participants = sessionParticipantRepository
+            .findByScheduledSession_IdAndStudentIdAndActiveTrue(session.getId(), studentId);
+        if (participants.isEmpty()) {
+            addParticipant(sessionId, studentId);
+            participants = sessionParticipantRepository
+                .findByScheduledSession_IdAndStudentIdAndActiveTrue(session.getId(), studentId);
+        }
+        for (SessionParticipant participant : participants) {
+            participant.setPresent(present);
+            participant.setAttendanceNotes(notes);
+            participant.updateTimestamp();
+            sessionParticipantRepository.save(participant);
+        }
+        session.setInstanceOverride(true);
+        scheduledSessionRepository.save(session);
+    }
+
+    public ParticipantExercise addParticipantExercise(String sessionId, UUID studentId, ParticipantExerciseCreateRequestDTO req) {
+        ScheduledSession session = getOrCreateSessionInstance(sessionId);
+        List<SessionParticipant> participants = sessionParticipantRepository
+            .findByScheduledSession_IdAndStudentIdAndActiveTrue(session.getId(), studentId);
+        if (participants.isEmpty()) {
+            addParticipant(sessionId, studentId);
+            participants = sessionParticipantRepository
+                .findByScheduledSession_IdAndStudentIdAndActiveTrue(session.getId(), studentId);
+        }
+        SessionParticipant participant = participants.get(0);
+        ParticipantExercise pe = new ParticipantExercise();
+        pe.setSessionParticipant(participant);
+        pe.setExerciseId(req.getExerciseId());
+        pe.setSetsCompleted(req.getSetsCompleted());
+        pe.setRepsCompleted(req.getRepsCompleted());
+        pe.setWeightCompleted(req.getWeightCompleted());
+        pe.setExerciseNotes(req.getExerciseNotes());
+        participantExerciseRepository.save(pe);
+        session.setInstanceOverride(true);
+        scheduledSessionRepository.save(session);
+        return pe;
+    }
+
+    public void updateParticipantExercise(UUID exerciseRecordId, ParticipantExerciseUpdateRequestDTO req) {
+        participantExerciseRepository.findById(exerciseRecordId).ifPresent(pe -> {
+            if (req.getSetsCompleted() != null) pe.setSetsCompleted(req.getSetsCompleted());
+            if (req.getRepsCompleted() != null) pe.setRepsCompleted(req.getRepsCompleted());
+            if (req.getWeightCompleted() != null) pe.setWeightCompleted(req.getWeightCompleted());
+            if (req.getExerciseNotes() != null) pe.setExerciseNotes(req.getExerciseNotes());
+            pe.updateTimestamp();
+            participantExerciseRepository.save(pe);
+        });
+    }
+
+    public void removeParticipantExercise(UUID exerciseRecordId) {
+        participantExerciseRepository.findById(exerciseRecordId).ifPresent(pe -> {
+            pe.softDelete();
+            participantExerciseRepository.save(pe);
+        });
+    }
+
+    public SessionResponseDTO createOneOffSession(OneOffSessionCreateRequestDTO req) {
+        ScheduledSession session = new ScheduledSession();
+        session.setId(UUID.randomUUID());
+        session.setSessionSeriesId(UUID.randomUUID()); // standalone series id
+        session.setSessionId(String.format("oneoff__%s__%s", req.getStartTime().toLocalDate(), req.getStartTime().toLocalTime()));
+        session.setTrainerId(req.getTrainerId());
+        session.setStartTime(req.getStartTime());
+        session.setEndTime(req.getEndTime());
+        session.setMaxParticipants(req.getMaxParticipants() != null ? req.getMaxParticipants() : 10);
+        session.setSeriesName(req.getSeriesName());
+        session.setInstanceOverride(true);
+        session.setEffectiveFromTimestamp(Instant.now());
+        session.setNotes(req.getNotes());
+        scheduledSessionRepository.save(session);
+        return getSessionById(session.getSessionId());
     }
     
     private String generateSessionId(TrainerSchedule schedule, LocalDate date) {
@@ -180,6 +326,43 @@ public class ScheduleService {
                                 return scheduledSessionRepository.save(session);
                             }
                         }
+                        // Fallback: slug may have changed (series renamed).
+                        List<TrainerSchedule> timeMatches = schedules.stream()
+                            .filter(s -> s.getStartTime().equals(time))
+                            .toList();
+                        if (!timeMatches.isEmpty()) {
+                            if (timeMatches.size() == 1) {
+                                TrainerSchedule schedule = timeMatches.get(0);
+                                ScheduledSession session = generateSessionFromSchedule(schedule, date);
+                                return scheduledSessionRepository.save(session);
+                            } else {
+                                // Disambiguate using provided slug (parts[0]) heuristics
+                                String providedSlug = parts[0].toLowerCase();
+                                List<TrainerSchedule> exactSlugMatches = timeMatches.stream()
+                                    .filter(s -> s.getSeriesName() != null && s.getSeriesName().toLowerCase().replace(" ", "-").equals(providedSlug))
+                                    .toList();
+                                if (exactSlugMatches.size() == 1) {
+                                    ScheduledSession session = generateSessionFromSchedule(exactSlugMatches.get(0), date);
+                                    return scheduledSessionRepository.save(session);
+                                }
+                                // Prefix / contains heuristics
+                                List<TrainerSchedule> prefixMatches = timeMatches.stream()
+                                    .filter(s -> {
+                                        String slug = s.getSeriesName() == null ? "" : s.getSeriesName().toLowerCase().replace(" ", "-");
+                                        return slug.startsWith(providedSlug) || providedSlug.startsWith(slug);
+                                    }).toList();
+                                if (prefixMatches.size() == 1) {
+                                    ScheduledSession session = generateSessionFromSchedule(prefixMatches.get(0), date);
+                                    return scheduledSessionRepository.save(session);
+                                }
+                                // Still ambiguous: throw with diagnostic
+                                String candidates = timeMatches.stream()
+                                    .map(s -> generateSessionId(s, date))
+                                    .distinct()
+                                    .reduce((a,b) -> a + "," + b).orElse("(none)");
+                                throw new RuntimeException("Ambiguous session slug/time. Provided='" + sessionId + "' candidates=" + candidates);
+                            }
+                        }
                     } catch (Exception e) {
                         // Parsing failed
                     }
@@ -222,22 +405,34 @@ public class ScheduleService {
             
             // Get exercises if this session has been materialized and student has exercises
             List<ExerciseResponseDTO> exercises = new ArrayList<>();
+            List<ParticipantExerciseResponseDTO> participantExerciseDtos = new ArrayList<>();
             if (existingSession != null) {
                 List<SessionParticipant> participants = sessionParticipantRepository
-                    .findByScheduledSession_IdAndStudentIdAndActiveTrue(existingSession.getId(), commitment.getStudentId());
-                
+                        .findByScheduledSession_IdAndStudentIdAndActiveTrue(existingSession.getId(), commitment.getStudentId());
                 for (SessionParticipant participant : participants) {
                     if (participant.getExercises() != null) {
                         for (ParticipantExercise participantExercise : participant.getExercises()) {
-                            if (participantExercise.getExercise() != null) {
-                                ExerciseResponseDTO exerciseDto = ExerciseResponseDTO.fromEntity(participantExercise.getExercise());
-                                exercises.add(exerciseDto);
+                            if (participantExercise.isActive()) {
+                                if (participantExercise.getExercise() != null) {
+                                    ExerciseResponseDTO exerciseDto = ExerciseResponseDTO.fromEntity(participantExercise.getExercise());
+                                    exercises.add(exerciseDto);
+                                }
+                                participantExerciseDtos.add(new ParticipantExerciseResponseDTO(
+                                        participantExercise.getId(),
+                                        participantExercise.getExerciseId(),
+                                        participantExercise.getExercise() != null ? participantExercise.getExercise().getName() : null,
+                                        participantExercise.getSetsCompleted(),
+                                        participantExercise.getRepsCompleted(),
+                                        participantExercise.getWeightCompleted(),
+                                        participantExercise.getExerciseNotes()
+                                ));
                             }
                         }
                     }
                 }
             }
             dto.setExercises(exercises);
+            dto.setParticipantExercises(participantExerciseDtos);
             
             studentCommitments.add(dto);
         }

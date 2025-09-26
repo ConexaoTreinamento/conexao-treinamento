@@ -50,10 +50,12 @@ export default function SchedulePage() {
   })
   const apiSessions = scheduleQuery.data?.sessions || []
   const backendClasses = useMemo(()=> apiSessions.map(s => {
-    const students = (s.students||[]).map(st => ({ id: st.studentId || crypto.randomUUID(), name: st.studentName || 'Aluno', present: st.commitmentStatus === 'ATTENDING' }))
+    const students = (s.students||[]).map(st => ({ id: st.studentId || '', name: st.studentName || 'Aluno', present: st.commitmentStatus === 'ATTENDING' }))
     const date = s.startTime?.slice(0,10) || selectedIso
+    const realId = s.sessionId && s.sessionId.length > 0 ? s.sessionId : undefined
     return {
-      id: s.sessionId || crypto.randomUUID(),
+      id: realId, // may be undefined if backend failed to generate; we will guard navigation
+      real: !!realId,
       name: s.seriesName || 'Aula',
       instructor: s.trainerName || '—',
       time: s.startTime?.slice(11,16) || '',
@@ -189,14 +191,14 @@ export default function SchedulePage() {
           <p className="text-sm text-muted-foreground">{selectedDate.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</p>
         </div>
         <div className="w-full">
-          <div className="grid grid-cols-7 gap-2 pb-2">
+          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin" style={{scrollbarWidth:'thin'}}>
             {monthDays.map((date)=> {
               const key = date.toISOString().slice(0,10)
               const stats = daySessionCounts[key]
               const hasSessions = !!stats
               return (
                 <button key={key} onClick={()=> setSelectedDate(date)}
-                  className={`relative flex flex-col items-center justify-center p-2 rounded-lg border h-[70px] text-center transition-all group ${isSelected(date)?'bg-green-600 text-white border-green-600 shadow':'hover:bg-muted'} ${!isSelected(date)&& isToday(date)?'ring-1 ring-green-600':''}`}>                
+                  className={`relative flex flex-col min-w-[68px] flex-shrink-0 items-center justify-center p-2 rounded-lg border h-[72px] text-center transition-all group ${isSelected(date)?'bg-green-600 text-white border-green-600 shadow':'hover:bg-muted'} ${!isSelected(date)&& isToday(date)?'ring-1 ring-green-600':''}`}>
                   <span className="text-[10px] font-medium leading-none uppercase tracking-wide">{formatDayName(date)}</span>
                   <span className="text-lg font-bold leading-none mt-1">{date.getDate()}</span>
                   {hasSessions && (
@@ -253,7 +255,7 @@ export default function SchedulePage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Alunos</span>
-                        <Button size="sm" variant="outline" className="h-7 px-2 text-xs bg-transparent" onClick={() => classItem.id && !String(classItem.id).startsWith('local-') && router.push(`/schedule/${classItem.id}?date=${selectedIso}`)}>Gerenciar</Button>
+                        <Button size="sm" variant="outline" disabled={!classItem.real} title={!classItem.real? 'Sessão não materializada ainda':'Gerenciar sessão'} className="h-7 px-2 text-xs bg-transparent" onClick={() => classItem.real && classItem.id && router.push(`/schedule/${classItem.id}?date=${selectedIso}`)}>Gerenciar</Button>
                       </div>
                       <div className="max-h-32 overflow-y-auto space-y-1" style={{ scrollbarWidth: "thin" }}>
                         {classItem.students.map((student: {id:string; name:string; present:boolean}) => (
@@ -271,7 +273,7 @@ export default function SchedulePage() {
                   {classItem.students.length === 0 && (
                     <div className="text-center py-2">
                       <p className="text-sm text-muted-foreground">Nenhum aluno inscrito</p>
-                      <Button size="sm" variant="outline" className="mt-2 h-7 px-2 text-xs bg-transparent" onClick={() => classItem.id && !String(classItem.id).startsWith('local-') && router.push(`/schedule/${classItem.id}?date=${selectedIso}`)}>Adicionar Alunos</Button>
+                      <Button size="sm" variant="outline" disabled={!classItem.real} title={!classItem.real? 'Sessão não materializada ainda':'Adicionar alunos'} className="mt-2 h-7 px-2 text-xs bg-transparent" onClick={() => classItem.real && classItem.id && router.push(`/schedule/${classItem.id}?date=${selectedIso}`)}>Adicionar Alunos</Button>
                     </div>
                   )}
                 </CardContent>
