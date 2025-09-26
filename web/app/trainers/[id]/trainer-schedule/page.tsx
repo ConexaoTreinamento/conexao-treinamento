@@ -12,7 +12,7 @@ import {Checkbox} from "@/components/ui/checkbox"
 import {Save, Loader2, Calendar as CalendarIcon, Clock, RefreshCcw, Settings2} from "lucide-react"
 import {useQueryClient, useMutation} from "@tanstack/react-query"
 import {apiClient} from "@/lib/client"
-import {getSchedulesByTrainerOptions, getSchedulesByTrainerQueryKey, createScheduleMutation, updateScheduleMutation, deleteScheduleMutation} from "@/lib/api-client/@tanstack/react-query.gen"
+import {getSchedulesByTrainerOptions, getSchedulesByTrainerQueryKey, createScheduleMutation, updateScheduleMutation, deleteScheduleMutation, getAvailableSessionSeriesQueryKey} from "@/lib/api-client/@tanstack/react-query.gen"
 import {useQuery} from "@tanstack/react-query"
 import {type TrainerScheduleResponseDto, type TrainerScheduleRequestDto} from "@/lib/api-client/types.gen"
 
@@ -96,8 +96,10 @@ export default function TrainerSchedulePage(){
         } else {
           await createMutation.mutateAsync({body: payload})
         }
-      }
-  await qc.invalidateQueries({queryKey: getSchedulesByTrainerQueryKey({path:{trainerId}, client: apiClient})})
+    }
+    // Invalidate impacted queries so UI reflects new availability
+    await qc.invalidateQueries({queryKey: getSchedulesByTrainerQueryKey({path:{trainerId}, client: apiClient})})
+    await qc.invalidateQueries({queryKey: getAvailableSessionSeriesQueryKey({client: apiClient})})
       setBulkOpen(false)
     } finally {
       setSaving(false)
