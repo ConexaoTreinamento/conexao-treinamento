@@ -63,19 +63,6 @@ export default function PlansPage(){
     onSettled: () => qc.invalidateQueries({queryKey: plansQueryOptions.queryKey})
   })
 
-  // Editing state
-  const [editingId, setEditingId] = useState<string|null>(null)
-  const [editValues, setEditValues] = useState<{name:string; maxDays:number; durationDays:number}>({name:'', maxDays:1, durationDays:30})
-
-  const startEdit = (p: StudentPlanResponseDto)=> {
-    setEditingId(p.id!)
-    setEditValues({name: p.name!, maxDays: p.maxDays!, durationDays: p.durationDays!})
-  }
-
-  const cancelEdit = ()=> {
-    setEditingId(null)
-  }
-
   // Normalize plans: support both API field naming variants (planId/planName or id/name)
   const plans = useMemo(()=> {
     const list = (data||[]) as any[]
@@ -95,17 +82,6 @@ export default function PlansPage(){
 
   const submit = (v:PlanForm)=>{
     createPlan.mutate({body:{name: v.name, maxDays: v.maxDays, durationDays: v.durationDays}})
-  }
-
-  const saveEdit = () => {
-    if(!editingId) return
-    // Optimistic update only (no update endpoint yet) - in future replace with real update mutation
-    const prev = qc.getQueryData<any[]>(plansQueryOptions.queryKey)
-    if(prev){
-      qc.setQueryData<any[]>(plansQueryOptions.queryKey, prev.map(p=> p.planId===editingId? {...p, planName: editValues.name, planMaxDays: editValues.maxDays, planDurationDays: editValues.durationDays}: p))
-      toast({title:'Plano atualizado (local)', description:'Endpoint de atualização não implementado'})
-    }
-    setEditingId(null)
   }
 
   return (
@@ -151,61 +127,30 @@ export default function PlansPage(){
         {isLoading && <div className="space-y-2">{[...Array(3)].map((_,i)=><Card key={i} className="animate-pulse"><CardContent className="h-16"/></Card>)}</div>}
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {plans.map(({_raw: p, id, name, maxDays, durationDays})=> {
-            const isEditing = editingId === id
             return (
-              <Card key={id} className={`border-l-4 ${isEditing? 'border-l-orange-500':'border-l-green-600'}`}>
+              <Card key={id} className={'border-l-4 border-l-green-600'}>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base flex items-center justify-between gap-2">
-                    {isEditing ? (
-                      <Input
-                        value={editValues.name}
-                        onChange={e=> setEditValues(v=> ({...v, name: e.target.value}))}
-                        className="h-8 text-sm"
-                      />
-                    ) : (
                       <span className="truncate" title={name}>{name}</span>
-                    )}
-                    <Badge variant="outline" className="text-xs whitespace-nowrap">{isEditing? editValues.maxDays : maxDays}d/sem</Badge>
+                    <Badge variant="outline" className="text-xs whitespace-nowrap">{maxDays}d/sem</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Duração: {isEditing? editValues.durationDays : durationDays} dias</span>
+                    <span>Duração: {durationDays} dias</span>
                   </div>
-                  {isEditing && (
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-medium">Dias/sem</label>
-                        <Input type="number" value={editValues.maxDays} onChange={e=> setEditValues(v=> ({...v, maxDays: Number(e.target.value)}))} className="h-8 text-xs" />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-medium">Duração</label>
-                        <Input type="number" value={editValues.durationDays} onChange={e=> setEditValues(v=> ({...v, durationDays: Number(e.target.value)}))} className="h-8 text-xs" />
-                      </div>
-                    </div>
-                  )}
                   <div className="flex gap-2 pt-1">
-                    {isEditing ? (
-                      <>
-                        <Button size="sm" className="h-8 px-2 bg-green-600 hover:bg-green-700" onClick={saveEdit} disabled={createPlan.isPending}>Salvar</Button>
-                        <Button size="sm" variant="outline" className="h-8 px-2" onClick={cancelEdit}><X className="w-3 h-3"/></Button>
-                      </>
-                    ) : (
-                      <>
-                        <Button size="sm" variant="outline" className="h-8 px-2" onClick={()=> startEdit({id, name, maxDays, durationDays})}><Pencil className="w-3 h-3"/></Button>
-                        <ConfirmDeleteButton
-                          size="sm"
-                          variant="outline"
-                          className="h-8 px-2"
-                          title="Excluir Plano"
-                          description={`Tem certeza que deseja excluir o plano "${name}"?`}
-                          onConfirm={()=> deletePlan.mutate({path:{planId: id}, client: apiClient})}
-                          disabled={deletePlan.isPending}
-                        >
-                          <Trash2 className="w-3 h-3"/>
-                        </ConfirmDeleteButton>
-                      </>
-                    )}
+                      <ConfirmDeleteButton
+                        size="sm"
+                        variant="outline"
+                        className="h-8 px-2"
+                        title="Excluir Plano"
+                        description={`Tem certeza que deseja excluir o plano "${name}"?`}
+                        onConfirm={()=> deletePlan.mutate({path:{planId: id}, client: apiClient})}
+                        disabled={deletePlan.isPending}
+                      >
+                        <Trash2 className="w-3 h-3"/>
+                      </ConfirmDeleteButton>
                   </div>
                 </CardContent>
               </Card>
