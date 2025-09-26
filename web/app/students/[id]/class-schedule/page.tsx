@@ -23,6 +23,7 @@ export default function ClassSchedulePage() {
   const studentId = params.id as string
   const qc = useQueryClient()
   const [selectedSeries, setSelectedSeries] = useState<string[]>([])
+  const [initializedSelection, setInitializedSelection] = useState(false)
   const [openParticipantsFor, setOpenParticipantsFor] = useState<string | null>(null)
   const [openHistoryFor, setOpenHistoryFor] = useState<string | null>(null)
   const [participantsFilter, setParticipantsFilter] = useState<'ALL'|'ATTENDING'>('ALL')
@@ -69,13 +70,14 @@ export default function ClassSchedulePage() {
 
   const planDays = planQuery.data?.planMaxDays || 3
 
-  // Pre-select existing ATTENDING commitments
+  // Pre-select based on CURRENT active commitments (latest event per series) rather than raw history
   useEffect(()=> {
-    if(commitmentsQuery.data){
-      const attending = (commitmentsQuery.data).filter(c=> c.commitmentStatus==='ATTENDING').map(c=> c.sessionSeriesId!)
+    if(!initializedSelection && activeCommitmentsQuery.data){
+      const attending = (activeCommitmentsQuery.data).filter(c=> c.commitmentStatus==='ATTENDING').map(c=> c.sessionSeriesId!)
       setSelectedSeries(attending)
+      setInitializedSelection(true)
     }
-  }, [commitmentsQuery.data])
+  }, [activeCommitmentsQuery.data, initializedSelection])
 
   interface NormalizedSeries {
     id: string
@@ -188,17 +190,19 @@ export default function ClassSchedulePage() {
     if(!target) return
     try {
       await singleMutation.mutateAsync({ path:{ studentId, sessionSeriesId: seriesId}, body:{ commitmentStatus: currentlySelected? 'NOT_ATTENDING':'ATTENDING' }, client: apiClient })
-      await qc.invalidateQueries({queryKey:[getStudentCommitmentsQueryKey(studentIdQueryOptions)]})
-      await qc.invalidateQueries({queryKey:[getCurrentActiveCommitmentsQueryKey(studentIdQueryOptions)]})
+  await qc.invalidateQueries({queryKey: getStudentCommitmentsQueryKey(studentIdQueryOptions)})
+  await qc.invalidateQueries({queryKey: getCurrentActiveCommitmentsQueryKey(studentIdQueryOptions)})
       setSelectedSeries(prev=> currentlySelected? prev.filter(i=> i!==seriesId): [...prev, seriesId])
     } catch(e){/* ignore */}
   }
 
   const toggleSeries = (seriesId: string) => {
+    setInitializedSelection(true) // user is manually editing
     setSelectedSeries(prev=> prev.includes(seriesId)? prev.filter(i=> i!==seriesId): canSelectSeries(seriesId)? [...prev, seriesId]: prev)
   }
 
   const toggleDay = (weekday: number) => {
+    setInitializedSelection(true)
     const ids = normalizedSeries.filter(s => s.weekday === weekday).map(s => s.id)
     const anySelected = ids.some(id => selectedSeries.includes(id))
     if(anySelected){
@@ -210,20 +214,23 @@ export default function ClassSchedulePage() {
 
   const handleSave = async () => {
     // Determine adds/removals
-    const currentAttending = (commitmentsQuery.data||[])
-      .filter((c)=> c.commitmentStatus==='ATTENDING')
-      .map((c)=> c.sessionSeriesId)
+    // Determine latest active ATTENDING set from activeCommitmentsQuery (already filtered server-side)
+    const currentAttending = (activeCommitmentsQuery.data||[])
+      .filter(c=> c.commitmentStatus==='ATTENDING')
+      .map(c=> c.sessionSeriesId)
       .filter((id): id is string => !!id)
     const toAttend = selectedSeries.filter(id=> !currentAttending.includes(id))
     const toRemove = currentAttending.filter(id => !selectedSeries.includes(id))
     try {
-      if(toAttend.length){
-        await mutation.mutateAsync({path:{studentId}, body:{sessionSeriesIds: toAttend, commitmentStatus:'ATTENDING'}, client: apiClient})
-      }
+      // Process removals first (frees weekday slots) then additions
       if(toRemove.length){
         await mutation.mutateAsync({path:{studentId}, body:{sessionSeriesIds: toRemove, commitmentStatus:'NOT_ATTENDING'}, client: apiClient})
       }
-      await qc.invalidateQueries({queryKey:[getStudentCommitmentsQueryKey(studentIdQueryOptions)]})
+      if(toAttend.length){
+        await mutation.mutateAsync({path:{studentId}, body:{sessionSeriesIds: toAttend, commitmentStatus:'ATTENDING'}, client: apiClient})
+      }
+      await qc.invalidateQueries({queryKey: getStudentCommitmentsQueryKey(studentIdQueryOptions)})
+      await qc.invalidateQueries({queryKey: getCurrentActiveCommitmentsQueryKey(studentIdQueryOptions)})
       router.back()
     } catch(e){/* no-op */}
   }
@@ -334,7 +341,7 @@ export default function ClassSchedulePage() {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" className="flex-1" onClick={()=> router.back()}>Cancelar</Button>
-            <Button onClick={handleSave} className="flex-1 bg-green-600 hover:bg-green-700" disabled={mutation.isPending || selectedSeries.length===0}>{mutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin"/>}<Save className="w-4 h-4 mr-2"/> Salvar</Button>
+            <Button onClick={handleSave} className="flex-1 bg-green-600 hover:bg-green-700" disabled={mutation.isPending}>{mutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin"/>}<Save className="w-4 h-4 mr-2"/> Salvar</Button>
           </div>
         </div>
         {/* Participants Dialog */}

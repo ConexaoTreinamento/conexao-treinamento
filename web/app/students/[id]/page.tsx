@@ -136,9 +136,9 @@ export default function StudentProfilePage() {
       setAssignNotes('')
       setAssignPlanId('')
       await Promise.all([
-        qc.invalidateQueries({ queryKey: [getCurrentStudentPlanQueryKey(currentPlanOptions)] }),
-        qc.invalidateQueries({ queryKey: [getStudentPlanHistoryQueryKey(currentPlanOptions)] }),
-        qc.invalidateQueries({ queryKey: [getStudentCommitmentsQueryKey(currentPlanOptions)] }),
+        qc.invalidateQueries({ queryKey: getCurrentStudentPlanQueryKey(currentPlanOptions) }),
+        qc.invalidateQueries({ queryKey: getStudentPlanHistoryQueryKey(currentPlanOptions) }),
+        qc.invalidateQueries({ queryKey: getStudentCommitmentsQueryKey(currentPlanOptions) }),
       ])
     } catch (e:any) {
       toast({ title: 'Erro ao atribuir plano', description: e?.message || 'Tente novamente', variant: 'destructive' })

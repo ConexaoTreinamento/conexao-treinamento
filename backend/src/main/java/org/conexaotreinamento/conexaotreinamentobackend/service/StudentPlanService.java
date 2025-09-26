@@ -103,8 +103,8 @@ public class StudentPlanService {
                 "Plan not found or inactive"));
         
         // Validate assigning user exists
-        User assigningUser = userRepository.findById(assignedByUserId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assigning user not found"));
+//        User assigningUser = userRepository.findById(assignedByUserId)
+//            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assigning user not found"));
         
         LocalDate startDate = requestDTO.getStartDate();
         LocalDate endDate = startDate.plusDays(plan.getDurationDays());
@@ -120,7 +120,6 @@ public class StudentPlanService {
         
         // Create new assignment
         StudentPlanAssignment assignment = new StudentPlanAssignment();
-        assignment.setId(UUID.randomUUID());
         assignment.setStudentId(studentId);
         assignment.setPlanId(requestDTO.getPlanId());
         assignment.setStartDate(startDate);
@@ -129,7 +128,7 @@ public class StudentPlanService {
         assignment.setAssignmentNotes(requestDTO.getAssignmentNotes());
         
         StudentPlanAssignment savedAssignment = assignmentRepository.save(assignment);
-        return mapToAssignmentResponseDTO(savedAssignment, student, plan, assigningUser);
+        return mapToAssignmentResponseDTO(savedAssignment, student, plan, null);
     }
     
     @Transactional(readOnly = true)
