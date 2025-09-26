@@ -36,14 +36,22 @@ export default function SchedulePage() {
 
   // ===== Backend Integration =====
   const selectedIso = useMemo(()=> selectedDate.toISOString().slice(0,10), [selectedDate])
+
+  // Month boundaries (local time based)
+  const monthStart = useMemo(()=> new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1), [currentMonth])
+  const monthEnd = useMemo(()=> new Date(currentMonth.getFullYear(), currentMonth.getMonth()+1, 0), [currentMonth])
+  const monthStartIso = useMemo(()=> monthStart.toISOString().slice(0,10), [monthStart])
+  const monthEndIso = useMemo(()=> monthEnd.toISOString().slice(0,10), [monthEnd])
   interface SessionStudent { studentId?: string; studentName?: string; commitmentStatus?: string }
+  // Fetch entire visible month once; reuse locally for per-day filtering
   const scheduleQuery = useQuery({
-    ...getScheduleOptions({ client: apiClient, query: { startDate: selectedIso, endDate: selectedIso } }),
+    ...getScheduleOptions({ client: apiClient, query: { startDate: monthStartIso, endDate: monthEndIso } }),
     refetchInterval: 60_000,
   })
   const apiSessions = scheduleQuery.data?.sessions || []
-  const backendClasses = apiSessions.map(s => {
+  const backendClasses = useMemo(()=> apiSessions.map(s => {
     const students = (s.students||[]).map(st => ({ id: st.studentId || crypto.randomUUID(), name: st.studentName || 'Aluno', present: st.commitmentStatus === 'ATTENDING' }))
+    const date = s.startTime?.slice(0,10) || selectedIso
     return {
       id: s.sessionId || crypto.randomUUID(),
       name: s.seriesName || 'Aula',
@@ -52,11 +60,11 @@ export default function SchedulePage() {
       endTime: s.endTime?.slice(11,16) || '',
       currentStudents: students.length,
       students,
-      date: selectedIso
+      date
     }
-  })
+  }), [apiSessions, selectedIso])
   const classesForSelectedDate = useMemo(()=> {
-    return [...backendClasses, ...localSessions.filter(ls => ls.date === selectedIso)]
+    return [...backendClasses.filter(c => c.date === selectedIso), ...localSessions.filter(ls => ls.date === selectedIso)]
       .sort((a,b)=> (a.time||'').localeCompare(b.time||''))
   }, [backendClasses, localSessions, selectedIso])
 
@@ -68,20 +76,27 @@ export default function SchedulePage() {
 
   // We limit modal usage here to creating a one-off (standalone) scheduled session representation (only client-side until backend exposes endpoint)
 
-  // Generate dates for horizontal scroll based on current month (14 days around middle of month)
-  const getScrollDates = () => {
-    const dates = []
-    const year = currentMonth.getFullYear()
-    const month = currentMonth.getMonth()
-    const baseDate = new Date(year, month, 15)
-    for (let i = -7; i <= 6; i++) {
-      const date = new Date(baseDate)
-      date.setDate(baseDate.getDate() + i)
-      dates.push(date)
+  // Build all days for selected month
+  const monthDays = useMemo(()=> {
+    const days: Date[] = []
+    for(let d = new Date(monthStart); d <= monthEnd; d = new Date(d.getFullYear(), d.getMonth(), d.getDate()+1)) {
+      days.push(d)
     }
-    return dates
-  }
-  const scrollDates = getScrollDates()
+    return days
+  }, [monthStart, monthEnd])
+
+  // Aggregate counts per day
+  const daySessionCounts = useMemo(()=> {
+    const map: Record<string, { total:number; present:number; capacity:number }> = {}
+    backendClasses.forEach(cls => {
+      const key = cls.date
+      if(!map[key]) map[key] = { total:0, present:0, capacity:0 }
+      map[key].total += 1
+      map[key].present += cls.students.filter(s=> s.present).length
+      map[key].capacity += cls.currentStudents // placeholder; backend does not yet expose maxParticipants
+    })
+    return map
+  }, [backendClasses])
 
   const formatDayName = (date: Date) => {
     const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
@@ -136,8 +151,8 @@ export default function SchedulePage() {
   }
 
   const goToToday = () => { const today = new Date(); setSelectedDate(today); setCurrentMonth(today) }
-  const goToPreviousMonth = () => { const m = new Date(currentMonth); m.setMonth(m.getMonth()-1); setCurrentMonth(m); setSelectedDate(new Date(m.getFullYear(), m.getMonth(), 15)) }
-  const goToNextMonth = () => { const m = new Date(currentMonth); m.setMonth(m.getMonth()+1); setCurrentMonth(m); setSelectedDate(new Date(m.getFullYear(), m.getMonth(), 15)) }
+  const goToPreviousMonth = () => { const m = new Date(currentMonth); m.setMonth(m.getMonth()-1); setCurrentMonth(m); setSelectedDate(new Date(m.getFullYear(), m.getMonth(), 1)) }
+  const goToNextMonth = () => { const m = new Date(currentMonth); m.setMonth(m.getMonth()+1); setCurrentMonth(m); setSelectedDate(new Date(m.getFullYear(), m.getMonth(), 1)) }
   const formatMonthYear = (date: Date) => date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
 
   return (
@@ -174,13 +189,22 @@ export default function SchedulePage() {
           <p className="text-sm text-muted-foreground">{selectedDate.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</p>
         </div>
         <div className="w-full">
-          <div className="flex gap-2 overflow-x-auto pb-2 px-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-            {scrollDates.map((date, index) => (
-              <button key={index} className={`flex-shrink-0 flex flex-col items-center justify-center p-2 rounded-lg border transition-all min-w-[50px] h-[60px] ${isSelected(date) ? "bg-green-600 text-white border-green-600" : isToday(date) ? "border-green-600 text-green-600 bg-green-50 dark:bg-green-950" : "border-border hover:bg-muted"}`} onClick={() => setSelectedDate(date)}>
-                <span className="text-xs font-medium leading-none">{formatDayName(date)}</span>
-                <span className="text-lg font-bold leading-none mt-1">{date.getDate()}</span>
-              </button>
-            ))}
+          <div className="grid grid-cols-7 gap-2 pb-2">
+            {monthDays.map((date)=> {
+              const key = date.toISOString().slice(0,10)
+              const stats = daySessionCounts[key]
+              const hasSessions = !!stats
+              return (
+                <button key={key} onClick={()=> setSelectedDate(date)}
+                  className={`relative flex flex-col items-center justify-center p-2 rounded-lg border h-[70px] text-center transition-all group ${isSelected(date)?'bg-green-600 text-white border-green-600 shadow':'hover:bg-muted'} ${!isSelected(date)&& isToday(date)?'ring-1 ring-green-600':''}`}>                
+                  <span className="text-[10px] font-medium leading-none uppercase tracking-wide">{formatDayName(date)}</span>
+                  <span className="text-lg font-bold leading-none mt-1">{date.getDate()}</span>
+                  {hasSessions && (
+                    <span className={`mt-1 text-[10px] font-medium px-1 rounded ${isSelected(date)?'bg-green-700/70':'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'}`}>{stats.total} aula{stats.total>1?'s':''}</span>
+                  )}
+                  {!hasSessions && <span className="mt-1 text-[10px] text-muted-foreground">—</span>}
+                </button>
+              )})}
           </div>
         </div>
         <div className="space-y-3">
