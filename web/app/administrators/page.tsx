@@ -26,8 +26,7 @@ interface Administrator {
   email: string
   fullName: string
   active: boolean
-  createdAt: string
-  updatedAt: string
+  joinDate: string
 }
 
 interface FormData {
@@ -93,7 +92,8 @@ export default function AdministratorsPage() {
       const response = await fetch('http://localhost:8080/administrators', { headers: getAuthHeaders() })
       if (response.ok) {
         const data = await response.json()
-        setAdministrators(data.content || [])
+        // Backend retorna array diretamente, não um objeto com propriedade content
+        setAdministrators(Array.isArray(data) ? data : data.content || [])
       } else {
         console.error('Erro ao carregar administradores')
       }
@@ -483,7 +483,7 @@ export default function AdministratorsPage() {
                         </div>
 
                         <div className="text-xs text-muted-foreground mt-1">
-                          Criado em: {new Date(admin.createdAt).toLocaleDateString('pt-BR')}
+                          Criado em: {new Date(admin.joinDate).toLocaleDateString('pt-BR')}
                         </div>
                       </div>
                     </div>

@@ -15,8 +15,7 @@ interface AdministratorData {
   lastName: string
   email: string
   fullName: string
-  createdAt: string
-  updatedAt: string
+  joinDate: string
   active: boolean
 }
 
@@ -153,11 +152,7 @@ export default function AdministratorProfilePage() {
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Data de Criação</label>
-                <p className="text-sm">{new Date(administratorData.createdAt).toLocaleDateString("pt-BR")}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Última Atualização</label>
-                <p className="text-sm">{new Date(administratorData.updatedAt).toLocaleDateString("pt-BR")}</p>
+                <p className="text-sm">{new Date(administratorData.joinDate).toLocaleDateString("pt-BR")}</p>
               </div>
             </div>
           </CardContent>
