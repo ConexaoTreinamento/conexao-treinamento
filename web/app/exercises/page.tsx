@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -30,16 +30,18 @@ import {
 } from "@/components/ui/pagination"
 import CreateExerciseModal from "@/components/ui/create-exercise-modal"
 import EditExerciseModal from "@/components/ui/edit-exercise-modal"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
 import { Search, Plus, Activity, Edit, Trash2, X, Eye, RotateCcw, MoreVertical } from "lucide-react"
 import Layout from "@/components/layout"
 import { DeleteExerciseDialog } from "@/components/exercises/delete-exercise-dialog"
-import { useEffect } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
-import { getAuthHeaders } from "../administrators/page"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { findAllExercisesOptions, restoreExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { apiClient } from "@/lib/client"
+import { ExerciseResponseDto } from "@/lib/api-client"
 
+const getAuthHeaders = () => ({ 'Authorization': `Bearer ${localStorage.getItem('token')}` })
 
 interface Exercise {
   id: number
@@ -54,74 +56,30 @@ export default function ExercisesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isNewExerciseOpen, setIsNewExerciseOpen] = useState(false)
   const [isEditExerciseOpen, setIsEditExerciseOpen] = useState(false)
-  const [editingExercise, setEditingExercise] = useState<Exercise | null>(null)
+  const [editingExercise, setEditingExercise] = useState<ExerciseResponseDto | null>(null)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null)
+  const [exerciseToDelete, setExerciseToDelete] = useState<ExerciseResponseDto | null>(null)
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
-  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
+  const [selectedExercise, setSelectedExercise] = useState<ExerciseResponseDto | null>(null)
   const [showInactive, setShowInactive] = useState(false)
-  const [filters, setFilters] = useState({
-    category: "",
-    equipment: "",
-    difficulty: "",
-    muscle: "",
-  })
-  const [newExerciseForm, setNewExerciseForm] = useState({
-    name: "",
-    description: "",
-  })
 
-  const [exercises, setExercises] = useState<Exercise[]>([])
   const [totalPages, setTotalPages] = useState(0)
   const [currentPage, setCurrentPage] = useState(0)
-  const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+  const queryClient = useQueryClient();
 
-  const loadExercises = async () => {
-    try {
-      setIsLoading(true)
+  const { data: exercises, isLoading, error } = useQuery({
+    ...findAllExercisesOptions({
+      client: apiClient,
+      query: { pageable: { page: currentPage }, search: searchTerm, includeInactive: showInactive }
+    })
+  })
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-      const response = await fetch(`${apiUrl}/exercises?search=${searchTerm}&page=${currentPage}&includeInactive=${showInactive}`, {headers: getAuthHeaders()})
-
-      if (!response.ok) {
-        toast({
-          title: "Erro",
-          description: "Erro ao carregar exercícios. Tente novamente.",
-          variant: "destructive",
-        })
-        setExercises([])
-        setTotalPages(1)
-        return
-      }
-
-      const data = await response.json()
-
-      // Validação dos dados recebidos
-      if (data && typeof data === 'object') {
-        setExercises(Array.isArray(data.content) ? data.content : Array.isArray(data) ? data : [])
-        setTotalPages(data.page?.totalPages || 1)
-      } else {
-        setExercises([])
-        setTotalPages(1)
-      }
-    } catch (err) {
-      console.error('Erro ao carregar exercícios:', err)
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar exercícios. Tente novamente.",
-        variant: "destructive",
-      })
-      setExercises([])
-      setTotalPages(1)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const { mutateAsync: restoreExercise, isPending: isRestoring } = useMutation(restoreExerciseMutation());
 
   useEffect(() => {
-    loadExercises()
-  }, [currentPage, searchTerm, showInactive])
+    setTotalPages(exercises?.totalPages!)
+  }, [exercises])
 
   const handleSearchInputChange = (value: string) => {
     setSearchInput(value)
@@ -147,13 +105,6 @@ export default function ExercisesPage() {
     setCurrentPage(0)
   }
 
-  const filteredExercises = exercises.filter((exercise) => {
-    const matchesSearch =
-        exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (exercise.description || "").toLowerCase().includes(searchTerm.toLowerCase())
-      return matchesSearch
-  })
-
   const handlePageChange = (newPage: number) => {
     try {
       setCurrentPage(newPage)
@@ -167,116 +118,33 @@ export default function ExercisesPage() {
     }
   }
 
-
-  const handleCreateExercise = () => {
-    try {
-      if (newExerciseForm.name.trim()) {
-        const newExercise = {
-          id: Date.now(),
-          name: newExerciseForm.name.trim(),
-          description: newExerciseForm.description.trim() || "",
-        }
-        setExercises((prev) => [...prev, newExercise])
-        setNewExerciseForm({
-          name: "",
-          description: "",
-        })
-        setIsNewExerciseOpen(false)
-        toast({
-          title: "Sucesso",
-          description: "Exercício criado com sucesso!",
-        })
-      }
-    } catch (err) {
-      console.error('Erro ao criar exercício:', err)
-      toast({
-        title: "Erro",
-        description: "Erro ao criar exercício. Tente novamente.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleEditExercise = () => {
-    try {
-      if (editingExercise && editingExercise.name.trim()) {
-        setExercises((prev) =>
-          prev.map((ex) =>
-            ex.id === editingExercise.id
-              ? {
-                  ...ex,
-                  name: editingExercise.name.trim(),
-                  description: (editingExercise.description || "").trim(),
-                }
-              : ex,
-          ),
-        )
-        setEditingExercise(null)
-        setIsEditExerciseOpen(false)
-        toast({
-          title: "Sucesso",
-          description: "Exercício editado com sucesso!",
-        })
-      }
-    } catch (err) {
-      console.error('Erro ao editar exercício:', err)
-      toast({
-        title: "Erro",
-        description: "Erro ao editar exercício. Tente novamente.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const openDeleteDialog = (exercise: Exercise) => {
+  const openDeleteDialog = (exercise: ExerciseResponseDto) => {
     setExerciseToDelete(exercise)
     setIsDeleteDialogOpen(true)
   }
 
-  const openEditDialog = (exercise: Exercise) => {
+  const openEditDialog = (exercise: ExerciseResponseDto) => {
     setEditingExercise(exercise);
     setIsEditExerciseOpen(true);
   }
 
-    const clearFilters = () => {
-        setFilters({
-            category: "",
-            equipment: "",
-            difficulty: "",
-            muscle: "",
-        })
-    }
-
-    const hasActiveFilters = Object.values(filters).some((filter) => filter !== "")
-
-  const openDetailsDialog = (exercise: Exercise) => {
+  const openDetailsDialog = (exercise: ExerciseResponseDto) => {
     setSelectedExercise(exercise)
     setIsDetailsDialogOpen(true)
   }
 
-  const handleRestoreExercise = async (exercise: Exercise) => {
+  const handleRestoreExercise = async (exercise: ExerciseResponseDto) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-      const response = await fetch(`${apiUrl}/exercises/${exercise.id}/restore`, {
-        method: 'PATCH',
-        headers: getAuthHeaders(),
-      })
-
-      if (!response.ok) {
-        toast({
-          title: "Erro",
-          description: "Erro ao restaurar exercício. Tente novamente.",
-          variant: "destructive",
-        })
-        return
-      }
+      restoreExercise({ path: { id: String(exercise?.id) }, client: apiClient })
 
       toast({
         title: "Sucesso",
         description: "Exercício restaurado com sucesso!",
       })
 
-      loadExercises()
+      await queryClient.invalidateQueries({
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllExercises'
+      })
     } catch (err) {
       console.error('Erro ao restaurar exercício:', err)
       toast({
@@ -298,24 +166,22 @@ export default function ExercisesPage() {
           </div>
 
           <Button
-              className="bg-green-600 hover:bg-green-700"
-              onClick={() => setIsNewExerciseOpen(true)}
+            className="bg-green-600 hover:bg-green-700"
+            onClick={() => setIsNewExerciseOpen(true)}
           >
             <Plus className="w-4 h-4 mr-2" />
             Novo Exercício
           </Button>
 
           <CreateExerciseModal
-              isOpen={isNewExerciseOpen}
-              onClose={() => setIsNewExerciseOpen(false)}
-              onExerciseCreated={loadExercises}
+            isOpen={isNewExerciseOpen}
+            onClose={() => setIsNewExerciseOpen(false)}
           />
 
           <EditExerciseModal
-              isOpen={isEditExerciseOpen}
-              onClose={() => setIsEditExerciseOpen(false)}
-              exercise={editingExercise}
-              onExerciseUpdated={loadExercises}
+            isOpen={isEditExerciseOpen}
+            onClose={() => setIsEditExerciseOpen(false)}
+            exercise={editingExercise}
           />
 
         </div>
@@ -357,7 +223,7 @@ export default function ExercisesPage() {
 
         {/* Results Summary */}
         <div className="text-sm text-muted-foreground">
-          Página {currentPage + 1} de {totalPages} ({exercises.length} exercícios nesta página)
+          Página {currentPage + 1} de {totalPages} ({exercises?.totalElements} exercícios nesta página)
         </div>
 
 
@@ -381,130 +247,129 @@ export default function ExercisesPage() {
         {/* Exercises Grid */}
         {!isLoading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 gap-3">
-            {exercises.map((exercise) => (
-            <Card
-              key={exercise.id}
-              className={`hover:shadow-md transition-shadow h-36 flex flex-col cursor-pointer ${
-                exercise.deletedAt ? 'opacity-60 border-red-200 bg-red-50/30' : ''
-              }`}
-              onClick={() => openDetailsDialog(exercise)}
-            >
-              <CardHeader className="pb-3 pt-3 px-3 flex-shrink-0 min-h-16">
-                <div className="flex items-start justify-between h-full">
-                  <div className="flex-1 min-w-0 pr-2 overflow-hidden">
-                    <div className="flex items-center gap-2 mb-1">
-                      <CardTitle className="text-sm font-medium leading-tight break-words min-h-8 flex-1"
-                        style={{
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          wordBreak: 'break-word'
-                        }}
-                      >
-                        {exercise.name}
-                      </CardTitle>
-                      {exercise.deletedAt && (
-                        <Badge variant="destructive" className="text-xs px-1 py-0 flex-shrink-0">
-                          Excluído
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => e.stopPropagation()}
-                          className="h-6 w-6 hover:bg-black hover:text-white"
-                        >
-                          <MoreVertical className="w-3 h-3" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            openDetailsDialog(exercise)
+            {exercises?.content!.map((exercise) => (
+              <Card
+                key={exercise.id}
+                className={`hover:shadow-md transition-shadow h-36 flex flex-col cursor-pointer ${exercise.deletedAt ? 'opacity-60 border-red-200 bg-red-50/30' : ''
+                  }`}
+                onClick={() => openDetailsDialog(exercise)}
+              >
+                <CardHeader className="pb-3 pt-3 px-3 flex-shrink-0 min-h-16">
+                  <div className="flex items-start justify-between h-full">
+                    <div className="flex-1 min-w-0 pr-2 overflow-hidden">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CardTitle className="text-sm font-medium leading-tight break-words min-h-8 flex-1"
+                          style={{
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            wordBreak: 'break-word'
                           }}
-                          className="cursor-pointer"
                         >
-                          <Eye className="w-4 h-4 mr-2" />
-                          Ver detalhes
-                        </DropdownMenuItem>
-                        {!exercise.deletedAt ? (
-                          <>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                openEditDialog(exercise)
-                              }}
-                              className="cursor-pointer"
-                            >
-                              <Edit className="w-4 h-4 mr-2" />
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                openDeleteDialog(exercise)
-                              }}
-                              className="cursor-pointer text-red-600 focus:text-white focus:bg-red-600"
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Excluir
-                            </DropdownMenuItem>
-                          </>
-                        ) : (
+                          {exercise.name}
+                        </CardTitle>
+                        {exercise.deletedAt && (
+                          <Badge variant="destructive" className="text-xs px-1 py-0 flex-shrink-0">
+                            Excluído
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => e.stopPropagation()}
+                            className="h-6 w-6 hover:bg-black hover:text-white"
+                          >
+                            <MoreVertical className="w-3 h-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation()
-                              handleRestoreExercise(exercise)
+                              openDetailsDialog(exercise)
                             }}
-                            className="cursor-pointer text-green-600 focus:text-white focus:bg-green-600"
+                            className="cursor-pointer"
                           >
-                            <RotateCcw className="w-4 h-4 mr-2" />
-                            Restaurar
+                            <Eye className="w-4 h-4 mr-2" />
+                            Ver detalhes
                           </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="px-3 pb-3 flex-1 min-h-16">
-                <div className="h-full overflow-hidden">
-                  {exercise.description ? (
-                    <CardDescription
-                      className="text-sm leading-relaxed break-words"
-                      style={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        wordBreak: 'break-word',
-                        hyphens: 'auto'
-                      }}
-                    >
-                      {exercise.description}
-                    </CardDescription>
-                  ) : (
-                    <div className="text-xs text-muted-foreground italic">
-                      Sem descrição
+                          {!exercise.deletedAt ? (
+                            <>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  openEditDialog(exercise)
+                                }}
+                                className="cursor-pointer"
+                              >
+                                <Edit className="w-4 h-4 mr-2" />
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  openDeleteDialog(exercise)
+                                }}
+                                className="cursor-pointer text-red-600 focus:text-white focus:bg-red-600"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Excluir
+                              </DropdownMenuItem>
+                            </>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleRestoreExercise(exercise)
+                              }}
+                              className="cursor-pointer text-green-600 focus:text-white focus:bg-green-600"
+                            >
+                              <RotateCcw className="w-4 h-4 mr-2" />
+                              Restaurar
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                </CardHeader>
+                <CardContent className="px-3 pb-3 flex-1 min-h-16">
+                  <div className="h-full overflow-hidden">
+                    {exercise.description ? (
+                      <CardDescription
+                        className="text-sm leading-relaxed break-words"
+                        style={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          wordBreak: 'break-word',
+                          hyphens: 'auto'
+                        }}
+                      >
+                        {exercise.description}
+                      </CardDescription>
+                    ) : (
+                      <div className="text-xs text-muted-foreground italic">
+                        Sem descrição
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}
 
-        {!isLoading && exercises.length === 0 && (
+        {!isLoading && exercises?.content!.length === 0 && (
           <Card>
             <CardContent className="text-center py-12">
               <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -563,7 +428,7 @@ export default function ExercisesPage() {
                 >
                   Próxima
                 </PaginationNext>
-                </PaginationItem>
+              </PaginationItem>
             </PaginationContent>
           </Pagination>
         </div>
@@ -619,7 +484,6 @@ export default function ExercisesPage() {
           open={isDeleteDialogOpen}
           onOpenChange={setIsDeleteDialogOpen}
           exercise={exerciseToDelete}
-          onDelete={loadExercises}
         />
       </div>
     </Layout>

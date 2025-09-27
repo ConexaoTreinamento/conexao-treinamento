@@ -248,8 +248,7 @@ export default function ClassDetailPage() {
       setLoading(true)
       try {
         // In a real application, this would be an API call
-        // const response = await fetch(`/api/classes/${params.id}`)
-        // const data = await response.json()
+
 
         // For now, find the class from mock data
         const classId = parseInt(params.id as string)
