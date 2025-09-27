@@ -107,7 +107,7 @@ public class AdministratorService {
         Administrator savedAdministrator = administratorRepository.save(administrator);
 
         // Buscar o User para obter o createdAt e outros dados
-        User user = userRepository.findById(administrator.getUserId())
+        User user = userRepository.findByIdAndDeletedAtIsNull(administrator.getUserId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         
         return AdministratorResponseDTO.fromEntity(savedAdministrator, updatedUser.email(), user.isActive(), user.getCreatedAt(), user.getUpdatedAt());
@@ -118,7 +118,7 @@ public class AdministratorService {
         Administrator administrator = administratorRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Administrator not found"));
 
-        User user = userRepository.findById(administrator.getUserId())
+        User user = userRepository.findByIdAndDeletedAtIsNull(administrator.getUserId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         UserResponseDTO updatedUser = null;
@@ -146,7 +146,7 @@ public class AdministratorService {
 
         // Refresh user data if it was updated
         if (updatedUser != null) {
-            user = userRepository.findById(administrator.getUserId())
+            user = userRepository.findByIdAndDeletedAtIsNull(administrator.getUserId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         }
 
