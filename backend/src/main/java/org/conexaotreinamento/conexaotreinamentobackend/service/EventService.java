@@ -1,9 +1,10 @@
 package org.conexaotreinamento.conexaotreinamentobackend.service;
 
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.EventRequestDTO;
+import java.util.UUID;
+
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateEventRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchEventRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.UpdateEventRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.EventResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Event;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.EventRepository;
@@ -15,7 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.UUID;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +26,7 @@ public class EventService {
     private final EventRepository repository;
 
     @Transactional
-    public EventResponseDTO createEvent(EventRequestDTO request) {
+    public EventResponseDTO createEvent(CreateEventRequestDTO request) {
         Event e = new Event(request.name(), request.date());
         e.setStartTime(request.startTime());
         e.setEndTime(request.endTime());
@@ -61,7 +63,7 @@ public class EventService {
     }
 
     @Transactional
-    public EventResponseDTO updateEvent(UUID id, EventRequestDTO request) {
+    public EventResponseDTO updateEvent(UUID id, UpdateEventRequestDTO request) {
         Event e = repository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found"));
 
