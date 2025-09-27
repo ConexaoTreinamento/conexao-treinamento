@@ -15,6 +15,7 @@ import ConfirmDeleteButton from "@/components/confirm-delete-button";
 import { useToast } from "@/hooks/use-toast";
 import type { StudentResponseDto } from "@/lib/api-client/types.gen"
 import {useStudent} from "@/lib/hooks/student-queries";
+import { findEventByIdOptions } from "@/lib/api-client/@tanstack/react-query.gen"
 
 // Type definitions
 interface Evaluation {
@@ -85,6 +86,12 @@ export default function StudentProfilePage() {
     await restoreStudent({ path: { id: String(params.id) }, client: apiClient })
     toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
   }
+
+  const result = useQuery(findEventByIdOptions({ path: { id: String(params.id) }, client: apiClient }))
+
+  const mutation = useMutation(createEventMutation())
+
+  result.data
 
   const { data: studentData, isLoading, error } = useStudent({path: {id: String(params.id)}}, {enabled: Boolean(params.id)})
 
