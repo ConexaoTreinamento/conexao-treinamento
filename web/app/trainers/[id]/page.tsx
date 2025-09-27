@@ -26,11 +26,6 @@ export default function TrainerProfilePage() {
     ...findTrainerByIdOptions({
       path: { id: params.id as string },
       client: apiClient,
-      security: [{
-        type: "http",
-        scheme: "bearer",
-        in: "header",
-      },]
     })
   })
 
@@ -73,11 +68,6 @@ export default function TrainerProfilePage() {
         path: { id: String(updatedTrainer?.id) },
         body: updatedTrainer,
         client: apiClient,
-        security: [{
-          type: "http",
-          scheme: "bearer",
-          in: "header",
-        }],
       })
       await queryClient.invalidateQueries({
         predicate: function (q) {
