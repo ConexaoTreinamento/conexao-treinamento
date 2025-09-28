@@ -228,20 +228,47 @@ export default function ClassDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Class Info */}
           <Card>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Activity className="w-5 h-5" />
-                  Informações da Aula
-                  {session.canceled && <Badge variant="destructive" className="ml-2 text-[10px]">Cancelada</Badge>}
+            <CardHeader className="pb-4 sm:pb-5">
+              <div className="space-y-2">
+                <CardTitle className="text-base sm:text-lg flex items-center gap-2 min-w-0">
+                  <Activity className="w-5 h-5 flex-shrink-0" />
+                  <span className="truncate">Informações da Aula</span>
                 </CardTitle>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline" onClick={() => setIsEditClassOpen(true)} className="h-8 px-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {session.canceled && (
+                    <Badge variant="destructive" className="text-[10px] flex-shrink-0">Cancelada</Badge>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsEditClassOpen(true)}
+                    className="h-8 px-2"
+                    aria-label="Editar aula"
+                    title="Editar"
+                  >
                     <Edit className="w-3 h-3 mr-1" />
-                    Editar
+                    <span className="hidden sm:inline">Editar</span>
                   </Button>
-                  <Button size="sm" variant={session.canceled ? "default" : "destructive"} onClick={toggleCancel} disabled={mCancelRestore.isPending} className="h-8 px-2">
-                    {session.canceled ? (<><CheckCircle className="w-3 h-3 mr-1" />Restaurar</>) : (<><XCircle className="w-3 h-3 mr-1" />Cancelar</>)}
+                  <Button
+                    size="sm"
+                    variant={session.canceled ? "default" : "destructive"}
+                    onClick={toggleCancel}
+                    disabled={mCancelRestore.isPending}
+                    className="h-8 px-2"
+                    aria-label={session.canceled ? "Restaurar aula" : "Cancelar aula"}
+                    title={session.canceled ? "Restaurar" : "Cancelar"}
+                  >
+                    {session.canceled ? (
+                      <>
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        <span className="hidden sm:inline">Restaurar</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="w-3 h-3 mr-1" />
+                        <span className="hidden sm:inline">Cancelar</span>
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
@@ -306,6 +333,17 @@ export default function ClassDetailPage() {
                         <div className="flex-1 min-w-0">
                           <p className="font-medium truncate">{student.studentName || student.studentId}</p>
                         </div>
+                        {/* Remove on small screens next to the name */}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => removeStudent(student.studentId)}
+                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 flex-shrink-0 sm:hidden"
+                          aria-label="Remover aluno da aula"
+                          title="Remover"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
                       </div>
                       <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
                         <div className="flex gap-2 w-full sm:w-auto">
@@ -316,7 +354,7 @@ export default function ClassDetailPage() {
                             <Activity className="w-3 h-3 mr-1" />Exercícios
                           </Button>
                         </div>
-                        <Button size="sm" variant="ghost" onClick={() => removeStudent(student.studentId)} className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 flex-shrink-0">
+                        <Button size="sm" variant="ghost" onClick={() => removeStudent(student.studentId)} className="hidden sm:flex h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 flex-shrink-0" aria-label="Remover aluno da aula" title="Remover">
                           <X className="w-4 h-4" />
                         </Button>
                       </div>
