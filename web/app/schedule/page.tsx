@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import ClassModal from "@/components/class-modal"
 import { apiClient } from "@/lib/client"
-import { getScheduleOptions, findAllTrainersOptions, getSessionOptions, createOneOffMutation, getScheduleQueryKey } from "@/lib/api-client/@tanstack/react-query.gen"
+import { getScheduleOptions, findAllTrainersOptions, getSessionOptions, getScheduleQueryKey, createOneOffSessionMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { SessionResponseDto, StudentCommitmentResponseDto, TrainerResponseDto } from "@/lib/api-client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
@@ -110,7 +110,7 @@ export default function SchedulePage() {
   }, [trainersQuery.data])
 
   // Create one-off session (backend)
-  const mCreateOneOff = useMutation(createOneOffMutation())
+  const mCreateOneOff = useMutation(createOneOffSessionMutation())
 
   // Build all days for selected month
   const monthDays = useMemo(()=> {

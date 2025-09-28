@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ArrowLeft, Activity, Calendar, CheckCircle, Edit, Save, X, XCircle } from "lucide-react"
 import { apiClient } from "@/lib/client"
 import { Checkbox } from "@/components/ui/checkbox"
-import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updateTrainerMutation, updatePresenceMutation, removeParticipantMutation, addParticipantMutation, addExerciseMutation, updateExerciseMutation, removeExerciseMutation, findAll1Options, getScheduleQueryKey } from "@/lib/api-client/@tanstack/react-query.gen"
+import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updatePresenceMutation, getScheduleQueryKey, findAllExercisesOptions, updateRegisteredParticipantExerciseMutation, addRegisteredParticipantExerciseMutation, removeRegisteredParticipantExerciseMutation, updateSessionTrainerMutation, removeSessionParticipantMutation, addSessionParticipantMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { useStudents } from "@/lib/hooks/student-queries"
 
 interface ParticipantExercise { id?:string; exerciseId?:string; exerciseName?:string; setsCompleted?:number; repsCompleted?:number; weightCompleted?:number; exerciseNotes?:string; done?: boolean }
@@ -56,7 +56,7 @@ export default function ClassDetailPage() {
   useEffect(()=> { setStudentPage(0) }, [studentSearchTerm])
 
   // Exercises catalog (for exercise selection)
-  const exercisesQuery = useQuery({ ...findAll1Options({ client: apiClient, query: { pageable: { page:0, size: 200 } as any } }) })
+  const exercisesQuery = useQuery({ ...findAllExercisesOptions({ client: apiClient, query: { pageable: { page:0, size: 200 } } }) })
   const allExercises = ((exercisesQuery.data as any)?.content || []) as Array<{id?:string; name?:string}>
 
   // Local UI state derived from session
@@ -83,13 +83,13 @@ export default function ClassDetailPage() {
   }, [session])
 
   // Mutations
-  const mUpdateTrainer = useMutation(updateTrainerMutation())
+  const mUpdateTrainer = useMutation(updateSessionTrainerMutation())
   const mPresence = useMutation(updatePresenceMutation())
-  const mRemoveParticipant = useMutation(removeParticipantMutation())
-  const mAddParticipant = useMutation(addParticipantMutation())
-  const mAddExercise = useMutation(addExerciseMutation())
-  const mUpdateExercise = useMutation(updateExerciseMutation())
-  const mRemoveExercise = useMutation(removeExerciseMutation())
+  const mRemoveParticipant = useMutation(removeSessionParticipantMutation())
+  const mAddParticipant = useMutation(addSessionParticipantMutation())
+  const mAddExercise = useMutation(addRegisteredParticipantExerciseMutation())
+  const mUpdateExercise = useMutation(updateRegisteredParticipantExerciseMutation())
+  const mRemoveExercise = useMutation(removeRegisteredParticipantExerciseMutation())
 
   // Invalidate this session and also the schedule listing for the month containing this session's date
   const invalidateScheduleForSessionMonth = () => {
