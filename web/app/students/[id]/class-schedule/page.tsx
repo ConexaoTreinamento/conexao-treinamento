@@ -200,6 +200,12 @@ export default function ClassSchedulePage() {
       const monthStartIso = monthStart.toISOString().slice(0,10)
       const monthEndIso = monthEnd.toISOString().slice(0,10)
   await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: monthStartIso, endDate: monthEndIso } }) })
+    // Also invalidate recent 7-day window used by Student > Recent Classes
+    const fmt = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`
+    const todayLocal = new Date()
+    const recentEnd = fmt(todayLocal)
+    const recentStart = fmt(new Date(todayLocal.getFullYear(), todayLocal.getMonth(), todayLocal.getDate()-7))
+    await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: recentStart, endDate: recentEnd } }) })
       setSelectedSeries(prev=> currentlySelected? prev.filter(i=> i!==seriesId): [...prev, seriesId])
     } catch(e){/* ignore */}
   }
@@ -246,6 +252,12 @@ export default function ClassSchedulePage() {
       const monthStartIso = monthStart.toISOString().slice(0,10)
       const monthEndIso = monthEnd.toISOString().slice(0,10)
   await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: monthStartIso, endDate: monthEndIso } }) })
+    // Also invalidate recent 7-day window used by Student > Recent Classes
+    const fmt = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`
+    const todayLocal = new Date()
+    const recentEnd = fmt(todayLocal)
+    const recentStart = fmt(new Date(todayLocal.getFullYear(), todayLocal.getMonth(), todayLocal.getDate()-7))
+    await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: recentStart, endDate: recentEnd } }) })
       router.back()
     } catch(e){/* no-op */}
   }

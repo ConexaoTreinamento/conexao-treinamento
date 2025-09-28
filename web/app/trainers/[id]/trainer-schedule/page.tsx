@@ -309,7 +309,13 @@ export default function TrainerSchedulePage(){
       const monthEnd = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth()+1, 0))
       const monthStartIso = monthStart.toISOString().slice(0,10)
       const monthEndIso = monthEnd.toISOString().slice(0,10)
-      await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: monthStartIso, endDate: monthEndIso } }) })
+  await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: monthStartIso, endDate: monthEndIso } }) })
+  // Invalidate recent 7-day window as well (Student > Recent Classes)
+  const formatLocalDate = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`
+  const recentEnd = formatLocalDate(new Date())
+  const anchor = new Date()
+  const recentStart = formatLocalDate(new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate()-7))
+  await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: recentStart, endDate: recentEnd } }) })
       setBulkOpen(false)
     } finally {
       setSaving(false)

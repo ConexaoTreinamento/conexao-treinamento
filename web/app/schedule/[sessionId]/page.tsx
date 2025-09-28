@@ -102,6 +102,17 @@ export default function ClassDetailPage() {
     const monthStartIso = monthStart.toISOString().slice(0,10)
     const monthEndIso = monthEnd.toISOString().slice(0,10)
     qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: monthStartIso, endDate: monthEndIso } }) })
+    // Also invalidate the recent 7-day schedule window (Student > Recent Classes)
+    const today = new Date()
+    const formatLocalDate = (dt: Date) => {
+      const y = dt.getFullYear()
+      const m = String(dt.getMonth() + 1).padStart(2, '0')
+      const day = String(dt.getDate()).padStart(2, '0')
+      return `${y}-${m}-${day}`
+    }
+    const recentEnd = formatLocalDate(today)
+    const recentStart = formatLocalDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7))
+    qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: recentStart, endDate: recentEnd } }) })
   }
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: getSessionOptions({ client: apiClient, path:{ sessionId } }).queryKey })

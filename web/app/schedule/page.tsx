@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import ClassModal from "@/components/class-modal"
 import { apiClient } from "@/lib/client"
-import { getScheduleOptions, findAllTrainersOptions, getSessionOptions, createOneOffMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { getScheduleOptions, findAllTrainersOptions, getSessionOptions, createOneOffMutation, getScheduleQueryKey } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { SessionResponseDto, StudentCommitmentResponseDto, TrainerResponseDto } from "@/lib/api-client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
@@ -32,6 +32,14 @@ export default function SchedulePage() {
 
   // ===== Backend Integration =====
   const selectedIso = useMemo(()=> selectedDate.toISOString().slice(0,10), [selectedDate])
+
+  // Helper: format Date to LocalDate (yyyy-MM-dd) for backend LocalDate params
+  const formatLocalDate = (d: Date) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
 
   // Month boundaries (local time based)
   const monthStart = useMemo(()=> new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1), [currentMonth])
@@ -159,6 +167,11 @@ export default function SchedulePage() {
       } })
       // Invalidate schedule for the current month range
       await qc.invalidateQueries({ queryKey: getScheduleOptions({ client: apiClient, query: { startDate: monthStartIso, endDate: monthEndIso } }).queryKey })
+      // Also invalidate the recent 7-day schedule window (used by Student > Recent Classes)
+      const today = new Date()
+      const recentEnd = formatLocalDate(today)
+      const recentStart = formatLocalDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7))
+      await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: recentStart, endDate: recentEnd } }) })
       setIsNewClassOpen(false)
     } catch {
       // Fallback: create a local-only entry if backend fails
