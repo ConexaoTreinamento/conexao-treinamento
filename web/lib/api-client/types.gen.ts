@@ -230,6 +230,7 @@ export type ParticipantExercise = {
     repsCompleted?: number;
     weightCompleted?: number;
     exerciseNotes?: string;
+    done?: boolean;
     createdAt?: string;
     updatedAt?: string;
     deletedAt?: string;
@@ -336,6 +337,7 @@ export type ParticipantExerciseCreateRequestDto = {
     repsCompleted?: number;
     weightCompleted?: number;
     exerciseNotes?: string;
+    done?: boolean;
 };
 
 export type SessionCancelRequestDto = {
@@ -360,6 +362,7 @@ export type ParticipantExerciseResponseDto = {
     repsCompleted?: number;
     weightCompleted?: number;
     exerciseNotes?: string;
+    done?: boolean;
 };
 
 export type SessionResponseDto = {
@@ -471,6 +474,7 @@ export type ParticipantExerciseUpdateRequestDto = {
     repsCompleted?: number;
     weightCompleted?: number;
     exerciseNotes?: string;
+    done?: boolean;
 };
 
 export type PatchExerciseRequestDto = {
@@ -492,8 +496,8 @@ export type Pageable = {
 };
 
 export type PageUserResponseDto = {
-    totalPages?: number;
     totalElements?: number;
+    totalPages?: number;
     size?: number;
     content?: Array<UserResponseDto>;
     number?: number;
@@ -509,8 +513,8 @@ export type PageableObject = {
     offset?: number;
     sort?: SortObject;
     paged?: boolean;
-    pageNumber?: number;
     pageSize?: number;
+    pageNumber?: number;
     unpaged?: boolean;
 };
 
@@ -521,8 +525,8 @@ export type SortObject = {
 };
 
 export type PageStudentResponseDto = {
-    totalPages?: number;
     totalElements?: number;
+    totalPages?: number;
     size?: number;
     content?: Array<StudentResponseDto>;
     number?: number;
@@ -539,8 +543,8 @@ export type ScheduleResponseDto = {
 };
 
 export type PageExerciseResponseDto = {
-    totalPages?: number;
     totalElements?: number;
+    totalPages?: number;
     size?: number;
     content?: Array<ExerciseResponseDto>;
     number?: number;
@@ -569,8 +573,8 @@ export type TrainerSchedule = {
 };
 
 export type PageAdministratorResponseDto = {
-    totalPages?: number;
     totalElements?: number;
+    totalPages?: number;
     size?: number;
     content?: Array<AdministratorResponseDto>;
     number?: number;

@@ -12,10 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ArrowLeft, Activity, Calendar, CheckCircle, Edit, Save, X, XCircle } from "lucide-react"
 import { apiClient } from "@/lib/client"
+import { Checkbox } from "@/components/ui/checkbox"
 import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updateTrainerMutation, updatePresenceMutation, removeParticipantMutation, addParticipantMutation, addExerciseMutation, updateExerciseMutation, removeExerciseMutation, findAll1Options } from "@/lib/api-client/@tanstack/react-query.gen"
 import { useStudents } from "@/lib/hooks/student-queries"
 
-interface ParticipantExercise { id?:string; exerciseId?:string; exerciseName?:string; setsCompleted?:number; repsCompleted?:number; weightCompleted?:number; exerciseNotes?:string }
+interface ParticipantExercise { id?:string; exerciseId?:string; exerciseName?:string; setsCompleted?:number; repsCompleted?:number; weightCompleted?:number; exerciseNotes?:string; done?: boolean }
 interface SessionParticipant { studentId:string; studentName?:string; present?:boolean; commitmentStatus?: 'ATTENDING' | 'NOT_ATTENDING' | 'TENTATIVE'; participantExercises?:ParticipantExercise[] }
 interface SessionData { sessionId:string; seriesName:string; trainerId?:string; trainerName?:string; startTime?:string; endTime?:string; notes?:string; canceled?:boolean; students?:SessionParticipant[]; maxParticipants?:number }
 
@@ -144,6 +145,16 @@ export default function ClassDetailPage() {
   const deleteExercise = async (exerciseRecordId: string) => {
     if (!session) return
     await mRemoveExercise.mutateAsync({ client: apiClient, path:{ exerciseRecordId } })
+    invalidate()
+  }
+
+  const toggleExerciseDone = async (studentId: string, exerciseRecordId: string, currentDone: boolean) => {
+    // optimistic flip in local UI
+    setParticipants(prev => prev.map(p => p.studentId === studentId ? {
+      ...p,
+      participantExercises: (p.participantExercises || []).map(ex => ex.id === exerciseRecordId ? { ...ex, done: !currentDone } : ex)
+    } : p))
+    await mUpdateExercise.mutateAsync({ client: apiClient, path:{ exerciseRecordId }, body:{ done: !currentDone } })
     invalidate()
   }
 
@@ -277,10 +288,13 @@ export default function ClassDetailPage() {
                         <p className="text-sm font-medium">Exercícios registrados:</p>
                         <div className="space-y-1">
                           {(student.participantExercises||[]).map((ex) => (
-                            <div key={ex.id} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm">
-                              <span className="flex-1 min-w-0 truncate">
-                                {ex.exerciseName || ex.exerciseId} {ex.setsCompleted!=null && `- ${ex.setsCompleted}x${ex.repsCompleted ?? ''}`} {ex.weightCompleted!=null && `- ${ex.weightCompleted}kg`}
-                              </span>
+                            <div key={ex.id} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm gap-2">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <Checkbox checked={!!ex.done} onCheckedChange={(v)=> ex.id && toggleExerciseDone(student.studentId, ex.id, !!ex.done)} aria-label="Marcar como concluído" />
+                                <span className={`flex-1 min-w-0 truncate ${ex.done? 'line-through opacity-70':''}`}>
+                                  {ex.exerciseName || ex.exerciseId} {ex.setsCompleted!=null && `- ${ex.setsCompleted}x${ex.repsCompleted ?? ''}`} {ex.weightCompleted!=null && `- ${ex.weightCompleted}kg`}
+                                </span>
+                              </div>
                               <Button size="sm" variant="ghost" onClick={() => ex.id && deleteExercise(ex.id)} className="h-6 w-6 p-0 flex-shrink-0 ml-2 text-red-500">
                                 <X className="w-4 h-4" />
                               </Button>

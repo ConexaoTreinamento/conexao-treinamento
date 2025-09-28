@@ -367,6 +367,7 @@ public class ScheduleService {
         pe.setRepsCompleted(req.getRepsCompleted());
         pe.setWeightCompleted(req.getWeightCompleted());
         pe.setExerciseNotes(req.getExerciseNotes());
+    if (req.getDone() != null) pe.setDone(req.getDone());
         participantExerciseRepository.save(pe);
         session.setInstanceOverride(true);
         scheduledSessionRepository.save(session);
@@ -379,6 +380,7 @@ public class ScheduleService {
             if (req.getRepsCompleted() != null) pe.setRepsCompleted(req.getRepsCompleted());
             if (req.getWeightCompleted() != null) pe.setWeightCompleted(req.getWeightCompleted());
             if (req.getExerciseNotes() != null) pe.setExerciseNotes(req.getExerciseNotes());
+            if (req.getDone() != null) pe.setDone(req.getDone());
             pe.updateTimestamp();
             participantExerciseRepository.save(pe);
         });
@@ -564,14 +566,15 @@ public class ScheduleService {
                             ExerciseResponseDTO exerciseDto = ExerciseResponseDTO.fromEntity(participantExercise.getExercise());
                             exercises.add(exerciseDto);
                         }
-                        participantExerciseDtos.add(new ParticipantExerciseResponseDTO(
+            participantExerciseDtos.add(new ParticipantExerciseResponseDTO(
                                 participantExercise.getId(),
                                 participantExercise.getExerciseId(),
                                 participantExercise.getExercise() != null ? participantExercise.getExercise().getName() : null,
                                 participantExercise.getSetsCompleted(),
                                 participantExercise.getRepsCompleted(),
                                 participantExercise.getWeightCompleted(),
-                                participantExercise.getExerciseNotes()
+                participantExercise.getExerciseNotes(),
+                participantExercise.isDone()
                         ));
                     }
                 } else {
@@ -617,7 +620,8 @@ public class ScheduleService {
                                 participantExercise.getSetsCompleted(),
                                 participantExercise.getRepsCompleted(),
                                 participantExercise.getWeightCompleted(),
-                                participantExercise.getExerciseNotes()
+                                participantExercise.getExerciseNotes(),
+                                participantExercise.isDone()
                         ));
                     }
                     dto.setExercises(exercises);
