@@ -211,8 +211,37 @@ export default function TrainerSchedulePage(){
     setWeekConfig(defaults)
   }, [bulkOpen, data])
 
-  const toggleEnabled = (weekday:number) => setWeekConfig(prev=> prev.map(r=> r.weekday===weekday ? {...r, enabled:!r.enabled}: r))
-  const updateRow = (weekday:number, patch: Partial<WeekConfigRow>) => setWeekConfig(prev=> prev.map(r=> r.weekday===weekday ? {...r, ...patch}: r))
+  // When classDuration changes, auto-select newly generated slots for enabled days
+  useEffect(()=>{
+    setWeekConfig(prev=> prev.map(r=>{
+      if(!r.enabled) return r
+      const slots = genSlots(r)
+      const sel = new Set(r.selectedStarts)
+      let changed = false
+      for(const s of slots){ if(!sel.has(s)){ sel.add(s); changed = true } }
+      return changed ? {...r, selectedStarts: sel} : r
+    }))
+  }, [classDuration])
+
+  const toggleEnabled = (weekday:number) => setWeekConfig(prev=> prev.map(r=> {
+    if(r.weekday!==weekday) return r
+    const nextEnabled = !r.enabled
+    if(!nextEnabled) return {...r, enabled: nextEnabled}
+    // When enabling, select all generated slots by default
+    const slots = genSlots(r)
+    return {...r, enabled: nextEnabled, selectedStarts: new Set(slots)}
+  }))
+  const updateRow = (weekday:number, patch: Partial<WeekConfigRow>) => setWeekConfig(prev=> prev.map(r=> {
+    if(r.weekday!==weekday) return r
+    const next = {...r, ...patch}
+    // If shift times changed or classDuration changed elsewhere, auto-select new slots
+    const slots = genSlots(next)
+    // Keep existing selections and add any newly generated slots
+    const selected = new Set(next.selectedStarts)
+    let changed = false
+    for(const s of slots){ if(!selected.has(s)){ selected.add(s); changed = true } }
+    return changed ? {...next, selectedStarts: selected} : next
+  }))
 
   // Generate slots for UI preview
   const genSlots = (row: WeekConfigRow): string[] => {
@@ -307,32 +336,32 @@ export default function TrainerSchedulePage(){
                   <Settings2 className="w-4 h-4 mr-2"/> Configurar Semana
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl">
+              <DialogContent className="max-w-6xl">
                 <DialogHeader>
                   <DialogTitle>Configuração Semanal</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <label className="text-xs font-medium">Duração da aula (min)</label>
                     <Input type="number" className="h-8 w-24 text-xs" value={classDuration} onChange={e=> setClassDuration(Math.max(15, Number(e.target.value||"60")))} />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[65vh] overflow-y-auto pr-1 -mr-1">
+                  <div className="flex flex-col gap-2 max-h-[65vh] overflow-y-auto pr-1 -mr-1 md:max-h-none md:flex-row md:flex-nowrap md:overflow-x-auto md:overflow-y-visible md:px-1 md:gap-2">
                     {weekConfig.map(r=> (
-                      <div key={r.weekday} className={`rounded-md border p-2 ${!r.enabled? 'opacity-60':''}`}>
-                        <div className="flex items-center justify-between mb-2">
+                      <div key={r.weekday} className={`rounded-md border p-1.5 ${!r.enabled? 'opacity-60':''} flex-1 min-w-[100px] max-w-[360px] md:flex-[1_1_280px] lg:flex-[1_1_340px]`}>
+                        <div className="mb-2">
                           <div className="flex items-center gap-2">
                             <Checkbox checked={r.enabled} onCheckedChange={()=>toggleEnabled(r.weekday)} />
-                            <span className="text-sm font-medium">{weekdayLabel(r.weekday)}</span>
+                            <span className="text-[13px] font-medium">{weekdayLabel(r.weekday)}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                          <div className="mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground">
                             <Clock className="w-3 h-3"/>
                             <span>{r.shiftStart} – {r.shiftEnd}</span>
                           </div>
                         </div>
                         {r.enabled && (
                           <div className="space-y-2">
-                            <div className="grid grid-cols-3 gap-2 text-[11px]">
-                              <div className="col-span-1">
+                            <div className="grid grid-cols-1 gap-2 text-[11px]">
+                              <div>
                                 <label className="block text-[10px] font-medium mb-0.5">Série</label>
                                 <Input value={r.seriesName} onChange={e=>updateRow(r.weekday,{seriesName:e.target.value})} className="h-8 text-xs" placeholder="Treino" />
                               </div>
@@ -397,3 +426,4 @@ export default function TrainerSchedulePage(){
     </Layout>
   )
 }
+0
