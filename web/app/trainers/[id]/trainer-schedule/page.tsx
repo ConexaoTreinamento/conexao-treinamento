@@ -12,7 +12,7 @@ import {Checkbox} from "@/components/ui/checkbox"
 import {Save, Loader2, Calendar as CalendarIcon, Clock, RefreshCcw, Settings2} from "lucide-react"
 import {useQueryClient, useMutation} from "@tanstack/react-query"
 import {apiClient} from "@/lib/client"
-import {getSchedulesByTrainerOptions, getSchedulesByTrainerQueryKey, createScheduleMutation, updateScheduleMutation, deleteScheduleMutation, getAvailableSessionSeriesQueryKey} from "@/lib/api-client/@tanstack/react-query.gen"
+import {getSchedulesByTrainerOptions, getSchedulesByTrainerQueryKey, createScheduleMutation, updateScheduleMutation, deleteScheduleMutation, getAvailableSessionSeriesQueryKey, getScheduleQueryKey} from "@/lib/api-client/@tanstack/react-query.gen"
 import {useQuery} from "@tanstack/react-query"
 import {type TrainerScheduleResponseDto, type TrainerScheduleRequestDto} from "@/lib/api-client/types.gen"
 
@@ -97,9 +97,16 @@ export default function TrainerSchedulePage(){
           await createMutation.mutateAsync({body: payload})
         }
     }
-    // Invalidate impacted queries so UI reflects new availability
-    await qc.invalidateQueries({queryKey: getSchedulesByTrainerQueryKey({path:{trainerId}, client: apiClient})})
-    await qc.invalidateQueries({queryKey: getAvailableSessionSeriesQueryKey({client: apiClient})})
+  // Invalidate impacted queries so UI reflects new availability
+  await qc.invalidateQueries({queryKey: getSchedulesByTrainerQueryKey({path:{trainerId}, client: apiClient})})
+  await qc.invalidateQueries({queryKey: getAvailableSessionSeriesQueryKey({client: apiClient})})
+  // Also refresh the monthly schedule view
+  const today = new Date()
+  const monthStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1))
+  const monthEnd = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth()+1, 0))
+  const monthStartIso = monthStart.toISOString().slice(0,10)
+  const monthEndIso = monthEnd.toISOString().slice(0,10)
+  await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: monthStartIso, endDate: monthEndIso } }) })
       setBulkOpen(false)
     } finally {
       setSaving(false)

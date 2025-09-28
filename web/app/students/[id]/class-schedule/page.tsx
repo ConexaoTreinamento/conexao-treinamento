@@ -9,7 +9,7 @@ import { ArrowLeft, Save, Calendar, Clock, User, Loader2 } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
 import {apiClient} from "@/lib/client"
-import {getAvailableSessionSeriesOptions, getStudentCommitmentsOptions, bulkUpdateCommitmentsMutation, getCurrentStudentPlanOptions, getSessionSeriesCommitmentsOptions, getCommitmentHistoryOptions, getCurrentActiveCommitmentsOptions, updateCommitmentMutation, getStudentCommitmentsQueryKey, getCurrentActiveCommitmentsQueryKey} from "@/lib/api-client/@tanstack/react-query.gen"
+import {getAvailableSessionSeriesOptions, getStudentCommitmentsOptions, bulkUpdateCommitmentsMutation, getCurrentStudentPlanOptions, getSessionSeriesCommitmentsOptions, getCommitmentHistoryOptions, getCurrentActiveCommitmentsOptions, updateCommitmentMutation, getStudentCommitmentsQueryKey, getCurrentActiveCommitmentsQueryKey, getScheduleQueryKey} from "@/lib/api-client/@tanstack/react-query.gen"
 import {useQueryClient, useMutation, useQuery} from "@tanstack/react-query"
 import { TrainerSchedule, CommitmentDetailResponseDto } from "@/lib/api-client"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -190,8 +190,16 @@ export default function ClassSchedulePage() {
     if(!target) return
     try {
       await singleMutation.mutateAsync({ path:{ studentId, sessionSeriesId: seriesId}, body:{ commitmentStatus: currentlySelected? 'NOT_ATTENDING':'ATTENDING' }, client: apiClient })
-  await qc.invalidateQueries({queryKey: getStudentCommitmentsQueryKey(studentIdQueryOptions)})
-  await qc.invalidateQueries({queryKey: getCurrentActiveCommitmentsQueryKey(studentIdQueryOptions)})
+      // Invalidate student commitments & active commitments
+      await qc.invalidateQueries({queryKey: getStudentCommitmentsQueryKey(studentIdQueryOptions)})
+      await qc.invalidateQueries({queryKey: getCurrentActiveCommitmentsQueryKey(studentIdQueryOptions)})
+      // Also invalidate schedule views for the month containing today (broad refresh)
+      const today = new Date()
+      const monthStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1))
+      const monthEnd = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth()+1, 0))
+      const monthStartIso = monthStart.toISOString().slice(0,10)
+      const monthEndIso = monthEnd.toISOString().slice(0,10)
+  await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: monthStartIso, endDate: monthEndIso } }) })
       setSelectedSeries(prev=> currentlySelected? prev.filter(i=> i!==seriesId): [...prev, seriesId])
     } catch(e){/* ignore */}
   }
@@ -231,6 +239,13 @@ export default function ClassSchedulePage() {
       }
       await qc.invalidateQueries({queryKey: getStudentCommitmentsQueryKey(studentIdQueryOptions)})
       await qc.invalidateQueries({queryKey: getCurrentActiveCommitmentsQueryKey(studentIdQueryOptions)})
+      // Invalidate monthly schedule cache as commitments affect session rosters and occupancy
+      const today = new Date()
+      const monthStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1))
+      const monthEnd = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth()+1, 0))
+      const monthStartIso = monthStart.toISOString().slice(0,10)
+      const monthEndIso = monthEnd.toISOString().slice(0,10)
+  await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: monthStartIso, endDate: monthEndIso } }) })
       router.back()
     } catch(e){/* no-op */}
   }
