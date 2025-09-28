@@ -227,9 +227,20 @@ export default function TrainerSchedulePage(){
     if(r.weekday!==weekday) return r
     const nextEnabled = !r.enabled
     if(!nextEnabled) return {...r, enabled: nextEnabled}
-    // When enabling, select all generated slots by default
-    const slots = genSlots(r)
-    return {...r, enabled: nextEnabled, selectedStarts: new Set(slots)}
+    // When enabling, default window: 09:00–18:00, with lunch (12:00–13:00) excluded
+    const newShiftStart = '09:00'
+    const newShiftEnd = '18:00'
+    const tempRow = { ...r, shiftStart: newShiftStart, shiftEnd: newShiftEnd, enabled: true }
+    const allSlots = genSlots(tempRow)
+    // Exclude any slot overlapping 12:00–13:00 considering current classDuration
+    const lunchStart = '12:00'
+    const lunchEnd = '13:00'
+    const overlapsLunch = (start:string) => {
+      const end = addMinutesHHmm(start, classDuration)
+      return cmpHHmm(start, lunchEnd) < 0 && cmpHHmm(end, lunchStart) > 0
+    }
+    const filtered = allSlots.filter(s => !overlapsLunch(s))
+    return { ...r, enabled: nextEnabled, shiftStart: newShiftStart, shiftEnd: newShiftEnd, selectedStarts: new Set(filtered) }
   }))
   const updateRow = (weekday:number, patch: Partial<WeekConfigRow>) => setWeekConfig(prev=> prev.map(r=> {
     if(r.weekday!==weekday) return r
