@@ -17,7 +17,7 @@ import type { StudentResponseDto } from "@/lib/api-client/types.gen"
 import {useStudent} from "@/lib/hooks/student-queries";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { getCurrentStudentPlanOptions, getStudentPlanHistoryOptions, getAllPlansOptions, assignPlanToStudentMutation, getStudentCommitmentsOptions, getCurrentStudentPlanQueryKey, getStudentPlanHistoryQueryKey, getStudentCommitmentsQueryKey } from '@/lib/api-client/@tanstack/react-query.gen'
+import { getCurrentStudentPlanOptions, getStudentPlanHistoryOptions, getAllPlansOptions, assignPlanToStudentMutation, getStudentCommitmentsOptions, getCurrentStudentPlanQueryKey, getStudentPlanHistoryQueryKey, getStudentCommitmentsQueryKey, getScheduleOptions } from '@/lib/api-client/@tanstack/react-query.gen'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -97,6 +97,20 @@ export default function StudentProfilePage() {
   })
   const allPlansQuery = useQuery({
     ...getAllPlansOptions({ client: apiClient })
+  })
+
+  // Recent classes (last 7 days) schedule query — backend expects LocalDate (yyyy-MM-dd)
+  const now = new Date()
+  const formatLocalDate = (d: Date) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+  const endDateIso = formatLocalDate(now)
+  const startDateIso = formatLocalDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7))
+  const recentScheduleQuery = useQuery({
+    ...getScheduleOptions({ client: apiClient, query: { startDate: startDateIso, endDate: endDateIso } }),
   })
   const assignPlanMutation = useMutation(assignPlanToStudentMutation({ client: apiClient }))
   const [openAssignDialog, setOpenAssignDialog] = useState(false)
@@ -413,15 +427,39 @@ export default function StudentProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {studentMockData.recentClasses.map((classItem, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
-                        <div>
-                          <p className="font-medium text-sm">{classItem.name}</p>
-                          <p className="text-xs text-muted-foreground">{new Date(classItem.date).toLocaleDateString('pt-BR')} • {classItem.instructor}</p>
-                        </div>
-                        <Badge className={getAttendanceColor(classItem.status)}>{classItem.status}</Badge>
-                      </div>
-                    ))}
+                    {recentScheduleQuery.isLoading && (
+                      <p className="text-xs text-muted-foreground">Carregando aulas recentes...</p>
+                    )}
+                    {!recentScheduleQuery.isLoading && (
+                      (() => {
+                        const sessions = (recentScheduleQuery.data?.sessions ?? [])
+                          .filter((s) => s.students?.some((st) => st.studentId === studentId))
+                          .sort((a, b) => new Date(b.startTime || 0).getTime() - new Date(a.startTime || 0).getTime())
+                        if (sessions.length === 0) {
+                          return (
+                            <div className="text-center py-8">
+                              <Activity className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                              <p className="text-muted-foreground">Nenhuma aula recente</p>
+                            </div>
+                          )
+                        }
+                        return sessions.map((s) => {
+                          const participant = s.students?.find((st) => st.studentId === studentId)
+                          const wasPresent = participant?.present ?? (participant?.commitmentStatus === 'ATTENDING')
+                          const statusLabel = wasPresent ? 'Presente' : 'Ausente'
+                          return (
+                            <div key={`${s.sessionId}`} className="flex items-center justify-between p-3 rounded-lg border">
+                              <div>
+                                <p className="font-medium text-sm">{s.seriesName || 'Aula'}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {s.startTime ? new Date(s.startTime).toLocaleDateString('pt-BR') : '—'} • {s.trainerName || 'Instrutor'}</p>
+                              </div>
+                              <Badge className={getAttendanceColor(statusLabel)}>{statusLabel}</Badge>
+                            </div>
+                          )
+                        })
+                      })()
+                    )}
                   </div>
                 </CardContent>
               </Card>
