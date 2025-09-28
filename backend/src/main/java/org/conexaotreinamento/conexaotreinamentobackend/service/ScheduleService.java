@@ -56,6 +56,8 @@ public class ScheduleService {
         // Create a map to track which dates/schedules already have instances
         Map<String, ScheduledSession> existingSessionMap = existingSessions.stream()
             .collect(Collectors.toMap(ScheduledSession::getSessionId, s -> s));
+        // Track generated (virtual) sessionIds to avoid duplicates when also adding standalone instances
+        Set<String> generatedSessionIds = new HashSet<>();
         
         // Generate sessions from trainer schedules for all dates in range
         for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
@@ -73,6 +75,7 @@ public class ScheduleService {
                 
                 // Check if there's an existing session instance
                 ScheduledSession existingSession = existingSessionMap.get(sessionId);
+                generatedSessionIds.add(sessionId);
                 
                 // Create session DTO
                 SessionResponseDTO session = new SessionResponseDTO();
@@ -105,6 +108,31 @@ public class ScheduleService {
                 session.setPresentCount((int) studentCommitments.stream().filter(sc -> sc.getCommitmentStatus() == CommitmentStatus.ATTENDING).count());
                 
                 sessions.add(session);
+            }
+        }
+        // Also include any standalone persisted sessions that do not correspond to a generated schedule (e.g., one-offs)
+        for (ScheduledSession ss : existingSessions) {
+            if (!generatedSessionIds.contains(ss.getSessionId())) {
+                LocalDate date = ss.getStartTime().toLocalDate();
+                Instant sessionInstant = date.atStartOfDay().toInstant(ZoneOffset.UTC);
+                SessionResponseDTO dto = new SessionResponseDTO();
+                dto.setSessionId(ss.getSessionId());
+                dto.setTrainerId(ss.getTrainerId());
+                if (ss.getTrainerId() != null) {
+                    trainerRepository.findById(ss.getTrainerId()).ifPresent(t -> dto.setTrainerName(t.getName()));
+                }
+                dto.setStartTime(ss.getStartTime());
+                dto.setEndTime(ss.getEndTime());
+                dto.setSeriesName(ss.getSeriesName());
+                dto.setNotes(ss.getNotes());
+                dto.setInstanceOverride(ss.isInstanceOverride());
+                dto.setCanceled(ss.isCanceled());
+                dto.setMaxParticipants(ss.getMaxParticipants());
+                // For standalone one-offs (null series id), commitments come only from instance participants
+                List<StudentCommitmentResponseDTO> students = getStudentCommitmentsForSession(ss.getSessionSeriesId(), sessionInstant, ss);
+                dto.setStudents(students);
+                dto.setPresentCount((int) students.stream().filter(sc -> sc.getCommitmentStatus() == CommitmentStatus.ATTENDING).count());
+                sessions.add(dto);
             }
         }
         
