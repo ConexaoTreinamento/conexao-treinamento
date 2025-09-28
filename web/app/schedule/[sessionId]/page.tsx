@@ -17,7 +17,7 @@ import { apiClient } from "@/lib/client"
 import { getSessionOptions, getScheduleOptions, updateSessionMutation, updateTrainerMutation, cancelOrRestoreMutation, addParticipantMutation, updatePresenceMutation, removeParticipantMutation, addExerciseMutation, updateExerciseMutation, removeExerciseMutation, findAllTrainersOptions } from "@/lib/api-client/@tanstack/react-query.gen"
 
 interface ParticipantExercise { id?:string; exerciseId?:string; exerciseName?:string; setsCompleted?:number; repsCompleted?:number; weightCompleted?:number; exerciseNotes?:string }
-interface SessionParticipant { studentId:string; studentName?:string; present?:boolean; participantExercises?:ParticipantExercise[] }
+interface SessionParticipant { studentId:string; studentName?:string; present?:boolean; commitmentStatus?: 'ATTENDING' | 'NOT_ATTENDING' | 'TENTATIVE'; participantExercises?:ParticipantExercise[] }
 interface SessionData { sessionId:string; seriesName:string; trainerId?:string; trainerName?:string; startTime?:string; endTime?:string; notes?:string; canceled?:boolean; students?:SessionParticipant[]; maxParticipants?:number; presentCount?:number }
 
 export default function SessionDetailPage(){
@@ -74,8 +74,8 @@ export default function SessionDetailPage(){
   setTrainer(session.trainerId || 'none')
       setParticipants((session.students||[]).map(s=> ({
         ...s,
-        // honor backend-provided presence if available
-        present: s.present ?? false,
+        // honor backend-provided presence if available; otherwise default to present when commitment is ATTENDING
+        present: s.present ?? (s.commitmentStatus === 'ATTENDING'),
         // carry over any participant-specific exercise records
         participantExercises: s.participantExercises || []
       })))

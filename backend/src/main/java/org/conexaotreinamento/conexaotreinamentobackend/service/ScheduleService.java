@@ -511,31 +511,42 @@ public class ScheduleService {
             if (existingSession != null) {
                 List<SessionParticipant> participants = sessionParticipantRepository
                         .findByScheduledSession_IdAndStudentIdAndActiveTrue(existingSession.getId(), commitment.getStudentId());
-                for (SessionParticipant participant : participants) {
-                    // attendance flags
-                    dto.setPresent(participant.isPresent());
-                    if (participant.getAttendanceNotes() != null) {
-                        dto.setAttendanceNotes(participant.getAttendanceNotes());
-                    }
-                    if (participant.getExercises() != null) {
-                        for (ParticipantExercise participantExercise : participant.getExercises()) {
-                            if (participantExercise.isActive()) {
-                                if (participantExercise.getExercise() != null) {
-                                    ExerciseResponseDTO exerciseDto = ExerciseResponseDTO.fromEntity(participantExercise.getExercise());
-                                    exercises.add(exerciseDto);
-                                }
-                                participantExerciseDtos.add(new ParticipantExerciseResponseDTO(
-                                        participantExercise.getId(),
-                                        participantExercise.getExerciseId(),
-                                        participantExercise.getExercise() != null ? participantExercise.getExercise().getName() : null,
-                                        participantExercise.getSetsCompleted(),
-                                        participantExercise.getRepsCompleted(),
-                                        participantExercise.getWeightCompleted(),
-                                        participantExercise.getExerciseNotes()
-                                ));
+                if (!participants.isEmpty()) {
+                    // If we have a persisted participant record, use its presence/notes and fetch exercises explicitly
+                    for (SessionParticipant participant : participants) {
+                        dto.setPresent(participant.isPresent());
+                        if (participant.getAttendanceNotes() != null) {
+                            dto.setAttendanceNotes(participant.getAttendanceNotes());
+                        }
+                        // Fetch participant exercises via repository to avoid lazy init issues
+                        List<ParticipantExercise> pes = participantExerciseRepository
+                                .findActiveWithExerciseBySessionParticipantId(participant.getId());
+                        for (ParticipantExercise participantExercise : pes) {
+                            if (participantExercise.getExercise() != null) {
+                                ExerciseResponseDTO exerciseDto = ExerciseResponseDTO.fromEntity(participantExercise.getExercise());
+                                exercises.add(exerciseDto);
                             }
+                            participantExerciseDtos.add(new ParticipantExerciseResponseDTO(
+                                    participantExercise.getId(),
+                                    participantExercise.getExerciseId(),
+                                    participantExercise.getExercise() != null ? participantExercise.getExercise().getName() : null,
+                                    participantExercise.getSetsCompleted(),
+                                    participantExercise.getRepsCompleted(),
+                                    participantExercise.getWeightCompleted(),
+                                    participantExercise.getExerciseNotes()
+                            ));
                         }
                     }
+                } else {
+                    // No persisted participant override yet. Default presence to true when committed ATTENDING
+                    if (commitment.getCommitmentStatus() == CommitmentStatus.ATTENDING) {
+                        dto.setPresent(true);
+                    }
+                }
+            } else {
+                // Virtual (non-materialized) session: default presence to true for committed ATTENDING
+                if (commitment.getCommitmentStatus() == CommitmentStatus.ATTENDING) {
+                    dto.setPresent(true);
                 }
             }
             dto.setExercises(exercises);
