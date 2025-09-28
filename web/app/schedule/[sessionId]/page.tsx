@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ArrowLeft, Activity, Calendar, CheckCircle, Edit, Save, X, XCircle } from "lucide-react"
 import { apiClient } from "@/lib/client"
 import { Checkbox } from "@/components/ui/checkbox"
-import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updateTrainerMutation, updatePresenceMutation, removeParticipantMutation, addParticipantMutation, addExerciseMutation, updateExerciseMutation, removeExerciseMutation, findAll1Options } from "@/lib/api-client/@tanstack/react-query.gen"
+import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updateTrainerMutation, updatePresenceMutation, removeParticipantMutation, addParticipantMutation, addExerciseMutation, updateExerciseMutation, removeExerciseMutation, findAll1Options, getScheduleQueryKey } from "@/lib/api-client/@tanstack/react-query.gen"
 import { useStudents } from "@/lib/hooks/student-queries"
 
 interface ParticipantExercise { id?:string; exerciseId?:string; exerciseName?:string; setsCompleted?:number; repsCompleted?:number; weightCompleted?:number; exerciseNotes?:string; done?: boolean }
@@ -91,7 +91,22 @@ export default function ClassDetailPage() {
   const mUpdateExercise = useMutation(updateExerciseMutation())
   const mRemoveExercise = useMutation(removeExerciseMutation())
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: getSessionOptions({ client: apiClient, path:{ sessionId } }).queryKey })
+  // Invalidate this session and also the schedule listing for the month containing this session's date
+  const invalidateScheduleForSessionMonth = () => {
+    const dateIso = (session?.startTime?.slice(0,10)) || hintedDate || undefined
+    if(!dateIso) return
+    // Compute month boundaries in UTC to match schedule query usage
+    const d = new Date(dateIso)
+    const monthStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1))
+    const monthEnd = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth()+1, 0))
+    const monthStartIso = monthStart.toISOString().slice(0,10)
+    const monthEndIso = monthEnd.toISOString().slice(0,10)
+    qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: monthStartIso, endDate: monthEndIso } }) })
+  }
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: getSessionOptions({ client: apiClient, path:{ sessionId } }).queryKey })
+    invalidateScheduleForSessionMonth()
+  }
 
   const togglePresence = async (sid: string) => {
     if (!session) return
