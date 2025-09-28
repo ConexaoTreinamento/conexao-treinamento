@@ -1,304 +1,398 @@
 "use client"
 
+import { useEffect, useMemo, useState } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Layout from "@/components/layout"
-import { useEffect, useState } from "react"
-import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, CheckCircle, Trash2, XCircle } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ArrowLeft, Activity, Calendar, CheckCircle, Edit, Save, X, XCircle } from "lucide-react"
 import { apiClient } from "@/lib/client"
-import { getSessionOptions, getScheduleOptions, updateSessionMutation, updateTrainerMutation, cancelOrRestoreMutation, addParticipantMutation, updatePresenceMutation, removeParticipantMutation, addExerciseMutation, updateExerciseMutation, removeExerciseMutation, findAllTrainersOptions } from "@/lib/api-client/@tanstack/react-query.gen"
+import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updateTrainerMutation, updatePresenceMutation, removeParticipantMutation, addParticipantMutation, addExerciseMutation, updateExerciseMutation, removeExerciseMutation, findAllOptions, findAll1Options } from "@/lib/api-client/@tanstack/react-query.gen"
 
 interface ParticipantExercise { id?:string; exerciseId?:string; exerciseName?:string; setsCompleted?:number; repsCompleted?:number; weightCompleted?:number; exerciseNotes?:string }
 interface SessionParticipant { studentId:string; studentName?:string; present?:boolean; commitmentStatus?: 'ATTENDING' | 'NOT_ATTENDING' | 'TENTATIVE'; participantExercises?:ParticipantExercise[] }
-interface SessionData { sessionId:string; seriesName:string; trainerId?:string; trainerName?:string; startTime?:string; endTime?:string; notes?:string; canceled?:boolean; students?:SessionParticipant[]; maxParticipants?:number; presentCount?:number }
+interface SessionData { sessionId:string; seriesName:string; trainerId?:string; trainerName?:string; startTime?:string; endTime?:string; notes?:string; canceled?:boolean; students?:SessionParticipant[]; maxParticipants?:number }
 
-export default function SessionDetailPage(){
+export default function ClassDetailPage() {
   const { sessionId: rawSessionId } = useParams<{sessionId:string}>()
   const router = useRouter()
   const searchParams = useSearchParams()
   const qc = useQueryClient()
 
-  const sessionId = (() => {
-    // Normalize: decode once if it looks encoded to avoid %25 double-encoding later
-    try {
-      return rawSessionId?.includes('%') ? decodeURIComponent(rawSessionId) : rawSessionId
-    } catch {
-      return rawSessionId
-    }
-  })()
+  const sessionId = useMemo(() => {
+    try { return rawSessionId?.includes('%') ? decodeURIComponent(rawSessionId) : rawSessionId } catch { return rawSessionId }
+  }, [rawSessionId])
 
-  // Queries
-  // Hints from URL to assist backend disambiguation (e.g., trainer-based resolution)
+  // Query session (with hint for trainer if provided)
   const hintedDate = searchParams.get('date') || undefined
-  const hintedStart = searchParams.get('start') || undefined // HHmm
   const hintedTrainer = searchParams.get('trainer') || undefined
-  const sessionQuery = useQuery({ ...getSessionOptions({ client: apiClient, path:{ sessionId }, query: { trainerId: hintedTrainer } }) })
-  // Fallback: if session not found but we have hints, try to find canonical by date/start/trainer
-  const needFallback = !!hintedDate && (!!sessionQuery.error || !sessionQuery.data)
-  const dayLookupQuery = useQuery({
-    ...getScheduleOptions({ client: apiClient, query: { startDate: hintedDate || '', endDate: hintedDate || '' } }),
-    enabled: needFallback
-  })
-  const trainersQuery = useQuery({ ...findAllTrainersOptions({ client: apiClient }) })
-
-  // Local UI state
-  const [notes, setNotes] = useState('')
-  const [trainer, setTrainer] = useState('none')
-  const [adding, setAdding] = useState(false)
-  const [newStudentId, setNewStudentId] = useState('')
-  const [participants, setParticipants] = useState<SessionParticipant[]>([])
-  const [expandedStudent, setExpandedStudent] = useState<string | null>(null)
-  const [addingExerciseFor, setAddingExerciseFor] = useState<string | null>(null)
-  const [newExercise, setNewExercise] = useState({ exerciseId:'', setsCompleted:'', repsCompleted:'', weightCompleted:'', exerciseNotes:'' })
-  const [editingExercise, setEditingExercise] = useState<{ studentId:string; exercise:ParticipantExercise } | null>(null)
-
+  const sessionQuery = useQuery({ ...getSessionOptions({ client: apiClient, path:{ sessionId }, query:{ trainerId: hintedTrainer } }) })
   const session = sessionQuery.data as SessionData | undefined
 
-  useEffect(()=>{
-    if(session){
-      // If backend canonical sessionId differs (e.g., series renamed), redirect to canonical URL
-      if(session.sessionId && session.sessionId !== sessionId){
-        const dateParam = session.startTime ? session.startTime.slice(0,10) : undefined
-        const qs = dateParam ? `?date=${dateParam}` : ''
-        router.replace(`/schedule/${session.sessionId}${qs}`)
-      }
-      setNotes(session.notes || '')
-  setTrainer(session.trainerId || 'none')
-      setParticipants((session.students||[]).map(s=> ({
+  // Fallback lookup by day (when deep-linking with only date hints)
+  const needFallback = !!hintedDate && (!!sessionQuery.error || !sessionQuery.data)
+  useQuery({
+    ...getScheduleOptions({ client: apiClient, query:{ startDate: hintedDate || '', endDate: hintedDate || '' } }),
+    enabled: needFallback
+  })
+
+  // Trainers
+  const trainersQuery = useQuery({ ...findAllTrainersOptions({ client: apiClient }) })
+
+  // Students (for Add Student dialog)
+  const studentsQuery = useQuery({ ...findAllOptions({ client: apiClient, query: { pageable: { page: 0, size: 200 } as any } }) })
+  const allStudents = ((studentsQuery.data as any)?.content || []) as Array<{id?:string; name?:string; surname?:string}>
+
+  // Exercises catalog (for exercise selection)
+  const exercisesQuery = useQuery({ ...findAll1Options({ client: apiClient, query: { pageable: { page:0, size: 200 } as any } }) })
+  const allExercises = ((exercisesQuery.data as any)?.content || []) as Array<{id?:string; name?:string}>
+
+  // Local UI state derived from session
+  const [participants, setParticipants] = useState<SessionParticipant[]>([])
+  const [isExerciseOpen, setIsExerciseOpen] = useState(false)
+  const [isEditClassOpen, setIsEditClassOpen] = useState(false)
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
+  const [studentSearchTerm, setStudentSearchTerm] = useState("")
+  const [exerciseSearchTerm, setExerciseSearchTerm] = useState("")
+  const [editTrainer, setEditTrainer] = useState<string>("none")
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+
+  // Exercise form
+  const [exerciseForm, setExerciseForm] = useState({ exerciseId: "", sets: "", reps: "", weight: "", notes: "" })
+
+  useEffect(() => {
+  if (session) {
+      setParticipants((session.students||[]).map(s => ({
         ...s,
-        // honor backend-provided presence if available; otherwise default to present when commitment is ATTENDING
         present: s.present ?? (s.commitmentStatus === 'ATTENDING'),
-        // carry over any participant-specific exercise records
         participantExercises: s.participantExercises || []
       })))
+      setEditTrainer(session.trainerId || "none")
     }
   }, [session])
 
   // Mutations
-  const mUpdateNotes = useMutation(updateSessionMutation())
   const mUpdateTrainer = useMutation(updateTrainerMutation())
-  const mCancel = useMutation(cancelOrRestoreMutation())
-  const mAddParticipant = useMutation(addParticipantMutation())
   const mPresence = useMutation(updatePresenceMutation())
   const mRemoveParticipant = useMutation(removeParticipantMutation())
+  const mAddParticipant = useMutation(addParticipantMutation())
   const mAddExercise = useMutation(addExerciseMutation())
   const mUpdateExercise = useMutation(updateExerciseMutation())
   const mRemoveExercise = useMutation(removeExerciseMutation())
 
   const invalidate = () => qc.invalidateQueries({ queryKey: getSessionOptions({ client: apiClient, path:{ sessionId } }).queryKey })
 
-  const updateNotes = async ()=> {
-    if(!session) return
-    await mUpdateNotes.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId }, body:{ notes } })
+  const togglePresence = async (sid: string) => {
+    if (!session) return
+    const current = participants.find(p=> p.studentId===sid)?.present ?? true
+    setParticipants(prev => prev.map(p => p.studentId===sid ? ({ ...p, present: !current }) : p))
+    await mPresence.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId, studentId: sid }, body:{ present: !current } })
     invalidate()
   }
-  const updateTrainer = async (tid:string)=> {
-    if(!session) return
-    setTrainer(tid)
-    const mapped = (tid === 'none' || !tid) ? undefined : tid
-    await mUpdateTrainer.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId }, body:{ trainerId: mapped } })
-    invalidate()
-  }
-  const toggleCancel = async ()=> {
-    if(!session) return
-    await mCancel.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId }, body:{ cancel: !session.canceled } })
-    invalidate()
-  }
-  const togglePresence = async (sid:string, present:boolean)=> {
-    if(!session) return
-    setParticipants(p=> p.map(sp=> sp.studentId===sid? {...sp, present}: sp))
-    await mPresence.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId, studentId: sid }, body:{ present } })
-    invalidate()
-  }
-  const addStudent = async ()=> {
-    if(!session || !newStudentId) return
-    await mAddParticipant.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId }, body:{ studentId: newStudentId } })
-    setNewStudentId('')
-    setAdding(false)
-    invalidate()
-  }
-  const removeStudent = async (sid:string)=> {
-    if(!session) return
+
+  const removeStudent = async (sid: string) => {
+    if (!session) return
     await mRemoveParticipant.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId, studentId: sid } })
     invalidate()
   }
 
-  // Exercise helpers
-  const startAddExercise = (studentId:string)=> {
-    setAddingExerciseFor(studentId)
-    setNewExercise({ exerciseId:'', setsCompleted:'', repsCompleted:'', weightCompleted:'', exerciseNotes:'' })
-  }
-  const submitAddExercise = async ()=> {
-    if(!session || !addingExerciseFor) return
-    const body:any = {}
-    if(newExercise.exerciseId) body.exerciseId = newExercise.exerciseId
-    if(newExercise.setsCompleted) body.setsCompleted = parseInt(newExercise.setsCompleted)
-    if(newExercise.repsCompleted) body.repsCompleted = parseInt(newExercise.repsCompleted)
-    if(newExercise.weightCompleted) body.weightCompleted = parseFloat(newExercise.weightCompleted)
-    if(newExercise.exerciseNotes) body.exerciseNotes = newExercise.exerciseNotes
-    await mAddExercise.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId, studentId: addingExerciseFor }, body })
-    setAddingExerciseFor(null)
-    invalidate()
-  }
-  const startEditExercise = (studentId:string, ex:ParticipantExercise)=> {
-    setEditingExercise({ studentId, exercise: ex })
-    setNewExercise({
-      exerciseId: ex.exerciseId || '',
-      setsCompleted: ex.setsCompleted?.toString() || '',
-      repsCompleted: ex.repsCompleted?.toString() || '',
-      weightCompleted: ex.weightCompleted?.toString() || '',
-      exerciseNotes: ex.exerciseNotes || ''
-    })
-  }
-  const submitEditExercise = async ()=> {
-    if(!session || !editingExercise || !editingExercise.exercise.id) return
-    const body:any = {}
-    if(newExercise.exerciseId) body.exerciseId = newExercise.exerciseId
-    body.setsCompleted = newExercise.setsCompleted? parseInt(newExercise.setsCompleted): undefined
-    body.repsCompleted = newExercise.repsCompleted? parseInt(newExercise.repsCompleted): undefined
-    body.weightCompleted = newExercise.weightCompleted? parseFloat(newExercise.weightCompleted): undefined
-    body.exerciseNotes = newExercise.exerciseNotes || undefined
-  await mUpdateExercise.mutateAsync({ client: apiClient, path:{ exerciseRecordId: editingExercise.exercise.id! }, body })
-    setEditingExercise(null)
-    invalidate()
-  }
-  const removeExercise = async (participantExerciseId:string)=> {
-    if(!session) return
-  await mRemoveExercise.mutateAsync({ client: apiClient, path:{ exerciseRecordId: participantExerciseId } })
+  const addStudent = async (studentId: string) => {
+    if (!session) return
+    await mAddParticipant.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId }, body:{ studentId } })
     invalidate()
   }
 
-  if(sessionQuery.isLoading) return <Layout><div className="p-6 text-sm">Carregando...</div></Layout>
-  if(sessionQuery.error || !session) return <Layout><div className="p-6 text-sm text-red-600">Sessão não encontrada.</div></Layout>
+  const openExerciseDialog = (sid: string) => {
+    setSelectedStudentId(sid)
+    setIsExerciseOpen(true)
+    setExerciseForm({ exerciseId: "", sets: "", reps: "", weight: "", notes: "" })
+  }
 
-  return <Layout>
-    <div className="space-y-5">
-      <div className="flex items-center gap-3 flex-wrap">
-        <Button size="icon" variant="ghost" onClick={()=> router.back()}><ArrowLeft className="w-4 h-4"/></Button>
-        <h1 className="text-xl font-bold flex items-center gap-3">Aula • {session.seriesName}{session.canceled && <Badge variant="destructive">Cancelada</Badge>}</h1>
-        <div className="ml-auto flex gap-2">
-          <Button size="sm" variant={session.canceled? 'secondary':'outline'} onClick={toggleCancel}>{session.canceled? 'Restaurar':'Cancelar'}</Button>
+  const submitExercise = async () => {
+    if (!session || !selectedStudentId || !exerciseForm.exerciseId) return
+    await mAddExercise.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId, studentId: selectedStudentId }, body:{
+      exerciseId: exerciseForm.exerciseId,
+      setsCompleted: exerciseForm.sets ? parseInt(exerciseForm.sets) : undefined,
+      repsCompleted: exerciseForm.reps ? parseInt(exerciseForm.reps) : undefined,
+      weightCompleted: exerciseForm.weight ? parseFloat(exerciseForm.weight) : undefined,
+      exerciseNotes: exerciseForm.notes || undefined
+    } })
+    setIsExerciseOpen(false)
+    setSelectedStudentId(null)
+    invalidate()
+  }
+
+  const deleteExercise = async (exerciseRecordId: string) => {
+    if (!session) return
+    await mRemoveExercise.mutateAsync({ client: apiClient, path:{ exerciseRecordId } })
+    invalidate()
+  }
+
+  const saveTrainer = async () => {
+    if (!session) return
+    const mapped = editTrainer === 'none' ? undefined : editTrainer
+    await mUpdateTrainer.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId }, body:{ trainerId: mapped } })
+    setIsEditClassOpen(false)
+    invalidate()
+  }
+
+  if (sessionQuery.isLoading) return <Layout><div className="p-6 text-sm">Carregando...</div></Layout>
+  if (sessionQuery.error || !session) return <Layout><div className="p-6 text-sm text-red-600">Sessão não encontrada.</div></Layout>
+
+  // Derived
+  const filteredStudents = participants.filter(s => ((s.studentName || s.studentId || '').toLowerCase()).includes(studentSearchTerm.toLowerCase()))
+  const excludedIds = new Set((participants||[]).map(p => p.studentId))
+  const availableStudents = (allStudents||[]).filter(s => !!s.id && !excludedIds.has(s.id!))
+  const filteredExercises = (allExercises||[]).filter(e => (e.name || '').toLowerCase().includes(exerciseSearchTerm.toLowerCase()))
+
+  return (
+    <Layout>
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold truncate">{session.seriesName}</h1>
+            <p className="text-sm text-muted-foreground">
+              {session.startTime?.slice(0,10)} • {session.startTime?.slice(11,16)}{session.endTime? ` - ${session.endTime.slice(11,16)}`:''}
+            </p>
+          </div>
         </div>
-      </div>
-      <div className="grid gap-5 md:grid-cols-2">
-        <Card className="order-1">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Instrutor</CardTitle></CardHeader>
-          <CardContent className="space-y-2">
-            <Select value={trainer} onValueChange={updateTrainer}>
-              <SelectTrigger className="w-full h-9"><SelectValue placeholder="Selecione"/></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">(Sem instrutor)</SelectItem>
-                {(trainersQuery.data||[])
-                  .filter((t:any)=> !!t?.id)
-                  .map((t:any)=> <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <p className="text-[10px] text-muted-foreground">Alterar o instrutor afeta apenas esta instância.</p>
-          </CardContent>
-        </Card>
-        <Card className="order-3 md:order-2">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Anotações</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <Textarea value={notes} onChange={e=> setNotes(e.target.value)} placeholder="Observações" className="min-h-[120px]" />
-            <div className="flex justify-end">
-                  <Button size="sm" onClick={updateNotes} disabled={mUpdateNotes.isPending} className="bg-green-600 hover:bg-green-700">{mUpdateNotes.isPending? 'Salvando...':'Salvar'}</Button>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="order-2 md:order-3 md:row-span-2">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold flex items-center gap-2">Participantes <Badge variant="outline" className="font-normal text-[10px] ml-2">{participants.length} / {session.maxParticipants || participants.length}</Badge></CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-              {participants.map(p=> (
-                <div key={p.studentId} className="rounded border bg-background/60">
-                  <div className="flex items-center gap-2 p-2">
-                    <Checkbox checked={p.present} onCheckedChange={v=> togglePresence(p.studentId, !!v)} />
-                    <button className="flex-1 min-w-0 text-left text-sm font-medium truncate" onClick={()=> setExpandedStudent(s=> s===p.studentId? null: p.studentId)}>
-                      {p.studentName || p.studentId}
-                    </button>
-                    <Badge variant={p.present? 'default':'outline'} className="text-[10px] flex items-center gap-1">{p.present? <CheckCircle className="w-3 h-3"/>:<XCircle className="w-3 h-3"/>}{p.present? 'Presente':'Ausente'}</Badge>
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={()=> removeStudent(p.studentId)}><Trash2 className="w-4 h-4"/></Button>
-                  </div>
-                  {expandedStudent===p.studentId && (
-                    <div className="px-3 pb-3 space-y-2 border-t pt-2 bg-muted/30">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[11px] font-semibold text-muted-foreground uppercase">Exercícios</span>
-                        <Button size="sm" variant="outline" className="h-6 text-[10px] px-2" onClick={()=> startAddExercise(p.studentId)}>Adicionar</Button>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Class Info */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Activity className="w-5 h-5" />
+                  Informações da Aula
+                </CardTitle>
+                <Button size="sm" variant="outline" onClick={() => setIsEditClassOpen(true)} className="h-8 px-2">
+                  <Edit className="w-3 h-3 mr-1" />
+                  Editar
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                  <span>{session.startTime?.slice(0,10)} • {session.startTime?.slice(11,16)}{session.endTime? ` - ${session.endTime.slice(11,16)}`:''}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="w-4 h-4 inline-flex items-center justify-center rounded-full bg-muted text-[10px]">P</span>
+                  <span>
+                    {(participants||[]).length}/{session.maxParticipants || participants.length} alunos
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="w-4 h-4 inline-flex items-center justify-center rounded-full bg-muted text-[10px]">I</span>
+                  <span>{session.trainerName || '—'}</span>
+                </div>
+              </div>
+
+              {session.notes && (
+                <div className="pt-3 border-t">
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{session.notes}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Students List */}
+          <Card className="lg:col-span-2">
+            <CardHeader className="pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Activity className="w-5 h-5" />
+                  Alunos da Aula
+                </CardTitle>
+                <Button variant="outline" size="sm" onClick={() => setAddDialogOpen(true)}>Adicionar Aluno</Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {/* Search Input */}
+                <div>
+                  <Label htmlFor="studentSearch">Buscar Aluno</Label>
+                  <Input id="studentSearch" placeholder="Digite o nome do aluno..." value={studentSearchTerm} onChange={(e)=> setStudentSearchTerm(e.target.value)} />
+                </div>
+
+                {filteredStudents.map((student) => (
+                  <div key={student.studentId} className="p-3 rounded-lg border bg-card">
+                    <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${student.participantExercises?.length ? 'mb-3' : ''}`}>
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
+                            {(student.studentName||'')
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{student.studentName || student.studentId}</p>
+                        </div>
                       </div>
-                      <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                        {(p.participantExercises||[]).map(ex=> (
-                          <div key={ex.id} className="p-2 rounded border bg-background/70 text-[11px] space-y-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="font-medium truncate flex-1">{ex.exerciseName || ex.exerciseId || 'Exercício'}</div>
-                              <div className="flex gap-1">
-                                <Button size="sm" variant="ghost" className="h-6 px-2" onClick={()=> startEditExercise(p.studentId, ex)}>Editar</Button>
-                                <Button size="sm" variant="ghost" className="h-6 px-2" onClick={()=> ex.id && removeExercise(ex.id)} disabled={mRemoveExercise.isPending}>Remover</Button>
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-3 gap-2 text-[10px]">
-                              {ex.setsCompleted!=null && <span>Series: {ex.setsCompleted}</span>}
-                              {ex.repsCompleted!=null && <span>Reps: {ex.repsCompleted}</span>}
-                              {ex.weightCompleted!=null && <span>Carga: {ex.weightCompleted}</span>}
-                            </div>
-                            {ex.exerciseNotes && <p className="text-[10px] text-muted-foreground whitespace-pre-wrap">{ex.exerciseNotes}</p>}
-                          </div>
-                        ))}
-                        {(p.participantExercises||[]).length===0 && <p className="text-[10px] text-muted-foreground">Nenhum exercício.</p>}
+                      <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                        <div className="flex gap-2 w-full sm:w-auto">
+                          <Button size="sm" variant={student.present ? "default" : "outline"} onClick={() => togglePresence(student.studentId)} className={`w-full sm:w-28 h-8 text-xs ${student.present? 'bg-green-600 hover:bg-green-700' : 'border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950'}`}>
+                            {student.present ? (<><CheckCircle className="w-3 h-3 mr-1" />Presente</>) : (<><XCircle className="w-3 h-3 mr-1" />Ausente</>)}
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => openExerciseDialog(student.studentId)} className="w-full sm:w-28 h-8 text-xs">
+                            <Activity className="w-3 h-3 mr-1" />Exercícios
+                          </Button>
+                        </div>
+                        <Button size="sm" variant="ghost" onClick={() => removeStudent(student.studentId)} className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 flex-shrink-0">
+                          <X className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
-                  )}
-                </div>
-              ))}
-              {participants.length===0 && <p className="text-xs text-muted-foreground">Sem participantes.</p>}
-            </div>
-            <Dialog open={adding} onOpenChange={setAdding}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="w-full justify-center">Adicionar Aluno</Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-sm">
-                <DialogHeader><DialogTitle>Adicionar Aluno</DialogTitle></DialogHeader>
-                <div className="space-y-3">
-                  <Input placeholder="ID do aluno" value={newStudentId} onChange={e=> setNewStudentId(e.target.value)} />
-                  <Button size="sm" onClick={addStudent} disabled={!newStudentId}>Adicionar</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </CardContent>
-        </Card>
-        {(addingExerciseFor || editingExercise) && (
-          <Card className="order-4 border-dashed">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">{editingExercise? 'Editar Exercício':'Novo Exercício'}</CardTitle></CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div className="grid grid-cols-2 gap-3">
-                <Input placeholder="ID Exercício" value={newExercise.exerciseId} onChange={e=> setNewExercise(s=> ({...s, exerciseId:e.target.value}))} />
-                <Input placeholder="Séries" value={newExercise.setsCompleted} onChange={e=> setNewExercise(s=> ({...s, setsCompleted:e.target.value}))} />
-                <Input placeholder="Reps" value={newExercise.repsCompleted} onChange={e=> setNewExercise(s=> ({...s, repsCompleted:e.target.value}))} />
-                <Input placeholder="Carga" value={newExercise.weightCompleted} onChange={e=> setNewExercise(s=> ({...s, weightCompleted:e.target.value}))} />
-              </div>
-              <Textarea placeholder="Notas" value={newExercise.exerciseNotes} onChange={e=> setNewExercise(s=> ({...s, exerciseNotes:e.target.value}))} className="min-h-[80px]" />
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" size="sm" onClick={()=> { setAddingExerciseFor(null); setEditingExercise(null) }}>Cancelar</Button>
-                {editingExercise? (
-                  <Button size="sm" onClick={submitEditExercise} disabled={mUpdateExercise.isPending}>{mUpdateExercise.isPending? 'Salvando...':'Salvar'}</Button>
-                ): (
-                  <Button size="sm" onClick={submitAddExercise} disabled={mAddExercise.isPending || !newExercise.exerciseId}>{mAddExercise.isPending? 'Adicionando...':'Adicionar'}</Button>
+
+                    {/* Student Exercises */}
+                    {(student.participantExercises||[]).length > 0 && (
+                      <div className="space-y-2 pt-2 border-t">
+                        <p className="text-sm font-medium">Exercícios registrados:</p>
+                        <div className="space-y-1">
+                          {(student.participantExercises||[]).map((ex) => (
+                            <div key={ex.id} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm">
+                              <span className="flex-1 min-w-0 truncate">
+                                {ex.exerciseName || ex.exerciseId} {ex.setsCompleted!=null && `- ${ex.setsCompleted}x${ex.repsCompleted ?? ''}`} {ex.weightCompleted!=null && `- ${ex.weightCompleted}kg`}
+                              </span>
+                              <Button size="sm" variant="ghost" onClick={() => ex.id && deleteExercise(ex.id)} className="h-6 w-6 p-0 flex-shrink-0 ml-2 text-red-500">
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {filteredStudents.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <p className="text-sm">Nenhum aluno encontrado.</p>
+                    <Button variant="outline" size="sm" onClick={() => setStudentSearchTerm("") } className="mt-2">Limpar filtro</Button>
+                  </div>
                 )}
               </div>
             </CardContent>
           </Card>
-        )}
+        </div>
+
+        {/* Add Student Dialog */}
+        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Adicionar Aluno</DialogTitle>
+              <DialogDescription>Selecione um aluno para adicionar à aula</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Input placeholder="Buscar aluno..." value={studentSearchTerm} onChange={(e)=> setStudentSearchTerm(e.target.value)} />
+              </div>
+              <div className="max-h-60 overflow-y-auto space-y-2">
+                {(availableStudents||[]).filter(s=> (`${s.name||''} ${s.surname||''}`.trim().toLowerCase().includes(studentSearchTerm.toLowerCase())) ).map(s => (
+                  <div key={s.id} className="flex items-center justify-between p-2 rounded border hover:bg-muted/50 cursor-pointer" onClick={() => s.id && addStudent(s.id)}>
+                    <span className="text-sm">{`${s.name||''} ${s.surname||''}`.trim()}</span>
+                    <Button size="sm" variant="outline">Adicionar</Button>
+                  </div>
+                ))}
+                {availableStudents.length===0 && <div className="text-center text-sm text-muted-foreground py-6">Nenhum aluno disponível.</div>}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={()=> setAddDialogOpen(false)}>Fechar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Exercise Dialog */}
+        <Dialog open={isExerciseOpen} onOpenChange={setIsExerciseOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Registrar Exercício</DialogTitle>
+              <DialogDescription>Adicione um exercício realizado pelo aluno</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label>Exercício</Label>
+                <div className="space-y-2">
+                  <Input placeholder="Buscar exercício..." value={exerciseSearchTerm} onChange={(e)=> setExerciseSearchTerm(e.target.value)} />
+                  <div className="max-h-48 overflow-y-auto border rounded">
+                    {(filteredExercises||[]).map(ex => (
+                      <div key={ex.id} className={`px-3 py-2 text-sm cursor-pointer hover:bg-muted ${exerciseForm.exerciseId===ex.id? 'bg-muted':''}`} onClick={()=> setExerciseForm(prev => ({ ...prev, exerciseId: ex.id || '' }))}>
+                        {ex.name}
+                      </div>
+                    ))}
+                    {filteredExercises.length===0 && <div className="text-center text-sm text-muted-foreground py-4">Nenhum exercício encontrado</div>}
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label>Séries</Label>
+                  <Input type="number" value={exerciseForm.sets} onChange={(e)=> setExerciseForm(prev => ({ ...prev, sets: e.target.value }))} placeholder="3" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Repetições</Label>
+                  <Input type="number" value={exerciseForm.reps} onChange={(e)=> setExerciseForm(prev => ({ ...prev, reps: e.target.value }))} placeholder="10" />
+                </div>
+                <div className="space-y-1">
+                  <Label>Carga (kg)</Label>
+                  <Input type="number" step="0.5" value={exerciseForm.weight} onChange={(e)=> setExerciseForm(prev => ({ ...prev, weight: e.target.value }))} placeholder="20" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label>Notas</Label>
+                <Input value={exerciseForm.notes} onChange={(e)=> setExerciseForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="Observações do exercício..." />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={()=> setIsExerciseOpen(false)}>Cancelar</Button>
+              <Button onClick={submitExercise} className="bg-green-600 hover:bg-green-700"><Save className="w-4 h-4 mr-2" />Registrar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Class Dialog (Trainer) */}
+        <Dialog open={isEditClassOpen} onOpenChange={setIsEditClassOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Editar Aula</DialogTitle>
+              <DialogDescription>Atualize o instrutor desta instância da aula</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label>Instrutor</Label>
+                <Select value={editTrainer} onValueChange={setEditTrainer}>
+                  <SelectTrigger className="w-full h-9"><SelectValue placeholder="Selecione"/></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">(Sem instrutor)</SelectItem>
+                    {(trainersQuery.data||[])
+                      .filter((t:any)=> !!t?.id)
+                      .map((t:any)=> <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={()=> setIsEditClassOpen(false)}>Cancelar</Button>
+              <Button onClick={saveTrainer} className="bg-green-600 hover:bg-green-700"><Save className="w-4 h-4 mr-2" />Salvar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
       </div>
-      <div className="flex justify-end pt-2">
-        <Button variant="outline" onClick={()=> router.back()}>Voltar</Button>
-      </div>
-    </div>
-  </Layout>
+    </Layout>
+  )
 }

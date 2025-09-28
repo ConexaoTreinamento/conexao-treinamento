@@ -61,6 +61,8 @@ export default function SchedulePage() {
       trainerId: s.trainerId,
       time: s.startTime?.slice(11,16) || '',
       endTime: s.endTime?.slice(11,16) || '',
+      canceled: !!s.canceled,
+      overridden: !!s.instanceOverride,
       currentStudents: students.length,
       students,
       date
@@ -192,7 +194,7 @@ export default function SchedulePage() {
           <p className="text-sm text-muted-foreground">{selectedDate.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</p>
         </div>
         <div className="w-full">
-          <div className="mx-auto w-full max-w-[100vw] md:max-w-[860px]">
+          <div className="mx-auto w-full max-w-[90vw] md:max-w-[1500px]">
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin" style={{scrollbarWidth:'thin'}}>
             {monthDays.map((date)=> {
               const key = date.toISOString().slice(0,10)
@@ -232,11 +234,15 @@ export default function SchedulePage() {
             </Card>
           ) : (
             classesForSelectedDate.map(classItem => (
-              <Card key={classItem.id} className="hover:shadow-sm transition-shadow">
+              <Card key={classItem.id} className={`hover:shadow-sm transition-shadow ${classItem.canceled? 'opacity-70 grayscale':''}`}>
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1 flex-1 min-w-0">
-                      <CardTitle className="text-base leading-tight">{classItem.name}</CardTitle>
+                      <CardTitle className="text-base leading-tight flex items-center gap-2">
+                        {classItem.name}
+                        {classItem.overridden && <Badge variant="outline" className="text-[10px]">Ajuste</Badge>}
+                        {classItem.canceled && <Badge variant="destructive" className="text-[10px]">Cancelada</Badge>}
+                      </CardTitle>
                       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />

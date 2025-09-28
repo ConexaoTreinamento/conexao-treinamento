@@ -287,20 +287,42 @@ public class ScheduleService {
 
     public void addParticipant(String sessionId, UUID studentId) {
         ScheduledSession session = getOrCreateSessionInstance(sessionId);
-        SessionParticipant participant = new SessionParticipant();
-        participant.setScheduledSession(session);
-        participant.setStudentId(studentId);
-        participant.setParticipationType(SessionParticipant.ParticipationType.INCLUDED);
-        sessionParticipantRepository.save(participant);
+        // If there is an EXCLUDED override for this student in this instance, remove it
+        List<SessionParticipant> existing = sessionParticipantRepository
+            .findByScheduledSession_IdAndStudentIdAndActiveTrue(session.getId(), studentId);
+        for (SessionParticipant sp : existing) {
+            if (sp.isExcluded()) {
+                sessionParticipantRepository.delete(sp);
+            }
+        }
+        // Create INCLUDED override (or keep existing INCLUDED)
+        boolean hasIncluded = existing.stream().anyMatch(SessionParticipant::isIncluded);
+        if (!hasIncluded) {
+            SessionParticipant participant = new SessionParticipant();
+            participant.setScheduledSession(session);
+            participant.setStudentId(studentId);
+            participant.setParticipationType(SessionParticipant.ParticipationType.INCLUDED);
+            sessionParticipantRepository.save(participant);
+        }
         session.setInstanceOverride(true);
         scheduledSessionRepository.save(session);
     }
 
     public void removeParticipant(String sessionId, UUID studentId) {
         ScheduledSession session = getOrCreateSessionInstance(sessionId);
-        List<SessionParticipant> participants = sessionParticipantRepository
+        List<SessionParticipant> existing = sessionParticipantRepository
             .findByScheduledSession_IdAndStudentIdAndActiveTrue(session.getId(), studentId);
-        participants.forEach(p -> { p.softDelete(); sessionParticipantRepository.save(p); });
+        // Remove any INCLUDED overrides
+        existing.stream().filter(SessionParticipant::isIncluded).forEach(sessionParticipantRepository::delete);
+        // Add EXCLUDED override if not already present
+        boolean hasExcluded = existing.stream().anyMatch(SessionParticipant::isExcluded);
+        if (!hasExcluded) {
+            SessionParticipant ex = new SessionParticipant();
+            ex.setScheduledSession(session);
+            ex.setStudentId(studentId);
+            ex.setParticipationType(SessionParticipant.ParticipationType.EXCLUDED);
+            sessionParticipantRepository.save(ex);
+        }
         session.setInstanceOverride(true);
         scheduledSessionRepository.save(session);
     }
@@ -309,16 +331,20 @@ public class ScheduleService {
         ScheduledSession session = getOrCreateSessionInstance(sessionId);
         List<SessionParticipant> participants = sessionParticipantRepository
             .findByScheduledSession_IdAndStudentIdAndActiveTrue(session.getId(), studentId);
-        if (participants.isEmpty()) {
+        // If there is an EXCLUDED override, remove it since we are explicitly setting presence
+        participants.stream().filter(SessionParticipant::isExcluded).forEach(sessionParticipantRepository::delete);
+        if (participants.stream().noneMatch(SessionParticipant::isIncluded)) {
             addParticipant(sessionId, studentId);
             participants = sessionParticipantRepository
                 .findByScheduledSession_IdAndStudentIdAndActiveTrue(session.getId(), studentId);
         }
         for (SessionParticipant participant : participants) {
-            participant.setPresent(present);
-            participant.setAttendanceNotes(notes);
-            participant.updateTimestamp();
-            sessionParticipantRepository.save(participant);
+            if (participant.isIncluded()) {
+                participant.setPresent(present);
+                participant.setAttendanceNotes(notes);
+                participant.updateTimestamp();
+                sessionParticipantRepository.save(participant);
+            }
         }
         session.setInstanceOverride(true);
         scheduledSessionRepository.save(session);
@@ -495,7 +521,18 @@ public class ScheduleService {
             }
         }
         
-        // Convert to DTOs and include exercise data if available
+        // Build participant override maps if there is a materialized session
+        Set<UUID> excludedInInstance = new HashSet<>();
+        Map<UUID, SessionParticipant> includedInInstance = new HashMap<>();
+        if (existingSession != null) {
+            List<SessionParticipant> overrides = sessionParticipantRepository.findByScheduledSession_IdAndActiveTrue(existingSession.getId());
+            for (SessionParticipant sp : overrides) {
+                if (sp.isExcluded()) excludedInInstance.add(sp.getStudentId());
+                if (sp.isIncluded()) includedInInstance.put(sp.getStudentId(), sp);
+            }
+        }
+
+        // Convert to DTOs and include exercise data if available, applying overrides
         for (StudentCommitment commitment : latestCommitmentsPerStudent.values()) {
             StudentCommitmentResponseDTO dto = new StudentCommitmentResponseDTO();
             dto.setStudentId(commitment.getStudentId());
@@ -509,33 +546,33 @@ public class ScheduleService {
             List<ExerciseResponseDTO> exercises = new ArrayList<>();
             List<ParticipantExerciseResponseDTO> participantExerciseDtos = new ArrayList<>();
             if (existingSession != null) {
-                List<SessionParticipant> participants = sessionParticipantRepository
-                        .findByScheduledSession_IdAndStudentIdAndActiveTrue(existingSession.getId(), commitment.getStudentId());
-                if (!participants.isEmpty()) {
-                    // If we have a persisted participant record, use its presence/notes and fetch exercises explicitly
-                    for (SessionParticipant participant : participants) {
-                        dto.setPresent(participant.isPresent());
-                        if (participant.getAttendanceNotes() != null) {
-                            dto.setAttendanceNotes(participant.getAttendanceNotes());
+                // If student explicitly excluded in this instance, skip entirely
+                if (excludedInInstance.contains(commitment.getStudentId())) {
+                    continue;
+                }
+                // If included/overridden, use that participant record
+                SessionParticipant participant = includedInInstance.get(commitment.getStudentId());
+                if (participant != null) {
+                    dto.setPresent(participant.isPresent());
+                    if (participant.getAttendanceNotes() != null) {
+                        dto.setAttendanceNotes(participant.getAttendanceNotes());
+                    }
+                    List<ParticipantExercise> pes = participantExerciseRepository
+                            .findActiveWithExerciseBySessionParticipantId(participant.getId());
+                    for (ParticipantExercise participantExercise : pes) {
+                        if (participantExercise.getExercise() != null) {
+                            ExerciseResponseDTO exerciseDto = ExerciseResponseDTO.fromEntity(participantExercise.getExercise());
+                            exercises.add(exerciseDto);
                         }
-                        // Fetch participant exercises via repository to avoid lazy init issues
-                        List<ParticipantExercise> pes = participantExerciseRepository
-                                .findActiveWithExerciseBySessionParticipantId(participant.getId());
-                        for (ParticipantExercise participantExercise : pes) {
-                            if (participantExercise.getExercise() != null) {
-                                ExerciseResponseDTO exerciseDto = ExerciseResponseDTO.fromEntity(participantExercise.getExercise());
-                                exercises.add(exerciseDto);
-                            }
-                            participantExerciseDtos.add(new ParticipantExerciseResponseDTO(
-                                    participantExercise.getId(),
-                                    participantExercise.getExerciseId(),
-                                    participantExercise.getExercise() != null ? participantExercise.getExercise().getName() : null,
-                                    participantExercise.getSetsCompleted(),
-                                    participantExercise.getRepsCompleted(),
-                                    participantExercise.getWeightCompleted(),
-                                    participantExercise.getExerciseNotes()
-                            ));
-                        }
+                        participantExerciseDtos.add(new ParticipantExerciseResponseDTO(
+                                participantExercise.getId(),
+                                participantExercise.getExerciseId(),
+                                participantExercise.getExercise() != null ? participantExercise.getExercise().getName() : null,
+                                participantExercise.getSetsCompleted(),
+                                participantExercise.getRepsCompleted(),
+                                participantExercise.getWeightCompleted(),
+                                participantExercise.getExerciseNotes()
+                        ));
                     }
                 } else {
                     // No persisted participant override yet. Default presence to true when committed ATTENDING
@@ -555,6 +592,41 @@ public class ScheduleService {
             studentCommitments.add(dto);
         }
         
+        // Also add any participants that were INCLUDED explicitly in the instance but do not have a series commitment
+        if (existingSession != null) {
+            for (SessionParticipant sp : includedInInstance.values()) {
+                if (!latestCommitmentsPerStudent.containsKey(sp.getStudentId())) {
+                    StudentCommitmentResponseDTO dto = new StudentCommitmentResponseDTO();
+                    dto.setStudentId(sp.getStudentId());
+                    studentRepository.findById(sp.getStudentId()).ifPresent(st -> dto.setStudentName(st.getName()));
+                    dto.setCommitmentStatus(CommitmentStatus.ATTENDING); // treat included as attending for this instance
+                    dto.setPresent(sp.isPresent());
+                    dto.setAttendanceNotes(sp.getAttendanceNotes());
+                    List<ParticipantExercise> pes = participantExerciseRepository
+                            .findActiveWithExerciseBySessionParticipantId(sp.getId());
+                    List<ExerciseResponseDTO> exercises = new ArrayList<>();
+                    List<ParticipantExerciseResponseDTO> participantExerciseDtos = new ArrayList<>();
+                    for (ParticipantExercise participantExercise : pes) {
+                        if (participantExercise.getExercise() != null) {
+                            exercises.add(ExerciseResponseDTO.fromEntity(participantExercise.getExercise()));
+                        }
+                        participantExerciseDtos.add(new ParticipantExerciseResponseDTO(
+                                participantExercise.getId(),
+                                participantExercise.getExerciseId(),
+                                participantExercise.getExercise() != null ? participantExercise.getExercise().getName() : null,
+                                participantExercise.getSetsCompleted(),
+                                participantExercise.getRepsCompleted(),
+                                participantExercise.getWeightCompleted(),
+                                participantExercise.getExerciseNotes()
+                        ));
+                    }
+                    dto.setExercises(exercises);
+                    dto.setParticipantExercises(participantExerciseDtos);
+                    studentCommitments.add(dto);
+                }
+            }
+        }
+
         return studentCommitments;
     }
     
