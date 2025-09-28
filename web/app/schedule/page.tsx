@@ -192,7 +192,8 @@ export default function SchedulePage() {
           <p className="text-sm text-muted-foreground">{selectedDate.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</p>
         </div>
         <div className="w-full">
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin" style={{scrollbarWidth:'thin'}}>
+          <div className="mx-auto w-full max-w-[100vw] md:max-w-[860px]">
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin" style={{scrollbarWidth:'thin'}}>
             {monthDays.map((date)=> {
               const key = date.toISOString().slice(0,10)
               const stats = daySessionCounts[key]
@@ -208,6 +209,7 @@ export default function SchedulePage() {
                   {!hasSessions && <span className="mt-1 text-[10px] text-muted-foreground">—</span>}
                 </button>
               )})}
+            </div>
           </div>
         </div>
         <div className="space-y-3">

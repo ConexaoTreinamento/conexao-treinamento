@@ -145,25 +145,127 @@ public class ScheduleService {
     }
 
     public SessionResponseDTO getSessionById(String sessionId) {
-        ScheduledSession sessionEntity = getOrCreateSessionInstance(sessionId);
-        // derive date for commitments
-        LocalDate date = sessionEntity.getStartTime().toLocalDate();
-        Instant sessionInstant = date.atStartOfDay().toInstant(ZoneOffset.UTC);
-        SessionResponseDTO dto = new SessionResponseDTO();
-        dto.setSessionId(sessionEntity.getSessionId());
-        dto.setTrainerId(sessionEntity.getTrainerId());
-        if (sessionEntity.getTrainerId() != null) {
-            trainerRepository.findById(sessionEntity.getTrainerId()).ifPresent(t -> dto.setTrainerName(t.getName()));
+        return getSessionById(sessionId, null);
+    }
+
+    public SessionResponseDTO getSessionById(String sessionId, UUID preferredTrainerId) {
+        // 1) If an instance already exists, return it
+        Optional<ScheduledSession> existingOpt = scheduledSessionRepository.findBySessionIdAndActiveTrue(sessionId);
+        if (existingOpt.isPresent()) {
+            ScheduledSession sessionEntity = existingOpt.get();
+            LocalDate date = sessionEntity.getStartTime().toLocalDate();
+            Instant sessionInstant = date.atStartOfDay().toInstant(ZoneOffset.UTC);
+            SessionResponseDTO dto = new SessionResponseDTO();
+            dto.setSessionId(sessionEntity.getSessionId());
+            dto.setTrainerId(sessionEntity.getTrainerId());
+            if (sessionEntity.getTrainerId() != null) {
+                trainerRepository.findById(sessionEntity.getTrainerId()).ifPresent(t -> dto.setTrainerName(t.getName()));
+            }
+            dto.setStartTime(sessionEntity.getStartTime());
+            dto.setEndTime(sessionEntity.getEndTime());
+            dto.setSeriesName(sessionEntity.getSeriesName());
+            dto.setNotes(sessionEntity.getNotes());
+            dto.setInstanceOverride(sessionEntity.isInstanceOverride());
+            dto.setCanceled(sessionEntity.isCanceled());
+            dto.setMaxParticipants(sessionEntity.getMaxParticipants());
+            List<StudentCommitmentResponseDTO> students = getStudentCommitmentsForSession(sessionEntity.getSessionSeriesId(), sessionInstant, sessionEntity);
+            dto.setStudents(students);
+            dto.setPresentCount((int) students.stream().filter(sc -> sc.getCommitmentStatus() == CommitmentStatus.ATTENDING).count());
+            return dto;
         }
-        dto.setStartTime(sessionEntity.getStartTime());
-        dto.setEndTime(sessionEntity.getEndTime());
-        dto.setSeriesName(sessionEntity.getSeriesName());
-        dto.setNotes(sessionEntity.getNotes());
-        dto.setInstanceOverride(sessionEntity.isInstanceOverride());
-        dto.setCanceled(sessionEntity.isCanceled());
-        dto.setMaxParticipants(sessionEntity.getMaxParticipants());
-        // commitments + participants info
-        List<StudentCommitmentResponseDTO> students = getStudentCommitmentsForSession(sessionEntity.getSessionSeriesId(), sessionInstant, sessionEntity);
+
+        // 2) Lazily resolve from schedule without materializing an instance
+        String[] parts = sessionId.split("__");
+        if (parts.length != 3) {
+            throw new RuntimeException("Invalid sessionId format: " + sessionId);
+        }
+        try {
+            String dateStr = parts[1];
+            String timeStr = parts[2];
+            LocalDate date = LocalDate.parse(dateStr);
+            LocalTime time = LocalTime.parse(timeStr);
+            int weekday = date.getDayOfWeek() == DayOfWeek.SUNDAY ? 0 : date.getDayOfWeek().getValue();
+            Instant sessionInstant = date.atStartOfDay().toInstant(ZoneOffset.UTC);
+            // If multiple persisted instances exist for this timestamp (edge), prefer one matching trainer override
+            List<ScheduledSession> persistedSameStart = scheduledSessionRepository
+                .findByStartTimeBetweenAndActiveTrue(LocalDateTime.of(date, time), LocalDateTime.of(date, time));
+            if (!persistedSameStart.isEmpty()) {
+                if (preferredTrainerId != null) {
+                    for (ScheduledSession ss : persistedSameStart) {
+                        if (preferredTrainerId.equals(ss.getTrainerId())) {
+                            return getSessionById(ss.getSessionId());
+                        }
+                    }
+                }
+                // Otherwise return the first (stable choice)
+                return getSessionById(persistedSameStart.get(0).getSessionId());
+            }
+            List<TrainerSchedule> schedules = trainerScheduleRepository
+                .findByWeekdayAndEffectiveFromTimestampLessThanEqual(weekday, sessionInstant);
+            // Try exact canonical match first
+            for (TrainerSchedule schedule : schedules) {
+                if (schedule.getStartTime().equals(time) && generateSessionId(schedule, date).equals(sessionId)) {
+                    return buildVirtualSessionDTO(schedule, date, sessionInstant);
+                }
+            }
+            // Fallback heuristics (slug rename, etc.)
+            List<TrainerSchedule> timeMatches = schedules.stream()
+                .filter(s -> s.getStartTime().equals(time))
+                .toList();
+            if (!timeMatches.isEmpty()) {
+                // Strong disambiguation: trainerId if provided
+                if (preferredTrainerId != null) {
+                    List<TrainerSchedule> trainerMatches = timeMatches.stream()
+                        .filter(s -> preferredTrainerId.equals(s.getTrainerId()))
+                        .toList();
+                    if (trainerMatches.size() == 1) {
+                        return buildVirtualSessionDTO(trainerMatches.get(0), date, sessionInstant);
+                    }
+                }
+                if (timeMatches.size() == 1) {
+                    return buildVirtualSessionDTO(timeMatches.get(0), date, sessionInstant);
+                } else {
+                    String providedSlug = parts[0].toLowerCase();
+                    List<TrainerSchedule> exactSlugMatches = timeMatches.stream()
+                        .filter(s -> s.getSeriesName() != null && s.getSeriesName().toLowerCase().replace(" ", "-").equals(providedSlug))
+                        .toList();
+                    if (exactSlugMatches.size() == 1) {
+                        return buildVirtualSessionDTO(exactSlugMatches.get(0), date, sessionInstant);
+                    }
+                    List<TrainerSchedule> prefixMatches = timeMatches.stream()
+                        .filter(s -> {
+                            String slug = s.getSeriesName() == null ? "" : s.getSeriesName().toLowerCase().replace(" ", "-");
+                            return slug.startsWith(providedSlug) || providedSlug.startsWith(slug);
+                        }).toList();
+                    if (prefixMatches.size() == 1) {
+                        return buildVirtualSessionDTO(prefixMatches.get(0), date, sessionInstant);
+                    }
+                    String candidates = timeMatches.stream()
+                        .map(s -> generateSessionId(s, date))
+                        .distinct()
+                        .reduce((a,b) -> a + "," + b).orElse("(none)");
+                    throw new RuntimeException("Ambiguous session slug/time. Provided='" + sessionId + "' candidates=" + candidates);
+                }
+            }
+            throw new RuntimeException("Could not resolve session for sessionId: " + sessionId);
+        } catch (Exception e) {
+            throw new RuntimeException("Could not resolve session for sessionId: " + sessionId, e);
+        }
+    }
+
+    private SessionResponseDTO buildVirtualSessionDTO(TrainerSchedule schedule, LocalDate date, Instant sessionInstant) {
+        SessionResponseDTO dto = new SessionResponseDTO();
+        dto.setSessionId(generateSessionId(schedule, date)); // canonical id
+        dto.setTrainerId(schedule.getTrainerId());
+        trainerRepository.findById(schedule.getTrainerId()).ifPresent(t -> dto.setTrainerName(t.getName()));
+        dto.setStartTime(LocalDateTime.of(date, schedule.getStartTime()));
+        dto.setEndTime(LocalDateTime.of(date, schedule.getEndTime()));
+        dto.setSeriesName(schedule.getSeriesName());
+        dto.setNotes(null);
+        dto.setInstanceOverride(false);
+        dto.setCanceled(false);
+        dto.setMaxParticipants(schedule.getIntervalDuration()); // temporary placeholder
+        List<StudentCommitmentResponseDTO> students = getStudentCommitmentsForSession(schedule.getId(), sessionInstant, null);
         dto.setStudents(students);
         dto.setPresentCount((int) students.stream().filter(sc -> sc.getCommitmentStatus() == CommitmentStatus.ATTENDING).count());
         return dto;

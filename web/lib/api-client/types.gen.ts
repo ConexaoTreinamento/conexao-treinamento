@@ -383,6 +383,8 @@ export type StudentCommitmentResponseDto = {
     commitmentStatus?: 'ATTENDING' | 'NOT_ATTENDING' | 'TENTATIVE';
     exercises?: Array<ExerciseResponseDto>;
     participantExercises?: Array<ParticipantExerciseResponseDto>;
+    present?: boolean;
+    attendanceNotes?: string;
 };
 
 export type StudentPlanRequestDto = {
@@ -490,8 +492,8 @@ export type Pageable = {
 };
 
 export type PageUserResponseDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
     size?: number;
     content?: Array<UserResponseDto>;
     number?: number;
@@ -519,8 +521,8 @@ export type SortObject = {
 };
 
 export type PageStudentResponseDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
     size?: number;
     content?: Array<StudentResponseDto>;
     number?: number;
@@ -537,8 +539,8 @@ export type ScheduleResponseDto = {
 };
 
 export type PageExerciseResponseDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
     size?: number;
     content?: Array<ExerciseResponseDto>;
     number?: number;
@@ -567,8 +569,8 @@ export type TrainerSchedule = {
 };
 
 export type PageAdministratorResponseDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
     size?: number;
     content?: Array<AdministratorResponseDto>;
     number?: number;
@@ -1021,7 +1023,9 @@ export type GetSessionData = {
     path: {
         sessionId: string;
     };
-    query?: never;
+    query?: {
+        trainerId?: string;
+    };
     url: '/schedule/sessions/{sessionId}';
 };
 

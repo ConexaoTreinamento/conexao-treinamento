@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.UUID;
 import java.util.List;
 
 @RestController
@@ -46,8 +47,8 @@ public class ScheduleController {
     }
 
     @GetMapping("/sessions/{sessionId}")
-    public ResponseEntity<SessionResponseDTO> getSession(@PathVariable String sessionId) {
-        return ResponseEntity.ok(scheduleService.getSessionById(sessionId));
+    public ResponseEntity<SessionResponseDTO> getSession(@PathVariable String sessionId, @RequestParam(required = false) UUID trainerId) {
+        return ResponseEntity.ok(scheduleService.getSessionById(sessionId, trainerId));
     }
 
     @PostMapping("/sessions/{sessionId}/trainer")

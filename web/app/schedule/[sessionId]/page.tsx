@@ -36,11 +36,12 @@ export default function SessionDetailPage(){
   })()
 
   // Queries
-  const sessionQuery = useQuery({ ...getSessionOptions({ client: apiClient, path:{ sessionId } }) })
-  // Fallback: if session not found but we have hints, try to find canonical by date/start/trainer
+  // Hints from URL to assist backend disambiguation (e.g., trainer-based resolution)
   const hintedDate = searchParams.get('date') || undefined
   const hintedStart = searchParams.get('start') || undefined // HHmm
   const hintedTrainer = searchParams.get('trainer') || undefined
+  const sessionQuery = useQuery({ ...getSessionOptions({ client: apiClient, path:{ sessionId }, query: { trainerId: hintedTrainer } }) })
+  // Fallback: if session not found but we have hints, try to find canonical by date/start/trainer
   const needFallback = !!hintedDate && (!!sessionQuery.error || !sessionQuery.data)
   const dayLookupQuery = useQuery({
     ...getScheduleOptions({ client: apiClient, query: { startDate: hintedDate || '', endDate: hintedDate || '' } }),
@@ -50,7 +51,7 @@ export default function SessionDetailPage(){
 
   // Local UI state
   const [notes, setNotes] = useState('')
-  const [trainer, setTrainer] = useState('')
+  const [trainer, setTrainer] = useState('none')
   const [adding, setAdding] = useState(false)
   const [newStudentId, setNewStudentId] = useState('')
   const [participants, setParticipants] = useState<SessionParticipant[]>([])
@@ -70,7 +71,7 @@ export default function SessionDetailPage(){
         router.replace(`/schedule/${session.sessionId}${qs}`)
       }
       setNotes(session.notes || '')
-      setTrainer(session.trainerId || '')
+  setTrainer(session.trainerId || 'none')
       setParticipants((session.students||[]).map(s=> ({
         ...s,
         // honor backend-provided presence if available
@@ -102,7 +103,8 @@ export default function SessionDetailPage(){
   const updateTrainer = async (tid:string)=> {
     if(!session) return
     setTrainer(tid)
-  await mUpdateTrainer.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId }, body:{ trainerId: tid || undefined } })
+    const mapped = (tid === 'none' || !tid) ? undefined : tid
+    await mUpdateTrainer.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId }, body:{ trainerId: mapped } })
     invalidate()
   }
   const toggleCancel = async ()=> {
@@ -193,8 +195,10 @@ export default function SessionDetailPage(){
             <Select value={trainer} onValueChange={updateTrainer}>
               <SelectTrigger className="w-full h-9"><SelectValue placeholder="Selecione"/></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">(Sem instrutor)</SelectItem>
-                {(trainersQuery.data||[]).map((t:any)=> <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                <SelectItem value="none">(Sem instrutor)</SelectItem>
+                {(trainersQuery.data||[])
+                  .filter((t:any)=> !!t?.id)
+                  .map((t:any)=> <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
               </SelectContent>
             </Select>
             <p className="text-[10px] text-muted-foreground">Alterar o instrutor afeta apenas esta instância.</p>
