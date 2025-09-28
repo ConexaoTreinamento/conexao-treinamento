@@ -395,8 +395,7 @@ public class ScheduleService {
 
     public SessionResponseDTO createOneOffSession(OneOffSessionCreateRequestDTO req) {
         ScheduledSession session = new ScheduledSession();
-        session.setId(UUID.randomUUID());
-        session.setSessionSeriesId(UUID.randomUUID()); // standalone series id
+        session.setSessionSeriesId(null); // standalone series id
         session.setSessionId(String.format("oneoff__%s__%s", req.getStartTime().toLocalDate(), req.getStartTime().toLocalTime()));
         session.setTrainerId(req.getTrainerId());
         session.setStartTime(req.getStartTime());

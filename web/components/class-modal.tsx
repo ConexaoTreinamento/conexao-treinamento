@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useEffect, useMemo } from "react"
+import { useForm, Controller } from "react-hook-form"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -28,13 +29,15 @@ interface ClassModalProps {
 }
 
 export default function ClassModal({ open, mode = "create", initialData, onClose, onSubmitData }: ClassModalProps) {
-  const [form, setForm] = useState<OneOffClassData>({
-    name: initialData?.name || "",
-    trainerId: initialData?.trainerId || "",
-    trainerName: initialData?.trainerName || undefined,
-    startTime: initialData?.startTime || "",
-    endTime: initialData?.endTime || "",
-    maxStudents: initialData?.maxStudents || "2",
+  const { control, register, handleSubmit, reset, watch } = useForm<OneOffClassData>({
+    defaultValues: {
+      name: initialData?.name || "",
+      trainerId: initialData?.trainerId || "",
+      trainerName: initialData?.trainerName || undefined,
+      startTime: initialData?.startTime || "",
+      endTime: initialData?.endTime || "",
+      maxStudents: initialData?.maxStudents || "2",
+    }
   })
 
   const trainersQuery = useQuery({
@@ -47,7 +50,7 @@ export default function ClassModal({ open, mode = "create", initialData, onClose
 
   useEffect(() => {
     if (open) {
-      setForm({
+      reset({
         name: initialData?.name || "",
         trainerId: initialData?.trainerId || "",
         trainerName: initialData?.trainerName,
@@ -56,19 +59,23 @@ export default function ClassModal({ open, mode = "create", initialData, onClose
         maxStudents: initialData?.maxStudents || "2",
       })
     }
-  }, [open, initialData])
+  }, [open, initialData, reset])
 
+  const name = watch("name")
+  const trainerId = watch("trainerId")
+  const startTime = watch("startTime")
+  const endTime = watch("endTime")
   const isValid = useMemo(() => {
-    if (!form.name || !form.trainerId || !form.startTime || !form.endTime) return false
-    return form.endTime >= form.startTime
-  }, [form])
+    if (!name || !trainerId || !startTime || !endTime) return false
+    return endTime >= startTime
+  }, [name, trainerId, startTime, endTime])
 
-  const handleSubmit = () => {
+  const onSubmit = (data: OneOffClassData) => {
     if (!isValid) return
-    const trainerName = trainerOptions.find(t => t.id === form.trainerId)?.name
-    onSubmitData({ ...form, trainerName })
+    const tn = trainerOptions.find(t => t.id === data.trainerId)?.name
+    onSubmitData({ ...data, trainerName: tn })
     if (mode === "create") {
-      setForm({ name: "", trainerId: "", startTime: "", endTime: "", maxStudents: "2" })
+      reset({ name: "", trainerId: "", startTime: "", endTime: "", maxStudents: "2" })
     }
     onClose()
   }
@@ -85,25 +92,26 @@ export default function ClassModal({ open, mode = "create", initialData, onClose
         <div className="space-y-4 mt-4">
           <div className="space-y-2">
             <Label htmlFor="className">Nome</Label>
-            <Input
-              id="className"
-              value={form.name}
-              onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="Ex: Pilates Iniciante"
-            />
+            <Input id="className" placeholder="Ex: Pilates Iniciante" {...register("name")} />
           </div>
           <div className="space-y-2">
             <Label>Professor</Label>
-            <Select value={form.trainerId} onValueChange={value => setForm(prev => ({ ...prev, trainerId: value }))}>
-              <SelectTrigger>
-                <SelectValue placeholder={trainersQuery.isLoading ? "Carregando..." : "Selecione"} />
-              </SelectTrigger>
-              <SelectContent>
-                {trainerOptions.map(t => (
-                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              name="trainerId"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={trainersQuery.isLoading ? "Carregando..." : "Selecione"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {trainerOptions.map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
           <div className="space-y-3">
             <Label>Horário</Label>
@@ -111,32 +119,25 @@ export default function ClassModal({ open, mode = "create", initialData, onClose
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
                   <Label className="text-xs">Início</Label>
-                  <Input type="time" value={form.startTime} onChange={e => setForm(prev => ({ ...prev, startTime: e.target.value }))} className="h-8" />
+                  <Input type="time" className="h-8" {...register("startTime")} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Fim</Label>
-                  <Input type="time" value={form.endTime} onChange={e => setForm(prev => ({ ...prev, endTime: e.target.value }))} className="h-8" />
+                  <Input type="time" className="h-8" {...register("endTime")} />
                 </div>
               </div>
-              {form.startTime && form.endTime && form.endTime < form.startTime && (
+              {startTime && endTime && endTime < startTime && (
                 <p className="text-xs text-red-500">Horário final deve ser após o inicial.</p>
               )}
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="maxStudents">Máx. Alunos</Label>
-            <Input
-              id="maxStudents"
-              type="number"
-              value={form.maxStudents}
-              onChange={e => setForm(prev => ({ ...prev, maxStudents: e.target.value }))}
-              placeholder="2"
-              min={1}
-            />
+            <Input id="maxStudents" type="number" placeholder="2" min={1} {...register("maxStudents")} />
           </div>
           <div className="flex gap-2 pt-2">
             <Button variant="outline" onClick={handleClose} className="flex-1">Cancelar</Button>
-            <Button onClick={handleSubmit} disabled={!isValid || trainersQuery.isLoading} className="bg-green-600 hover:bg-green-700 flex-1 disabled:opacity-60">
+            <Button onClick={handleSubmit(onSubmit)} disabled={!isValid || trainersQuery.isLoading} className="bg-green-600 hover:bg-green-700 flex-1 disabled:opacity-60">
               {mode === "create" ? "Criar Aula" : "Salvar"}
             </Button>
           </div>

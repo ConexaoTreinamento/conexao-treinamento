@@ -22,7 +22,7 @@ public class ScheduledSession {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
     
-    @Column(name = "session_series_id", nullable = false)
+    @Column(name = "session_series_id", nullable = true)
     private UUID sessionSeriesId;
     
     @Column(name = "session_id", nullable = false, unique = true)

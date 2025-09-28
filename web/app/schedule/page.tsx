@@ -10,24 +10,19 @@ import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import ClassModal from "@/components/class-modal"
 import { apiClient } from "@/lib/client"
-import { getScheduleOptions, findAllTrainersOptions, getSessionOptions } from "@/lib/api-client/@tanstack/react-query.gen"
+import { getScheduleOptions, findAllTrainersOptions, getSessionOptions, createOneOffMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { SessionResponseDto, StudentCommitmentResponseDto, TrainerResponseDto } from "@/lib/api-client"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export default function SchedulePage() {
+  const qc = useQueryClient()
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [userRole, setUserRole] = useState<string>("")
   const [isNewClassOpen, setIsNewClassOpen] = useState(false)
-  const [modalInitialData, setModalInitialData] = useState({
-    name: "",
-    instructor: "",
-    maxStudents: "2",
-    description: "",
-    weekDays: [] as string[],
-    times: [] as { day: string; startTime: string; endTime: string }[],
-  })
-  const [localSessions, setLocalSessions] = useState<Array<{ id: string; name: string; instructor: string; time: string; endTime: string; maxStudents: number; currentStudents: number; students: Array<{ id: string; name: string; present: boolean }>; date: string }>>([]) // legacy fallback until backend supports true one-off session entity
+  type OneOffClassData = { name: string; trainerId: string; trainerName?: string; startTime: string; endTime: string; maxStudents: string }
+  const [modalInitialData, setModalInitialData] = useState<Partial<OneOffClassData>>({ name: "", trainerId: "", maxStudents: "2", startTime: "", endTime: "" })
+  const [localSessions, setLocalSessions] = useState<Array<{ id: string; name: string; instructor: string; time: string; endTime: string; maxStudents: number; currentStudents: number; students: Array<{ id: string; name: string; present: boolean }>; date: string }>>([]) // legacy fallback for cases when backend call fails
   const router = useRouter()
 
   useEffect(() => {
@@ -106,7 +101,8 @@ export default function SchedulePage() {
     return map
   }, [trainersQuery.data])
 
-  // We limit modal usage here to creating a one-off (standalone) scheduled session representation (only client-side until backend exposes endpoint)
+  // Create one-off session (backend)
+  const mCreateOneOff = useMutation(createOneOffMutation())
 
   // Build all days for selected month
   const monthDays = useMemo(()=> {
@@ -149,36 +145,42 @@ export default function SchedulePage() {
     return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
   }
 
-  const handleCreateClass = (formData: any) => {
-    if (!formData.name || !formData.instructor) return
-    const first = formData.times[0]
-    if (!first?.startTime || !first?.endTime) return
-    const newLocal = {
-      id: `oneoff-${Date.now()}`,
-      name: formData.name,
-      instructor: trainerOptions.find(t=>t.id===formData.instructor)?.name || '—',
-      time: first.startTime,
-      endTime: first.endTime,
-      maxStudents: Number.parseInt(formData.maxStudents) || 10,
-      currentStudents: 0,
-      students: [],
-      date: selectedIso
+  const handleCreateClass = async (formData: OneOffClassData) => {
+    // Build LocalDateTime strings using selected day
+    const start = `${selectedIso}T${formData.startTime}:00`
+    const end = `${selectedIso}T${formData.endTime}:00`
+    try {
+      await mCreateOneOff.mutateAsync({ client: apiClient, body: {
+        seriesName: formData.name,
+        trainerId: formData.trainerId || undefined,
+        startTime: start,
+        endTime: end,
+        maxParticipants: Number.parseInt(formData.maxStudents) || 10,
+      } })
+      // Invalidate schedule for the current month range
+      await qc.invalidateQueries({ queryKey: getScheduleOptions({ client: apiClient, query: { startDate: monthStartIso, endDate: monthEndIso } }).queryKey })
+      setIsNewClassOpen(false)
+    } catch {
+      // Fallback: create a local-only entry if backend fails
+      const newLocal = {
+        id: `oneoff-${Date.now()}`,
+        name: formData.name,
+        instructor: (trainerOptions.find(t=>t.id===formData.trainerId)?.name) || '—',
+        time: formData.startTime,
+        endTime: formData.endTime,
+        maxStudents: Number.parseInt(formData.maxStudents) || 10,
+        currentStudents: 0,
+        students: [],
+        date: selectedIso
+      }
+      setLocalSessions(prev => [...prev, newLocal])
+      setIsNewClassOpen(false)
     }
-    setLocalSessions(prev => [...prev, newLocal])
   }
 
   const handleCloseClassModal = () => setIsNewClassOpen(false)
   const handleOpenClassModal = () => {
-    const selectedDayOfWeek = getDayOfWeekValue(selectedDate)
-    const initialData = {
-      name: "",
-      instructor: "",
-      maxStudents: "2",
-      description: "",
-      weekDays: [selectedDayOfWeek],
-      times: [{ day: selectedDayOfWeek, startTime: "", endTime: "" }]
-    }
-    setModalInitialData(initialData)
+    setModalInitialData({ name: "", trainerId: "", maxStudents: "2", startTime: "", endTime: "" })
     setIsNewClassOpen(true)
   }
 
