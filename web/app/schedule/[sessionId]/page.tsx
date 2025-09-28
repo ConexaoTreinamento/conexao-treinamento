@@ -13,7 +13,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ArrowLeft, Activity, Calendar, CheckCircle, Edit, Save, X, XCircle } from "lucide-react"
 import { apiClient } from "@/lib/client"
 import { Checkbox } from "@/components/ui/checkbox"
-import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updatePresenceMutation, getScheduleQueryKey, findAllExercisesOptions, updateRegisteredParticipantExerciseMutation, addRegisteredParticipantExerciseMutation, removeRegisteredParticipantExerciseMutation, updateSessionTrainerMutation, removeSessionParticipantMutation, addSessionParticipantMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updatePresenceMutation, getScheduleQueryKey, findAllExercisesOptions, updateRegisteredParticipantExerciseMutation, addRegisteredParticipantExerciseMutation, removeRegisteredParticipantExerciseMutation, updateSessionTrainerMutation, removeSessionParticipantMutation, addSessionParticipantMutation, cancelOrRestoreSessionMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { Badge } from "@/components/ui/badge"
 import { useStudents } from "@/lib/hooks/student-queries"
 
 interface ParticipantExercise { id?:string; exerciseId?:string; exerciseName?:string; setsCompleted?:number; repsCompleted?:number; weightCompleted?:number; exerciseNotes?:string; done?: boolean }
@@ -90,6 +91,7 @@ export default function ClassDetailPage() {
   const mAddExercise = useMutation(addRegisteredParticipantExerciseMutation())
   const mUpdateExercise = useMutation(updateRegisteredParticipantExerciseMutation())
   const mRemoveExercise = useMutation(removeRegisteredParticipantExerciseMutation())
+  const mCancelRestore = useMutation(cancelOrRestoreSessionMutation())
 
   // Invalidate this session and also the schedule listing for the month containing this session's date
   const invalidateScheduleForSessionMonth = () => {
@@ -192,6 +194,12 @@ export default function ClassDetailPage() {
     invalidate()
   }
 
+  const toggleCancel = async () => {
+    if (!session) return
+    await mCancelRestore.mutateAsync({ client: apiClient, path: { sessionId: session.sessionId }, body: { cancel: !session.canceled } })
+    invalidate()
+  }
+
   if (sessionQuery.isLoading) return <Layout><div className="p-6 text-sm">Carregando...</div></Layout>
   if (sessionQuery.error || !session) return <Layout><div className="p-6 text-sm text-red-600">Sessão não encontrada.</div></Layout>
 
@@ -225,11 +233,17 @@ export default function ClassDetailPage() {
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Activity className="w-5 h-5" />
                   Informações da Aula
+                  {session.canceled && <Badge variant="destructive" className="ml-2 text-[10px]">Cancelada</Badge>}
                 </CardTitle>
-                <Button size="sm" variant="outline" onClick={() => setIsEditClassOpen(true)} className="h-8 px-2">
-                  <Edit className="w-3 h-3 mr-1" />
-                  Editar
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" variant="outline" onClick={() => setIsEditClassOpen(true)} className="h-8 px-2">
+                    <Edit className="w-3 h-3 mr-1" />
+                    Editar
+                  </Button>
+                  <Button size="sm" variant={session.canceled ? "default" : "destructive"} onClick={toggleCancel} disabled={mCancelRestore.isPending} className="h-8 px-2">
+                    {session.canceled ? (<><CheckCircle className="w-3 h-3 mr-1" />Restaurar</>) : (<><XCircle className="w-3 h-3 mr-1" />Cancelar</>)}
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
