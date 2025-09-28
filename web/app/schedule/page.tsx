@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Calendar, Clock, Plus, User, CheckCircle, XCircle, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import Layout from "@/components/layout"
 import ClassModal from "@/components/class-modal"
 import { apiClient } from "@/lib/client"
@@ -16,6 +16,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export default function SchedulePage() {
   const qc = useQueryClient()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [userRole, setUserRole] = useState<string>("")
@@ -29,6 +31,41 @@ export default function SchedulePage() {
     const role = localStorage.getItem("userRole") || "professor"
     setUserRole(role)
   }, [])
+
+  // Initialize/sync state from search params
+  useEffect(() => {
+    const monthParam = searchParams.get('month') // YYYY-MM
+    const dayParam = searchParams.get('day')     // YYYY-MM-DD
+    if (monthParam && /^\d{4}-\d{2}$/.test(monthParam)) {
+      const [y, m] = monthParam.split('-').map(Number)
+      const desired = new Date(y, (m - 1), 1)
+      if (desired.getFullYear() !== currentMonth.getFullYear() || desired.getMonth() !== currentMonth.getMonth()) {
+        setCurrentMonth(desired)
+      }
+    }
+    if (dayParam && /^\d{4}-\d{2}-\d{2}$/.test(dayParam)) {
+      const [y, m, d] = dayParam.split('-').map(Number)
+      const desired = new Date(y, (m - 1), d)
+      if (desired.toDateString() !== selectedDate.toDateString()) {
+        setSelectedDate(desired)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
+  // Helper to push month/day into URL without scroll jump
+  const setUrlParams = (monthDate: Date, dayDate: Date) => {
+    const sp = new URLSearchParams(searchParams.toString())
+    const mm = String(monthDate.getMonth() + 1).padStart(2, '0')
+    const monthStr = `${monthDate.getFullYear()}-${mm}`
+    const dd = String(dayDate.getDate()).padStart(2, '0')
+    const dayStr = `${dayDate.getFullYear()}-${String(dayDate.getMonth()+1).padStart(2,'0')}-${dd}`
+    sp.set('month', monthStr)
+    sp.set('day', dayStr)
+    const qs = sp.toString()
+    const url = qs ? `${pathname}?${qs}` : pathname
+    router.replace(url, { scroll: false })
+  }
 
   // ===== Backend Integration =====
   const selectedIso = useMemo(()=> selectedDate.toISOString().slice(0,10), [selectedDate])
@@ -67,8 +104,8 @@ export default function SchedulePage() {
       endTime: s.endTime?.slice(11,16) || '',
       canceled: !!s.canceled,
       overridden: !!s.instanceOverride,
-      currentStudents: students.length,
-      maxStudents: s.maxParticipants ?? students.length,
+  currentStudents: students.length,
+  maxStudents: s.maxParticipants ?? 0,
       students,
       date
     }
@@ -147,6 +184,7 @@ export default function SchedulePage() {
   }
 
   const getOccupancyColor = (current: number, max: number) => {
+    if (max > 0 && current >= max) return "bg-red-600 text-white"
     const percentage = max === 0 ? 0 : (current / max) * 100
     if (percentage >= 90) return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
     if (percentage >= 70) return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
@@ -197,9 +235,9 @@ export default function SchedulePage() {
     setIsNewClassOpen(true)
   }
 
-  const goToToday = () => { const today = new Date(); setSelectedDate(today); setCurrentMonth(today) }
-  const goToPreviousMonth = () => { const m = new Date(currentMonth); m.setMonth(m.getMonth()-1); setCurrentMonth(m); setSelectedDate(new Date(m.getFullYear(), m.getMonth(), 1)) }
-  const goToNextMonth = () => { const m = new Date(currentMonth); m.setMonth(m.getMonth()+1); setCurrentMonth(m); setSelectedDate(new Date(m.getFullYear(), m.getMonth(), 1)) }
+  const goToToday = () => { const today = new Date(); setSelectedDate(today); setCurrentMonth(today); setUrlParams(today, today) }
+  const goToPreviousMonth = () => { const m = new Date(currentMonth); m.setMonth(m.getMonth()-1); const first = new Date(m.getFullYear(), m.getMonth(), 1); setCurrentMonth(m); setSelectedDate(first); setUrlParams(m, first) }
+  const goToNextMonth = () => { const m = new Date(currentMonth); m.setMonth(m.getMonth()+1); const first = new Date(m.getFullYear(), m.getMonth(), 1); setCurrentMonth(m); setSelectedDate(first); setUrlParams(m, first) }
   const formatMonthYear = (date: Date) => date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
 
   // Child component to render a class card; if overridden, fetch session details to use accurate instructor
@@ -258,8 +296,8 @@ export default function SchedulePage() {
                 </div>
               </div>
             </div>
-            <Badge className={`${getOccupancyColor(classItem.currentStudents, classItem.maxStudents || classItem.currentStudents)} text-xs`}>
-              {classItem.currentStudents}/{classItem.maxStudents || classItem.currentStudents}
+            <Badge className={`${getOccupancyColor(classItem.currentStudents, classItem.maxStudents || 0)} text-xs`}>
+              {classItem.currentStudents}/{classItem.maxStudents || '∞'}
             </Badge>
           </div>
         </CardHeader>
@@ -335,12 +373,14 @@ export default function SchedulePage() {
               const stats = daySessionCounts[key]
               const hasSessions = !!stats
               return (
-                <button key={key} onClick={()=> setSelectedDate(date)}
+                <button key={key} onClick={()=> { setSelectedDate(date); setUrlParams(currentMonth, date) }}
                   className={`relative flex flex-col min-w-[68px] flex-shrink-0 items-center justify-center p-2 rounded-lg border h-[72px] text-center transition-all group ${isSelected(date)?'bg-green-600 text-white border-green-600 shadow':'hover:bg-muted'} ${!isSelected(date)&& isToday(date)?'ring-1 ring-green-600':''}`}>
                   <span className="text-[10px] font-medium leading-none uppercase tracking-wide">{formatDayName(date)}</span>
                   <span className="text-lg font-bold leading-none mt-1">{date.getDate()}</span>
                   {hasSessions && (
-                    <span className={`mt-1 text-[10px] font-medium px-1 rounded ${isSelected(date)?'bg-green-700/70':'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'}`}>{stats.total} aula{stats.total>1?'s':''}</span>
+                    <span className={`mt-1 text-[10px] font-medium px-1 rounded ${isSelected(date)?'bg-green-700/70':'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'}`}>
+                      {stats.total} aula{stats.total>1?'s':''}
+                    </span>
                   )}
                   {!hasSessions && <span className="mt-1 text-[10px] text-muted-foreground">—</span>}
                 </button>

@@ -155,6 +155,10 @@ export default function ClassSchedulePage() {
     if(selectedSeries.includes(seriesId)) return true
     const series = seriesById.get(seriesId)
     if(!series) return false
+    // Capacity enforcement: do not allow selecting if full
+    const cap = series.capacity ?? 0
+    const enrolled = series.enrolledCount ?? 0
+    if (cap > 0 && enrolled >= cap) return false
     // If day already selected
     if(selectedSeries.some(id=> {
       const other = seriesById.get(id)
@@ -335,7 +339,7 @@ export default function ClassSchedulePage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <h4 className="font-medium text-sm">{cls.seriesName}</h4>
-                              {max>0 && <Badge className={`${getOccupancyColor(current, max)} text-xs`}>{current}/{max}</Badge>}
+                              {max>0 && <Badge className={`${getOccupancyColor(current, max)} text-xs ${current>=max? 'ring-2 ring-red-500':''}`}>{current}/{max}{current>=max? ' • Cheia':''}</Badge>}
                               {activeSeriesIds.has(cls.id) && <Badge variant="secondary" className="text-[10px]">Ativo</Badge>}
                               {conflict && <Badge variant="destructive" className="flex items-center gap-1 text-[10px]" title={`Conflito de horário com outra série selecionada no mesmo dia.`}><AlertTriangle className="w-3 h-3"/> Conflito</Badge>}
                             </div>

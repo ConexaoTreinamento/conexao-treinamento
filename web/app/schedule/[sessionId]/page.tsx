@@ -15,6 +15,7 @@ import { apiClient } from "@/lib/client"
 import { Checkbox } from "@/components/ui/checkbox"
 import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updatePresenceMutation, getScheduleQueryKey, findAllExercisesOptions, updateRegisteredParticipantExerciseMutation, addRegisteredParticipantExerciseMutation, removeRegisteredParticipantExerciseMutation, updateSessionTrainerMutation, removeSessionParticipantMutation, addSessionParticipantMutation, cancelOrRestoreSessionMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { Badge } from "@/components/ui/badge"
+import { toast } from "@/hooks/use-toast"
 import { useStudents } from "@/lib/hooks/student-queries"
 
 interface ParticipantExercise { id?:string; exerciseId?:string; exerciseName?:string; setsCompleted?:number; repsCompleted?:number; weightCompleted?:number; exerciseNotes?:string; done?: boolean }
@@ -137,6 +138,12 @@ export default function ClassDetailPage() {
 
   const addStudent = async (studentId: string) => {
     if (!session) return
+    // Capacity enforcement
+    const max = session.maxParticipants ?? 0
+    if (max > 0 && participants.length >= max) {
+      toast({ title: "Turma lotada", description: "Não é possível adicionar mais alunos, a capacidade foi atingida.", variant: "destructive" as any })
+      return
+    }
     // Optimistic UI: mark as present by default
     setParticipants(prev => {
       const exists = prev.some(p => p.studentId === studentId)
@@ -307,7 +314,16 @@ export default function ClassDetailPage() {
                   <Activity className="w-5 h-5" />
                   Alunos da Aula
                 </CardTitle>
-                <Button variant="outline" size="sm" onClick={() => setAddDialogOpen(true)}>Adicionar Aluno</Button>
+                <div className="flex items-center gap-2">
+                  {session.maxParticipants != null && (
+                    <Badge className={`${(participants.length >= (session.maxParticipants||0) && (session.maxParticipants||0)>0)? 'bg-red-600 text-white':'bg-muted'} text-xs`}>
+                      {participants.length}/{session.maxParticipants}
+                    </Badge>
+                  )}
+                  <Button variant="outline" size="sm" onClick={() => setAddDialogOpen(true)} disabled={!!session.maxParticipants && participants.length >= (session.maxParticipants||0)}>
+                    Adicionar Aluno
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
