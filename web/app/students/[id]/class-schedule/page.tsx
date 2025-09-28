@@ -262,6 +262,16 @@ export default function ClassSchedulePage() {
     } catch(e){/* no-op */}
   }
 
+  // Friendly Portuguese labels for commitment status
+  const statusLabel = (status?: string) => {
+    switch (status) {
+      case 'ATTENDING': return 'Ativo'
+      case 'NOT_ATTENDING': return 'Inativo'
+      case 'TENTATIVE': return 'Talvez'
+      default: return '—'
+    }
+  }
+
   const getOccupancyColor = (current: number, max: number) => {
     if(max===0) return "bg-muted"
     const pct = (current/max)*100
@@ -334,9 +344,6 @@ export default function ClassSchedulePage() {
                             </div>
                           </div>
                           <div className="flex flex-col gap-1">
-                            <Button variant="outline" size="icon" className="h-7 w-7" onClick={()=> handleQuickToggle(cls.id, isSelected)} title={isSelected? 'Remover compromisso':'Adicionar compromisso'} disabled={singleMutation.isPending}>
-                              {isSelected? <Save className="w-3 h-3 rotate-45"/>: <Save className="w-3 h-3"/>}
-                            </Button>
                             <Button variant="outline" size="icon" className="h-7 w-7" onClick={()=> setOpenParticipantsFor(cls.id)} title="Participantes">
                               <Users className="w-3 h-3"/>
                             </Button>
@@ -390,7 +397,7 @@ export default function ClassSchedulePage() {
               {participantsData.filter(p=> participantsFilter==='ALL' || p.commitmentStatus==='ATTENDING').map(p=> (
                 <div key={p.id} className="flex items-center justify-between p-2 rounded border">
                   <span className="truncate font-medium" title={p.seriesName}>{p.studentName || p.seriesName}</span>
-                  <Badge variant={p.commitmentStatus==='ATTENDING'? 'secondary':'outline'} className="text-[10px]">{p.commitmentStatus}</Badge>
+                  <Badge variant={p.commitmentStatus==='ATTENDING'? 'secondary':'outline'} className="text-[10px]">{statusLabel(p.commitmentStatus)}</Badge>
                 </div>
               ))}
             </div>
@@ -409,7 +416,7 @@ export default function ClassSchedulePage() {
                 <div key={h.id} className="p-2 rounded border space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-xs">{h.seriesName}</span>
-                    <Badge variant={h.commitmentStatus==='ATTENDING'? 'secondary':'outline'} className="text-[10px]">{h.commitmentStatus}</Badge>
+                    <Badge variant={h.commitmentStatus==='ATTENDING'? 'secondary':'outline'} className="text-[10px]">{statusLabel(h.commitmentStatus)}</Badge>
                   </div>
                   <p className="text-[10px] text-muted-foreground">Atualizado: {h.createdAt ? new Date(h.createdAt).toLocaleDateString('pt-BR'): '—'}</p>
                 </div>
