@@ -327,9 +327,10 @@ export default function StudentProfilePage() {
                       variant="outline"
                       className="w-full"
                       onClick={() => router.push(`/students/${params.id}/class-schedule`)}
+                      disabled={!currentPlanQuery.data}
                   >
                     <CalendarDays className="w-4 h-4 mr-2"/>
-                    Cronograma
+                    {currentPlanQuery.data ? 'Cronograma' : 'Cronograma (Precisa de plano ativo)'}
                   </Button>
                   <Button
                       size="sm"
@@ -401,10 +402,6 @@ export default function StudentProfilePage() {
                           <Badge variant="secondary">Ativo</Badge>
                         </div>
                       ))}
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 pt-2">
-                      <Button variant="outline" size="sm" className="w-full bg-transparent" onClick={() => router.push(`/students/${params.id}/class-schedule`)}>Gerenciar</Button>
-                      <Button variant="outline" size="sm" className="w-full" onClick={() => setOpenAssignDialog(true)}>{currentPlanQuery.data ? 'Renovar Plano' : 'Atribuir Plano'}</Button>
                     </div>
                   </div>
                 </CardContent>
