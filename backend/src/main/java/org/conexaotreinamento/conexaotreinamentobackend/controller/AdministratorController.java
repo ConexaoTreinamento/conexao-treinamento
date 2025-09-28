@@ -33,17 +33,17 @@ public class AdministratorController {
     private final AdministratorService administratorService;
 
     @PostMapping
-    public ResponseEntity<AdministratorResponseDTO> create(@RequestBody @Valid AdministratorRequestDTO request) {
+    public ResponseEntity<AdministratorResponseDTO> createAdministrator(@RequestBody @Valid AdministratorRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(administratorService.create(request));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AdministratorResponseDTO> findById(@PathVariable UUID id) {
+    public ResponseEntity<AdministratorResponseDTO> findAdministratorById(@PathVariable UUID id) {
         return ResponseEntity.ok(administratorService.findById(id));
     }
 
     @GetMapping
-    public ResponseEntity<Page<AdministratorResponseDTO>> findAll(
+    public ResponseEntity<Page<AdministratorResponseDTO>> findAllAdministrators(
             @RequestParam(required = false) String search,
             @RequestParam(required = false, defaultValue = "false") boolean includeInactive,
             @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -51,23 +51,23 @@ public class AdministratorController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<AdministratorResponseDTO> update(@PathVariable UUID id, @RequestBody @Valid AdministratorRequestDTO request) {
+    public ResponseEntity<AdministratorResponseDTO> updateAdministrator(@PathVariable UUID id, @RequestBody @Valid AdministratorRequestDTO request) {
         return ResponseEntity.ok(administratorService.update(id, request));
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<AdministratorResponseDTO> patch(@PathVariable UUID id, @RequestBody @Valid PatchAdministratorRequestDTO request) {
+    public ResponseEntity<AdministratorResponseDTO> patchAdministrator(@PathVariable UUID id, @RequestBody @Valid PatchAdministratorRequestDTO request) {
         return ResponseEntity.ok(administratorService.patch(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+    public ResponseEntity<Void> deleteAdministrator(@PathVariable UUID id) {
         administratorService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/restore")
-    public ResponseEntity<AdministratorResponseDTO> restore(@PathVariable UUID id) {
+    public ResponseEntity<AdministratorResponseDTO> restoreAdministrator(@PathVariable UUID id) {
         return ResponseEntity.ok(administratorService.restore(id));
     }
 }
