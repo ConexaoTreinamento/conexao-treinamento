@@ -150,6 +150,20 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // Relax URL firewall to allow encoded characters in path variables like sessionId (e.g., ":" -> %3A)
+    @Bean
+    public HttpFirewall httpFirewall() {
+        StrictHttpFirewall firewall = new StrictHttpFirewall();
+        firewall.setAllowUrlEncodedPercent(true); // allow %25 sequences
+        // Keep other defaults strict; enable more if needed in future
+        return firewall;
+    }
+
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer(HttpFirewall firewall) {
+        return (web) -> web.httpFirewall(firewall);
+    }
+
     @Bean
     @Profile("test")
     public SecurityFilterChain testSecurityFilterChain(HttpSecurity http) throws Exception {

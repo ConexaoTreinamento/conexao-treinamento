@@ -290,7 +290,6 @@ public class ScheduleService {
     
     private ScheduledSession generateSessionFromSchedule(TrainerSchedule schedule, LocalDate date) {
         ScheduledSession session = new ScheduledSession();
-        session.setId(UUID.randomUUID());
         session.setSessionSeriesId(schedule.getId());
         session.setSessionId(generateSessionId(schedule, date));
         session.setTrainerId(schedule.getTrainerId());
@@ -365,6 +364,7 @@ public class ScheduleService {
                         }
                     } catch (Exception e) {
                         // Parsing failed
+                        throw new RuntimeException("Could not create session instance for sessionId: " + sessionId, e);
                     }
                 }
                 throw new RuntimeException("Could not create session instance for sessionId: " + sessionId);
@@ -410,6 +410,11 @@ public class ScheduleService {
                 List<SessionParticipant> participants = sessionParticipantRepository
                         .findByScheduledSession_IdAndStudentIdAndActiveTrue(existingSession.getId(), commitment.getStudentId());
                 for (SessionParticipant participant : participants) {
+                    // attendance flags
+                    dto.setPresent(participant.isPresent());
+                    if (participant.getAttendanceNotes() != null) {
+                        dto.setAttendanceNotes(participant.getAttendanceNotes());
+                    }
                     if (participant.getExercises() != null) {
                         for (ParticipantExercise participantExercise : participant.getExercises()) {
                             if (participantExercise.isActive()) {

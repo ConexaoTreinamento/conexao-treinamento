@@ -58,6 +58,7 @@ export default function SchedulePage() {
       real: !!realId,
       name: s.seriesName || 'Aula',
       instructor: s.trainerName || '—',
+      trainerId: s.trainerId,
       time: s.startTime?.slice(11,16) || '',
       endTime: s.endTime?.slice(11,16) || '',
       currentStudents: students.length,
@@ -255,7 +256,13 @@ export default function SchedulePage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Alunos</span>
-                        <Button size="sm" variant="outline" disabled={!classItem.real} title={!classItem.real? 'Sessão não materializada ainda':'Gerenciar sessão'} className="h-7 px-2 text-xs bg-transparent" onClick={() => classItem.real && classItem.id && router.push(`/schedule/${classItem.id}?date=${selectedIso}`)}>Gerenciar</Button>
+                        <Button size="sm" variant="outline" disabled={!classItem.real} title={!classItem.real? 'Sessão não materializada ainda':'Gerenciar sessão'} className="h-7 px-2 text-xs bg-transparent" onClick={() => {
+                          if (!classItem.real || !classItem.id) return
+                          const startHHmm = (classItem.time || '').replace(':','')
+                          const trainer = classItem.trainerId || ''
+                          const qs = `?date=${selectedIso}${startHHmm? `&start=${startHHmm}`:''}${trainer? `&trainer=${trainer}`:''}`
+                          router.push(`/schedule/${classItem.id}${qs}`)
+                        }}>Gerenciar</Button>
                       </div>
                       <div className="max-h-32 overflow-y-auto space-y-1" style={{ scrollbarWidth: "thin" }}>
                         {classItem.students.map((student: {id:string; name:string; present:boolean}) => (
@@ -273,7 +280,13 @@ export default function SchedulePage() {
                   {classItem.students.length === 0 && (
                     <div className="text-center py-2">
                       <p className="text-sm text-muted-foreground">Nenhum aluno inscrito</p>
-                      <Button size="sm" variant="outline" disabled={!classItem.real} title={!classItem.real? 'Sessão não materializada ainda':'Adicionar alunos'} className="mt-2 h-7 px-2 text-xs bg-transparent" onClick={() => classItem.real && classItem.id && router.push(`/schedule/${classItem.id}?date=${selectedIso}`)}>Adicionar Alunos</Button>
+                      <Button size="sm" variant="outline" disabled={!classItem.real} title={!classItem.real? 'Sessão não materializada ainda':'Adicionar alunos'} className="mt-2 h-7 px-2 text-xs bg-transparent" onClick={() => {
+                        if (!classItem.real || !classItem.id) return
+                        const startHHmm = (classItem.time || '').replace(':','')
+                        const trainer = classItem.trainerId || ''
+                        const qs = `?date=${selectedIso}${startHHmm? `&start=${startHHmm}`:''}${trainer? `&trainer=${trainer}`:''}`
+                        router.push(`/schedule/${classItem.id}${qs}`)
+                      }}>Adicionar Alunos</Button>
                     </div>
                   )}
                 </CardContent>

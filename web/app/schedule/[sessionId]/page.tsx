@@ -1,6 +1,6 @@
 "use client"
 
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Layout from "@/components/layout"
 import { useEffect, useState } from "react"
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query"
@@ -14,24 +14,39 @@ import { Input } from "@/components/ui/input"
 import { ArrowLeft, CheckCircle, Trash2, XCircle } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { apiClient } from "@/lib/client"
-import { getSessionOptions, updateSessionMutation, updateTrainerMutation, cancelOrRestoreMutation, addParticipantMutation, updatePresenceMutation, removeParticipantMutation, addExerciseMutation, updateExerciseMutation, removeExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { getSessionOptions, getScheduleOptions, updateSessionMutation, updateTrainerMutation, cancelOrRestoreMutation, addParticipantMutation, updatePresenceMutation, removeParticipantMutation, addExerciseMutation, updateExerciseMutation, removeExerciseMutation, findAllTrainersOptions } from "@/lib/api-client/@tanstack/react-query.gen"
 
 interface ParticipantExercise { id?:string; exerciseId?:string; exerciseName?:string; setsCompleted?:number; repsCompleted?:number; weightCompleted?:number; exerciseNotes?:string }
 interface SessionParticipant { studentId:string; studentName?:string; present?:boolean; participantExercises?:ParticipantExercise[] }
 interface SessionData { sessionId:string; seriesName:string; trainerId?:string; trainerName?:string; startTime?:string; endTime?:string; notes?:string; canceled?:boolean; students?:SessionParticipant[]; maxParticipants?:number; presentCount?:number }
 
 export default function SessionDetailPage(){
-  const { sessionId } = useParams<{sessionId:string}>()
+  const { sessionId: rawSessionId } = useParams<{sessionId:string}>()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const qc = useQueryClient()
+
+  const sessionId = (() => {
+    // Normalize: decode once if it looks encoded to avoid %25 double-encoding later
+    try {
+      return rawSessionId?.includes('%') ? decodeURIComponent(rawSessionId) : rawSessionId
+    } catch {
+      return rawSessionId
+    }
+  })()
 
   // Queries
   const sessionQuery = useQuery({ ...getSessionOptions({ client: apiClient, path:{ sessionId } }) })
-  const trainersQuery = useQuery({ queryKey:['trainers'], queryFn: async ()=> {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/trainers`)
-    if(!res.ok) return []
-    return res.json()
-  }})
+  // Fallback: if session not found but we have hints, try to find canonical by date/start/trainer
+  const hintedDate = searchParams.get('date') || undefined
+  const hintedStart = searchParams.get('start') || undefined // HHmm
+  const hintedTrainer = searchParams.get('trainer') || undefined
+  const needFallback = !!hintedDate && (!!sessionQuery.error || !sessionQuery.data)
+  const dayLookupQuery = useQuery({
+    ...getScheduleOptions({ client: apiClient, query: { startDate: hintedDate || '', endDate: hintedDate || '' } }),
+    enabled: needFallback
+  })
+  const trainersQuery = useQuery({ ...findAllTrainersOptions({ client: apiClient }) })
 
   // Local UI state
   const [notes, setNotes] = useState('')
@@ -56,7 +71,13 @@ export default function SessionDetailPage(){
       }
       setNotes(session.notes || '')
       setTrainer(session.trainerId || '')
-      setParticipants((session.students||[]).map(s=> ({...s, present:false})))
+      setParticipants((session.students||[]).map(s=> ({
+        ...s,
+        // honor backend-provided presence if available
+        present: s.present ?? false,
+        // carry over any participant-specific exercise records
+        participantExercises: s.participantExercises || []
+      })))
     }
   }, [session])
 
