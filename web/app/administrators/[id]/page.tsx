@@ -68,7 +68,7 @@ export default function AdministratorProfilePage() {
     )
   }
 
-  const initials = `${administratorData.firstName.charAt(0)}${administratorData.lastName.charAt(0)}`.toUpperCase()
+  const initials = !administratorData.firstName || !administratorData.lastName ? "" : `${administratorData.firstName?.charAt(0)}${administratorData.lastName?.charAt(0)}`.toUpperCase()
 
   return (
     <Layout>
