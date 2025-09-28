@@ -114,8 +114,7 @@ export default function EventDetailPage() {
       setLoading(true)
       try {
         // In a real application, this would be an API call
-        // const response = await fetch(`/api/events/${params.id}`)
-        // const data = await response.json()
+
 
         // For now, find the event from mock data
         const eventId = parseInt(params.id as string)

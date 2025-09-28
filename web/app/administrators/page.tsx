@@ -18,17 +18,9 @@ import { Label } from "@/components/ui/label"
 import { Mail, Plus, Search, Shield, AlertCircle, CheckCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
-
-interface Administrator {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
-  fullName: string
-  active: boolean
-  createdAt: string
-  updatedAt: string
-}
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { createAdministratorMutation, findAllAdministratorsOptions } from "@/lib/api-client/@tanstack/react-query.gen"
+import { apiClient } from "@/lib/client"
 
 interface FormData {
   firstName: string
@@ -45,21 +37,10 @@ interface ValidationErrors {
   general?: string
 }
 
-export const getAuthHeaders = () => {
-  const token = localStorage.getItem("token") // adjust key if different
-  return {
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  }
-}
-
 export default function AdministratorsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [userRole, setUserRole] = useState<string>("")
   const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [administrators, setAdministrators] = useState<Administrator[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
 
   // Form state
@@ -67,112 +48,96 @@ export default function AdministratorsPage() {
     firstName: "",
     lastName: "",
     email: "",
-    password: ""
+    password: "",
   })
   const [errors, setErrors] = useState<ValidationErrors>({})
   const [touched, setTouched] = useState<{ [key: string]: boolean }>({})
 
   const router = useRouter()
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     const role = localStorage.getItem("userRole") || "professor"
     setUserRole(role)
 
-    // Redirect if not admin
     if (role !== "admin") {
       router.push("/schedule")
-    } else {
-      loadAdministrators()
     }
   }, [router])
 
-  // Load administrators from API
-  const loadAdministrators = async () => {
-    setIsLoading(true)
-    try {
-      const response = await fetch('http://localhost:8080/administrators', { headers: getAuthHeaders() })
-      if (response.ok) {
-        const data = await response.json()
-        setAdministrators(data.content || [])
-      } else {
-        console.error('Erro ao carregar administradores')
-      }
-    } catch (error) {
-      console.error('Erro ao conectar com a API:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  // Load administrators via useQuery
+  const {
+    data: administrators = [],
+    isLoading,
+  } = useQuery({
+    ...findAllAdministratorsOptions({
+      client: apiClient,
+      query: { pageable: {} } // TODO: implement pagination maybe?
+    }),
+    select: (res) => res.content ?? [],
+  })
+
+  const { mutateAsync: createAdministrator, isPending: isSubmitting } = useMutation(
+    createAdministratorMutation()
+  )
 
   const filteredAdministrators = administrators.filter((admin) => {
     const fullName = admin.fullName || `${admin.firstName} ${admin.lastName}`
-    return fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      admin.email.toLowerCase().includes(searchTerm.toLowerCase())
+    return (
+      fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      admin.email!.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   })
 
-  // Validate individual fields (US-ADM-202 and US-ADM-203)
+  // ---------------- Validation helpers ----------------
   const validateField = (name: string, value: string): string => {
     switch (name) {
-      case 'firstName':
+      case "firstName":
         if (!value.trim()) return "Nome é obrigatório"
         if (value.length > 100) return "Nome deve ter no máximo 100 caracteres"
         return ""
-
-      case 'lastName':
+      case "lastName":
         if (!value.trim()) return "Sobrenome é obrigatório"
         if (value.length > 100) return "Sobrenome deve ter no máximo 100 caracteres"
         return ""
-
-      case 'email':
+      case "email":
         if (!value.trim()) return "Email é obrigatório"
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         if (!emailRegex.test(value)) return "Email deve ter um formato válido (nome@domínio)"
         if (value.length > 255) return "Email deve ter no máximo 255 caracteres"
         return ""
-
-      case 'password':
+      case "password":
         if (!value.trim()) return "Senha é obrigatória"
         if (value.length < 6) return "Senha deve ter pelo menos 6 caracteres"
         if (value.length > 255) return "Senha deve ter no máximo 255 caracteres"
         return ""
-
       default:
         return ""
     }
   }
 
-  // Handle field changes
   const handleFieldChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }))
-
-    // Real-time validation
+    setFormData((prev) => ({ ...prev, [name]: value }))
     if (touched[name]) {
-      const error = validateField(name, value)
-      setErrors(prev => ({ ...prev, [name]: error }))
+      setErrors((prev) => ({ ...prev, [name]: validateField(name, value) }))
     }
   }
 
-  // Handle field blur
   const handleFieldBlur = (name: string) => {
-    setTouched(prev => ({ ...prev, [name]: true }))
-    const error = validateField(name, formData[name as keyof FormData])
-    setErrors(prev => ({ ...prev, [name]: error }))
+    setTouched((prev) => ({ ...prev, [name]: true }))
+    setErrors((prev) => ({ ...prev, [name]: validateField(name, formData[name as keyof FormData]) }))
   }
 
-  // Validate all fields
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {}
-
-    Object.keys(formData).forEach(key => {
+    Object.keys(formData).forEach((key) => {
       const error = validateField(key, formData[key as keyof FormData])
       if (error) newErrors[key as keyof ValidationErrors] = error
     })
-
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  // Reset form
   const resetForm = () => {
     setFormData({ firstName: "", lastName: "", email: "", password: "" })
     setErrors({})
@@ -180,70 +145,41 @@ export default function AdministratorsPage() {
     setShowSuccess(false)
   }
 
-  // Handle form submit
+  // Submit handler
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    // Mark all fields as touched
     setTouched({ firstName: true, lastName: true, email: true, password: true })
 
-    if (!validateForm()) {
-      return
-    }
-
-    setIsSubmitting(true)
-    setErrors({})
+    if (!validateForm()) return
 
     try {
-      const response = await fetch('http://localhost:8080/administrators', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify(formData),
+      await createAdministrator({
+        body: formData,
+        client: apiClient,
       })
-
-      if (response.ok) {
-        // Success
-        setShowSuccess(true)
-        resetForm()
-        loadAdministrators() // Reload list
-
-        // Close dialog after showing success
-        setTimeout(() => {
-          setIsCreateOpen(false)
-          setShowSuccess(false)
-        }, 2000)
+      setShowSuccess(true)
+      resetForm()
+      await queryClient.invalidateQueries({
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === "findAllAdministrators",
+      })
+      setIsCreateOpen(false)
+      setShowSuccess(false)
+    } catch (error: any) {
+      if (error?.status === 409) {
+        setErrors({ email: "Email já está em uso" })
+      } else if (error?.status === 400 && error?.fieldErrors) {
+        setErrors(error.fieldErrors)
       } else {
-        // Handle validation errors from backend
-        const errorData = await response.json()
-
-        if (response.status === 409) {
-          // Email já está em uso (US-ADM-203)
-          setErrors({ email: "Email já está em uso" })
-        } else if (response.status === 400 && errorData.fieldErrors) {
-          // Field validation errors
-          setErrors(errorData.fieldErrors)
-        } else {
-          setErrors({ general: errorData.message || "Erro ao cadastrar administrador" })
-        }
+        setErrors({ general: error?.message || "Erro ao cadastrar administrador" })
       }
-    } catch (error) {
-      console.error('Erro ao criar administrador:', error)
-      setErrors({ general: "Erro de conexão. Verifique se o servidor está rodando." })
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
-  // Don't render if not admin
-  if (userRole !== "admin") {
-    return null
-  }
+  if (userRole !== "admin") return null
 
   const handleDialogOpenChange = (open: boolean) => {
     setIsCreateOpen(open)
-    if (!open) {
-      resetForm()
-    }
+    if (!open) resetForm()
   }
 
   return (
@@ -483,7 +419,7 @@ export default function AdministratorsPage() {
                         </div>
 
                         <div className="text-xs text-muted-foreground mt-1">
-                          Criado em: {new Date(admin.createdAt).toLocaleDateString('pt-BR')}
+                          Criado em: {new Date(admin.createdAt!).toLocaleDateString('pt-BR')}
                         </div>
                       </div>
                     </div>

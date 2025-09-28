@@ -1,11 +1,11 @@
 import {useQuery, keepPreviousData, UseQueryOptions} from "@tanstack/react-query";
-import {findAllOptions, findByIdOptions, findByIdQueryKey} from "@/lib/api-client/@tanstack/react-query.gen";
+import {findAllStudentsOptions, findStudentByIdOptions, findStudentByIdQueryKey} from "@/lib/api-client/@tanstack/react-query.gen";
 import type { Options } from "@/lib/api-client/client/types";
 import {apiClient} from "@/lib/client";
-import type {FindAllData, FindByIdData, StudentResponseDto} from "@/lib/api-client";
+import type {FindAllStudentsData, FindStudentByIdData, StudentResponseDto} from "@/lib/api-client";
 
-export const useStudent = (options: Options<FindByIdData>, queryOptions?: Omit<UseQueryOptions<StudentResponseDto, Error, StudentResponseDto, ReturnType<typeof findByIdQueryKey>>, 'queryKey' | 'queryFn'>) => useQuery({
-  ...findByIdOptions({...options, client: apiClient}),
+export const useStudent = (options: Options<FindStudentByIdData>, queryOptions?: Omit<UseQueryOptions<StudentResponseDto, Error, StudentResponseDto, ReturnType<typeof findStudentByIdQueryKey>>, 'queryKey' | 'queryFn'>) => useQuery({
+  ...findStudentByIdOptions({...options, client: apiClient}),
   ...queryOptions,
 });
 
@@ -38,7 +38,7 @@ export const useStudents = (params: {
     pageSize = 20,
   } = params;
 
-  const options: Options<FindAllData> = {
+  const options: Options<FindAllStudentsData> = {
     query: {
       ...(search && { search }),
       ...(gender && { gender }),
@@ -57,7 +57,7 @@ export const useStudents = (params: {
   };
 
   return useQuery({
-    ...findAllOptions({...options, client: apiClient}),
+    ...findAllStudentsOptions({...options, client: apiClient}),
     staleTime: 1000 * 60 * 5,
     placeholderData: keepPreviousData,
   });
