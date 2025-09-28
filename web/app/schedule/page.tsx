@@ -10,7 +10,8 @@ import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import ClassModal from "@/components/class-modal"
 import { apiClient } from "@/lib/client"
-import { getScheduleOptions, findAllTrainersOptions } from "@/lib/api-client/@tanstack/react-query.gen"
+import { getScheduleOptions, findAllTrainersOptions, getSessionOptions } from "@/lib/api-client/@tanstack/react-query.gen"
+import type { SessionResponseDto, StudentCommitmentResponseDto, TrainerResponseDto } from "@/lib/api-client"
 import { useQuery } from "@tanstack/react-query"
 
 export default function SchedulePage() {
@@ -26,7 +27,7 @@ export default function SchedulePage() {
     weekDays: [] as string[],
     times: [] as { day: string; startTime: string; endTime: string }[],
   })
-  const [localSessions, setLocalSessions] = useState<any[]>([]) // legacy fallback until backend supports true one-off session entity
+  const [localSessions, setLocalSessions] = useState<Array<{ id: string; name: string; instructor: string; time: string; endTime: string; maxStudents: number; currentStudents: number; students: Array<{ id: string; name: string; present: boolean }>; date: string }>>([]) // legacy fallback until backend supports true one-off session entity
   const router = useRouter()
 
   useEffect(() => {
@@ -50,7 +51,7 @@ export default function SchedulePage() {
   })
   const apiSessions = scheduleQuery.data?.sessions || []
   const backendClasses = useMemo(()=> apiSessions.map(s => {
-    const students = (s.students||[]).map(st => ({ id: st.studentId || '', name: st.studentName || 'Aluno', present: st.commitmentStatus === 'ATTENDING' }))
+    const students = (s.students||[]).map(st => ({ id: st.studentId || '', name: st.studentName || 'Aluno', present: (st).present ?? (st.commitmentStatus === 'ATTENDING') }))
     const date = s.startTime?.slice(0,10) || selectedIso
     const realId = s.sessionId && s.sessionId.length > 0 ? s.sessionId : undefined
     return {
@@ -64,12 +65,30 @@ export default function SchedulePage() {
       canceled: !!s.canceled,
       overridden: !!s.instanceOverride,
       currentStudents: students.length,
+      maxStudents: s.maxParticipants ?? students.length,
       students,
       date
     }
   }), [apiSessions, selectedIso])
   const classesForSelectedDate = useMemo(()=> {
-    return [...backendClasses.filter(c => c.date === selectedIso), ...localSessions.filter(ls => ls.date === selectedIso)]
+    const backend = backendClasses.filter(c => c.date === selectedIso)
+    const locals = localSessions
+      .filter(ls => ls.date === selectedIso)
+      .map(ls => ({
+        id: ls.id,
+        real: false,
+        name: ls.name,
+        instructor: ls.instructor,
+        trainerId: undefined,
+        time: ls.time,
+        endTime: ls.endTime,
+        canceled: false,
+        overridden: false,
+        currentStudents: ls.currentStudents,
+        students: ls.students,
+        maxStudents: ls.maxStudents,
+      }))
+    return [...backend, ...locals]
       .sort((a,b)=> (a.time||'').localeCompare(b.time||''))
   }, [backendClasses, localSessions, selectedIso])
 
@@ -77,7 +96,15 @@ export default function SchedulePage() {
   const trainersQuery = useQuery({
     ...findAllTrainersOptions({ client: apiClient })
   })
-  const trainerOptions = (trainersQuery.data || []).map(t => ({ id: t.id || '', name: t.name || '—' })).filter(t => t.id)
+  const trainerOptions = (Array.isArray(trainersQuery.data) ? trainersQuery.data : []).map((t: TrainerResponseDto) => ({ id: t.id || '', name: t.name || '—' })).filter(t => t.id)
+  const trainersById = useMemo(() => {
+    const map: Record<string, string> = {}
+    const list = Array.isArray(trainersQuery.data) ? trainersQuery.data : []
+    for (const t of list) {
+      if (t && t.id && t.name) map[t.id] = t.name
+    }
+    return map
+  }, [trainersQuery.data])
 
   // We limit modal usage here to creating a one-off (standalone) scheduled session representation (only client-side until backend exposes endpoint)
 
@@ -160,6 +187,98 @@ export default function SchedulePage() {
   const goToNextMonth = () => { const m = new Date(currentMonth); m.setMonth(m.getMonth()+1); setCurrentMonth(m); setSelectedDate(new Date(m.getFullYear(), m.getMonth(), 1)) }
   const formatMonthYear = (date: Date) => date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
 
+  // Child component to render a class card; if overridden, fetch session details to use accurate instructor
+  type ClassItem = {
+    id?: string
+    real: boolean
+    name: string
+    instructor: string
+    trainerId?: string
+    time?: string
+    endTime?: string
+    canceled: boolean
+    overridden: boolean
+    currentStudents: number
+    students: Array<{ id: string; name: string; present: boolean }>
+    maxStudents?: number
+  }
+  function ScheduleClassCard({ classItem }: { classItem: ClassItem }) {
+    const detailsQuery = useQuery({
+      ...getSessionOptions({ client: apiClient, path: { sessionId: classItem.id ?? '' }, query: {} }),
+      enabled: Boolean(classItem.real && classItem.overridden && classItem.id)
+    })
+    const details: SessionResponseDto | undefined = detailsQuery.data
+    const resolvedInstructor = (classItem.overridden && classItem.real)
+      ? (details?.trainerName ?? (details?.trainerId ? trainersById[details.trainerId] : undefined) ?? '—')
+      : classItem.instructor
+    const studentsOverride: StudentCommitmentResponseDto[] | undefined = details?.students
+    const resolvedStudents = studentsOverride
+      ? studentsOverride.map(s => ({ id: s.studentId ?? '', name: s.studentName ?? 'Aluno', present: s.present ?? false }))
+      : classItem.students
+    const onManage = () => {
+      if (!classItem.real || !classItem.id) return
+      const startHHmm = (classItem.time || '').replace(':','')
+      const trainer = classItem.trainerId || ''
+      const qs = `?date=${selectedIso}${startHHmm? `&start=${startHHmm}`:''}${trainer? `&trainer=${trainer}`:''}`
+      router.push(`/schedule/${classItem.id}${qs}`)
+    }
+    return (
+      <Card key={classItem.id} className={`hover:shadow-sm transition-shadow ${classItem.canceled? 'opacity-70 grayscale':''}`}>
+        <CardHeader className="pb-2">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1 flex-1 min-w-0">
+              <CardTitle className="text-base leading-tight flex items-center gap-2">
+                {classItem.name}
+                {classItem.overridden && <Badge variant="outline" className="text-[10px]">Ajuste</Badge>}
+                {classItem.canceled && <Badge variant="destructive" className="text-[10px]">Cancelada</Badge>}
+              </CardTitle>
+              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  <span>{classItem.time}{classItem.endTime? ` - ${classItem.endTime}`:''}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  <span>{resolvedInstructor}</span>
+                </div>
+              </div>
+            </div>
+            <Badge className={`${getOccupancyColor(classItem.currentStudents, classItem.maxStudents || classItem.currentStudents)} text-xs`}>
+              {classItem.currentStudents}/{classItem.maxStudents || classItem.currentStudents}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {resolvedStudents.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Alunos</span>
+                <Button size="sm" variant="outline" disabled={!classItem.real} title={!classItem.real? 'Sessão não materializada ainda':'Gerenciar sessão'} className="h-7 px-2 text-xs bg-transparent" onClick={onManage}>Gerenciar</Button>
+              </div>
+              <div className="max-h-32 overflow-y-auto space-y-1" style={{ scrollbarWidth: "thin" }}>
+                {resolvedStudents.map((student: {id:string; name:string; present:boolean}) => (
+                  <div key={student.id} className="flex items-center gap-2 p-1">
+                    <Avatar className="w-6 h-6">
+                      <AvatarFallback className="text-xs">{student.name.split(" ").map((n: string) => n[0]).join("")}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm flex-1 min-w-0 truncate">{student.name}</span>
+                    {student.present ? <CheckCircle className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {resolvedStudents.length === 0 && (
+            <div className="text-center py-2">
+              <p className="text-sm text-muted-foreground">Nenhum aluno inscrito</p>
+              <Button size="sm" variant="outline" disabled={!classItem.real} title={!classItem.real? 'Sessão não materializada ainda':'Adicionar alunos'} className="mt-2 h-7 px-2 text-xs bg-transparent" onClick={onManage}>Adicionar Alunos</Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Layout>
       <div className="space-y-3 pb-4">
@@ -234,71 +353,7 @@ export default function SchedulePage() {
             </Card>
           ) : (
             classesForSelectedDate.map(classItem => (
-              <Card key={classItem.id} className={`hover:shadow-sm transition-shadow ${classItem.canceled? 'opacity-70 grayscale':''}`}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1 flex-1 min-w-0">
-                      <CardTitle className="text-base leading-tight flex items-center gap-2">
-                        {classItem.name}
-                        {classItem.overridden && <Badge variant="outline" className="text-[10px]">Ajuste</Badge>}
-                        {classItem.canceled && <Badge variant="destructive" className="text-[10px]">Cancelada</Badge>}
-                      </CardTitle>
-                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          <span>{classItem.time}{classItem.endTime? ` - ${classItem.endTime}`:''}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <User className="w-3 h-3" />
-                          <span>{classItem.instructor}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <Badge className={`${getOccupancyColor(classItem.currentStudents, classItem.maxStudents || classItem.currentStudents)} text-xs`}>
-                      {classItem.currentStudents}/{classItem.maxStudents || classItem.currentStudents}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {classItem.students.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Alunos</span>
-                        <Button size="sm" variant="outline" disabled={!classItem.real} title={!classItem.real? 'Sessão não materializada ainda':'Gerenciar sessão'} className="h-7 px-2 text-xs bg-transparent" onClick={() => {
-                          if (!classItem.real || !classItem.id) return
-                          const startHHmm = (classItem.time || '').replace(':','')
-                          const trainer = classItem.trainerId || ''
-                          const qs = `?date=${selectedIso}${startHHmm? `&start=${startHHmm}`:''}${trainer? `&trainer=${trainer}`:''}`
-                          router.push(`/schedule/${classItem.id}${qs}`)
-                        }}>Gerenciar</Button>
-                      </div>
-                      <div className="max-h-32 overflow-y-auto space-y-1" style={{ scrollbarWidth: "thin" }}>
-                        {classItem.students.map((student: {id:string; name:string; present:boolean}) => (
-                          <div key={student.id} className="flex items-center gap-2 p-1">
-                            <Avatar className="w-6 h-6">
-                              <AvatarFallback className="text-xs">{student.name.split(" ").map((n: string) => n[0]).join("")}</AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm flex-1 min-w-0 truncate">{student.name}</span>
-                            {student.present ? <CheckCircle className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {classItem.students.length === 0 && (
-                    <div className="text-center py-2">
-                      <p className="text-sm text-muted-foreground">Nenhum aluno inscrito</p>
-                      <Button size="sm" variant="outline" disabled={!classItem.real} title={!classItem.real? 'Sessão não materializada ainda':'Adicionar alunos'} className="mt-2 h-7 px-2 text-xs bg-transparent" onClick={() => {
-                        if (!classItem.real || !classItem.id) return
-                        const startHHmm = (classItem.time || '').replace(':','')
-                        const trainer = classItem.trainerId || ''
-                        const qs = `?date=${selectedIso}${startHHmm? `&start=${startHHmm}`:''}${trainer? `&trainer=${trainer}`:''}`
-                        router.push(`/schedule/${classItem.id}${qs}`)
-                      }}>Adicionar Alunos</Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <ScheduleClassCard key={classItem.id} classItem={classItem} />
             ))
           )}
         </div>

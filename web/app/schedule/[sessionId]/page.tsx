@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { ArrowLeft, Activity, Calendar, CheckCircle, Edit, Save, X, XCircle } from "lucide-react"
 import { apiClient } from "@/lib/client"
-import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updateTrainerMutation, updatePresenceMutation, removeParticipantMutation, addParticipantMutation, addExerciseMutation, updateExerciseMutation, removeExerciseMutation, findAllOptions, findAll1Options } from "@/lib/api-client/@tanstack/react-query.gen"
+import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updateTrainerMutation, updatePresenceMutation, removeParticipantMutation, addParticipantMutation, addExerciseMutation, updateExerciseMutation, removeExerciseMutation, findAll1Options } from "@/lib/api-client/@tanstack/react-query.gen"
+import { useStudents } from "@/lib/hooks/student-queries"
 
 interface ParticipantExercise { id?:string; exerciseId?:string; exerciseName?:string; setsCompleted?:number; repsCompleted?:number; weightCompleted?:number; exerciseNotes?:string }
 interface SessionParticipant { studentId:string; studentName?:string; present?:boolean; commitmentStatus?: 'ATTENDING' | 'NOT_ATTENDING' | 'TENTATIVE'; participantExercises?:ParticipantExercise[] }
@@ -44,9 +45,14 @@ export default function ClassDetailPage() {
   // Trainers
   const trainersQuery = useQuery({ ...findAllTrainersOptions({ client: apiClient }) })
 
-  // Students (for Add Student dialog)
-  const studentsQuery = useQuery({ ...findAllOptions({ client: apiClient, query: { pageable: { page: 0, size: 200 } as any } }) })
-  const allStudents = ((studentsQuery.data as any)?.content || []) as Array<{id?:string; name?:string; surname?:string}>
+  // Students (for Add Student dialog) with pagination similar to Students page
+  const [studentSearchTerm, setStudentSearchTerm] = useState("")
+  const [studentPage, setStudentPage] = useState(0)
+  const pageSize = 10
+  const studentsQuery = useStudents({ search: studentSearchTerm || undefined, page: studentPage, pageSize })
+  const pageData = (studentsQuery.data as any) || {}
+  const allStudents = (pageData.content || []) as Array<{id?:string; name?:string; surname?:string}>
+  useEffect(()=> { setStudentPage(0) }, [studentSearchTerm])
 
   // Exercises catalog (for exercise selection)
   const exercisesQuery = useQuery({ ...findAll1Options({ client: apiClient, query: { pageable: { page:0, size: 200 } as any } }) })
@@ -57,7 +63,6 @@ export default function ClassDetailPage() {
   const [isExerciseOpen, setIsExerciseOpen] = useState(false)
   const [isEditClassOpen, setIsEditClassOpen] = useState(false)
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
-  const [studentSearchTerm, setStudentSearchTerm] = useState("")
   const [exerciseSearchTerm, setExerciseSearchTerm] = useState("")
   const [editTrainer, setEditTrainer] = useState<string>("none")
   const [addDialogOpen, setAddDialogOpen] = useState(false)
@@ -103,7 +108,16 @@ export default function ClassDetailPage() {
 
   const addStudent = async (studentId: string) => {
     if (!session) return
+    // Optimistic UI: mark as present by default
+    setParticipants(prev => {
+      const exists = prev.some(p => p.studentId === studentId)
+      if (exists) return prev
+      const name = (pageData.content || []).find((s:any)=> s.id===studentId)
+      return [...prev, { studentId, studentName: name? `${name.name||''} ${name.surname||''}`.trim() : studentId, present: true, participantExercises: [] }]
+    })
     await mAddParticipant.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId }, body:{ studentId } })
+    // Ensure presence true also persisted (if backend doesn't default);
+    try { await mPresence.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId, studentId }, body:{ present: true } }) } catch {}
     invalidate()
   }
 
@@ -309,6 +323,11 @@ export default function ClassDetailPage() {
                 ))}
                 {availableStudents.length===0 && <div className="text-center text-sm text-muted-foreground py-6">Nenhum aluno disponível.</div>}
               </div>
+              <div className="flex items-center justify-between pt-2">
+                <Button size="sm" variant="outline" disabled={studentPage<=0 || studentsQuery.isFetching} onClick={()=> setStudentPage(p=> Math.max(0, p-1))}>Anterior</Button>
+                <span className="text-xs text-muted-foreground">Página {studentPage + 1} de {Math.max(1, (pageData.totalPages ?? 1))}</span>
+                <Button size="sm" variant="outline" disabled={(studentPage+1)>= (pageData.totalPages ?? 1) || studentsQuery.isFetching} onClick={()=> setStudentPage(p=> p+1)}>Próxima</Button>
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={()=> setAddDialogOpen(false)}>Fechar</Button>
@@ -330,9 +349,9 @@ export default function ClassDetailPage() {
                   <Input placeholder="Buscar exercício..." value={exerciseSearchTerm} onChange={(e)=> setExerciseSearchTerm(e.target.value)} />
                   <div className="max-h-48 overflow-y-auto border rounded">
                     {(filteredExercises||[]).map(ex => (
-                      <div key={ex.id} className={`px-3 py-2 text-sm cursor-pointer hover:bg-muted ${exerciseForm.exerciseId===ex.id? 'bg-muted':''}`} onClick={()=> setExerciseForm(prev => ({ ...prev, exerciseId: ex.id || '' }))}>
+                      <button key={ex.id} type="button" className={`w-full text-left px-3 py-2 text-sm cursor-pointer hover:bg-muted ${exerciseForm.exerciseId===ex.id? 'bg-muted':''}`} onClick={(e)=> { e.preventDefault(); setExerciseForm(prev => ({ ...prev, exerciseId: ex.id || '' })); }}>
                         {ex.name}
-                      </div>
+                      </button>
                     ))}
                     {filteredExercises.length===0 && <div className="text-center text-sm text-muted-foreground py-4">Nenhum exercício encontrado</div>}
                   </div>
