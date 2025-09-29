@@ -306,7 +306,7 @@ export default function ClassDetailPage() {
                 <div className="flex items-center gap-2 text-sm">
                   <span className="w-4 h-4 inline-flex items-center justify-center rounded-full bg-muted text-[10px]">P</span>
                   <span>
-                    {(students||[]).length} alunos
+                    {(students||[]).length} aluno{(students||[]).length === 1 ? '' : 's'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
