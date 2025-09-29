@@ -22,8 +22,8 @@ export default function SchedulePage() {
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [userRole, setUserRole] = useState<string>("")
   const [isNewClassOpen, setIsNewClassOpen] = useState(false)
-  type OneOffClassData = { name: string; trainerId: string; trainerName?: string; startTime: string; endTime: string; maxStudents: string }
-  const [modalInitialData, setModalInitialData] = useState<Partial<OneOffClassData>>({ name: "", trainerId: "", maxStudents: "2", startTime: "", endTime: "" })
+  type OneOffClassData = { name: string; trainerId: string; trainerName?: string; startTime: string; endTime: string }
+  const [modalInitialData, setModalInitialData] = useState<Partial<OneOffClassData>>({ name: "", trainerId: "", startTime: "", endTime: "" })
   const [localSessions, setLocalSessions] = useState<Array<{ id: string; name: string; instructor: string; time: string; endTime: string; currentStudents: number; students: Array<{ id: string; name: string; present: boolean }>; date: string }>>([]) // legacy fallback for cases when backend call fails
   const router = useRouter()
 
@@ -221,7 +221,7 @@ export default function SchedulePage() {
 
   const handleCloseClassModal = () => setIsNewClassOpen(false)
   const handleOpenClassModal = () => {
-    setModalInitialData({ name: "", trainerId: "", maxStudents: "2", startTime: "", endTime: "" })
+    setModalInitialData({ name: "", trainerId: "", startTime: "", endTime: "" })
     setIsNewClassOpen(true)
   }
 
