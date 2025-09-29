@@ -44,7 +44,6 @@ export default function SchedulePage() {
   const [isNewClassOpen, setIsNewClassOpen] = useState(false)
   type OneOffClassData = { name: string; trainerId: string; trainerName?: string; startTime: string; endTime: string }
   const [modalInitialData, setModalInitialData] = useState<Partial<OneOffClassData>>({ name: "", trainerId: "", startTime: "", endTime: "" })
-  const [localSessions, setLocalSessions] = useState<Array<{ id: string; name: string; instructor: string; time: string; endTime: string; currentStudents: number; students: Array<{ id: string; name: string; present: boolean }>; date: string }>>([]) // legacy fallback for cases when backend call fails
   const router = useRouter()
 
   useEffect(() => {
@@ -111,26 +110,10 @@ export default function SchedulePage() {
     }
   }), [apiSessions, selectedIso])
   const classesForSelectedDate = useMemo(()=> {
-    const backend = backendClasses.filter(c => c.date === selectedIso)
-    const locals = localSessions
-      .filter(ls => ls.date === selectedIso)
-      .map(ls => ({
-        id: ls.id,
-        real: false,
-        name: ls.name,
-        instructor: ls.instructor,
-        trainerId: undefined,
-        time: ls.time,
-        endTime: ls.endTime,
-        canceled: false,
-        overridden: false,
-        currentStudents: ls.currentStudents,
-        students: ls.students,
-        // no capacity display
-      }))
-    return [...backend, ...locals]
+    return backendClasses
+      .filter(c => c.date === selectedIso)
       .sort((a,b)=> (a.time||'').localeCompare(b.time||''))
-  }, [backendClasses, localSessions, selectedIso])
+  }, [backendClasses, selectedIso])
 
   // Trainers (real backend)
   const trainersQuery = useQuery({
@@ -204,18 +187,7 @@ export default function SchedulePage() {
       await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: recentStart, endDate: recentEnd } }) })
       setIsNewClassOpen(false)
     } catch {
-      // Fallback: create a local-only entry if backend fails
-      const newLocal = {
-        id: `oneoff-${Date.now()}`,
-        name: formData.name,
-        instructor: (trainerOptions.find(t=>t.id===formData.trainerId)?.name) || '—',
-        time: formData.startTime,
-        endTime: formData.endTime,
-        currentStudents: 0,
-        students: [],
-        date: selectedIso
-      }
-      setLocalSessions(prev => [...prev, newLocal])
+      // No local fallback: rely only on backend state
       setIsNewClassOpen(false)
     }
   }
