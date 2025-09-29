@@ -10,13 +10,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { ArrowLeft, Activity, Calendar, CheckCircle, Edit, Save, X, XCircle } from "lucide-react"
+import { ArrowLeft, Activity, Calendar, CheckCircle, Edit, Save, X, XCircle, Plus } from "lucide-react"
 import { apiClient } from "@/lib/client"
 import { Checkbox } from "@/components/ui/checkbox"
-import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updatePresenceMutation, getScheduleQueryKey, findAllExercisesOptions, updateRegisteredParticipantExerciseMutation, addRegisteredParticipantExerciseMutation, removeRegisteredParticipantExerciseMutation, updateSessionTrainerMutation, removeSessionParticipantMutation, addSessionParticipantMutation, cancelOrRestoreSessionMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updatePresenceMutation, getScheduleQueryKey, findAllExercisesOptions, updateRegisteredParticipantExerciseMutation, addRegisteredParticipantExerciseMutation, removeRegisteredParticipantExerciseMutation, updateSessionTrainerMutation, removeSessionParticipantMutation, addSessionParticipantMutation, cancelOrRestoreSessionMutation, createExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { Badge } from "@/components/ui/badge"
 import { useStudents } from "@/lib/hooks/student-queries"
-import type { ExerciseResponseDto, FindAllStudentsResponse, PageExerciseResponseDto, PageStudentResponseDto, ParticipantExerciseResponseDto, SessionResponseDto, StudentCommitmentResponseDto, TrainerResponseDto } from "@/lib/api-client"
+import type { ExerciseResponseDto, PageExerciseResponseDto, PageStudentResponseDto, SessionResponseDto, StudentCommitmentResponseDto, TrainerResponseDto, ScheduleResponseDto } from "@/lib/api-client"
+import { useForm } from "react-hook-form"
 
 export default function ClassDetailPage() {
   const { sessionId: rawSessionId } = useParams<{sessionId:string}>()
@@ -65,9 +66,14 @@ export default function ClassDetailPage() {
   const [exerciseSearchTerm, setExerciseSearchTerm] = useState("")
   const [editTrainer, setEditTrainer] = useState<string>("none")
   const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [isCreateExerciseOpen, setIsCreateExerciseOpen] = useState(false)
 
-  // Exercise form
-  const [exerciseForm, setExerciseForm] = useState({ exerciseId: "", sets: "", reps: "", weight: "", notes: "" })
+  // Exercise forms (react-hook-form)
+  type RegisterExerciseForm = { exerciseId: string; sets?: string; reps?: string; weight?: string; notes?: string }
+  const registerExerciseForm = useForm<RegisterExerciseForm>({ defaultValues: { exerciseId: "", sets: "", reps: "", weight: "", notes: "" } })
+  type CreateExerciseForm = { name: string; description?: string }
+  const createExerciseForm = useForm<CreateExerciseForm>({ defaultValues: { name: "", description: "" } })
+  // removed local create exercise state in favor of react-hook-form
 
   useEffect(() => {
     if (session) {
@@ -84,6 +90,7 @@ export default function ClassDetailPage() {
   const mUpdateExercise = useMutation(updateRegisteredParticipantExerciseMutation())
   const mRemoveExercise = useMutation(removeRegisteredParticipantExerciseMutation())
   const mCancelRestore = useMutation(cancelOrRestoreSessionMutation())
+  const mCreateExercise = useMutation(createExerciseMutation())
 
   // Invalidate this session and also the schedule listing for the month containing this session's date
   const invalidateScheduleForSessionMonth = () => {
@@ -176,22 +183,54 @@ export default function ClassDetailPage() {
   const openExerciseDialog = (sid: string) => {
     setSelectedStudentId(sid)
     setIsExerciseOpen(true)
-    setExerciseForm({ exerciseId: "", sets: "", reps: "", weight: "", notes: "" })
+    registerExerciseForm.reset({ exerciseId: "", sets: "", reps: "", weight: "", notes: "" })
   }
 
-  const submitExercise = async () => {
-    if (!session || !selectedStudentId || !exerciseForm.exerciseId) return
-  await mAddExercise.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId!, studentId: selectedStudentId! }, body:{
-      exerciseId: exerciseForm.exerciseId,
-      setsCompleted: exerciseForm.sets ? parseInt(exerciseForm.sets) : undefined,
-      repsCompleted: exerciseForm.reps ? parseInt(exerciseForm.reps) : undefined,
-      weightCompleted: exerciseForm.weight ? parseFloat(exerciseForm.weight) : undefined,
-      exerciseNotes: exerciseForm.notes || undefined
+  const openCreateExercise = () => {
+    createExerciseForm.reset({ name: "", description: "" })
+    setIsCreateExerciseOpen(true)
+  }
+
+  const addToExercisesCaches = (ex: ExerciseResponseDto) => {
+    const entries = qc.getQueriesData<import("@/lib/api-client").PageExerciseResponseDto>({
+      predicate: (q) => {
+        const k0 = (q.queryKey as any)?.[0]
+        return k0 && typeof k0 === 'object' && k0._id === 'findAllExercises'
+      }
+    })
+    entries.forEach(([key, data]) => {
+      if (!data) return
+      const content = data.content ?? []
+      if (content.some(e => e.id === ex.id)) return
+      qc.setQueryData(key, { ...data, content: [ex, ...content] })
+    })
+  }
+
+  const createExerciseAndUse = createExerciseForm.handleSubmit(async (values) => {
+    const name = values.name.trim()
+    if (!name) return
+    const description = values.description?.trim() || undefined
+    const created = await mCreateExercise.mutateAsync({ client: apiClient, body: { name, description } })
+    // Update local caches so it appears in the list
+    addToExercisesCaches(created)
+    // Select it in the register exercise modal
+    registerExerciseForm.setValue("exerciseId", created.id || "")
+    setIsCreateExerciseOpen(false)
+  })
+
+  const submitExercise = registerExerciseForm.handleSubmit(async (values) => {
+    if (!session || !selectedStudentId || !values.exerciseId) return
+    await mAddExercise.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId!, studentId: selectedStudentId! }, body:{
+      exerciseId: values.exerciseId,
+      setsCompleted: values.sets ? parseInt(values.sets) : undefined,
+      repsCompleted: values.reps ? parseInt(values.reps) : undefined,
+      weightCompleted: values.weight ? parseFloat(values.weight) : undefined,
+      exerciseNotes: values.notes || undefined
     } })
     setIsExerciseOpen(false)
     setSelectedStudentId(null)
     invalidate()
-  }
+  })
 
   const deleteExercise = async (exerciseRecordId: string) => {
     if (!session) return
@@ -410,7 +449,7 @@ export default function ClassDetailPage() {
                       <div className="space-y-2 pt-2 border-t">
                         <p className="text-sm font-medium">Exercícios registrados:</p>
                         <div className="space-y-1">
-                          {(student.participantExercises||[]).map((ex) => (
+                          {[...((student.participantExercises||[]))].sort((a,b)=> (a.exerciseName||'').localeCompare(b.exerciseName||'')).map((ex) => (
                             <div key={ex.id} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm gap-2">
                               <div className="flex items-center gap-2 flex-1 min-w-0">
                                 <Checkbox checked={!!ex.done} onCheckedChange={(v)=> ex.id && student.studentId && toggleExerciseDone(student.studentId, ex.id, !!ex.done)} aria-label="Marcar como concluído" />
@@ -476,17 +515,24 @@ export default function ClassDetailPage() {
         <Dialog open={isExerciseOpen} onOpenChange={setIsExerciseOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Registrar Exercício</DialogTitle>
+              <DialogTitle>
+                Registrar Exercício{selectedStudentId ? ` - ${(students.find(s=> s.studentId===selectedStudentId)?.studentName)||''}`: ''}
+              </DialogTitle>
               <DialogDescription>Adicione um exercício realizado pelo aluno</DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
               <div className="space-y-1">
                 <Label>Exercício</Label>
                 <div className="space-y-2">
-                  <Input placeholder="Buscar exercício..." value={exerciseSearchTerm} onChange={(e)=> setExerciseSearchTerm(e.target.value)} />
+                  <div className="flex items-center gap-2">
+                    <Input placeholder="Buscar exercício..." value={exerciseSearchTerm} onChange={(e)=> setExerciseSearchTerm(e.target.value)} className="flex-1" />
+                    <Button type="button" size="icon" variant="outline" onClick={openCreateExercise} aria-label="Novo exercício" title="Novo exercício">
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
                   <div className="max-h-48 overflow-y-auto border rounded">
                     {(filteredExercises||[]).map(ex => (
-                      <button key={ex.id} type="button" className={`w-full text-left px-3 py-2 text-sm cursor-pointer hover:bg-muted ${exerciseForm.exerciseId===ex.id? 'bg-muted':''}`} onClick={(e)=> { e.preventDefault(); setExerciseForm(prev => ({ ...prev, exerciseId: ex.id || '' })); }}>
+                      <button key={ex.id} type="button" className={`w-full text-left px-3 py-2 text-sm cursor-pointer hover:bg-muted ${registerExerciseForm.watch('exerciseId')===ex.id? 'bg-muted':''}`} onClick={(e)=> { e.preventDefault(); registerExerciseForm.setValue('exerciseId', ex.id || ''); }}>
                         {ex.name}
                       </button>
                     ))}
@@ -497,25 +543,51 @@ export default function ClassDetailPage() {
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1">
                   <Label>Séries</Label>
-                  <Input type="number" value={exerciseForm.sets} onChange={(e)=> setExerciseForm(prev => ({ ...prev, sets: e.target.value }))} placeholder="3" />
+                  <Input type="number" placeholder="3" {...registerExerciseForm.register('sets')} />
                 </div>
                 <div className="space-y-1">
                   <Label>Repetições</Label>
-                  <Input type="number" value={exerciseForm.reps} onChange={(e)=> setExerciseForm(prev => ({ ...prev, reps: e.target.value }))} placeholder="10" />
+                  <Input type="number" placeholder="10 ou 30s" {...registerExerciseForm.register('reps')} />
                 </div>
                 <div className="space-y-1">
                   <Label>Carga (kg)</Label>
-                  <Input type="number" step="0.5" value={exerciseForm.weight} onChange={(e)=> setExerciseForm(prev => ({ ...prev, weight: e.target.value }))} placeholder="20" />
+                  <Input type="number" step="0.5" placeholder="20" {...registerExerciseForm.register('weight')} />
                 </div>
               </div>
               <div className="space-y-1">
                 <Label>Notas</Label>
-                <Input value={exerciseForm.notes} onChange={(e)=> setExerciseForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="Observações do exercício..." />
+                <Input placeholder="Observações do exercício..." {...registerExerciseForm.register('notes')} />
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={()=> setIsExerciseOpen(false)}>Cancelar</Button>
               <Button onClick={submitExercise} className="bg-green-600 hover:bg-green-700"><Save className="w-4 h-4 mr-2" />Registrar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Create Exercise Dialog */}
+        <Dialog open={isCreateExerciseOpen} onOpenChange={setIsCreateExerciseOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Novo Exercício</DialogTitle>
+              <DialogDescription>Crie um novo exercício</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label>Nome do Exercício</Label>
+                <Input placeholder="Ex: Supino Inclinado" {...createExerciseForm.register('name', { required: true })} />
+              </div>
+              <div className="space-y-1">
+                <Label>Descrição</Label>
+                <Input placeholder="Descrição do exercício..." {...createExerciseForm.register('description')} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={()=> setIsCreateExerciseOpen(false)}>Cancelar</Button>
+              <Button onClick={createExerciseAndUse} disabled={!createExerciseForm.watch('name')?.trim()} className="bg-green-600 hover:bg-green-700">
+                <Save className="w-4 h-4 mr-2" />Criar e Usar
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
