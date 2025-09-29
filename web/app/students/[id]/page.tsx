@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { StudentResponseDto } from "@/lib/api-client/types.gen"
 import {useStudent} from "@/lib/hooks/student-queries";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { getCurrentStudentPlanOptions, getStudentPlanHistoryOptions, getAllPlansOptions, assignPlanToStudentMutation, getStudentCommitmentsOptions, getCurrentStudentPlanQueryKey, getStudentPlanHistoryQueryKey, getStudentCommitmentsQueryKey, getScheduleOptions } from '@/lib/api-client/@tanstack/react-query.gen'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
@@ -112,6 +112,40 @@ export default function StudentProfilePage() {
   const recentScheduleQuery = useQuery({
     ...getScheduleOptions({ client: apiClient, query: { startDate: startDateIso, endDate: endDateIso } }),
   })
+  // Exercises tab: fetch last 30 days of schedule and derive registered exercises for this student
+  const startExercisesIso = formatLocalDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30))
+  const exercisesScheduleQuery = useQuery({
+    ...getScheduleOptions({ client: apiClient, query: { startDate: startExercisesIso, endDate: endDateIso } }),
+    enabled: !!studentId,
+  })
+  const exercisesForStudent = useMemo(() => {
+    const sessions = exercisesScheduleQuery.data?.sessions ?? []
+    const items = sessions
+      .filter((s) => s.students?.some((st) => st.studentId === studentId && (st.participantExercises ?? []).length > 0))
+      .map((s) => {
+        const participant = s.students?.find((st) => st.studentId === studentId)
+        const list = [...(participant?.participantExercises ?? [])]
+          .sort((a,b)=> (a.exerciseName||'').localeCompare(b.exerciseName||''))
+          .map((ex) => ({
+          id: ex.id || `${s.sessionId}-${ex.exerciseId}`,
+          name: ex.exerciseName || ex.exerciseId || 'Exercício',
+          sets: ex.setsCompleted ?? undefined,
+          reps: ex.repsCompleted != null ? String(ex.repsCompleted) : undefined,
+          weight: ex.weightCompleted != null ? `${ex.weightCompleted}kg` : undefined,
+          notes: ex.exerciseNotes || undefined,
+        }))
+        return {
+          key: s.sessionId || `${s.seriesName}-${s.startTime}`,
+          className: s.seriesName || 'Aula',
+          instructor: s.trainerName || 'Instrutor',
+          classDate: s.startTime || '',
+          exercises: list,
+        }
+      })
+      // Newest first
+      .sort((a, b) => new Date(b.classDate || 0).getTime() - new Date(a.classDate || 0).getTime())
+    return items
+  }, [exercisesScheduleQuery.data, studentId])
   const assignPlanMutation = useMutation(assignPlanToStudentMutation({ client: apiClient }))
   const [openAssignDialog, setOpenAssignDialog] = useState(false)
   const [assignPlanId, setAssignPlanId] = useState<string>("")
@@ -590,30 +624,34 @@ export default function StudentProfilePage() {
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Exercícios Realizados</CardTitle>
+                  <CardDescription>Últimos 30 dias</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {studentMockData.exercises.length === 0 && (
+                    {exercisesScheduleQuery.isLoading && (
+                      <p className="text-xs text-muted-foreground">Carregando exercícios...</p>
+                    )}
+                    {!exercisesScheduleQuery.isLoading && exercisesForStudent.length === 0 && (
                       <div className="text-center py-8">
                         <Activity className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                         <p className="text-muted-foreground">Nenhum exercício encontrado</p>
                       </div>
                     )}
 
-                    {studentMockData.exercises.map((exerciseItem, index) => (
-                      <div key={index} className="p-4 rounded-lg border bg-muted/50">
+                    {exercisesForStudent.map((exerciseItem) => (
+                      <div key={exerciseItem.key} className="p-4 rounded-lg border bg-muted/50">
                         <div className="mb-3">
                           <h3 className="font-medium">{exerciseItem.className} - {exerciseItem.instructor}</h3>
-                          <p className="text-xs text-muted-foreground">{new Date(exerciseItem.classDate).toLocaleDateString("pt-BR")}</p>
+                          <p className="text-xs text-muted-foreground">{exerciseItem.classDate ? new Date(exerciseItem.classDate).toLocaleDateString("pt-BR") : '—'}</p>
                         </div>
 
                         <div className="space-y-2">
-                          {exerciseItem.exercises.map((exercise: Exercise) => (
+                          {exerciseItem.exercises.map((exercise) => (
                             <div key={exercise.id} className="text-sm">
                               <div>
                                 <span className="text-muted-foreground">{exercise.name}</span>
                                 <p className="text-xs text-muted-foreground">
-                                  {exercise.sets}x{exercise.reps} {exercise.weight ? `• ${exercise.weight}` : ""} {exercise.duration ? `• ${exercise.duration}` : ""}
+                                  {exercise.sets != null ? `${exercise.sets}x` : ''}{exercise.reps ?? ''} {exercise.weight ? `• ${exercise.weight}` : ''} {exercise.notes ? `• ${exercise.notes}` : ''}
                                 </p>
                               </div>
                             </div>
