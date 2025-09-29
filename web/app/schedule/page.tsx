@@ -159,13 +159,12 @@ export default function SchedulePage() {
 
   // Aggregate counts per day
   const daySessionCounts = useMemo(()=> {
-    const map: Record<string, { total:number; present:number; capacity:number }> = {}
+    const map: Record<string, { total:number; present:number }> = {}
     backendClasses.forEach(cls => {
       const key = cls.date
-      if(!map[key]) map[key] = { total:0, present:0, capacity:0 }
+      if(!map[key]) map[key] = { total:0, present:0 }
       map[key].total += 1
       map[key].present += cls.students.filter(s=> s.present).length
-      map[key].capacity += cls.currentStudents // placeholder; backend does not yet expose maxParticipants
     })
     return map
   }, [backendClasses])
