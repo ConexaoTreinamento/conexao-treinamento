@@ -539,11 +539,20 @@ export default function ClassDetailPage() {
                     </Button>
                   </div>
                   <div className="max-h-48 overflow-y-auto border rounded">
-                    {(filteredExercises||[]).map(ex => (
-                      <button key={ex.id} type="button" className={`w-full text-left px-3 py-2 text-sm cursor-pointer hover:bg-muted ${registerExerciseForm.watch('exerciseId')===ex.id? 'bg-muted':''}`} onClick={(e)=> { e.preventDefault(); registerExerciseForm.setValue('exerciseId', ex.id || ''); }}>
-                        {ex.name}
-                      </button>
-                    ))}
+                    {(filteredExercises||[]).map(ex => {
+                      const selected = registerExerciseForm.watch('exerciseId')===ex.id
+                      return (
+                        <button
+                          key={ex.id}
+                          type="button"
+                          className={`w-full text-left px-3 py-2 text-sm cursor-pointer ${selected ? 'bg-green-600 text-white hover:bg-green-700' : 'hover:bg-muted'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600`}
+                          aria-pressed={selected}
+                          onClick={(e)=> { e.preventDefault(); registerExerciseForm.setValue('exerciseId', ex.id || ''); }}
+                        >
+                          {ex.name}
+                        </button>
+                      )
+                    })}
                     {filteredExercises.length===0 && <div className="text-center text-sm text-muted-foreground py-4">Nenhum exercício encontrado</div>}
                   </div>
                 </div>
@@ -567,7 +576,7 @@ export default function ClassDetailPage() {
                 <Input placeholder="Observações do exercício..." {...registerExerciseForm.register('notes')} />
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="gap-y-2">
               <Button variant="outline" onClick={()=> setIsExerciseOpen(false)}>Cancelar</Button>
               <Button onClick={submitExercise} className="bg-green-600 hover:bg-green-700"><Save className="w-4 h-4 mr-2" />Registrar</Button>
             </DialogFooter>
