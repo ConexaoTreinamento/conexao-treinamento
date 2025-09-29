@@ -115,7 +115,7 @@ export default function StudentProfilePage() {
   const assignPlanMutation = useMutation(assignPlanToStudentMutation({ client: apiClient }))
   const [openAssignDialog, setOpenAssignDialog] = useState(false)
   const [assignPlanId, setAssignPlanId] = useState<string>("")
-  const [assignStartDate, setAssignStartDate] = useState<string>(()=> new Date().toISOString().slice(0,10))
+  const [assignStartDate, setAssignStartDate] = useState<string>(()=> formatLocalDate(new Date()))
   const [assignNotes, setAssignNotes] = useState("")
 
   const { mutateAsync: deleteStudent, isPending: isDeleting } = useDeleteStudent()
