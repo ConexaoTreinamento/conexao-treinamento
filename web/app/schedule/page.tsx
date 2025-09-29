@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Calendar, Clock, Plus, User, CheckCircle, XCircle, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import Layout from "@/components/layout"
 import ClassModal from "@/components/class-modal"
@@ -216,7 +217,6 @@ export default function SchedulePage() {
     overridden: boolean
     currentStudents: number
     students: Array<{ id: string; name: string; present: boolean }>
-    // no capacity
   }
   function ScheduleClassCard({ classItem }: { classItem: ClassItem }) {
     const detailsQuery = useQuery({
@@ -317,6 +317,7 @@ export default function SchedulePage() {
     <Layout>
       <div className="space-y-3 pb-4">
         <div className="flex flex-col space-y-4">
+          {/* Header */}
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold">Agenda</h1>
             <div className="flex gap-2">
@@ -333,13 +334,14 @@ export default function SchedulePage() {
               )}
             </div>
           </div>
+          {/* Month bar */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button size="sm" variant="outline" onClick={goToPreviousMonth} className="h-8 w-8 p-0">
+              <Button size="sm" variant="outline" onClick={goToPreviousMonth} className="h-8 w-8 p-0" aria-label="Mês anterior">
                 <ChevronLeft className="w-4 h-4" />
               </Button>
               <h2 className="text-lg font-semibold capitalize min-w-[120px] text-center">{formatMonthYear(currentMonth)}</h2>
-              <Button size="sm" variant="outline" onClick={goToNextMonth} className="h-8 w-8 p-0">
+              <Button size="sm" variant="outline" onClick={goToNextMonth} className="h-8 w-8 p-0" aria-label="Próximo mês">
                 <ChevronRight className="w-4 h-4" />
               </Button>
             </div>
@@ -348,14 +350,42 @@ export default function SchedulePage() {
         </div>
         <div className="w-full">
           <div className="mx-auto w-full max-w-[90vw] md:max-w-[1500px]">
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin" style={{scrollbarWidth:'thin'}}>
+            <div
+              className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin"
+              style={{scrollbarWidth:'thin'}}
+              onKeyDown={(e)=>{
+                if(e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' && e.key !== 'Home' && e.key !== 'End') return
+                const container = e.currentTarget
+                const items = Array.from(container.querySelectorAll<HTMLButtonElement>('button[data-day-pill="1"]'))
+                if(items.length===0) return
+                const active = document.activeElement as HTMLElement | null
+                let idx = items.findIndex(el => el === active)
+                if(e.key==='Home') idx = 0
+                else if(e.key==='End') idx = items.length-1
+                else if(e.key==='ArrowRight') idx = Math.min(items.length-1, Math.max(0, idx<0? 0: idx+1))
+                else if(e.key==='ArrowLeft') idx = Math.max(0, Math.min(items.length-1, idx<0? items.length-1: idx-1))
+                const target = items[idx]
+                if(target){ target.focus(); e.preventDefault() }
+              }}
+              aria-label="Selecionar dia do mês"
+              role="group"
+            >
             {monthDays.map((date)=> {
               const key = date.toISOString().slice(0,10)
               const stats = daySessionCounts[key]
               const hasSessions = !!stats
+              const fullLabel = date.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })
               return (
-                <button key={key} onClick={()=> { setUrlParams(currentMonth, date) }}
-                  className={`relative flex flex-col min-w-[68px] flex-shrink-0 items-center justify-center p-2 rounded-lg border h-[72px] text-center transition-all group ${isSelected(date)?'bg-green-600 text-white border-green-600 shadow':'hover:bg-muted'} ${!isSelected(date)&& isToday(date)?'ring-1 ring-green-600':''}`}>
+                <button
+                  key={key}
+                  onClick={()=> { setUrlParams(currentMonth, date) }}
+                  className={`relative flex flex-col min-w-[68px] flex-shrink-0 items-center justify-center p-2 rounded-lg border h-[72px] text-center transition-all group ${isSelected(date)?'bg-green-600 text-white border-green-600 shadow':'hover:bg-muted'} ${!isSelected(date)&& isToday(date)?'ring-1 ring-green-600':''} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600`}
+                  title={`${fullLabel}${hasSessions ? ` • ${stats.total} aula${stats.total>1?'s':''}` : ''}`}
+                  aria-pressed={isSelected(date)}
+                  aria-label={`Selecionar ${fullLabel}${hasSessions ? `; ${stats.total} aula${stats.total>1?'s':''}` : ''}`}
+                  data-day-pill="1"
+                  tabIndex={0}
+                >
                   <span className="text-[10px] font-medium leading-none uppercase tracking-wide">{formatDayName(date)}</span>
                   <span className="text-lg font-bold leading-none mt-1">{date.getDate()}</span>
                   {hasSessions && (
