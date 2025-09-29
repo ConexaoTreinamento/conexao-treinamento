@@ -18,8 +18,28 @@ export default function SchedulePage() {
   const qc = useQueryClient()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [selectedDate, setSelectedDate] = useState(new Date())
-  const [currentMonth, setCurrentMonth] = useState(new Date())
+  // Derive currentMonth and selectedDate directly from search params
+  const monthParam = searchParams.get('month') // YYYY-MM
+  const dayParam = searchParams.get('day')     // YYYY-MM-DD
+  const currentMonth = useMemo(() => {
+    if (monthParam && /^\d{4}-\d{2}$/.test(monthParam)) {
+      const [y, m] = monthParam.split('-').map(Number)
+      return new Date(y, (m - 1), 1)
+    }
+    return new Date()
+  }, [monthParam])
+  const selectedDate = useMemo(() => {
+    if (dayParam && /^\d{4}-\d{2}-\d{2}$/.test(dayParam)) {
+      const [y, m, d] = dayParam.split('-').map(Number)
+      return new Date(y, (m - 1), d)
+    }
+    // Fall back to first day of currentMonth when a month is present, otherwise today
+    if (monthParam && /^\d{4}-\d{2}$/.test(monthParam)) {
+      const [y, m] = monthParam.split('-').map(Number)
+      return new Date(y, (m - 1), 1)
+    }
+    return new Date()
+  }, [dayParam, monthParam, currentMonth])
   const [userRole, setUserRole] = useState<string>("")
   const [isNewClassOpen, setIsNewClassOpen] = useState(false)
   type OneOffClassData = { name: string; trainerId: string; trainerName?: string; startTime: string; endTime: string }
@@ -32,26 +52,7 @@ export default function SchedulePage() {
     setUserRole(role)
   }, [])
 
-  // Initialize/sync state from search params
-  useEffect(() => {
-    const monthParam = searchParams.get('month') // YYYY-MM
-    const dayParam = searchParams.get('day')     // YYYY-MM-DD
-    if (monthParam && /^\d{4}-\d{2}$/.test(monthParam)) {
-      const [y, m] = monthParam.split('-').map(Number)
-      const desired = new Date(y, (m - 1), 1)
-      if (desired.getFullYear() !== currentMonth.getFullYear() || desired.getMonth() !== currentMonth.getMonth()) {
-        setCurrentMonth(desired)
-      }
-    }
-    if (dayParam && /^\d{4}-\d{2}-\d{2}$/.test(dayParam)) {
-      const [y, m, d] = dayParam.split('-').map(Number)
-      const desired = new Date(y, (m - 1), d)
-      if (desired.toDateString() !== selectedDate.toDateString()) {
-        setSelectedDate(desired)
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams])
+  // State now derived from search params, no sync needed
 
   // Helper to push month/day into URL without scroll jump
   const setUrlParams = (monthDate: Date, dayDate: Date) => {
@@ -225,9 +226,9 @@ export default function SchedulePage() {
     setIsNewClassOpen(true)
   }
 
-  const goToToday = () => { const today = new Date(); setSelectedDate(today); setCurrentMonth(today); setUrlParams(today, today) }
-  const goToPreviousMonth = () => { const m = new Date(currentMonth); m.setMonth(m.getMonth()-1); const first = new Date(m.getFullYear(), m.getMonth(), 1); setCurrentMonth(m); setSelectedDate(first); setUrlParams(m, first) }
-  const goToNextMonth = () => { const m = new Date(currentMonth); m.setMonth(m.getMonth()+1); const first = new Date(m.getFullYear(), m.getMonth(), 1); setCurrentMonth(m); setSelectedDate(first); setUrlParams(m, first) }
+  const goToToday = () => { const today = new Date(); setUrlParams(today, today) }
+  const goToPreviousMonth = () => { const m = new Date(currentMonth); m.setMonth(m.getMonth()-1); const first = new Date(m.getFullYear(), m.getMonth(), 1); setUrlParams(m, first) }
+  const goToNextMonth = () => { const m = new Date(currentMonth); m.setMonth(m.getMonth()+1); const first = new Date(m.getFullYear(), m.getMonth(), 1); setUrlParams(m, first) }
   const formatMonthYear = (date: Date) => date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
 
   // Child component to render a class card; if overridden, fetch session details to use accurate instructor
@@ -363,7 +364,7 @@ export default function SchedulePage() {
               const stats = daySessionCounts[key]
               const hasSessions = !!stats
               return (
-                <button key={key} onClick={()=> { setSelectedDate(date); setUrlParams(currentMonth, date) }}
+                <button key={key} onClick={()=> { setUrlParams(currentMonth, date) }}
                   className={`relative flex flex-col min-w-[68px] flex-shrink-0 items-center justify-center p-2 rounded-lg border h-[72px] text-center transition-all group ${isSelected(date)?'bg-green-600 text-white border-green-600 shadow':'hover:bg-muted'} ${!isSelected(date)&& isToday(date)?'ring-1 ring-green-600':''}`}>
                   <span className="text-[10px] font-medium leading-none uppercase tracking-wide">{formatDayName(date)}</span>
                   <span className="text-lg font-bold leading-none mt-1">{date.getDate()}</span>
