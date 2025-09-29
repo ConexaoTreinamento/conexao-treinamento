@@ -17,7 +17,6 @@ interface OneOffClassData {
   trainerName?: string
   startTime: string
   endTime: string
-  maxStudents: string
 }
 
 interface ClassModalProps {
@@ -36,7 +35,6 @@ export default function ClassModal({ open, mode = "create", initialData, onClose
       trainerName: initialData?.trainerName || undefined,
       startTime: initialData?.startTime || "",
       endTime: initialData?.endTime || "",
-      maxStudents: initialData?.maxStudents || "2",
     }
   })
 
@@ -56,7 +54,6 @@ export default function ClassModal({ open, mode = "create", initialData, onClose
         trainerName: initialData?.trainerName,
         startTime: initialData?.startTime || "",
         endTime: initialData?.endTime || "",
-        maxStudents: initialData?.maxStudents || "2",
       })
     }
   }, [open, initialData, reset])
@@ -75,7 +72,7 @@ export default function ClassModal({ open, mode = "create", initialData, onClose
     const tn = trainerOptions.find(t => t.id === data.trainerId)?.name
     onSubmitData({ ...data, trainerName: tn })
     if (mode === "create") {
-      reset({ name: "", trainerId: "", startTime: "", endTime: "", maxStudents: "2" })
+      reset({ name: "", trainerId: "", startTime: "", endTime: "" })
     }
     onClose()
   }
@@ -130,10 +127,6 @@ export default function ClassModal({ open, mode = "create", initialData, onClose
                 <p className="text-xs text-red-500">Horário final deve ser após o inicial.</p>
               )}
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="maxStudents">Máx. Alunos</Label>
-            <Input id="maxStudents" type="number" placeholder="2" min={1} {...register("maxStudents")} />
           </div>
           <div className="flex gap-2 pt-2">
             <Button variant="outline" onClick={handleClose} className="flex-1">Cancelar</Button>
