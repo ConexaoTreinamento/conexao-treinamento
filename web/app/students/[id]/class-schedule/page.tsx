@@ -189,6 +189,21 @@ export default function ClassSchedulePage() {
     })
   }
 
+  // Global conflict flag: any selected series overlaps with another on the same weekday
+  const anyConflict = useMemo(() => {
+    for (const id of selectedSeries) {
+      const s = seriesById.get(id)
+      if (!s || !s.startTime || !s.endTime) continue
+      for (const otherId of selectedSeries) {
+        if (otherId === id) continue
+        const o = seriesById.get(otherId)
+        if (!o || o.weekday !== s.weekday || !o.startTime || !o.endTime) continue
+        if ((o.startTime < (s.endTime || '')) && ((s.startTime || '') < o.endTime)) return true
+      }
+    }
+    return false
+  }, [selectedSeries, seriesById])
+
   const handleQuickToggle = async (seriesId: string, currentlySelected: boolean) => {
     const target = seriesById.get(seriesId)
     if(!target) return
@@ -379,7 +394,7 @@ export default function ClassSchedulePage() {
           </div>
           <div className="flex gap-2">
             <Button variant="outline" className="flex-1" onClick={()=> router.back()}>Cancelar</Button>
-            <Button onClick={handleSave} className="flex-1 bg-green-600 hover:bg-green-700" disabled={mutation.isPending}>{mutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin"/>}<Save className="w-4 h-4 mr-2"/> Salvar</Button>
+            <Button onClick={handleSave} className="flex-1 bg-green-600 hover:bg-green-700" disabled={mutation.isPending || anyConflict}>{mutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin"/>}<Save className="w-4 h-4 mr-2"/> {`Salvar${anyConflict ? ' (Resolva os conflitos)' : ''}`}</Button>
           </div>
         </div>
         {/* Participants Dialog */}
