@@ -245,7 +245,6 @@ export type ScheduledSession = {
     trainer?: Trainer;
     startTime?: string;
     endTime?: string;
-    maxParticipants?: number;
     canceled?: boolean;
     seriesName?: string;
     notes?: string;
@@ -350,7 +349,6 @@ export type OneOffSessionCreateRequestDto = {
     trainerId?: string;
     startTime?: string;
     endTime?: string;
-    maxParticipants?: number;
     notes?: string;
 };
 
@@ -376,7 +374,6 @@ export type SessionResponseDto = {
     instanceOverride?: boolean;
     students?: Array<StudentCommitmentResponseDto>;
     canceled?: boolean;
-    maxParticipants?: number;
     presentCount?: number;
 };
 
@@ -496,8 +493,8 @@ export type Pageable = {
 };
 
 export type PageUserResponseDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
     size?: number;
     content?: Array<UserResponseDto>;
     number?: number;
@@ -512,9 +509,9 @@ export type PageUserResponseDto = {
 export type PageableObject = {
     offset?: number;
     sort?: SortObject;
-    paged?: boolean;
-    pageNumber?: number;
     pageSize?: number;
+    pageNumber?: number;
+    paged?: boolean;
     unpaged?: boolean;
 };
 
@@ -525,8 +522,8 @@ export type SortObject = {
 };
 
 export type PageStudentResponseDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
     size?: number;
     content?: Array<StudentResponseDto>;
     number?: number;
@@ -543,8 +540,8 @@ export type ScheduleResponseDto = {
 };
 
 export type PageExerciseResponseDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
     size?: number;
     content?: Array<ExerciseResponseDto>;
     number?: number;
@@ -573,8 +570,8 @@ export type TrainerSchedule = {
 };
 
 export type PageAdministratorResponseDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
     size?: number;
     content?: Array<AdministratorResponseDto>;
     number?: number;

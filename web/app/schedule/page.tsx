@@ -24,7 +24,7 @@ export default function SchedulePage() {
   const [isNewClassOpen, setIsNewClassOpen] = useState(false)
   type OneOffClassData = { name: string; trainerId: string; trainerName?: string; startTime: string; endTime: string; maxStudents: string }
   const [modalInitialData, setModalInitialData] = useState<Partial<OneOffClassData>>({ name: "", trainerId: "", maxStudents: "2", startTime: "", endTime: "" })
-  const [localSessions, setLocalSessions] = useState<Array<{ id: string; name: string; instructor: string; time: string; endTime: string; maxStudents: number; currentStudents: number; students: Array<{ id: string; name: string; present: boolean }>; date: string }>>([]) // legacy fallback for cases when backend call fails
+  const [localSessions, setLocalSessions] = useState<Array<{ id: string; name: string; instructor: string; time: string; endTime: string; currentStudents: number; students: Array<{ id: string; name: string; present: boolean }>; date: string }>>([]) // legacy fallback for cases when backend call fails
   const router = useRouter()
 
   useEffect(() => {
@@ -104,8 +104,7 @@ export default function SchedulePage() {
       endTime: s.endTime?.slice(11,16) || '',
       canceled: !!s.canceled,
       overridden: !!s.instanceOverride,
-  currentStudents: students.length,
-  maxStudents: s.maxParticipants ?? 0,
+      currentStudents: students.length,
       students,
       date
     }
@@ -126,7 +125,7 @@ export default function SchedulePage() {
         overridden: false,
         currentStudents: ls.currentStudents,
         students: ls.students,
-        maxStudents: ls.maxStudents,
+        // no capacity display
       }))
     return [...backend, ...locals]
       .sort((a,b)=> (a.time||'').localeCompare(b.time||''))
@@ -183,13 +182,7 @@ export default function SchedulePage() {
     return days[date.getDay()]
   }
 
-  const getOccupancyColor = (current: number, max: number) => {
-    if (max > 0 && current >= max) return "bg-red-600 text-white"
-    const percentage = max === 0 ? 0 : (current / max) * 100
-    if (percentage >= 90) return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-    if (percentage >= 70) return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-    return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-  }
+  // removed occupancy color; we no longer display capacity
 
   const handleCreateClass = async (formData: OneOffClassData) => {
     // Build LocalDateTime strings using selected day
@@ -201,7 +194,6 @@ export default function SchedulePage() {
         trainerId: formData.trainerId || undefined,
         startTime: start,
         endTime: end,
-        maxParticipants: Number.parseInt(formData.maxStudents) || 10,
       } })
       // Invalidate schedule for the current month range
       await qc.invalidateQueries({ queryKey: getScheduleOptions({ client: apiClient, query: { startDate: monthStartIso, endDate: monthEndIso } }).queryKey })
@@ -219,7 +211,6 @@ export default function SchedulePage() {
         instructor: (trainerOptions.find(t=>t.id===formData.trainerId)?.name) || '—',
         time: formData.startTime,
         endTime: formData.endTime,
-        maxStudents: Number.parseInt(formData.maxStudents) || 10,
         currentStudents: 0,
         students: [],
         date: selectedIso
@@ -253,7 +244,7 @@ export default function SchedulePage() {
     overridden: boolean
     currentStudents: number
     students: Array<{ id: string; name: string; present: boolean }>
-    maxStudents?: number
+    // no capacity
   }
   function ScheduleClassCard({ classItem }: { classItem: ClassItem }) {
     const detailsQuery = useQuery({
@@ -296,8 +287,8 @@ export default function SchedulePage() {
                 </div>
               </div>
             </div>
-            <Badge className={`${getOccupancyColor(classItem.currentStudents, classItem.maxStudents || 0)} text-xs`}>
-              {classItem.currentStudents}/{classItem.maxStudents || '∞'}
+            <Badge className="bg-muted text-xs">
+              {classItem.currentStudents} aluno{classItem.currentStudents===1?'':'s'}
             </Badge>
           </div>
         </CardHeader>

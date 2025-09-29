@@ -113,11 +113,9 @@ public class ScheduleService {
                     session.setNotes(existingSession.getNotes());
                     session.setInstanceOverride(existingSession.isInstanceOverride());
                     session.setCanceled(existingSession.isCanceled());
-                    session.setMaxParticipants(existingSession.getMaxParticipants());
                 } else {
                     session.setInstanceOverride(false);
                     session.setCanceled(false);
-                    session.setMaxParticipants(schedule.getIntervalDuration()); // temporary placeholder for capacity mapping
                 }
                 
                 // Get student commitments for this session series at this point in time
@@ -157,7 +155,6 @@ public class ScheduleService {
                 dto.setNotes(ss.getNotes());
                 dto.setInstanceOverride(ss.isInstanceOverride());
                 dto.setCanceled(ss.isCanceled());
-                dto.setMaxParticipants(ss.getMaxParticipants());
                 // For standalone one-offs (null series id), commitments come only from instance participants
                 List<StudentCommitmentResponseDTO> students = getStudentCommitmentsForSession(ss.getSessionSeriesId(), sessionInstant, ss);
                 dto.setStudents(students);
@@ -225,7 +222,6 @@ public class ScheduleService {
             dto.setNotes(sessionEntity.getNotes());
             dto.setInstanceOverride(sessionEntity.isInstanceOverride());
             dto.setCanceled(sessionEntity.isCanceled());
-            dto.setMaxParticipants(sessionEntity.getMaxParticipants());
             List<StudentCommitmentResponseDTO> students = getStudentCommitmentsForSession(sessionEntity.getSessionSeriesId(), sessionInstant, sessionEntity);
             dto.setStudents(students);
             dto.setPresentCount((int) students.stream().filter(sc -> sc.getCommitmentStatus() == CommitmentStatus.ATTENDING).count());
@@ -331,7 +327,6 @@ public class ScheduleService {
         dto.setNotes(null);
         dto.setInstanceOverride(false);
         dto.setCanceled(false);
-        dto.setMaxParticipants(schedule.getIntervalDuration()); // temporary placeholder
         List<StudentCommitmentResponseDTO> students = getStudentCommitmentsForSession(schedule.getId(), sessionInstant, null);
         dto.setStudents(students);
         dto.setPresentCount((int) students.stream().filter(sc -> sc.getCommitmentStatus() == CommitmentStatus.ATTENDING).count());
@@ -467,7 +462,6 @@ public class ScheduleService {
         session.setTrainerId(req.getTrainerId());
         session.setStartTime(req.getStartTime());
         session.setEndTime(req.getEndTime());
-        session.setMaxParticipants(req.getMaxParticipants() != null ? req.getMaxParticipants() : 10);
         session.setSeriesName(req.getSeriesName());
         session.setInstanceOverride(true);
         session.setEffectiveFromTimestamp(Instant.now());
@@ -510,7 +504,6 @@ public class ScheduleService {
         session.setTrainerId(schedule.getTrainerId());
         session.setStartTime(LocalDateTime.of(date, schedule.getStartTime()));
         session.setEndTime(LocalDateTime.of(date, schedule.getEndTime()));
-        session.setMaxParticipants(10); // Default value
         session.setSeriesName(schedule.getSeriesName());
         session.setInstanceOverride(false); // Generated from schedule, no overrides
         session.setEffectiveFromTimestamp(Instant.now());

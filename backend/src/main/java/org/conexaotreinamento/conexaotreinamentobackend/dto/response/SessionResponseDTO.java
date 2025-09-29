@@ -22,6 +22,5 @@ public class SessionResponseDTO {
     private boolean instanceOverride;
     private List<StudentCommitmentResponseDTO> students;
     private boolean canceled;
-    private Integer maxParticipants;
     private Integer presentCount;
 }

@@ -40,9 +40,6 @@ public class ScheduledSession {
     
     @Column(name = "end_time", nullable = false)
     private LocalDateTime endTime;
-    
-    @Column(name = "max_participants", nullable = false)
-    private int maxParticipants = 1;
 
     @Column(name = "canceled", nullable = false)
     private boolean canceled = false; // explicit cancellation separate from soft delete

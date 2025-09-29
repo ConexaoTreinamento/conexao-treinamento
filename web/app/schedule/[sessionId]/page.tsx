@@ -15,12 +15,8 @@ import { apiClient } from "@/lib/client"
 import { Checkbox } from "@/components/ui/checkbox"
 import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updatePresenceMutation, getScheduleQueryKey, findAllExercisesOptions, updateRegisteredParticipantExerciseMutation, addRegisteredParticipantExerciseMutation, removeRegisteredParticipantExerciseMutation, updateSessionTrainerMutation, removeSessionParticipantMutation, addSessionParticipantMutation, cancelOrRestoreSessionMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { Badge } from "@/components/ui/badge"
-import { toast } from "@/hooks/use-toast"
 import { useStudents } from "@/lib/hooks/student-queries"
-
-interface ParticipantExercise { id?:string; exerciseId?:string; exerciseName?:string; setsCompleted?:number; repsCompleted?:number; weightCompleted?:number; exerciseNotes?:string; done?: boolean }
-interface SessionParticipant { studentId:string; studentName?:string; present?:boolean; commitmentStatus?: 'ATTENDING' | 'NOT_ATTENDING' | 'TENTATIVE'; participantExercises?:ParticipantExercise[] }
-interface SessionData { sessionId:string; seriesName:string; trainerId?:string; trainerName?:string; startTime?:string; endTime?:string; notes?:string; canceled?:boolean; students?:SessionParticipant[]; maxParticipants?:number }
+import type { ExerciseResponseDto, FindAllStudentsResponse, PageExerciseResponseDto, PageStudentResponseDto, ParticipantExerciseResponseDto, SessionResponseDto, StudentCommitmentResponseDto, TrainerResponseDto } from "@/lib/api-client"
 
 export default function ClassDetailPage() {
   const { sessionId: rawSessionId } = useParams<{sessionId:string}>()
@@ -35,8 +31,9 @@ export default function ClassDetailPage() {
   // Query session (with hint for trainer if provided)
   const hintedDate = searchParams.get('date') || undefined
   const hintedTrainer = searchParams.get('trainer') || undefined
-  const sessionQuery = useQuery({ ...getSessionOptions({ client: apiClient, path:{ sessionId }, query:{ trainerId: hintedTrainer } }) })
-  const session = sessionQuery.data as SessionData | undefined
+  const sessionOptions = getSessionOptions({ client: apiClient, path:{ sessionId }, query:{ trainerId: hintedTrainer } })
+  const sessionQuery = useQuery({ ...sessionOptions })
+  const session = sessionQuery.data as SessionResponseDto | undefined
 
   // Fallback lookup by day (when deep-linking with only date hints)
   const needFallback = !!hintedDate && (!!sessionQuery.error || !sessionQuery.data)
@@ -53,16 +50,15 @@ export default function ClassDetailPage() {
   const [studentPage, setStudentPage] = useState(0)
   const pageSize = 10
   const studentsQuery = useStudents({ search: studentSearchTerm || undefined, page: studentPage, pageSize })
-  const pageData = (studentsQuery.data as any) || {}
-  const allStudents = (pageData.content || []) as Array<{id?:string; name?:string; surname?:string}>
+  const pageData = (studentsQuery.data as PageStudentResponseDto | undefined)
+  const allStudents: Array<{ id?: string; name?: string; surname?: string }> = pageData?.content ?? []
   useEffect(()=> { setStudentPage(0) }, [studentSearchTerm])
 
   // Exercises catalog (for exercise selection)
   const exercisesQuery = useQuery({ ...findAllExercisesOptions({ client: apiClient, query: { pageable: { page:0, size: 200 } } }) })
-  const allExercises = ((exercisesQuery.data as any)?.content || []) as Array<{id?:string; name?:string}>
+  const allExercises: ExerciseResponseDto[] = ((exercisesQuery.data as PageExerciseResponseDto | undefined)?.content) ?? []
 
   // Local UI state derived from session
-  const [participants, setParticipants] = useState<SessionParticipant[]>([])
   const [isExerciseOpen, setIsExerciseOpen] = useState(false)
   const [isEditClassOpen, setIsEditClassOpen] = useState(false)
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
@@ -74,12 +70,7 @@ export default function ClassDetailPage() {
   const [exerciseForm, setExerciseForm] = useState({ exerciseId: "", sets: "", reps: "", weight: "", notes: "" })
 
   useEffect(() => {
-  if (session) {
-      setParticipants((session.students||[]).map(s => ({
-        ...s,
-        present: s.present ?? (s.commitmentStatus === 'ATTENDING'),
-        participantExercises: s.participantExercises || []
-      })))
+    if (session) {
       setEditTrainer(session.trainerId || "none")
     }
   }, [session])
@@ -118,42 +109,50 @@ export default function ClassDetailPage() {
     qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: recentStart, endDate: recentEnd } }) })
   }
   const invalidate = () => {
-    qc.invalidateQueries({ queryKey: getSessionOptions({ client: apiClient, path:{ sessionId } }).queryKey })
+    qc.invalidateQueries({ queryKey: sessionOptions.queryKey })
     invalidateScheduleForSessionMonth()
   }
 
   const togglePresence = async (sid: string) => {
     if (!session) return
-    const current = participants.find(p=> p.studentId===sid)?.present ?? true
-    setParticipants(prev => prev.map(p => p.studentId===sid ? ({ ...p, present: !current }) : p))
-    await mPresence.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId, studentId: sid }, body:{ present: !current } })
+    const key = sessionOptions.queryKey
+    // Optimistic update in cache
+    qc.setQueryData<SessionResponseDto>(key, (old) => {
+      if (!old) return old
+      const students = (old.students ?? []).map(s => s.studentId === sid ? ({ ...s, present: !(s.present ?? (s.commitmentStatus === 'ATTENDING')) }) : s)
+      return { ...old, students }
+    })
+    const current = (session.students ?? []).find(p=> p.studentId===sid)?.present ?? true
+    await mPresence.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId!, studentId: sid }, body:{ present: !current } })
     invalidate()
   }
 
   const removeStudent = async (sid: string) => {
     if (!session) return
-    await mRemoveParticipant.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId, studentId: sid } })
+    // Optimistic remove from cache
+    qc.setQueryData<SessionResponseDto>(sessionOptions.queryKey, (old) => {
+      if (!old) return old
+      return { ...old, students: (old.students ?? []).filter(s => s.studentId !== sid) }
+    })
+  await mRemoveParticipant.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId!, studentId: sid } })
     invalidate()
   }
 
   const addStudent = async (studentId: string) => {
     if (!session) return
-    // Capacity enforcement
-    const max = session.maxParticipants ?? 0
-    if (max > 0 && participants.length >= max) {
-      toast({ title: "Turma lotada", description: "Não é possível adicionar mais alunos, a capacidade foi atingida.", variant: "destructive" as any })
-      return
-    }
-    // Optimistic UI: mark as present by default
-    setParticipants(prev => {
-      const exists = prev.some(p => p.studentId === studentId)
-      if (exists) return prev
-      const name = (pageData.content || []).find((s:any)=> s.id===studentId)
-      return [...prev, { studentId, studentName: name? `${name.name||''} ${name.surname||''}`.trim() : studentId, present: true, participantExercises: [] }]
+    // Optimistic add to cache
+    qc.setQueryData<SessionResponseDto>(sessionOptions.queryKey, (old) => {
+      if (!old) return old
+      const exists = (old.students ?? []).some(p => p.studentId === studentId)
+      if (exists) return old
+      const found = (pageData?.content ?? []).find(s => s.id === studentId)
+      const studentName = found ? `${found.name ?? ''} ${found.surname ?? ''}`.trim() : studentId
+      const newEntry: StudentCommitmentResponseDto = { studentId, studentName, present: true, commitmentStatus: 'ATTENDING', participantExercises: [] }
+      return { ...old, students: [...(old.students ?? []), newEntry] }
     })
-    await mAddParticipant.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId }, body:{ studentId } })
+  await mAddParticipant.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId! }, body:{ studentId } })
     // Ensure presence true also persisted (if backend doesn't default);
-    try { await mPresence.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId, studentId }, body:{ present: true } }) } catch {}
+  try { await mPresence.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId!, studentId }, body:{ present: true } }) } catch {}
     invalidate()
   }
 
@@ -165,7 +164,7 @@ export default function ClassDetailPage() {
 
   const submitExercise = async () => {
     if (!session || !selectedStudentId || !exerciseForm.exerciseId) return
-    await mAddExercise.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId, studentId: selectedStudentId }, body:{
+  await mAddExercise.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId!, studentId: selectedStudentId! }, body:{
       exerciseId: exerciseForm.exerciseId,
       setsCompleted: exerciseForm.sets ? parseInt(exerciseForm.sets) : undefined,
       repsCompleted: exerciseForm.reps ? parseInt(exerciseForm.reps) : undefined,
@@ -179,16 +178,29 @@ export default function ClassDetailPage() {
 
   const deleteExercise = async (exerciseRecordId: string) => {
     if (!session) return
+    // Optimistic removal from cache
+    qc.setQueryData<SessionResponseDto>(sessionOptions.queryKey, (old) => {
+      if (!old) return old
+      const students = (old.students ?? []).map(s => ({
+        ...s,
+        participantExercises: (s.participantExercises ?? []).filter(ex => ex.id !== exerciseRecordId)
+      }))
+      return { ...old, students }
+    })
     await mRemoveExercise.mutateAsync({ client: apiClient, path:{ exerciseRecordId } })
     invalidate()
   }
 
   const toggleExerciseDone = async (studentId: string, exerciseRecordId: string, currentDone: boolean) => {
-    // optimistic flip in local UI
-    setParticipants(prev => prev.map(p => p.studentId === studentId ? {
-      ...p,
-      participantExercises: (p.participantExercises || []).map(ex => ex.id === exerciseRecordId ? { ...ex, done: !currentDone } : ex)
-    } : p))
+    // Optimistic flip in cache
+    qc.setQueryData<SessionResponseDto>(sessionOptions.queryKey, (old) => {
+      if (!old) return old
+      const students = (old.students ?? []).map(p => p.studentId === studentId ? ({
+        ...p,
+        participantExercises: (p.participantExercises ?? []).map(ex => ex.id === exerciseRecordId ? { ...ex, done: !currentDone } : ex)
+      }) : p)
+      return { ...old, students }
+    })
     await mUpdateExercise.mutateAsync({ client: apiClient, path:{ exerciseRecordId }, body:{ done: !currentDone } })
     invalidate()
   }
@@ -196,14 +208,14 @@ export default function ClassDetailPage() {
   const saveTrainer = async () => {
     if (!session) return
     const mapped = editTrainer === 'none' ? undefined : editTrainer
-    await mUpdateTrainer.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId }, body:{ trainerId: mapped } })
+  await mUpdateTrainer.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId! }, body:{ trainerId: mapped } })
     setIsEditClassOpen(false)
     invalidate()
   }
 
   const toggleCancel = async () => {
     if (!session) return
-    await mCancelRestore.mutateAsync({ client: apiClient, path: { sessionId: session.sessionId }, body: { cancel: !session.canceled } })
+  await mCancelRestore.mutateAsync({ client: apiClient, path: { sessionId: session.sessionId! }, body: { cancel: !session.canceled } })
     invalidate()
   }
 
@@ -211,8 +223,13 @@ export default function ClassDetailPage() {
   if (sessionQuery.error || !session) return <Layout><div className="p-6 text-sm text-red-600">Sessão não encontrada.</div></Layout>
 
   // Derived
-  const filteredStudents = participants.filter(s => ((s.studentName || s.studentId || '').toLowerCase()).includes(studentSearchTerm.toLowerCase()))
-  const excludedIds = new Set((participants||[]).map(p => p.studentId))
+  const students: StudentCommitmentResponseDto[] = (session.students ?? []).map(s => ({
+    ...s,
+    present: s.present ?? (s.commitmentStatus === 'ATTENDING'),
+    participantExercises: s.participantExercises ?? []
+  }))
+  const filteredStudents = students.filter(s => ((s.studentName || s.studentId || '').toLowerCase()).includes(studentSearchTerm.toLowerCase()))
+  const excludedIds = new Set((students||[]).map(p => p.studentId).filter(Boolean) as string[])
   const availableStudents = (allStudents||[]).filter(s => !!s.id && !excludedIds.has(s.id!))
   const filteredExercises = (allExercises||[]).filter(e => (e.name || '').toLowerCase().includes(exerciseSearchTerm.toLowerCase()))
 
@@ -289,7 +306,7 @@ export default function ClassDetailPage() {
                 <div className="flex items-center gap-2 text-sm">
                   <span className="w-4 h-4 inline-flex items-center justify-center rounded-full bg-muted text-[10px]">P</span>
                   <span>
-                    {(participants||[]).length}/{session.maxParticipants || participants.length} alunos
+                    {(students||[]).length} alunos
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
@@ -315,12 +332,7 @@ export default function ClassDetailPage() {
                   Alunos da Aula
                 </CardTitle>
                 <div className="flex items-center gap-2">
-                  {session.maxParticipants != null && (
-                    <Badge className={`${(participants.length >= (session.maxParticipants||0) && (session.maxParticipants||0)>0)? 'bg-red-600 text-white':'bg-muted'} text-xs`}>
-                      {participants.length}/{session.maxParticipants}
-                    </Badge>
-                  )}
-                  <Button variant="outline" size="sm" onClick={() => setAddDialogOpen(true)} disabled={!!session.maxParticipants && participants.length >= (session.maxParticipants||0)}>
+                  <Button variant="outline" size="sm" onClick={() => setAddDialogOpen(true)}>
                     Adicionar Aluno
                   </Button>
                 </div>
@@ -353,7 +365,7 @@ export default function ClassDetailPage() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => removeStudent(student.studentId)}
+                          onClick={() => student.studentId && removeStudent(student.studentId)}
                           className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 flex-shrink-0 sm:hidden"
                           aria-label="Remover aluno da aula"
                           title="Remover"
@@ -363,14 +375,14 @@ export default function ClassDetailPage() {
                       </div>
                       <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
                         <div className="flex gap-2 w-full sm:w-auto">
-                          <Button size="sm" variant={student.present ? "default" : "outline"} onClick={() => togglePresence(student.studentId)} className={`w-full sm:w-28 h-8 text-xs ${student.present? 'bg-green-600 hover:bg-green-700' : 'border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950'}`}>
+                          <Button size="sm" variant={student.present ? "default" : "outline"} onClick={() => student.studentId && togglePresence(student.studentId)} className={`w-full sm:w-28 h-8 text-xs ${student.present? 'bg-green-600 hover:bg-green-700' : 'border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950'}`}>
                             {student.present ? (<><CheckCircle className="w-3 h-3 mr-1" />Presente</>) : (<><XCircle className="w-3 h-3 mr-1" />Ausente</>)}
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => openExerciseDialog(student.studentId)} className="w-full sm:w-28 h-8 text-xs">
+                          <Button size="sm" variant="outline" onClick={() => student.studentId && openExerciseDialog(student.studentId)} className="w-full sm:w-28 h-8 text-xs">
                             <Activity className="w-3 h-3 mr-1" />Exercícios
                           </Button>
                         </div>
-                        <Button size="sm" variant="ghost" onClick={() => removeStudent(student.studentId)} className="hidden sm:flex h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 flex-shrink-0" aria-label="Remover aluno da aula" title="Remover">
+                        <Button size="sm" variant="ghost" onClick={() => student.studentId && removeStudent(student.studentId)} className="hidden sm:flex h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 flex-shrink-0" aria-label="Remover aluno da aula" title="Remover">
                           <X className="w-4 h-4" />
                         </Button>
                       </div>
@@ -384,7 +396,7 @@ export default function ClassDetailPage() {
                           {(student.participantExercises||[]).map((ex) => (
                             <div key={ex.id} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm gap-2">
                               <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <Checkbox checked={!!ex.done} onCheckedChange={(v)=> ex.id && toggleExerciseDone(student.studentId, ex.id, !!ex.done)} aria-label="Marcar como concluído" />
+                                <Checkbox checked={!!ex.done} onCheckedChange={(v)=> ex.id && student.studentId && toggleExerciseDone(student.studentId, ex.id, !!ex.done)} aria-label="Marcar como concluído" />
                                 <span className={`flex-1 min-w-0 truncate ${ex.done? 'line-through opacity-70':''}`}>
                                   {ex.exerciseName || ex.exerciseId} {ex.setsCompleted!=null && `- ${ex.setsCompleted}x${ex.repsCompleted ?? ''}`} {ex.weightCompleted!=null && `- ${ex.weightCompleted}kg`}
                                 </span>
@@ -433,8 +445,8 @@ export default function ClassDetailPage() {
               </div>
               <div className="flex items-center justify-between pt-2">
                 <Button size="sm" variant="outline" disabled={studentPage<=0 || studentsQuery.isFetching} onClick={()=> setStudentPage(p=> Math.max(0, p-1))}>Anterior</Button>
-                <span className="text-xs text-muted-foreground">Página {studentPage + 1} de {Math.max(1, (pageData.totalPages ?? 1))}</span>
-                <Button size="sm" variant="outline" disabled={(studentPage+1)>= (pageData.totalPages ?? 1) || studentsQuery.isFetching} onClick={()=> setStudentPage(p=> p+1)}>Próxima</Button>
+                <span className="text-xs text-muted-foreground">Página {studentPage + 1} de {Math.max(1, (pageData?.totalPages ?? 1))}</span>
+                <Button size="sm" variant="outline" disabled={(studentPage+1)>= (pageData?.totalPages ?? 1) || studentsQuery.isFetching} onClick={()=> setStudentPage(p=> p+1)}>Próxima</Button>
               </div>
             </div>
             <DialogFooter>

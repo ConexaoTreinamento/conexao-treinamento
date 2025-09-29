@@ -15,6 +15,5 @@ public class OneOffSessionCreateRequestDTO {
     private UUID trainerId;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private Integer maxParticipants;
     private String notes;
 }
