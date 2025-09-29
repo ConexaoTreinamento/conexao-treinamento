@@ -66,7 +66,7 @@ class StudentControllerTest {
         when(studentService.create(studentRequestDTO)).thenReturn(studentResponseDTO);
 
         // When
-        ResponseEntity<StudentResponseDTO> response = studentController.create(studentRequestDTO);
+        ResponseEntity<StudentResponseDTO> response = studentController.createStudent(studentRequestDTO);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
@@ -81,7 +81,7 @@ class StudentControllerTest {
         when(studentService.findById(studentId)).thenReturn(studentResponseDTO);
 
         // When
-        ResponseEntity<StudentResponseDTO> response = studentController.findById(studentId);
+        ResponseEntity<StudentResponseDTO> response = studentController.findStudentById(studentId);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -99,7 +99,7 @@ class StudentControllerTest {
                 isNull(), isNull(), eq(false), any(Pageable.class))).thenReturn(page);
 
         // When
-        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAll(
+        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAllStudents(
                 null, null, null, null, null, null, null, false, pageable);
 
         // Then
@@ -119,7 +119,7 @@ class StudentControllerTest {
                 isNull(), isNull(), eq(false), any(Pageable.class))).thenReturn(page);
 
         // When
-        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAll(
+        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAllStudents(
                 search, null, null, null, null, null, null, false, pageable);
 
         // Then
@@ -139,7 +139,7 @@ class StudentControllerTest {
                 isNull(), isNull(), eq(false), any(Pageable.class))).thenReturn(page);
 
         // When
-        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAll(
+        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAllStudents(
                 null, gender, null, null, null, null, null, false, pageable);
 
         // Then
@@ -159,7 +159,7 @@ class StudentControllerTest {
                 isNull(), isNull(), eq(false), any(Pageable.class))).thenReturn(page);
 
         // When
-        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAll(
+        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAllStudents(
                 null, null, profession, null, null, null, null, false, pageable);
 
         // Then
@@ -180,7 +180,7 @@ class StudentControllerTest {
                 isNull(), isNull(), eq(false), any(Pageable.class))).thenReturn(page);
 
         // When
-        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAll(
+        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAllStudents(
                 null, null, null, minAge, maxAge, null, null, false, pageable);
 
         // Then
@@ -201,7 +201,7 @@ class StudentControllerTest {
                 eq(minDate), eq(maxDate), eq(false), any(Pageable.class))).thenReturn(page);
 
         // When
-        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAll(
+        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAllStudents(
                 null, null, null, null, null, minDate, maxDate, false, pageable);
 
         // Then
@@ -220,7 +220,7 @@ class StudentControllerTest {
                 isNull(), isNull(), eq(true), any(Pageable.class))).thenReturn(page);
 
         // When
-        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAll(
+        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAllStudents(
                 null, null, null, null, null, null, null, true, pageable);
 
         // Then
@@ -238,7 +238,7 @@ class StudentControllerTest {
         Pageable pageable = PageRequest.of(0, 20, Sort.by("createdAt").descending());
 
         // When & Then
-        assertThatThrownBy(() -> studentController.findAll(
+        assertThatThrownBy(() -> studentController.findAllStudents(
                 null, null, null, minAge, maxAge, null, null, false, pageable))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
@@ -256,7 +256,7 @@ class StudentControllerTest {
         Pageable pageable = PageRequest.of(0, 20, Sort.by("createdAt").descending());
 
         // When & Then
-        assertThatThrownBy(() -> studentController.findAll(
+        assertThatThrownBy(() -> studentController.findAllStudents(
                 null, null, null, null, null, minDate, maxDate, false, pageable))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
@@ -276,7 +276,7 @@ class StudentControllerTest {
                 isNull(), isNull(), eq(false), any(Pageable.class))).thenReturn(page);
 
         // When
-        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAll(
+        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAllStudents(
                 null, gender, null, null, null, null, null, false, pageable);
 
         // Then
@@ -295,7 +295,7 @@ class StudentControllerTest {
                 isNull(), isNull(), eq(false), any(Pageable.class))).thenReturn(page);
 
         // When
-        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAll(
+        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAllStudents(
                 null, gender, null, null, null, null, null, false, pageable);
 
         // Then
@@ -314,7 +314,7 @@ class StudentControllerTest {
                 isNull(), isNull(), eq(false), any(Pageable.class))).thenReturn(page);
 
         // When
-        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAll(
+        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAllStudents(
                 null, gender, null, null, null, null, null, false, pageable);
 
         // Then
@@ -333,7 +333,7 @@ class StudentControllerTest {
                 isNull(), isNull(), eq(false), any(Pageable.class))).thenReturn(page);
 
         // When
-        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAll(
+        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAllStudents(
                 null, gender, null, null, null, null, null, false, pageable);
 
         // Then
@@ -348,7 +348,7 @@ class StudentControllerTest {
         when(studentService.update(studentId, studentRequestDTO)).thenReturn(studentResponseDTO);
 
         // When
-        ResponseEntity<StudentResponseDTO> response = studentController.update(studentId, studentRequestDTO);
+        ResponseEntity<StudentResponseDTO> response = studentController.updateStudent(studentId, studentRequestDTO);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -363,7 +363,7 @@ class StudentControllerTest {
         doNothing().when(studentService).delete(studentId);
 
         // When
-        ResponseEntity<Void> response = studentController.delete(studentId);
+        ResponseEntity<Void> response = studentController.deleteStudent(studentId);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
@@ -378,7 +378,7 @@ class StudentControllerTest {
         when(studentService.restore(studentId)).thenReturn(studentResponseDTO);
 
         // When
-        ResponseEntity<StudentResponseDTO> response = studentController.restore(studentId);
+        ResponseEntity<StudentResponseDTO> response = studentController.restoreStudent(studentId);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -405,7 +405,7 @@ class StudentControllerTest {
                 eq(minDate), eq(maxDate), eq(includeInactive), any(Pageable.class))).thenReturn(page);
 
         // When
-        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAll(
+        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAllStudents(
                 search, gender, profession, minAge, maxAge, minDate, maxDate, includeInactive, pageable);
 
         // Then
@@ -426,7 +426,7 @@ class StudentControllerTest {
                 isNull(), isNull(), eq(false), any(Pageable.class))).thenReturn(page);
 
         // When
-        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAll(
+        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAllStudents(
                 null, null, null, minAge, maxAge, null, null, false, pageable);
 
         // Then
@@ -445,7 +445,7 @@ class StudentControllerTest {
                 isNull(), isNull(), eq(false), any(Pageable.class))).thenReturn(page);
 
         // When
-        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAll(
+        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAllStudents(
                 null, null, null, age, age, null, null, false, pageable);
 
         // Then
@@ -464,7 +464,7 @@ class StudentControllerTest {
                 eq(date), eq(date), eq(false), any(Pageable.class))).thenReturn(page);
 
         // When
-        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAll(
+        ResponseEntity<Page<StudentResponseDTO>> response = studentController.findAllStudents(
                 null, null, null, null, null, date, date, false, pageable);
 
         // Then
