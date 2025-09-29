@@ -107,9 +107,26 @@ export default function ClassDetailPage() {
     const recentEnd = formatLocalDate(today)
     const recentStart = formatLocalDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7))
     qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: recentStart, endDate: recentEnd } }) })
+    // Fallback: broadly invalidate all schedule queries regardless of date ranges to avoid key mismatches due to timezone/date formatting differences
+    qc.invalidateQueries({
+      predicate: (q) => {
+        const k0 = (q.queryKey as any)?.[0]
+        return k0 && typeof k0 === 'object' && k0._id === 'getSchedule'
+      }
+    })
   }
   const invalidate = () => {
+    // Invalidate this exact session query key
     qc.invalidateQueries({ queryKey: sessionOptions.queryKey })
+    // Broadly invalidate any getSession queries for this sessionId to account for different query params/usages
+    if (sessionId) {
+      qc.invalidateQueries({
+        predicate: (q) => {
+          const k0 = (q.queryKey as any)?.[0]
+          return k0 && typeof k0 === 'object' && k0._id === 'getSession' && k0.path?.sessionId === sessionId
+        }
+      })
+    }
     invalidateScheduleForSessionMonth()
   }
 
