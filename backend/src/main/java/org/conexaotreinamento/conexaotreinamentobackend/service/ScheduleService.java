@@ -54,8 +54,20 @@ public class ScheduleService {
             .findByStartTimeBetweenAndActiveTrue(startDateTime, endDateTime);
         
         // Create a map to track which dates/schedules already have instances
-        Map<String, ScheduledSession> existingSessionMap = existingSessions.stream()
-            .collect(Collectors.toMap(ScheduledSession::getSessionId, s -> s));
+        // Map by both the persisted sessionId (legacy 3-part or new 4-part) AND the canonical 4-part key
+        Map<String, ScheduledSession> existingSessionMap = new HashMap<>();
+        for (ScheduledSession ss : existingSessions) {
+            // Persisted key
+            existingSessionMap.put(ss.getSessionId(), ss);
+            // Canonical key (series/date/time/trainer)
+            String canonicalKey = generateSessionId(ss.getSeriesName(),
+                    ss.getStartTime() != null ? ss.getStartTime().toLocalDate() : null,
+                    ss.getStartTime() != null ? ss.getStartTime().toLocalTime() : null,
+                    ss.getTrainerId());
+            if (canonicalKey != null) {
+                existingSessionMap.putIfAbsent(canonicalKey, ss);
+            }
+        }
         // Track generated (virtual) sessionIds to avoid duplicates when also adding standalone instances
         Set<String> generatedSessionIds = new HashSet<>();
         
@@ -73,9 +85,16 @@ public class ScheduleService {
                 LocalDateTime sessionStartTime = LocalDateTime.of(date, schedule.getStartTime());
                 LocalDateTime sessionEndTime = LocalDateTime.of(date, schedule.getEndTime());
                 
-                // Check if there's an existing session instance
+                // Check if there's an existing session instance (canonical 4-part); fallback to legacy 3-part
                 ScheduledSession existingSession = existingSessionMap.get(sessionId);
+                if (existingSession == null) {
+                    String legacyId = generateLegacySessionId(schedule, date);
+                    if (legacyId != null) existingSession = existingSessionMap.get(legacyId);
+                }
                 generatedSessionIds.add(sessionId);
+                // Also track legacy key to avoid duplicates later
+                String legacyGeneratedId = generateLegacySessionId(schedule, date);
+                if (legacyGeneratedId != null) generatedSessionIds.add(legacyGeneratedId);
                 
                 // Create session DTO
                 SessionResponseDTO session = new SessionResponseDTO();
@@ -112,7 +131,18 @@ public class ScheduleService {
         }
         // Also include any standalone persisted sessions that do not correspond to a generated schedule (e.g., one-offs)
         for (ScheduledSession ss : existingSessions) {
-            if (!generatedSessionIds.contains(ss.getSessionId())) {
+            // If an existing persisted session corresponds to a generated session, skip it to avoid duplicates.
+            String altId = generateSessionId(ss.getSeriesName(),
+                    ss.getStartTime() != null ? ss.getStartTime().toLocalDate() : null,
+                    ss.getStartTime() != null ? ss.getStartTime().toLocalTime() : null,
+                    ss.getTrainerId());
+            String altLegacy = null;
+            if (ss.getStartTime() != null) {
+                altLegacy = String.format("%s__%s__%s", safeSlug(ss.getSeriesName()), ss.getStartTime().toLocalDate(), ss.getStartTime().toLocalTime());
+            }
+            if (!generatedSessionIds.contains(ss.getSessionId())
+                    && (altId == null || !generatedSessionIds.contains(altId))
+                    && (altLegacy == null || !generatedSessionIds.contains(altLegacy))) {
                 LocalDate date = ss.getStartTime().toLocalDate();
                 Instant sessionInstant = date.atStartOfDay().toInstant(ZoneOffset.UTC);
                 SessionResponseDTO dto = new SessionResponseDTO();
@@ -204,12 +234,16 @@ public class ScheduleService {
 
         // 2) Lazily resolve from schedule without materializing an instance
         String[] parts = sessionId.split("__");
-        if (parts.length != 3) {
+        if (parts.length < 3 || parts.length > 4) {
             throw new RuntimeException("Invalid sessionId format: " + sessionId);
         }
         try {
             String dateStr = parts[1];
             String timeStr = parts[2];
+            // Optional provided trainerId (4th part) to help disambiguation
+            final UUID providedTrainerId = (parts.length == 4 && parts[3] != null && !parts[3].isBlank() && !"null".equalsIgnoreCase(parts[3]))
+                    ? safeParseUUID(parts[3])
+                    : null;
             LocalDate date = LocalDate.parse(dateStr);
             LocalTime time = LocalTime.parse(timeStr);
             int weekday = date.getDayOfWeek() == DayOfWeek.SUNDAY ? 0 : date.getDayOfWeek().getValue();
@@ -218,9 +252,10 @@ public class ScheduleService {
             List<ScheduledSession> persistedSameStart = scheduledSessionRepository
                 .findByStartTimeBetweenAndActiveTrue(LocalDateTime.of(date, time), LocalDateTime.of(date, time));
             if (!persistedSameStart.isEmpty()) {
-                if (preferredTrainerId != null) {
+                UUID trainerPref = preferredTrainerId != null ? preferredTrainerId : providedTrainerId;
+                if (trainerPref != null) {
                     for (ScheduledSession ss : persistedSameStart) {
-                        if (preferredTrainerId.equals(ss.getTrainerId())) {
+                        if (trainerPref.equals(ss.getTrainerId())) {
                             return getSessionById(ss.getSessionId());
                         }
                     }
@@ -232,7 +267,10 @@ public class ScheduleService {
                 .findByWeekdayAndEffectiveFromTimestampLessThanEqual(weekday, sessionInstant);
             // Try exact canonical match first
             for (TrainerSchedule schedule : schedules) {
-                if (schedule.getStartTime().equals(time) && generateSessionId(schedule, date).equals(sessionId)) {
+                String canonical = generateSessionId(schedule, date);
+                // Also accept legacy 3-part id for backward compatibility
+                String legacy = generateLegacySessionId(schedule, date);
+                if (schedule.getStartTime().equals(time) && (canonical.equals(sessionId) || legacy.equals(sessionId))) {
                     return buildVirtualSessionDTO(schedule, date, sessionInstant);
                 }
             }
@@ -242,9 +280,10 @@ public class ScheduleService {
                 .toList();
             if (!timeMatches.isEmpty()) {
                 // Strong disambiguation: trainerId if provided
-                if (preferredTrainerId != null) {
+                UUID trainerPref = preferredTrainerId != null ? preferredTrainerId : providedTrainerId;
+                if (trainerPref != null) {
                     List<TrainerSchedule> trainerMatches = timeMatches.stream()
-                        .filter(s -> preferredTrainerId.equals(s.getTrainerId()))
+                        .filter(s -> trainerPref.equals(s.getTrainerId()))
                         .toList();
                     if (trainerMatches.size() == 1) {
                         return buildVirtualSessionDTO(trainerMatches.get(0), date, sessionInstant);
@@ -283,7 +322,7 @@ public class ScheduleService {
 
     private SessionResponseDTO buildVirtualSessionDTO(TrainerSchedule schedule, LocalDate date, Instant sessionInstant) {
         SessionResponseDTO dto = new SessionResponseDTO();
-        dto.setSessionId(generateSessionId(schedule, date)); // canonical id
+    dto.setSessionId(generateSessionId(schedule, date)); // canonical id
         dto.setTrainerId(schedule.getTrainerId());
         trainerRepository.findById(schedule.getTrainerId()).ifPresent(t -> dto.setTrainerName(t.getName()));
         dto.setStartTime(LocalDateTime.of(date, schedule.getStartTime()));
@@ -438,11 +477,30 @@ public class ScheduleService {
     }
     
     private String generateSessionId(TrainerSchedule schedule, LocalDate date) {
+        if (schedule == null || date == null) return null;
+        return generateSessionId(schedule.getSeriesName(), date, schedule.getStartTime(), schedule.getTrainerId());
+    }
+
+    // Legacy 3-part id retained for compatibility checks
+    private String generateLegacySessionId(TrainerSchedule schedule, LocalDate date) {
+        if (schedule == null || date == null) return null;
         return String.format("%s__%s__%s",
-            schedule.getSeriesName().toLowerCase().replace(" ", "-"),
-            date.toString(),
-            schedule.getStartTime().toString()
-        );
+                safeSlug(schedule.getSeriesName()),
+                date,
+                schedule.getStartTime());
+    }
+
+    // Canonical generator that includes the trainerId to avoid collisions between trainers at same time
+    private String generateSessionId(String seriesName, LocalDate date, LocalTime startTime, UUID trainerId) {
+        if (date == null || startTime == null) return null;
+        String slug = safeSlug(seriesName);
+        String trainerPart = trainerId != null ? trainerId.toString() : "null";
+        return String.format("%s__%s__%s__%s", slug, date, startTime, trainerPart);
+    }
+
+    private String safeSlug(String input) {
+        String s = input == null ? "" : input;
+        return s.toLowerCase().replace(" ", "-");
     }
     
     private ScheduledSession generateSessionFromSchedule(TrainerSchedule schedule, LocalDate date) {
@@ -464,10 +522,13 @@ public class ScheduleService {
             .orElseGet(() -> {
                 // Parse sessionId to extract date and find the schedule
                 String[] parts = sessionId.split("__");
-                if (parts.length == 3) {
+                if (parts.length == 3 || parts.length == 4) {
                     try {
                         String dateStr = parts[1];
                         String timeStr = parts[2];
+                        final UUID providedTrainerId = (parts.length == 4 && parts[3] != null && !parts[3].isBlank() && !"null".equalsIgnoreCase(parts[3]))
+                                ? safeParseUUID(parts[3])
+                                : null;
                         LocalDate date = LocalDate.parse(dateStr);
                         LocalTime time = LocalTime.parse(timeStr);
                         int weekday = date.getDayOfWeek() == DayOfWeek.SUNDAY ? 0 : date.getDayOfWeek().getValue();
@@ -477,7 +538,9 @@ public class ScheduleService {
                             .findByWeekdayAndEffectiveFromTimestampLessThanEqual(weekday, date.atStartOfDay().toInstant(java.time.ZoneOffset.UTC));
                         
                         for (TrainerSchedule schedule : schedules) {
-                            if (schedule.getStartTime().equals(time) && generateSessionId(schedule, date).equals(sessionId)) {
+                            String canonical = generateSessionId(schedule, date);
+                            String legacy = generateLegacySessionId(schedule, date);
+                            if (schedule.getStartTime().equals(time) && (canonical.equals(sessionId) || legacy.equals(sessionId))) {
                                 ScheduledSession session = generateSessionFromSchedule(schedule, date);
                                 return scheduledSessionRepository.save(session);
                             }
@@ -487,6 +550,16 @@ public class ScheduleService {
                             .filter(s -> s.getStartTime().equals(time))
                             .toList();
                         if (!timeMatches.isEmpty()) {
+                            // Use provided trainerId if present
+                            if (providedTrainerId != null) {
+                                List<TrainerSchedule> trainerMatches = timeMatches.stream()
+                                        .filter(s -> providedTrainerId.equals(s.getTrainerId()))
+                                        .toList();
+                                if (trainerMatches.size() == 1) {
+                                    ScheduledSession session = generateSessionFromSchedule(trainerMatches.get(0), date);
+                                    return scheduledSessionRepository.save(session);
+                                }
+                            }
                             if (timeMatches.size() == 1) {
                                 TrainerSchedule schedule = timeMatches.get(0);
                                 ScheduledSession session = generateSessionFromSchedule(schedule, date);
@@ -526,6 +599,14 @@ public class ScheduleService {
                 }
                 throw new RuntimeException("Could not create session instance for sessionId: " + sessionId);
             });
+    }
+
+    private UUID safeParseUUID(String value) {
+        try {
+            return UUID.fromString(value);
+        } catch (Exception e) {
+            return null;
+        }
     }
     
     private List<StudentCommitmentResponseDTO> getStudentCommitmentsForSession(UUID sessionSeriesId, Instant sessionInstant, ScheduledSession existingSession) {
