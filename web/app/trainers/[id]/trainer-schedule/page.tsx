@@ -10,6 +10,7 @@ import {Badge} from "@/components/ui/badge"
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog"
 import {Checkbox} from "@/components/ui/checkbox"
 import {Save, Loader2, Calendar as CalendarIcon, Clock, Settings2, Square, SquareCheck} from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {useQueryClient, useMutation} from "@tanstack/react-query"
 import {apiClient} from "@/lib/client"
 import {getSchedulesByTrainerOptions, getSchedulesByTrainerQueryKey, createScheduleMutation, updateScheduleMutation, deleteScheduleMutation, getAvailableSessionSeriesQueryKey, getScheduleQueryKey} from "@/lib/api-client/@tanstack/react-query.gen"
@@ -349,7 +350,7 @@ export default function TrainerSchedulePage(){
           <div className="flex gap-2">
             <Dialog open={bulkOpen} onOpenChange={(o)=>{setBulkOpen(o)}}>
               <DialogTrigger asChild>
-                <Button className="bg-green-600 hover:bg-green-700">
+                <Button className="bg-green-600 hover:bg-green-700" aria-label="Configurar semana do instrutor">
                   <Settings2 className="w-4 h-4 mr-2"/> Configurar Semana
                 </Button>
               </DialogTrigger>
@@ -426,7 +427,11 @@ export default function TrainerSchedulePage(){
         <div className="space-y-2">
           <h2 className="text-lg font-semibold">Horários Ativos</h2>
           {loadingList && (
-            <div className="text-sm text-muted-foreground flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin"/> Carregando...</div>
+            <div className="space-y-2">
+              {[...Array(2)].map((_,i)=> (
+                <div key={i} className="animate-pulse h-24 rounded border" />
+              ))}
+            </div>
           )}
           {!loadingList && (
             <>

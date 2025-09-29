@@ -14,6 +14,7 @@ import {useQueryClient, useMutation, useQuery} from "@tanstack/react-query"
 import { TrainerSchedule, CommitmentDetailResponseDto } from "@/lib/api-client"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { History, Users, AlertTriangle } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 const weekdayMap: Record<number,string> = {0:"Domingo",1:"Segunda-feira",2:"Terça-feira",3:"Quarta-feira",4:"Quinta-feira",5:"Sexta-feira",6:"Sábado"}
 
@@ -155,10 +156,6 @@ export default function ClassSchedulePage() {
     if(selectedSeries.includes(seriesId)) return true
     const series = seriesById.get(seriesId)
     if(!series) return false
-    // Capacity enforcement: do not allow selecting if full
-    const cap = series.capacity ?? 0
-    const enrolled = series.enrolledCount ?? 0
-    if (cap > 0 && enrolled >= cap) return false
     // If day already selected
     if(selectedSeries.some(id=> {
       const other = seriesById.get(id)
@@ -400,7 +397,7 @@ export default function ClassSchedulePage() {
                             )}
                           </div>
                         </div>
-                        {max>0 && <div className="h-1.5 rounded bg-muted overflow-hidden">
+                        {max>0 && <div className="h-1.5 rounded bg-muted overflow-hidden" aria-hidden>
                           <div className="h-full bg-green-600 transition-all" style={{width: `${Math.min(100, Math.round((current/(max||1))*100))}%`}} />
                         </div>}
                       </div>
