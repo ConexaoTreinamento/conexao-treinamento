@@ -686,15 +686,21 @@ public class ScheduleService {
                         ));
                     }
                 } else {
-                    // No persisted participant override yet. Default presence to true when committed ATTENDING
+                    // No persisted participant override yet.
+                    // Only include students whose series commitment is ATTENDING at the session time
                     if (commitment.getCommitmentStatus() == CommitmentStatus.ATTENDING) {
                         dto.setPresent(true);
+                    } else {
+                        // Skip NOT_ATTENDING (or other non-attending) commitments so they don't appear as absent
+                        continue;
                     }
                 }
             } else {
-                // Virtual (non-materialized) session: default presence to true for committed ATTENDING
+                // Virtual (non-materialized) session: include only ATTENDING commitments
                 if (commitment.getCommitmentStatus() == CommitmentStatus.ATTENDING) {
                     dto.setPresent(true);
+                } else {
+                    continue;
                 }
             }
             dto.setExercises(exercises);
@@ -703,10 +709,12 @@ public class ScheduleService {
             studentCommitments.add(dto);
         }
         
-        // Also add any participants that were INCLUDED explicitly in the instance but do not have a series commitment
+        // Also add any participants that were INCLUDED explicitly in the instance but do not have an ATTENDING series commitment entry
         if (existingSession != null) {
             for (SessionParticipant sp : includedInInstance.values()) {
-                if (!latestCommitmentsPerStudent.containsKey(sp.getStudentId())) {
+                // If they were not added above (i.e., either no series commitment or series commitment was non-ATTENDING), include them now
+                boolean alreadyAdded = studentCommitments.stream().anyMatch(sc -> sc.getStudentId().equals(sp.getStudentId()));
+                if (!alreadyAdded) {
                     StudentCommitmentResponseDTO dto = new StudentCommitmentResponseDTO();
                     dto.setStudentId(sp.getStudentId());
                     studentRepository.findById(sp.getStudentId()).ifPresent(st -> dto.setStudentName(st.getName()));
