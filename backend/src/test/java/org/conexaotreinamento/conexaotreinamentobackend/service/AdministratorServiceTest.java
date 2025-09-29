@@ -244,7 +244,7 @@ class AdministratorServiceTest {
         when(userService.updateUserEmail(userId, "joao@example.com")).thenReturn(updatedUserResponse);
         when(userService.updateUserPassword(userId, "newpassword123")).thenReturn(updatedUserResponse);
         when(administratorRepository.save(administrator)).thenReturn(administrator);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.of(user));
 
         // When
         AdministratorResponseDTO result = administratorService.put(administratorId, updateAdministratorDTO);
@@ -258,7 +258,7 @@ class AdministratorServiceTest {
         verify(userService).updateUserEmail(userId, "joao@example.com");
         verify(userService).updateUserPassword(userId, "newpassword123");
         verify(administratorRepository).save(administrator);
-        verify(userRepository).findById(userId);
+        verify(userRepository).findByIdAndDeletedAtIsNull(userId);
     }
 
     @Test
@@ -277,7 +277,7 @@ class AdministratorServiceTest {
         when(administratorRepository.findById(administratorId)).thenReturn(Optional.of(administrator));
         when(userService.updateUserEmail(userId, "joao.updated@example.com")).thenReturn(updatedUserResponse);
         when(administratorRepository.save(administrator)).thenReturn(administrator);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.of(user));
 
         // When
         AdministratorResponseDTO result = administratorService.put(administratorId, updateAdministratorDTO);
@@ -291,7 +291,7 @@ class AdministratorServiceTest {
         verify(userService).updateUserEmail(userId, "joao.updated@example.com");
         verify(userService, never()).updateUserPassword(any(), any());
         verify(administratorRepository).save(administrator);
-        verify(userRepository).findById(userId);
+        verify(userRepository).findByIdAndDeletedAtIsNull(userId);
     }
 
     @Test
