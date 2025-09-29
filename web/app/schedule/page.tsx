@@ -245,8 +245,26 @@ export default function SchedulePage() {
             <div className="space-y-1 flex-1 min-w-0">
               <CardTitle className="text-base leading-tight flex items-center gap-2">
                 {classItem.name}
-                {classItem.overridden && <Badge variant="outline" className="text-[10px]">Ajuste</Badge>}
-                {classItem.canceled && <Badge variant="destructive" className="text-[10px]">Cancelada</Badge>}
+                {classItem.overridden && (
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="text-[10px] cursor-help">Ajuste</Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>Instância ajustada (instrutor/participantes podem ter sido alterados)</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                {classItem.canceled && (
+                  <TooltipProvider delayDuration={300}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="destructive" className="text-[10px] cursor-help">Cancelada</Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>Esta aula foi cancelada</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </CardTitle>
               <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                 <div className="flex items-center gap-1">

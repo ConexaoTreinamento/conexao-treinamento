@@ -354,9 +354,36 @@ export default function ClassSchedulePage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <h4 className="font-medium text-sm">{cls.seriesName}</h4>
-                              {max>0 && <Badge className={`${getOccupancyColor(current, max)} text-xs ${current>=max? 'ring-2 ring-red-500':''}`}>{current}/{max}{current>=max? ' • Cheia':''}</Badge>}
-                              {activeSeriesIds.has(cls.id) && <Badge variant="secondary" className="text-[10px]">Ativo</Badge>}
-                              {conflict && <Badge variant="destructive" className="flex items-center gap-1 text-[10px]" title={`Conflito de horário com outra série selecionada no mesmo dia.`}><AlertTriangle className="w-3 h-3"/> Conflito</Badge>}
+                              {max>0 && (
+                                <TooltipProvider delayDuration={300}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge className={`${getOccupancyColor(current, max)} text-xs ${current>=max? 'ring-2 ring-red-500':''}`}>{current}/{max}{current>=max? ' • Cheia':''}</Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Inscritos/Capacidade (informativo)</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                              {activeSeriesIds.has(cls.id) && (
+                                <TooltipProvider delayDuration={300}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge variant="secondary" className="text-[10px] cursor-help">Ativo</Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Compromisso atual do aluno nesta série</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                              {conflict && (
+                                <TooltipProvider delayDuration={300}>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Badge variant="destructive" className="flex items-center gap-1 text-[10px] cursor-help"><AlertTriangle className="w-3 h-3"/> Conflito</Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Conflito de horário com outra série selecionada no mesmo dia</TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
                             </div>
                             <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                               <div className="flex items-center gap-1"><Clock className="w-3 h-3"/><span>{cls.startTime?.slice(0,5)} - {cls.endTime?.slice(0,5)}</span></div>

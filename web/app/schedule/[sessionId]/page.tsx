@@ -316,7 +316,14 @@ export default function ClassDetailPage() {
                 </CardTitle>
                 <div className="flex items-center gap-2 flex-wrap">
                   {session.canceled && (
-                    <Badge variant="destructive" className="text-[10px] flex-shrink-0">Cancelada</Badge>
+                    <TooltipProvider delayDuration={300}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Badge variant="destructive" className="text-[10px] flex-shrink-0 cursor-help">Cancelada</Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>Esta aula foi cancelada</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   )}
                   <Button
                     size="sm"
