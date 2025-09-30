@@ -33,6 +33,7 @@ import {Checkbox} from "@/components/ui/checkbox"
 import ConfirmDeleteButton from "@/components/confirm-delete-button"
 import {useCreateStudent, useDeleteStudent, useRestoreStudent} from "@/lib/hooks/student-mutations"
 import {useToast} from "@/hooks/use-toast"
+import { handleHttpError } from "@/lib/error-utils"
 import {useStudents} from "@/lib/hooks/student-queries";
 import {apiClient} from "@/lib/client";
 
@@ -467,10 +468,8 @@ export default function StudentsPage() {
       await createStudent({ body: requestBody, client: apiClient })
       toast({ title: "Aluno criado", description: "Aluno cadastrado com sucesso.", duration: 3000 })
       setIsCreateOpen(false)
-    } catch (e) {
-      toast({ title: "Erro ao criar aluno", description: "Não foi possível criar o aluno.", duration: 4000 })
-      // eslint-disable-next-line no-console
-      console.error(e)
+    } catch (e: any) {
+      handleHttpError(e, "criar aluno", "Não foi possível criar o aluno. Tente novamente.")
     } finally {
       setIsCreating(false)
     }
@@ -481,13 +480,21 @@ export default function StudentsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    await deleteStudent({ path: { id }, client: apiClient })
-    toast({ title: "Aluno excluído", description: "O aluno foi marcado como inativo.", duration: 3000 })
+    try {
+      await deleteStudent({ path: { id }, client: apiClient })
+      toast({ title: "Aluno excluído", description: "O aluno foi marcado como inativo.", duration: 3000 })
+    } catch (e: any) {
+      handleHttpError(e, "excluir aluno", "Não foi possível excluir o aluno. Tente novamente.")
+    }
   }
 
   const handleRestore = async (id: string) => {
-    await restoreStudent({ path: { id }, client: apiClient })
-    toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
+    try {
+      await restoreStudent({ path: { id }, client: apiClient })
+      toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
+    } catch (e: any) {
+      handleHttpError(e, "reativar aluno", "Não foi possível reativar o aluno. Tente novamente.")
+    }
   }
 
   return (

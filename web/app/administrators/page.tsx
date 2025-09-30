@@ -17,6 +17,8 @@ import {
 import { Label } from "@/components/ui/label"
 import { Mail, Plus, Search, Shield, AlertCircle, CheckCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
+import { handleHttpError, extractFieldErrors } from "@/lib/error-utils"
 import Layout from "@/components/layout"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { createAdministratorMutation, findAllAdministratorsOptions } from "@/lib/api-client/@tanstack/react-query.gen"
@@ -40,6 +42,7 @@ interface ValidationErrors {
 export default function AdministratorsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [userRole, setUserRole] = useState<string>("")
+  const { toast } = useToast()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
 
@@ -165,13 +168,13 @@ export default function AdministratorsPage() {
       setIsCreateOpen(false)
       setShowSuccess(false)
     } catch (error: any) {
-      if (error?.status === 409) {
-        setErrors({ email: "Email já está em uso" })
-      } else if (error?.status === 400 && error?.fieldErrors) {
-        setErrors(error.fieldErrors)
+      const fieldErrors = extractFieldErrors(error)
+      if (fieldErrors) {
+        setErrors(fieldErrors)
       } else {
         setErrors({ general: error?.message || "Erro ao cadastrar administrador" })
       }
+      handleHttpError(error, "criar administrador", "Não foi possível criar o administrador. Tente novamente.")
     }
   }
 
