@@ -44,10 +44,14 @@ public class StudentCommitmentController {
             @PathVariable UUID studentId,
             @PathVariable UUID sessionSeriesId,
             @Valid @RequestBody StudentCommitmentRequestDTO request) {
-        StudentCommitment commitment = studentCommitmentService.updateCommitment(
-            studentId, sessionSeriesId, request.getCommitmentStatus(), request.getEffectiveFromTimestamp());
-        CommitmentDetailResponseDTO response = convertToDetailResponseDTO(commitment);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        try {
+            StudentCommitment commitment = studentCommitmentService.updateCommitment(
+                studentId, sessionSeriesId, request.getCommitmentStatus(), request.getEffectiveFromTimestamp());
+            CommitmentDetailResponseDTO response = convertToDetailResponseDTO(commitment);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().build();
+        }
     }
     
     // Get current commitment status for a student and session at a specific time
@@ -124,12 +128,16 @@ public class StudentCommitmentController {
     public ResponseEntity<List<CommitmentDetailResponseDTO>> bulkUpdateCommitments(
             @PathVariable UUID studentId,
             @Valid @RequestBody BulkCommitmentRequestDTO request) {
-        List<StudentCommitment> commitments = studentCommitmentService.bulkUpdateCommitments(
-            studentId, request.getSessionSeriesIds(), request.getCommitmentStatus(), request.getEffectiveFromTimestamp());
-        List<CommitmentDetailResponseDTO> response = commitments.stream()
-            .map(this::convertToDetailResponseDTO)
-            .collect(Collectors.toList());
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        try {
+            List<StudentCommitment> commitments = studentCommitmentService.bulkUpdateCommitments(
+                studentId, request.getSessionSeriesIds(), request.getCommitmentStatus(), request.getEffectiveFromTimestamp());
+            List<CommitmentDetailResponseDTO> response = commitments.stream()
+                .map(this::convertToDetailResponseDTO)
+                .collect(Collectors.toList());
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (RuntimeException ex) {
+            return ResponseEntity.badRequest().build();
+        }
     }
     
     // Utility endpoint: Get all available session series (for booking UI)
