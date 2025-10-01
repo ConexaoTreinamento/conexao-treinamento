@@ -364,7 +364,7 @@ function SchedulePageContent() {
           <p className="text-sm text-muted-foreground">{selectedDate.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</p>
         </div>
         <div className="w-full">
-          <div className="mx-auto w-full max-w-[90vw] md:max-w-[1500px]">
+          <div className="mx-auto w-full md:max-w-[75vw]">
             <div
               className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin"
               style={{scrollbarWidth:'thin'}}
