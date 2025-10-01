@@ -13,9 +13,9 @@ import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Clock, Award } from 
 import Layout from "@/components/layout"
 
 export default function ProfilePage() {
-  const token = localStorage.getItem("token")
-  const userId = localStorage.getItem("userId")
   const [id, setId] = useState<string>("")
+  const [token, setToken] = useState<string>("")
+  const [userId, setUserId] = useState<string>("")
   const [userRole, setUserRole] = useState<string>("")
   const [userName, setUserName] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
@@ -32,8 +32,12 @@ export default function ProfilePage() {
   })
 
   useEffect(() => {
+    const uToken = localStorage.getItem("token")
+    const uUserId = localStorage.getItem("userId")
     const role = localStorage.getItem("userRole")
     const name = localStorage.getItem("userName")
+    setToken(uToken || "")
+    setUserId(uUserId || "")
     setUserRole(role || "")
     setUserName(name || "")
 
@@ -81,11 +85,11 @@ export default function ProfilePage() {
       setIsLoading(false)
     } else {
       fetch(`${apiUrl}/trainers/userId/${userId}`, {
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json"
-      }
-    })
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      })
         .then(res => res.json())
         .then(data => setProfileData({
           name: data.name,
@@ -122,7 +126,8 @@ export default function ProfilePage() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
     await fetch(`${apiUrl}/trainers/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json",
+      headers: {
+        "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`
       },
       body: JSON.stringify(profileData),
@@ -292,16 +297,6 @@ export default function ProfilePage() {
                         id="address"
                         value={profileData.address}
                         onChange={(e) => handleInputChange("address", e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="bio">Biografia</Label>
-                      <Textarea
-                        id="bio"
-                        value={profileData.bio}
-                        onChange={(e) => handleInputChange("bio", e.target.value)}
-                        placeholder="Conte um pouco sobre você..."
-                        rows={4}
                       />
                     </div>
                   </CardContent>
