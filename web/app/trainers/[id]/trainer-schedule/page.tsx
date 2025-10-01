@@ -1,7 +1,7 @@
 "use client"
 
 import {useState, useMemo, useEffect} from "react"
-import {useParams} from "next/navigation"
+import {useParams, useRouter} from "next/navigation"
 import Layout from "@/components/layout"
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
 import {Button} from "@/components/ui/button"
@@ -9,7 +9,7 @@ import {Input} from "@/components/ui/input"
 import {Badge} from "@/components/ui/badge"
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog"
 import {Checkbox} from "@/components/ui/checkbox"
-import {Save, Loader2, Calendar as CalendarIcon, Clock, Settings2, Square, SquareCheck} from "lucide-react"
+import {Save, Loader2, Calendar as CalendarIcon, Clock, Settings2, Square, SquareCheck, ArrowLeft} from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {useQueryClient, useMutation} from "@tanstack/react-query"
 import {apiClient} from "@/lib/client"
@@ -159,6 +159,7 @@ function MobileTimetable({schedules}: WeekTimetableProps){
 export default function TrainerSchedulePage(){
   const params = useParams<{id:string}>()
   const trainerId = params.id as string
+  const router = useRouter()
   const qc = useQueryClient()
   const [bulkOpen, setBulkOpen] = useState(false)
   const [weekConfig, setWeekConfig] = useState<WeekConfigRow[]>([])
@@ -344,7 +345,12 @@ export default function TrainerSchedulePage(){
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Agenda do Instrutor</h1>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Voltar" title="Voltar">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <h1 className="text-2xl font-bold">Agenda do Instrutor</h1>
+            </div>
             <p className="text-muted-foreground text-sm">Configure os horários semanais e séries geradas</p>
           </div>
           <div className="flex gap-2">
