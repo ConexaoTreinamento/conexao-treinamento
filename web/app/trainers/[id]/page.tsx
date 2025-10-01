@@ -9,7 +9,6 @@ import { useRouter, useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Layout from "@/components/layout"
 import TrainerModal from "@/components/trainer-modal"
-import { ListTrainersDto, TrainerResponseDto, update } from "@/lib/api-client"
 import { findTrainerByIdOptions, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -26,11 +25,6 @@ export default function TrainerProfilePage() {
     ...findTrainerByIdOptions({
       path: { id: params.id as string },
       client: apiClient,
-      security: [{
-        type: "http",
-        scheme: "bearer",
-        in: "header",
-      },]
     })
   })
 
@@ -73,11 +67,6 @@ export default function TrainerProfilePage() {
         path: { id: String(updatedTrainer?.id) },
         body: updatedTrainer,
         client: apiClient,
-        security: [{
-          type: "http",
-          scheme: "bearer",
-          in: "header",
-        }],
       })
       await queryClient.invalidateQueries({
         predicate: function (q) {

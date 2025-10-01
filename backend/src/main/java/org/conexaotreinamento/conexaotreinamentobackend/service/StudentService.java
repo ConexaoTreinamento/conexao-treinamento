@@ -269,4 +269,8 @@ public class StudentService {
 
         return StudentResponseDTO.fromEntity(student);
     }
+
+    public List<Student> findAllActive() {
+        return studentRepository.findByDeletedAtIsNull();
+    }
 }

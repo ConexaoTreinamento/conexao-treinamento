@@ -14,8 +14,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { CheckCircle, X } from "lucide-react"
-import AddStudentDialog from "@/components/add-student-dialog"
+import { CheckCircle, X, Loader2 } from "lucide-react"
+import { useStudentLookup, useTrainerLookup } from "@/lib/hooks/event-queries"
 
 interface EventFormData {
   name: string
@@ -24,8 +24,8 @@ interface EventFormData {
   endTime: string
   location: string
   description: string
-  instructor: string
-  students: string[]
+  trainerId: string
+  participantIds: string[]
   attendance?: Record<string, boolean>
 }
 
@@ -35,8 +35,6 @@ interface EventModalProps {
   initialData?: Partial<EventFormData>
   onClose: () => void
   onSubmit: (data: EventFormData) => void
-  availableStudents: string[]
-  instructors: string[]
 }
 
 export default function EventModal({
@@ -45,9 +43,11 @@ export default function EventModal({
   initialData,
   onClose,
   onSubmit,
-  availableStudents,
-  instructors,
 }: EventModalProps) {
+  // Fetch lookup data
+  const { data: students = [], isLoading: studentsLoading } = useStudentLookup()
+  const { data: trainers = [], isLoading: trainersLoading } = useTrainerLookup()
+
   const [formData, setFormData] = useState<EventFormData>({
     name: "",
     date: "",
@@ -55,8 +55,8 @@ export default function EventModal({
     endTime: "",
     location: "",
     description: "",
-    instructor: "",
-    students: [],
+    trainerId: "",
+    participantIds: [],
     attendance: {},
   })
 
@@ -70,8 +70,8 @@ export default function EventModal({
         endTime: initialData.endTime || "",
         location: initialData.location || "",
         description: initialData.description || "",
-        instructor: initialData.instructor || "",
-        students: initialData.students || [],
+        trainerId: initialData.trainerId || "",
+        participantIds: initialData.participantIds || [],
         attendance: initialData.attendance || {},
       })
     } else {
@@ -83,8 +83,8 @@ export default function EventModal({
         endTime: "",
         location: "",
         description: "",
-        instructor: "",
-        students: [],
+        trainerId: "",
+        participantIds: [],
         attendance: {},
       })
     }
@@ -94,14 +94,19 @@ export default function EventModal({
     setFormData((prev) => {
       const newForm = { ...prev, [field]: value }
 
-      // Validate times
-      if (newForm.startTime && newForm.endTime) {
+      const hasCompleteStart = newForm.startTime?.length === 5
+      const hasCompleteEnd = newForm.endTime?.length === 5
+
+      if (hasCompleteStart && hasCompleteEnd) {
         const start = new Date(`2000-01-01T${newForm.startTime}`)
         const end = new Date(`2000-01-01T${newForm.endTime}`)
 
         if (end < start) {
-          // If end time is earlier than start time, set end time to start time
-          newForm.endTime = newForm.startTime
+          if (field === "startTime") {
+            newForm.endTime = value
+          } else {
+            return prev
+          }
         }
       }
 
@@ -109,37 +114,37 @@ export default function EventModal({
     })
   }
 
-  const handleAddStudent = (student: string) => {
-    if (!formData.students.includes(student)) {
+  const handleAddStudent = (studentId: string) => {
+    if (!formData.participantIds.includes(studentId)) {
       setFormData(prev => ({
         ...prev,
-        students: [...prev.students, student],
+        participantIds: [...prev.participantIds, studentId],
         attendance: {
           ...prev.attendance,
-          [student]: false,
+          [studentId]: false,
         },
       }))
     }
   }
 
-  const handleRemoveStudent = (student: string) => {
+  const handleRemoveStudent = (studentId: string) => {
     setFormData(prev => {
       const newAttendance = { ...prev.attendance }
-      delete newAttendance[student]
+      delete newAttendance[studentId]
       return {
         ...prev,
-        students: prev.students.filter(s => s !== student),
+        participantIds: prev.participantIds.filter(id => id !== studentId),
         attendance: newAttendance,
       }
     })
   }
 
-  const toggleAttendance = (student: string) => {
+  const toggleAttendance = (studentId: string) => {
     setFormData(prev => ({
       ...prev,
       attendance: {
         ...prev.attendance,
-        [student]: !prev.attendance?.[student],
+        [studentId]: !prev.attendance?.[studentId],
       },
     }))
   }
@@ -155,10 +160,10 @@ export default function EventModal({
            formData.startTime &&
            formData.endTime &&
            formData.location.trim() &&
-           formData.instructor
+           formData.trainerId
   }
 
-  const currentParticipants = formData.students.length
+  const currentParticipants = formData.participantIds.length
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -234,16 +239,16 @@ export default function EventModal({
             <div className="space-y-2">
               <Label htmlFor="eventInstructor">Instrutor *</Label>
               <Select
-                value={formData.instructor}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, instructor: value }))}
+                value={formData.trainerId}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, trainerId: value }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o instrutor" />
+                  <SelectValue placeholder={trainersLoading ? "Carregando..." : "Selecione o instrutor"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {instructors.map((instructor) => (
-                    <SelectItem key={instructor} value={instructor}>
-                      {instructor}
+                  {trainers.map((trainer) => (
+                    <SelectItem key={trainer.id} value={trainer.id}>
+                      {trainer.name || 'Nome não informado'}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -269,26 +274,37 @@ export default function EventModal({
               <Label>
                 Participantes ({currentParticipants})
               </Label>
-              <AddStudentDialog
-                students={availableStudents}
-                onAddStudent={handleAddStudent}
-                excludeStudents={formData.students}
-              />
+              <Select onValueChange={handleAddStudent}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder={studentsLoading ? "Carregando..." : "Adicionar aluno"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {students
+                    .filter(student => !formData.participantIds.includes(student.id))
+                    .map((student) => (
+                      <SelectItem key={student.id} value={student.id}>
+                        {student.name || 'Nome não informado'}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {formData.students.length > 0 && (
+            {formData.participantIds.length > 0 && (
               <div className="border rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
-                {formData.students.map((student) => (
-                  <div key={student} className="flex items-center justify-between p-2 bg-muted rounded">
-                    <span className="text-sm">{student}</span>
+                {formData.participantIds.map((studentId) => {
+                  const student = students.find(s => s.id === studentId)
+                  return (
+                  <div key={studentId} className="flex items-center justify-between p-2 bg-muted rounded">
+                    <span className="text-sm">{student?.name || 'Unknown Student'}</span>
                     <div className="flex items-center gap-1">
                       {/* Only show attendance toggle in edit mode */}
                       {mode === "edit" && (
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => toggleAttendance(student)}
-                          className={`h-6 w-6 p-0 ${formData.attendance?.[student] ? "text-green-600" : "text-muted-foreground"}`}
+                          onClick={() => toggleAttendance(studentId)}
+                          className={`h-6 w-6 p-0 ${formData.attendance?.[studentId] ? "text-green-600" : "text-muted-foreground"}`}
                         >
                           <CheckCircle className="w-3 h-3" />
                         </Button>
@@ -296,14 +312,15 @@ export default function EventModal({
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleRemoveStudent(student)}
+                        onClick={() => handleRemoveStudent(studentId)}
                         className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
                       >
                         <X className="w-3 h-3" />
                       </Button>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
@@ -316,9 +333,16 @@ export default function EventModal({
           <Button
             onClick={handleSubmit}
             className="bg-green-600 hover:bg-green-700"
-            disabled={!isFormValid()}
+            disabled={!isFormValid() || studentsLoading || trainersLoading}
           >
-            {mode === "create" ? "Criar Evento" : "Salvar Alterações"}
+            {studentsLoading || trainersLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Carregando...
+              </>
+            ) : (
+              mode === "create" ? "Criar Evento" : "Salvar Alterações"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

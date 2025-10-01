@@ -48,6 +48,11 @@ public class TrainerService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trainer not found"));
     }
 
+    public ListTrainersDTO findByUserId(UUID id) {
+        return trainerRepository.findTrainerByUserId(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trainer not found"));
+    }
+
     public List<ListTrainersDTO> findAll() {
         return trainerRepository.findAllTrainerProfiles(true);
     }

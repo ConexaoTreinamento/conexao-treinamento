@@ -17,6 +17,9 @@ public interface AdministratorRepository extends JpaRepository<Administrator, UU
     
     Optional<Administrator> findByEmailIgnoringCaseAndDeletedAtIsNull(String email);
     
+       // Fetch by email regardless of soft-delete status
+       Optional<Administrator> findByEmailIgnoringCase(String email);
+    
     Page<Administrator> findByDeletedAtIsNull(Pageable pageable);
     
     @Query("SELECT a FROM Administrator a WHERE a.deletedAt IS NULL " +
