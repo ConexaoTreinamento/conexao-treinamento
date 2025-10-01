@@ -166,42 +166,6 @@ export type ExerciseResponseDto = {
     deletedAt?: string;
 };
 
-export type EventRequestDto = {
-    name: string;
-    date: string;
-    startTime?: string;
-    endTime?: string;
-    location?: string;
-    description?: string;
-    trainerId: string;
-    participantIds?: Array<string>;
-};
-
-export type EventParticipantResponseDto = {
-    id?: string;
-    name?: string;
-    avatar?: string;
-    enrolledAt?: string;
-    present?: boolean;
-};
-
-export type EventResponseDto = {
-    id?: string;
-    name?: string;
-    date?: string;
-    startTime?: string;
-    endTime?: string;
-    location?: string;
-    description?: string;
-    instructorId?: string;
-    instructor?: string;
-    status?: string;
-    participants?: Array<EventParticipantResponseDto>;
-    createdAt?: string;
-    updatedAt?: string;
-    deletedAt?: string;
-};
-
 export type AdministratorRequestDto = {
     firstName: string;
     lastName: string;
@@ -304,9 +268,9 @@ export type SessionParticipant = {
     deletedAt?: string;
     active?: boolean;
     exercises?: Array<ParticipantExercise>;
-    present?: boolean;
     included?: boolean;
     excluded?: boolean;
+    present?: boolean;
 };
 
 export type SessionUpdateRequestDto = {
@@ -436,17 +400,6 @@ export type PatchExerciseRequestDto = {
     description?: string;
 };
 
-export type PatchEventRequestDto = {
-    name?: string;
-    date?: string;
-    startTime?: string;
-    endTime?: string;
-    location?: string;
-    description?: string;
-    trainerId?: string;
-    participantIds?: Array<string>;
-};
-
 export type PatchAdministratorRequestDto = {
     firstName?: string;
     lastName?: string;
@@ -461,45 +414,45 @@ export type Pageable = {
 };
 
 export type PageUserResponseDto = {
-    totalPages?: number;
     totalElements?: number;
+    totalPages?: number;
     first?: boolean;
     last?: boolean;
+    numberOfElements?: number;
     size?: number;
     content?: Array<UserResponseDto>;
     number?: number;
     sort?: SortObject;
     pageable?: PageableObject;
-    numberOfElements?: number;
     empty?: boolean;
 };
 
 export type PageableObject = {
     offset?: number;
     sort?: SortObject;
-    unpaged?: boolean;
     paged?: boolean;
-    pageNumber?: number;
     pageSize?: number;
+    pageNumber?: number;
+    unpaged?: boolean;
 };
 
 export type SortObject = {
     empty?: boolean;
-    unsorted?: boolean;
     sorted?: boolean;
+    unsorted?: boolean;
 };
 
 export type PageStudentResponseDto = {
-    totalPages?: number;
     totalElements?: number;
+    totalPages?: number;
     first?: boolean;
     last?: boolean;
+    numberOfElements?: number;
     size?: number;
     content?: Array<StudentResponseDto>;
     number?: number;
     sort?: SortObject;
     pageable?: PageableObject;
-    numberOfElements?: number;
     empty?: boolean;
 };
 
@@ -527,27 +480,17 @@ export type StudentCommitmentResponseDto = {
 };
 
 export type PageExerciseResponseDto = {
-    totalPages?: number;
     totalElements?: number;
+    totalPages?: number;
     first?: boolean;
     last?: boolean;
+    numberOfElements?: number;
     size?: number;
     content?: Array<ExerciseResponseDto>;
     number?: number;
     sort?: SortObject;
     pageable?: PageableObject;
-    numberOfElements?: number;
     empty?: boolean;
-};
-
-export type TrainerLookupDto = {
-    id?: string;
-    name?: string;
-};
-
-export type StudentLookupDto = {
-    id?: string;
-    name?: string;
 };
 
 export type TrainerSchedule = {
@@ -568,16 +511,16 @@ export type TrainerSchedule = {
 };
 
 export type PageAdministratorResponseDto = {
-    totalPages?: number;
     totalElements?: number;
+    totalPages?: number;
     first?: boolean;
     last?: boolean;
+    numberOfElements?: number;
     size?: number;
     content?: Array<AdministratorResponseDto>;
     number?: number;
     sort?: SortObject;
     pageable?: PageableObject;
-    numberOfElements?: number;
     empty?: boolean;
 };
 
@@ -806,76 +749,6 @@ export type UpdateExerciseResponses = {
 };
 
 export type UpdateExerciseResponse = UpdateExerciseResponses[keyof UpdateExerciseResponses];
-
-export type DeleteEventData = {
-    body?: never;
-    path: {
-        id: string;
-    };
-    query?: never;
-    url: '/events/{id}';
-};
-
-export type DeleteEventResponses = {
-    /**
-     * OK
-     */
-    200: unknown;
-};
-
-export type FindEventByIdData = {
-    body?: never;
-    path: {
-        id: string;
-    };
-    query?: never;
-    url: '/events/{id}';
-};
-
-export type FindEventByIdResponses = {
-    /**
-     * OK
-     */
-    200: EventResponseDto;
-};
-
-export type FindEventByIdResponse = FindEventByIdResponses[keyof FindEventByIdResponses];
-
-export type PatchEventData = {
-    body: PatchEventRequestDto;
-    path: {
-        id: string;
-    };
-    query?: never;
-    url: '/events/{id}';
-};
-
-export type PatchEventResponses = {
-    /**
-     * OK
-     */
-    200: EventResponseDto;
-};
-
-export type PatchEventResponse = PatchEventResponses[keyof PatchEventResponses];
-
-export type UpdateEventData = {
-    body: EventRequestDto;
-    path: {
-        id: string;
-    };
-    query?: never;
-    url: '/events/{id}';
-};
-
-export type UpdateEventResponses = {
-    /**
-     * OK
-     */
-    200: EventResponseDto;
-};
-
-export type UpdateEventResponse = UpdateEventResponses[keyof UpdateEventResponses];
 
 export type DeleteAdministratorData = {
     body?: never;
@@ -1191,77 +1064,6 @@ export type CreateExerciseResponses = {
 
 export type CreateExerciseResponse = CreateExerciseResponses[keyof CreateExerciseResponses];
 
-export type FindAllEventsData = {
-    body?: never;
-    path?: never;
-    query?: {
-        search?: string;
-        includeInactive?: boolean;
-    };
-    url: '/events';
-};
-
-export type FindAllEventsResponses = {
-    /**
-     * OK
-     */
-    200: Array<EventResponseDto>;
-};
-
-export type FindAllEventsResponse = FindAllEventsResponses[keyof FindAllEventsResponses];
-
-export type CreateEventData = {
-    body: EventRequestDto;
-    path?: never;
-    query?: never;
-    url: '/events';
-};
-
-export type CreateEventResponses = {
-    /**
-     * OK
-     */
-    200: EventResponseDto;
-};
-
-export type CreateEventResponse = CreateEventResponses[keyof CreateEventResponses];
-
-export type RemoveParticipantData = {
-    body?: never;
-    path: {
-        id: string;
-        studentId: string;
-    };
-    query?: never;
-    url: '/events/{id}/participants/{studentId}';
-};
-
-export type RemoveParticipantResponses = {
-    /**
-     * OK
-     */
-    200: unknown;
-};
-
-export type AddParticipantData = {
-    body?: never;
-    path: {
-        id: string;
-        studentId: string;
-    };
-    query?: never;
-    url: '/events/{id}/participants/{studentId}';
-};
-
-export type AddParticipantResponses = {
-    /**
-     * OK
-     */
-    200: EventResponseDto;
-};
-
-export type AddParticipantResponse = AddParticipantResponses[keyof AddParticipantResponses];
-
 export type UpdateCommitmentData = {
     body: StudentCommitmentRequestDto;
     path: {
@@ -1421,43 +1223,6 @@ export type RestoreExerciseResponses = {
 
 export type RestoreExerciseResponse = RestoreExerciseResponses[keyof RestoreExerciseResponses];
 
-export type RestoreEventData = {
-    body?: never;
-    path: {
-        id: string;
-    };
-    query?: never;
-    url: '/events/{id}/restore';
-};
-
-export type RestoreEventResponses = {
-    /**
-     * OK
-     */
-    200: EventResponseDto;
-};
-
-export type RestoreEventResponse = RestoreEventResponses[keyof RestoreEventResponses];
-
-export type ToggleAttendanceData = {
-    body?: never;
-    path: {
-        id: string;
-        studentId: string;
-    };
-    query?: never;
-    url: '/events/{id}/participants/{studentId}/attendance';
-};
-
-export type ToggleAttendanceResponses = {
-    /**
-     * OK
-     */
-    200: EventResponseDto;
-};
-
-export type ToggleAttendanceResponse = ToggleAttendanceResponses[keyof ToggleAttendanceResponses];
-
 export type RestoreAdministratorData = {
     body?: never;
     path: {
@@ -1475,6 +1240,24 @@ export type RestoreAdministratorResponses = {
 };
 
 export type RestoreAdministratorResponse = RestoreAdministratorResponses[keyof RestoreAdministratorResponses];
+
+export type FindTrainerByUserIdData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/trainers/userId/{id}';
+};
+
+export type FindTrainerByUserIdResponses = {
+    /**
+     * OK
+     */
+    200: ListTrainersDto;
+};
+
+export type FindTrainerByUserIdResponse = FindTrainerByUserIdResponses[keyof FindTrainerByUserIdResponses];
 
 export type GetSchedulesByTrainerData = {
     body?: never;
@@ -1616,38 +1399,6 @@ export type GetAllActiveAssignmentsResponses = {
 };
 
 export type GetAllActiveAssignmentsResponse = GetAllActiveAssignmentsResponses[keyof GetAllActiveAssignmentsResponses];
-
-export type GetTrainersForLookupData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/events/lookup/trainers';
-};
-
-export type GetTrainersForLookupResponses = {
-    /**
-     * OK
-     */
-    200: Array<TrainerLookupDto>;
-};
-
-export type GetTrainersForLookupResponse = GetTrainersForLookupResponses[keyof GetTrainersForLookupResponses];
-
-export type GetStudentsForLookupData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/events/lookup/students';
-};
-
-export type GetStudentsForLookupResponses = {
-    /**
-     * OK
-     */
-    200: Array<StudentLookupDto>;
-};
-
-export type GetStudentsForLookupResponse = GetStudentsForLookupResponses[keyof GetStudentsForLookupResponses];
 
 export type GetStudentCommitmentsData = {
     body?: never;

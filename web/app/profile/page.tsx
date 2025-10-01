@@ -1,8 +1,8 @@
 "use client"
-//TODO: useQuery
 //TODO: Revisar senha
 //TODO: Admin
 import { useState, useEffect } from "react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,22 +14,22 @@ import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Clock, Award } from 
 import Layout from "@/components/layout"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
+import { findTrainerByUserIdOptions, findTrainerByIdOptions, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { apiClient } from "@/lib/client"
 
 export default function ProfilePage() {
   const { toast } = useToast()
+  const queryClient = useQueryClient()
 
-  const [id, setId] = useState<string>("")
   const [token, setToken] = useState<string>("")
   const [userId, setUserId] = useState<string>("")
   const [userRole, setUserRole] = useState<string>("")
   const [userName, setUserName] = useState<string>("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [specialtiesInput, setSpecialtiesInput] = useState("")
 
   //const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-
-  const [specialtiesInput, setSpecialtiesInput] = useState("")
 
   const [profileData, setProfileData] = useState({
     name: "",
@@ -54,35 +54,42 @@ export default function ProfilePage() {
     setUserName(name);
   }, []);
 
-  useEffect(() => {
-    if (!userId || !token) return;
+  const { data: trainerDataByUser, isLoading: isLoadingTrainerId } = useQuery({
+    ...findTrainerByUserIdOptions({
+      path: { id: userId },
+      client: apiClient,
+    }),
+    enabled: !!userId && !!token && userRole !== "admin",
+  })
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const trainerId = trainerDataByUser?.id
 
-    fetch(`${apiUrl}/trainers/userId/${userId}`, {
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json"
-      }
-    })
-      .then(res => {
-        if (!res.ok) throw new Error(`Erro ${res.status}`);
-        return res.json();
+  const { data: trainerData, isLoading: isLoadingTrainer } = useQuery({
+    ...findTrainerByIdOptions({
+      path: { id: String(trainerId) },
+      client: apiClient,
+    }),
+    enabled: !!trainerId && userRole !== "admin",
+  })
+
+  const updateTrainerMutation = useMutation({
+    ...updateTrainerAndUserMutation({
+      client: apiClient,
+    }),
+    onSuccess: () => {
+      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!" })
+      queryClient.invalidateQueries({ queryKey: ["findTrainerById"] })
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as alterações",
+        variant: "destructive",
       })
-      .then(data => setId(data.id))
-      .catch(err => console.error("Erro ao buscar trainerId:", err));
-
-  }, [userId, token]);
+    },
+  })
 
   useEffect(() => {
-    setSpecialtiesInput(profileData.specialties.join(", "))
-  }, [profileData.specialties])
-
-  useEffect(() => {
-    if (!id) return;
-    setIsLoading(true);
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
     if (userRole === "admin") {
       setProfileData({
         name: "Admin Principal",
@@ -94,35 +101,25 @@ export default function ProfilePage() {
         specialties: ["Gestão", "Administração", "Planejamento"],
         avatar: "/placeholder.svg?height=100&width=100"
       })
-      setIsLoading(false)
-    } else {
-      fetch(`${apiUrl}/trainers/${id}`, {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
-        }
+    } else if (trainerData) {
+      setProfileData({
+        name: trainerData.name ?? "",
+        email: trainerData.email ?? "",
+        phone: trainerData.phone ?? "",
+        address: trainerData.address ?? "",
+        birthDate: trainerData.birthDate ?? "",
+        joinDate: trainerData.joinDate ?? "",
+        specialties: trainerData.specialties ?? [],
+        avatar: "/placeholder.svg?height=100&width=100"
       })
-        .then(res => res.json())
-        .then(data => setProfileData({
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          address: data.address,
-          birthDate: data.birthDate,
-          joinDate: data.joinDate,
-          specialties: Array.isArray(data.specialties) ? data.specialties : [],
-          avatar: "/placeholder.svg?height=100&width=100"
-        }))
-        .catch(() => {
-          toast({
-            title: "Erro",
-            description: "Não foi possível carregar seus dados",
-            variant: "destructive"
-          })
-        })
-        .finally(() => setIsLoading(false));
     }
-  }, [id, userRole])
+  }, [userRole, trainerData])
+
+  useEffect(() => {
+    if (profileData.specialties) {
+      setSpecialtiesInput(profileData.specialties.join(", "))
+    }
+  }, [profileData.specialties])
 
   const handleInputChange = (field: string, value: string) => {
     if (field === "specialties") {
@@ -142,39 +139,16 @@ export default function ProfilePage() {
     }))
   }
 
-  const handleSave = async () => {
-    if (!id) return
-    setIsLoading(true);
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    try {
-      const res = await fetch(`${apiUrl}/trainers/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify(profileData),
-      });
-      if (!res.ok) throw new Error("Erro ao salvar alterações")
-      toast({
-        title: "Sucesso",
-        description: "Perfil atualizado com sucesso!",
-      })
-    } catch (error) {
-      console.error(error)
-      toast({
-        title: "Erro",
-        description: "Não foi possível salvar as alterações",
-        variant: "destructive"
-      })
-    } finally {
-      setIsLoading(false)
-    }
+  const handleSave = () => {
+    if (!trainerId || userRole === "admin") return
+    updateTrainerMutation.mutate({
+      path: { id: String(trainerId) },
+      body: { ...profileData },
+    })
   }
 
-  const handleChangePassword = async () => {
-    if (!id) return
-
+  const handleChangePassword = () => {
+    if (!trainerId) return
     if (newPassword !== confirmPassword) {
       toast({
         title: "Erro",
@@ -183,57 +157,26 @@ export default function ProfilePage() {
       })
       return
     }
-
-    try {
-      setIsLoading(true)
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
-
-      const response = await fetch(`${apiUrl}/trainers/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          ...profileData,
-          password: newPassword,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Erro ao alterar senha")
-      }
-
-      toast({
-        title: "Sucesso",
-        description: "Senha alterada com sucesso!",
-      })
-      //setCurrentPassword("")
-      setNewPassword("")
-      setConfirmPassword("")
-    } catch (error) {
-      console.error(error)
-      toast({
-        title: "Erro",
-        description: "Não foi possível alterar a senha.",
-        variant: "destructive"
-      })
-    } finally {
-      setIsLoading(false)
-    }
+    updateTrainerMutation.mutate({
+      path: { id: String(trainerId) },
+      body: { ...profileData, password: newPassword },
+    })
+    setNewPassword("")
+    setConfirmPassword("")
   }
 
-  const stats = userRole === "admin" ? [
-    { label: "Alunos", value: "142", icon: User },
-    { label: "Professores", value: "8", icon: Award },
-    { label: "Anos na Academia", value: "4", icon: Calendar },
-    { label: "Eventos Organizados", value: "25", icon: Shield }
-  ] : [
-    { label: "Alunos Ativos", value: "35", icon: User },
-    { label: "Aulas por Semana", value: "12", icon: Calendar },
-    { label: "Horas Trabalhadas no mês", value: "120", icon: Clock },
-  ]
+  const isLoading = isLoadingTrainerId || isLoadingTrainer || updateTrainerMutation.isPending
 
+  const stats = userRole === "admin" ? [
+      { label: "Alunos", value: "142", icon: User },
+      { label: "Professores", value: "8", icon: Award },
+      { label: "Anos na Academia", value: "4", icon: Calendar },
+      { label: "Eventos Organizados", value: "25", icon: Shield }
+    ] : [
+      { label: "Alunos Ativos", value: "35", icon: User },
+      { label: "Aulas por Semana", value: "12", icon: Calendar },
+      { label: "Horas Trabalhadas no mês", value: "120", icon: Clock },
+    ]
 
   return (
     <Layout>
