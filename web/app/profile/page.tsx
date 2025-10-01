@@ -1,6 +1,7 @@
 "use client"
 //TODO: useQuery
 //TODO: Revisar senha
+//TODO: Admin
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
