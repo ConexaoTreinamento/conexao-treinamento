@@ -231,6 +231,7 @@ export default function SchedulePage() {
     const resolvedStudents = studentsOverride
       ? studentsOverride.map(s => ({ id: s.studentId ?? '', name: s.studentName ?? 'Aluno', present: s.present ?? false }))
       : classItem.students
+    const studentCount = resolvedStudents.length
     const onManage = () => {
       if (!classItem.real || !classItem.id) return
       const startHHmm = (classItem.time || '').replace(':','')
@@ -278,7 +279,7 @@ export default function SchedulePage() {
               </div>
             </div>
             <Badge className="bg-muted text-xs">
-              {classItem.currentStudents} aluno{classItem.currentStudents===1?'':'s'}
+              {studentCount} aluno{studentCount===1?'':'s'}
             </Badge>
           </div>
         </CardHeader>
