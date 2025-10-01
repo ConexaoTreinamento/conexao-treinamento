@@ -64,6 +64,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 	const handleLogout = () => {
 		localStorage.removeItem("userRole")
 		localStorage.removeItem("userName")
+		localStorage.removeItem('token')
 		router.push("/")
 	}
 
