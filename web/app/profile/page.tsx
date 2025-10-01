@@ -1,20 +1,21 @@
 "use client"
-
+//TODO: useQuery
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { useParams } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, Mail, Phone, MapPin, Calendar, Save, Camera, Shield, Clock, Award } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Clock, Award } from 'lucide-react'
 import Layout from "@/components/layout"
 
 export default function ProfilePage() {
-  const { id } = useParams();
+  const token = localStorage.getItem("token")
+  const userId = localStorage.getItem("userId")
+  const [id, setId] = useState<string>("")
   const [userRole, setUserRole] = useState<string>("")
   const [userName, setUserName] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
@@ -35,12 +36,37 @@ export default function ProfilePage() {
     const name = localStorage.getItem("userName")
     setUserRole(role || "")
     setUserName(name || "")
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
+    if (!userId) return;
+
+    fetch(`${apiUrl}/trainers/userId/${userId}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    })
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`Erro ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        setId(data.id);
+      })
+      .catch(err => {
+        console.error("Erro ao buscar trainerId:", err);
+      })
+  }, [userId])
+
+  useEffect(() => {
     if (!id) return;
     setIsLoading(true);
-
-    // Busca dados do perfil no backend
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    if (role === "admin") {
+
+    if (userRole === "admin") {
       setProfileData({
         name: "Admin Principal",
         email: "admin@gym.com",
@@ -52,26 +78,32 @@ export default function ProfilePage() {
         specialties: ["Gestão", "Administração", "Planejamento"],
         avatar: "/placeholder.svg?height=100&width=100"
       })
+      setIsLoading(false)
     } else {
-    fetch(`${apiUrl}/trainers/${id}`)
-      .then(res => res.json())
-      .then(data => setProfileData({
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        address: data.address,
-        birthDate: data.birthDate,
-        joinDate: data.createdAt,
-        bio: data.bio || "",
-        specialties: Array.isArray(data.specialties) ? data.specialties : [],
-        avatar: "/placeholder.svg?height=100&width=100"
-      }))
-      .catch(() => {
-        // Trate erro
-      })
-      .finally(() => setIsLoading(false));
+      fetch(`${apiUrl}/trainers/userId/${userId}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    })
+        .then(res => res.json())
+        .then(data => setProfileData({
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          address: data.address,
+          birthDate: data.birthDate,
+          joinDate: data.joinDate,
+          bio: data.bio || "",
+          specialties: Array.isArray(data.specialties) ? data.specialties : [],
+          avatar: "/placeholder.svg?height=100&width=100"
+        }))
+        .catch(() => {
+          //TODO: Trate erro
+        })
+        .finally(() => setIsLoading(false));
     }
-  }, [id]);
+  }, [id, userRole])
 
   const handleInputChange = (field: string, value: string) => {
     if (field === "specialties") {
@@ -85,11 +117,14 @@ export default function ProfilePage() {
   }
 
   const handleSave = async () => {
+    if (!id) return
     setIsLoading(true);
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
     await fetch(`${apiUrl}/trainers/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
       body: JSON.stringify(profileData),
     });
     setIsLoading(false);
@@ -160,7 +195,7 @@ export default function ProfilePage() {
                   <span>Desde {profileData.joinDate ? new Date(profileData.joinDate).toLocaleDateString('pt-BR') : ""}</span>
                 </div>
               </div>
-              
+
               {profileData.specialties.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Especialidades:</p>
