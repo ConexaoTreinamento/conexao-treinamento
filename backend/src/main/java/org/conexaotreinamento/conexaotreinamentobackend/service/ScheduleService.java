@@ -98,13 +98,7 @@ public class ScheduleService {
                 
                 // Create session DTO
                 SessionResponseDTO session = new SessionResponseDTO();
-                // If there is an existing persisted instance, prefer its stored sessionId
-                // to maintain backward compatibility with legacy 3-part identifiers.
-                if (existingSession != null) {
-                    session.setSessionId(existingSession.getSessionId());
-                } else {
-                    session.setSessionId(sessionId);
-                }
+                session.setSessionId(sessionId);
                 session.setTrainerId(schedule.getTrainerId());
                 session.setStartTime(sessionStartTime);
                 session.setEndTime(sessionEndTime);
