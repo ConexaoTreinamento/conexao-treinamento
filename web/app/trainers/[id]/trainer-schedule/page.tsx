@@ -357,7 +357,7 @@ export default function TrainerSchedulePage(){
             <Dialog open={bulkOpen} onOpenChange={(o)=>{setBulkOpen(o)}}>
               <DialogTrigger asChild>
                 <Button className="bg-green-600 hover:bg-green-700" aria-label="Configurar semana do instrutor">
-                  <Settings2 className="w-4 h-4 mr-2"/> Configurar Semana
+                  <Settings2 className="w-4 h-4 mr-2"/> Configurar
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-6xl">
