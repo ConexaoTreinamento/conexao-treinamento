@@ -91,7 +91,7 @@ export default function ProfilePage() {
       })
       setIsLoading(false)
     } else {
-      fetch(`${apiUrl}/trainers/userId/${userId}`, {
+      fetch(`${apiUrl}/trainers/${id}`, {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json"
