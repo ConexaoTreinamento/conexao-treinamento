@@ -48,13 +48,14 @@ export default function ClassDetailPage() {
   const trainersQuery = useQuery({ ...findAllTrainersOptions({ client: apiClient }) })
 
   // Students (for Add Student dialog) with pagination similar to Students page
-  const [studentSearchTerm, setStudentSearchTerm] = useState("")
+  const [participantSearchTerm, setParticipantSearchTerm] = useState("")
+  const [availableStudentSearchTerm, setAvailableStudentSearchTerm] = useState("")
   const [studentPage, setStudentPage] = useState(0)
   const pageSize = 10
-  const studentsQuery = useStudents({ search: studentSearchTerm || undefined, page: studentPage, pageSize })
+  const studentsQuery = useStudents({ search: availableStudentSearchTerm || undefined, page: studentPage, pageSize })
   const pageData = (studentsQuery.data as PageStudentResponseDto | undefined)
   const allStudents: Array<{ id?: string; name?: string; surname?: string }> = pageData?.content ?? []
-  useEffect(()=> { setStudentPage(0) }, [studentSearchTerm])
+  useEffect(()=> { setStudentPage(0) }, [availableStudentSearchTerm])
 
   // Exercises catalog (for exercise selection)
   const exercisesQuery = useQuery({ ...findAllExercisesOptions({ client: apiClient, query: { pageable: { page:0, size: 200 } } }) })
@@ -68,6 +69,12 @@ export default function ClassDetailPage() {
   const [editTrainer, setEditTrainer] = useState<string>("none")
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [isCreateExerciseOpen, setIsCreateExerciseOpen] = useState(false)
+
+  useEffect(() => {
+    if (addDialogOpen) return
+    setAvailableStudentSearchTerm("")
+    setStudentPage(0)
+  }, [addDialogOpen])
 
   // Exercise forms (react-hook-form)
   type RegisterExerciseForm = { exerciseId: string; sets?: string; reps?: string; weight?: string; notes?: string }
@@ -285,7 +292,7 @@ export default function ClassDetailPage() {
     present: s.present ?? (s.commitmentStatus === 'ATTENDING'),
     participantExercises: s.participantExercises ?? []
   }))
-  const filteredStudents = students.filter(s => ((s.studentName || s.studentId || '').toLowerCase()).includes(studentSearchTerm.toLowerCase()))
+  const filteredStudents = students.filter(s => ((s.studentName || s.studentId || '').toLowerCase()).includes(participantSearchTerm.toLowerCase()))
   const excludedIds = new Set((students||[]).map(p => p.studentId).filter(Boolean) as string[])
   const availableStudents = (allStudents||[]).filter(s => !!s.id && !excludedIds.has(s.id!))
   const filteredExercises = (allExercises||[]).filter(e => (e.name || '').toLowerCase().includes(exerciseSearchTerm.toLowerCase()))
@@ -407,7 +414,7 @@ export default function ClassDetailPage() {
                 {/* Search Input */}
                 <div>
                   <Label htmlFor="studentSearch">Buscar Aluno</Label>
-                  <Input id="studentSearch" placeholder="Digite o nome do aluno..." value={studentSearchTerm} onChange={(e)=> setStudentSearchTerm(e.target.value)} />
+                  <Input id="studentSearch" placeholder="Digite o nome do aluno..." value={participantSearchTerm} onChange={(e)=> setParticipantSearchTerm(e.target.value)} />
                 </div>
 
                 {filteredStudents.map((student) => (
@@ -479,7 +486,7 @@ export default function ClassDetailPage() {
                 {filteredStudents.length === 0 && (
                   <div className="text-center py-12 text-muted-foreground">
                     <p className="text-sm">Nenhum aluno encontrado.</p>
-                    <Button variant="outline" size="sm" onClick={() => setStudentSearchTerm("") } className="mt-2">Limpar filtro</Button>
+                    <Button variant="outline" size="sm" onClick={() => setParticipantSearchTerm("") } className="mt-2">Limpar filtro</Button>
                   </div>
                 )}
               </div>
@@ -496,10 +503,10 @@ export default function ClassDetailPage() {
             </DialogHeader>
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Input placeholder="Buscar aluno..." value={studentSearchTerm} onChange={(e)=> setStudentSearchTerm(e.target.value)} />
+                <Input placeholder="Buscar aluno..." value={availableStudentSearchTerm} onChange={(e)=> setAvailableStudentSearchTerm(e.target.value)} />
               </div>
               <div className="max-h-60 overflow-y-auto space-y-2">
-                {(availableStudents||[]).filter(s=> (`${s.name||''} ${s.surname||''}`.trim().toLowerCase().includes(studentSearchTerm.toLowerCase())) ).map(s => (
+                {(availableStudents||[]).filter(s=> (`${s.name||''} ${s.surname||''}`.trim().toLowerCase().includes(availableStudentSearchTerm.toLowerCase())) ).map(s => (
                   <div key={s.id} className="flex items-center justify-between p-2 rounded border hover:bg-muted/50 cursor-pointer" onClick={() => s.id && addStudent(s.id)}>
                     <span className="text-sm">{`${s.name||''} ${s.surname||''}`.trim()}</span>
                     <Button size="sm" variant="outline">Adicionar</Button>
