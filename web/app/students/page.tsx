@@ -44,7 +44,6 @@ import {useQuery} from '@tanstack/react-query'
 // Type-safe filter interface
 interface StudentFilters {
   status: "all" | "Ativo" | "Vencido" | "Inativo"
-  plan: "all" | "Mensal" | "Trimestral" | "Semestral" | "Anual"
   minAge: number | null
   maxAge: number | null
   profession: string
@@ -57,7 +56,6 @@ interface StudentFilters {
 // Default filter values
 const DEFAULT_FILTERS: StudentFilters = {
   status: "all",
-  plan: "all",
   minAge: null,
   maxAge: null,
   profession: "all",
@@ -71,7 +69,6 @@ const DEFAULT_FILTERS: StudentFilters = {
 const countActiveFilters = (filters: StudentFilters): number => {
   let count = 0
   if (filters.status !== DEFAULT_FILTERS.status) count++
-  if (filters.plan !== DEFAULT_FILTERS.plan) count++
   if (filters.minAge !== DEFAULT_FILTERS.minAge) count++
   if (filters.maxAge !== DEFAULT_FILTERS.maxAge) count++
   if (filters.profession !== DEFAULT_FILTERS.profession) count++
@@ -88,6 +85,7 @@ const StudentCard = (props: {
   initials: string,
   fullName: string,
   badge: React.ReactNode,
+  planLabel: string,
   onNewEvaluationClicked: MouseEventHandler<HTMLButtonElement>,
   onClickedDelete: MouseEventHandler<HTMLButtonElement>,
   isRestoring: boolean,
@@ -167,7 +165,7 @@ const StudentCard = (props: {
                 </div>
                 <div className="flex items-center gap-2">
                     <Calendar className="w-3 h-3 flex-shrink-0"/>
-                    <span>Plano Mensal</span>
+          <span>{props.planLabel}</span>
                 </div>
             </div>
 
@@ -212,7 +210,7 @@ const StudentCard = (props: {
                     </div>
                     <div className="flex items-center gap-1">
                         <Calendar className="w-3 h-3 flex-shrink-0"/>
-                        <span>Plano Mensal</span>
+            <span>{props.planLabel}</span>
                     </div>
                 </div>
 
@@ -283,18 +281,24 @@ export default function StudentsPage() {
   const { mutateAsync: createStudent } = useCreateStudent()
   const queryClient = useQueryClient()
   const assignPlan = useMutation({
-    ...assignPlanToStudentMutation({client: apiClient}),
-    onSuccess: async (...args) => {
-      // call generated onSuccess if exists
-      try {
-        const onSuccess = assignPlanToStudentMutation({ client: apiClient }).onSuccess
-        if (onSuccess) {
-          await onSuccess(...args)
+    ...assignPlanToStudentMutation({ client: apiClient }),
+    onSuccess: async (_data, variables) => {
+      await queryClient.invalidateQueries({
+        predicate: (query) => {
+          const [rawKey] = query.queryKey as [unknown]
+          if (!rawKey || typeof rawKey !== "object") return false
+          const key = rawKey as { _id?: string; path?: { studentId?: string } }
+          if (key._id === "getExpiringSoonAssignments") {
+            return true
+          }
+          if (key._id === "getCurrentStudentPlan") {
+            const studentId = variables?.path?.studentId
+            if (!studentId) return true
+            return key.path?.studentId === studentId
+          }
+          return false
         }
-      } catch {
-        /* ignore */
-      }
-      await queryClient.invalidateQueries({ predicate: (q) => Array.isArray(q.queryKey) && String(q.queryKey[0]).includes('getCurrentStudentPlan') })
+      })
     }
   })
   
@@ -462,7 +466,7 @@ export default function StudentsPage() {
       });
 
       const requestBody = {
-        email: formData.email,
+        email: formData.email!,
         name: formData.name,
         surname: formData.surname,
         gender: formData.sex || "O",
@@ -477,10 +481,8 @@ export default function StudentsPage() {
         emergencyContactName: formData.emergencyName,
         emergencyContactPhone: formData.emergencyPhone,
         emergencyContactRelationship: formData.emergencyRelationship,
-        objectives: formData.objectives,
-        observations: formData.impairmentObservations,
-  // pass through selected plan id for backend if endpoint supports embedding (ignored if not used server side)
-  planId: formData.plan,
+    objectives: formData.objectives,
+    observations: formData.impairmentObservations,
         anamnesis: hasAnamnesis ? {
           medication: formData.medication,
           isDoctorAwareOfPhysicalActivity: formData.isDoctorAwareOfPhysicalActivity,
@@ -519,6 +521,7 @@ export default function StudentsPage() {
 
       const created = await createStudent({ body: requestBody, client: apiClient })
 
+      let assignedPlan = false
       // Automatic plan assignment (fire and forget with basic error handling)
       if (created?.id && formData.plan) {
         try {
@@ -526,18 +529,21 @@ export default function StudentsPage() {
             path: { studentId: created.id },
             body: {
               planId: formData.plan,
-              startDate: new Date().toISOString().substring(0,10),
+              startDate: new Date().toISOString().substring(0, 10),
               assignmentNotes: 'Assinado automaticamente no cadastro.'
             },
             client: apiClient
           })
+          assignedPlan = true
         } catch (e) {
           // Non-blocking: just notify
-          toast({title:'Aluno criado, mas falha ao atribuir plano', variant:'destructive', duration:4000})
+          toast({ title: 'Aluno criado, mas falha ao atribuir plano', variant: 'destructive', duration: 4000 })
+          // eslint-disable-next-line no-console
+          console.error(e)
         }
       }
 
-      toast({ title: "Aluno criado", description: assignPlan.isSuccess ? "Aluno e plano atribuídos." : "Aluno cadastrado com sucesso.", duration: 3000 })
+      toast({ title: "Aluno criado", description: assignedPlan ? "Aluno e plano atribuídos." : "Aluno cadastrado com sucesso.", duration: 3000 })      
       setIsCreateOpen(false)
     } catch (e) {
       toast({ title: "Erro ao criar aluno", description: "Não foi possível criar o aluno.", duration: 4000 })
@@ -660,30 +666,6 @@ export default function StudentsPage() {
                                 <SelectItem value="Ativo">Ativo</SelectItem>
                                 <SelectItem value="Vencido">Vencido</SelectItem>
                                 <SelectItem value="Inativo">Inativo</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="plan"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Plano</FormLabel>
-                          <FormControl>
-                            <Select value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">Todos</SelectItem>
-                                <SelectItem value="Mensal">Mensal</SelectItem>
-                                <SelectItem value="Trimestral">Trimestral</SelectItem>
-                                <SelectItem value="Semestral">Semestral</SelectItem>
-                                <SelectItem value="Anual">Anual</SelectItem>
                               </SelectContent>
                             </Select>
                           </FormControl>
@@ -886,10 +868,15 @@ export default function StudentsPage() {
             const expiring = student.id ? expiringMap.get(student.id) : undefined
             const currentPlan = student.id ? currentPlanMap.get(student.id) : undefined
             const badgeNode = <PlanAssignmentStatusBadge assignment={expiring || currentPlan || null} />
+            const activePlan = expiring || currentPlan || null
+            const planName = activePlan?.planName?.trim()
+            const planLabel = planName
+              ? (planName.toLowerCase().startsWith("plano") ? planName : `Plano: ${planName}`)
+              : "Plano: não atribuído"
             return (
               <StudentCard key={student.id} student={student}
                            onClick={() => router.push(`/students/${student.id}`)} initials={initials}
-                           fullName={fullName} badge={badgeNode} onNewEvaluationClicked={e => {
+                           fullName={fullName} badge={badgeNode} planLabel={planLabel} onNewEvaluationClicked={e => {
                   e.stopPropagation()
                   router.push(`/students/${student.id}/evaluation/new`)
               }} onClickedDelete={async e => {

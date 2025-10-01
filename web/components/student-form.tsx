@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useId, useEffect, useRef } from "react"
+import React, { useId, useEffect, useRef, useMemo } from "react"
 import { v4 as uuidv4 } from "uuid"
 import { useForm, Controller, useFieldArray } from "react-hook-form"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,10 +11,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { User, Plus, Trash2 } from "lucide-react"
-import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import {apiClient} from '@/lib/client'
 import {getAllPlansOptions} from '@/lib/api-client/@tanstack/react-query.gen'
 import {hasInsomniaTypes, impairmentTypes} from "@/lib/students-data";
+import type { StudentPlanResponseDto } from "@/lib/api-client/types.gen"
 
 interface PhysicalImpairment {
   id: string
@@ -45,9 +46,8 @@ export interface StudentFormData {
   emergencyPhone?: string
   emergencyRelationship?: string
 
-  // Plan and status
-  plan?: string
-  status?: string
+  // Plan
+  plan?: string | null
   responsibleTrainer?: string
 
   // Objectives (above anamnesis)
@@ -87,10 +87,6 @@ interface StudentFormProps {
   mode: "create" | "edit"
 }
 
-// Plans will be loaded from backend
-const statuses = ["Ativo", "Inativo", "Vencido"]
-const trainers = ["Prof. Ana", "Prof. Carlos", "Prof. Marina", "Prof. Roberto"]
-
 export default function StudentForm({
   initialData = {},
   onSubmit,
@@ -101,18 +97,19 @@ export default function StudentForm({
 }: StudentFormProps) {
   const id = useId()
 
-  const normalizedInitialData: Partial<StudentFormData> = {
+  const normalizedInitialData: Partial<StudentFormData> = useMemo(() => ({
     ...initialData,
     physicalImpairments: initialData?.physicalImpairments?.map((p) => ({ ...p })) ?? []
-  }
+  }), [initialData])
+
+  const defaultValues = useMemo<StudentFormData>(() => ({
+    ...normalizedInitialData,
+    plan: mode === "create" ? null : normalizedInitialData.plan ?? null,
+    physicalImpairments: normalizedInitialData.physicalImpairments ?? []
+  }), [mode, normalizedInitialData])
 
   const { control, register, handleSubmit, setValue, reset, formState: { errors } } = useForm<StudentFormData>({
-    defaultValues: {
-      // spread normalized initial so missing values are undefined
-      ...normalizedInitialData,
-      status: normalizedInitialData.status ?? "Ativo",
-      physicalImpairments: normalizedInitialData.physicalImpairments ?? []
-    }
+    defaultValues
   })
 
   // Reset form once when initialData becomes available (handles async load / page refresh)
@@ -122,38 +119,36 @@ export default function StudentForm({
     // consider initialData as available when it has at least one own property
     const hasData = initialData && Object.keys(initialData).length > 0
     if (!hasData) return
-    const payload = {
+    reset({
       ...normalizedInitialData,
-      status: normalizedInitialData?.status ?? "Ativo",
+      plan: mode === "create" ? null : normalizedInitialData.plan ?? null,
       physicalImpairments: normalizedInitialData?.physicalImpairments ?? []
-    }
-    reset(payload)
+    })
     initializedRef.current = true
-  }, [initialData, normalizedInitialData, reset])
+  }, [initialData, mode, normalizedInitialData, reset])
 
-  const { fields, append, remove, update } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control,
     name: "physicalImpairments"
   })
 
   // Load plans from API
-  const plansQueryOptions = getAllPlansOptions({client: apiClient})
-  const {data: plansData} = useQuery(plansQueryOptions)
-  // If creating and no plan selected yet but we have plans, preselect first
-  useEffect(()=>{
-    if(mode==='create'){
-      const current = plansData![0]?.id
-      if(current){
-        const value = plansData![0].id
-        // only set if not already chosen
-        if(!((document.getElementById(`plan-${id}`) as HTMLSelectElement)?.value)){
-          setValue('plan', value)
-        }
-      }
-    }
-  },[plansData, mode, setValue, id])
+  const plansQueryOptions = getAllPlansOptions({ client: apiClient })
+  const { data: plansData, isLoading: plansLoading } = useQuery(plansQueryOptions)
+  const availablePlans: StudentPlanResponseDto[] = Array.isArray(plansData)
+    ? (plansData as StudentPlanResponseDto[])
+    : []
+  const selectablePlans = availablePlans.filter((plan): plan is StudentPlanResponseDto & { id: string } => {
+    return typeof plan?.id === 'string' && plan.id.length > 0
+  })
+  const hasSelectablePlans = selectablePlans.length > 0
 
-  // Plan assignment handled at page level after create; we only select plan here.
+  useEffect(() => {
+    if (mode !== "create") return
+    if (!hasSelectablePlans) {
+      setValue("plan", null)
+    }
+  }, [hasSelectablePlans, mode, setValue])
 
 
 
@@ -295,58 +290,46 @@ export default function StudentForm({
         </CardContent>
       </Card>
 
-      {/* Plan and Status */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Plano e Status</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor={`plan-${id}`}>Plano *</Label>
-              <Controller
-                control={control}
-                name="plan"
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={plansData!.length? 'Selecione o plano':'Carregando...'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {plansData!.map((plan) => (
-                        <SelectItem key={plan.id} value={plan.id!}>
-                          {plan.name} ({plan.maxDays}d/sem)
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+      {mode === "create" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Plano</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor={`plan-${id}`}>Plano</Label>
+                <Controller
+                  control={control}
+                  name="plan"
+                  render={({ field }) => {
+                    const selectValue = field.value ?? "__none"
+                    return (
+                      <Select
+                        value={selectValue}
+                        onValueChange={(v) => field.onChange(v === "__none" ? null : v)}
+                        disabled={plansLoading}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={plansLoading ? "Carregando planos..." : "Sem plano"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none">Sem plano</SelectItem>
+                          {selectablePlans.map((plan) => (
+                            <SelectItem key={plan.id} value={plan.id}>
+                              {plan.name} ({plan.maxDays}d/sem)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )
+                  }}
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor={`status-${id}`}>Status</Label>
-              <Controller
-                control={control}
-                name="status"
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={(v) => field.onChange(v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statuses.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Objectives */}
       <Card>
