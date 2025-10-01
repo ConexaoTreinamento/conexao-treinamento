@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Layout from "@/components/layout"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -21,6 +21,20 @@ import type { ExerciseResponseDto, PageExerciseResponseDto, PageStudentResponseD
 import { useForm } from "react-hook-form"
 
 export default function ClassDetailPage() {
+  return (
+    <Suspense
+      fallback={(
+        <Layout>
+          <div className="p-6 text-sm text-muted-foreground">Carregando aula...</div>
+        </Layout>
+      )}
+    >
+      <ClassDetailPageContent />
+    </Suspense>
+  )
+}
+
+function ClassDetailPageContent() {
   const { sessionId: rawSessionId } = useParams<{sessionId:string}>()
   const router = useRouter()
   const searchParams = useSearchParams()

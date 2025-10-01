@@ -1,6 +1,6 @@
 "use client"
 
-import React, {type MouseEventHandler, useState} from "react"
+import React, {type MouseEventHandler, Suspense, useState} from "react"
 import type {
   AnamnesisResponseDto,
   StudentRequestDto,
@@ -262,6 +262,20 @@ const StudentCard = (props: {
 );
 
 export default function StudentsPage() {
+  return (
+    <Suspense
+      fallback={(
+        <Layout>
+          <div className="p-6 text-sm text-muted-foreground">Carregando alunos...</div>
+        </Layout>
+      )}
+    >
+      <StudentsPageContent />
+    </Suspense>
+  )
+}
+
+function StudentsPageContent() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isCreateOpen, setIsCreateOpen] = useState(false)

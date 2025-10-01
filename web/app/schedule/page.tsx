@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useRef } from "react"
+import { Suspense, useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -16,6 +16,20 @@ import type { SessionResponseDto, StudentCommitmentResponseDto, TrainerResponseD
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 export default function SchedulePage() {
+  return (
+    <Suspense
+      fallback={(
+        <Layout>
+          <div className="p-6 text-sm text-muted-foreground">Carregando agenda...</div>
+        </Layout>
+      )}
+    >
+      <SchedulePageContent />
+    </Suspense>
+  )
+}
+
+function SchedulePageContent() {
   const qc = useQueryClient()
   const pathname = usePathname()
   const searchParams = useSearchParams()
