@@ -19,6 +19,9 @@ export default function ProfilePage() {
   const [userRole, setUserRole] = useState<string>("")
   const [userName, setUserName] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
+
+  const [specialtiesInput, setSpecialtiesInput] = useState("")
+
   const [profileData, setProfileData] = useState({
     name: "",
     email: "",
@@ -66,6 +69,10 @@ export default function ProfilePage() {
   }, [userId])
 
   useEffect(() => {
+    setSpecialtiesInput(profileData.specialties.join(", "))
+  }, [profileData.specialties])
+
+  useEffect(() => {
     if (!id) return;
     setIsLoading(true);
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -111,13 +118,20 @@ export default function ProfilePage() {
 
   const handleInputChange = (field: string, value: string) => {
     if (field === "specialties") {
-      setProfileData(prev => ({
-        ...prev,
-        specialties: value.split(",").map(s => s.trim()).filter(s => s.length > 0)
-      }))
+      setSpecialtiesInput(value) // só atualiza o input
     } else {
       setProfileData(prev => ({ ...prev, [field]: value }))
     }
+  }
+
+  const handleSpecialtiesBlur = () => {
+    setProfileData(prev => ({
+      ...prev,
+      specialties: specialtiesInput
+        .split(",")
+        .map(s => s.trim())
+        .filter(s => s.length > 0)
+    }))
   }
 
   const handleSave = async () => {
@@ -339,8 +353,9 @@ export default function ProfilePage() {
                       <Label htmlFor="specialties">Especialidades</Label>
                       <Input
                         id="specialties"
-                        value={profileData.specialties.join(', ')}
+                        value={specialtiesInput}
                         onChange={(e) => handleInputChange("specialties", e.target.value)}
+                        onBlur={handleSpecialtiesBlur}
                         placeholder="Musculação, Pilates, Yoga..."
                       />
                     </div>
