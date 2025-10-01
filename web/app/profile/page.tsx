@@ -1,24 +1,32 @@
 "use client"
 //TODO: useQuery
+//TODO: Revisar senha
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Clock, Award } from 'lucide-react'
 import Layout from "@/components/layout"
+import { useToast } from "@/hooks/use-toast"
+import { Toaster } from "@/components/ui/toaster"
 
 export default function ProfilePage() {
+  const { toast } = useToast()
+
   const [id, setId] = useState<string>("")
   const [token, setToken] = useState<string>("")
   const [userId, setUserId] = useState<string>("")
   const [userRole, setUserRole] = useState<string>("")
   const [userName, setUserName] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
+
+  //const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
 
   const [specialtiesInput, setSpecialtiesInput] = useState("")
 
@@ -34,18 +42,21 @@ export default function ProfilePage() {
   })
 
   useEffect(() => {
-    const uToken = localStorage.getItem("token")
-    const uUserId = localStorage.getItem("userId")
-    const role = localStorage.getItem("userRole")
-    const name = localStorage.getItem("userName")
-    setToken(uToken || "")
-    setUserId(uUserId || "")
-    setUserRole(role || "")
-    setUserName(name || "")
+    const uToken = localStorage.getItem("token") || "";
+    const uUserId = localStorage.getItem("userId") || "";
+    const role = localStorage.getItem("userRole") || "";
+    const name = localStorage.getItem("userName") || "";
+
+    setToken(uToken);
+    setUserId(uUserId);
+    setUserRole(role);
+    setUserName(name);
+  }, []);
+
+  useEffect(() => {
+    if (!userId || !token) return;
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
-    if (!userId) return;
 
     fetch(`${apiUrl}/trainers/userId/${userId}`, {
       headers: {
@@ -54,18 +65,13 @@ export default function ProfilePage() {
       }
     })
       .then(res => {
-        if (!res.ok) {
-          throw new Error(`Erro ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`Erro ${res.status}`);
         return res.json();
       })
-      .then(data => {
-        setId(data.id);
-      })
-      .catch(err => {
-        console.error("Erro ao buscar trainerId:", err);
-      })
-  }, [userId])
+      .then(data => setId(data.id))
+      .catch(err => console.error("Erro ao buscar trainerId:", err));
+
+  }, [userId, token]);
 
   useEffect(() => {
     setSpecialtiesInput(profileData.specialties.join(", "))
@@ -107,7 +113,11 @@ export default function ProfilePage() {
           avatar: "/placeholder.svg?height=100&width=100"
         }))
         .catch(() => {
-          //TODO: Trate erro
+          toast({
+            title: "Erro",
+            description: "Não foi possível carregar seus dados",
+            variant: "destructive"
+          })
         })
         .finally(() => setIsLoading(false));
     }
@@ -115,7 +125,7 @@ export default function ProfilePage() {
 
   const handleInputChange = (field: string, value: string) => {
     if (field === "specialties") {
-      setSpecialtiesInput(value) // só atualiza o input
+      setSpecialtiesInput(value)
     } else {
       setProfileData(prev => ({ ...prev, [field]: value }))
     }
@@ -135,15 +145,81 @@ export default function ProfilePage() {
     if (!id) return
     setIsLoading(true);
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    await fetch(`${apiUrl}/trainers/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify(profileData),
-    });
-    setIsLoading(false);
+    try {
+      const res = await fetch(`${apiUrl}/trainers/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(profileData),
+      });
+      if (!res.ok) throw new Error("Erro ao salvar alterações")
+      toast({
+        title: "Sucesso",
+        description: "Perfil atualizado com sucesso!",
+      })
+    } catch (error) {
+      console.error(error)
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as alterações",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleChangePassword = async () => {
+    if (!id) return
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Erro",
+        description: "As senhas não coincidem!",
+        variant: "destructive"
+      })
+      return
+    }
+
+    try {
+      setIsLoading(true)
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+
+      const response = await fetch(`${apiUrl}/trainers/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          ...profileData,
+          password: newPassword,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Erro ao alterar senha")
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Senha alterada com sucesso!",
+      })
+      //setCurrentPassword("")
+      setNewPassword("")
+      setConfirmPassword("")
+    } catch (error) {
+      console.error(error)
+      toast({
+        title: "Erro",
+        description: "Não foi possível alterar a senha.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const stats = userRole === "admin" ? [
@@ -156,6 +232,7 @@ export default function ProfilePage() {
     { label: "Aulas por Semana", value: "12", icon: Calendar },
     { label: "Horas Trabalhadas no mês", value: "120", icon: Clock },
   ]
+
 
   return (
     <Layout>
@@ -372,19 +449,23 @@ export default function ProfilePage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="space-y-2">
+                    {/*<div className="space-y-2">
                       <Label htmlFor="currentPassword">Senha Atual</Label>
                       <Input
                         id="currentPassword"
                         type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
                         placeholder="Digite sua senha atual"
                       />
-                    </div>
+                    </div>*/}
                     <div className="space-y-2">
                       <Label htmlFor="newPassword">Nova Senha</Label>
                       <Input
                         id="newPassword"
                         type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="Digite sua nova senha"
                       />
                     </div>
@@ -393,11 +474,17 @@ export default function ProfilePage() {
                       <Input
                         id="confirmPassword"
                         type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Confirme sua nova senha"
                       />
                     </div>
-                    <Button variant="outline">
-                      Alterar Senha
+                    <Button
+                      variant="outline"
+                      onClick={handleChangePassword}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? "Alterando..." : "Alterar Senha"}
                     </Button>
                   </CardContent>
                 </Card>
@@ -406,6 +493,7 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+      <Toaster />
     </Layout>
   )
 }
