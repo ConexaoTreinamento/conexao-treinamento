@@ -3,8 +3,6 @@ package org.conexaotreinamento.conexaotreinamentobackend.exception;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.*;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpServerErrorException.InternalServerError;
@@ -47,14 +45,6 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", req, fields);
     }
 
-    // Fallback handler for RuntimeException to return a client-friendly 400 in tests expecting Bad Request
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ApiError> handleRuntime(RuntimeException ex, HttpServletRequest req) {
-        Map<String, String> fields = new LinkedHashMap<>();
-        fields.put("error_type", ex.getClass().getSimpleName());
-        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), req, fields);
-    }
-
     private ResponseEntity<ApiError> build(HttpStatus status, String message, HttpServletRequest req,
             Map<String, String> fieldErrors) {
         ApiError body = new ApiError(
@@ -65,12 +55,5 @@ public class GlobalExceptionHandler {
                 req.getRequestURI(),
                 fieldErrors);
         return ResponseEntity.status(status).body(body);
-    }
-
-    @ExceptionHandler({ BadCredentialsException.class, JwtException.class })
-    public ResponseEntity<ApiError> handleUnauthorized(RuntimeException ex, HttpServletRequest req) {
-        Map<String, String> fields = new LinkedHashMap<>();
-        fields.put("error_type", ex.getClass().getSimpleName());
-        return build(HttpStatus.UNAUTHORIZED, ex.getMessage(), req, fields);
     }
 }

@@ -151,16 +151,22 @@ class StudentCommitmentServiceTest {
     void getCurrentActiveCommitments_filtersByAttendingAndTimestamp() {
         // Arrange
         Instant t = Instant.now();
-        StudentCommitment c1 = commitment(null, studentId, seriesId, CommitmentStatus.ATTENDING, t.minusSeconds(10));
-        // Service now builds from all commitments and filters
-        when(studentCommitmentRepository.findByStudentId(studentId)).thenReturn(List.of(c1));
+        UUID otherSeries = UUID.randomUUID();
+        UUID futureSeries = UUID.randomUUID();
+        StudentCommitment pastAttending = commitment(null, studentId, seriesId, CommitmentStatus.ATTENDING, t.minusSeconds(20));
+        StudentCommitment latestNotAttending = commitment(null, studentId, seriesId, CommitmentStatus.NOT_ATTENDING, t.minusSeconds(5));
+        StudentCommitment keepAttending = commitment(null, studentId, otherSeries, CommitmentStatus.ATTENDING, t.minusSeconds(10));
+        StudentCommitment futureCommitment = commitment(null, studentId, futureSeries, CommitmentStatus.ATTENDING, t.plusSeconds(60));
+        when(studentCommitmentRepository.findByStudentId(studentId))
+            .thenReturn(List.of(pastAttending, latestNotAttending, keepAttending, futureCommitment));
 
         // Act
-    List<StudentCommitment> list = studentCommitmentService.getCurrentActiveCommitments(studentId, t);
+        List<StudentCommitment> list = studentCommitmentService.getCurrentActiveCommitments(studentId, t);
 
-        // Assert
+        // Assert: only the ATTENDING commitment for otherSeries should remain
     assertEquals(1, list.size());
-    verify(studentCommitmentRepository).findByStudentId(studentId);
+    assertEquals(otherSeries, list.get(0).getSessionSeriesId());
+        verify(studentCommitmentRepository).findByStudentId(studentId);
     }
 
     @Test
