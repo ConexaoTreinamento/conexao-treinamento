@@ -68,9 +68,6 @@ export default function SchedulePage() {
     router.replace(url, { scroll: false })
   }
 
-  // ===== Backend Integration =====
-  const selectedIso = useMemo(()=> selectedDate.toISOString().slice(0,10), [selectedDate])
-
   // Helper: format Date to LocalDate (yyyy-MM-dd) for backend LocalDate params
   const formatLocalDate = (d: Date) => {
     const y = d.getFullYear()
@@ -79,11 +76,14 @@ export default function SchedulePage() {
     return `${y}-${m}-${day}`
   }
 
+  // ===== Backend Integration =====
+  const selectedIso = useMemo(()=> formatLocalDate(selectedDate), [selectedDate])
+
   // Month boundaries (local time based)
   const monthStart = useMemo(()=> new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1), [currentMonth])
   const monthEnd = useMemo(()=> new Date(currentMonth.getFullYear(), currentMonth.getMonth()+1, 0), [currentMonth])
-  const monthStartIso = useMemo(()=> monthStart.toISOString().slice(0,10), [monthStart])
-  const monthEndIso = useMemo(()=> monthEnd.toISOString().slice(0,10), [monthEnd])
+  const monthStartIso = useMemo(()=> formatLocalDate(monthStart), [monthStart])
+  const monthEndIso = useMemo(()=> formatLocalDate(monthEnd), [monthEnd])
   interface SessionStudent { studentId?: string; studentName?: string; commitmentStatus?: string }
   // Fetch entire visible month once; reuse locally for per-day filtering
   const scheduleQuery = useQuery({
