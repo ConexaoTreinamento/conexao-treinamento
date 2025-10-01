@@ -5,159 +5,99 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { ArrowLeft, Calendar, CheckCircle, Clock, Edit, MapPin, Trophy, Users, X, XCircle } from "lucide-react"
+import { ArrowLeft, Calendar, CheckCircle, Clock, Edit, MapPin, Trophy, Users, X, XCircle, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useParams, useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import EventModal from "@/components/event-modal"
+import { useEvent, useStudentLookup, useTrainerLookup } from "@/lib/hooks/event-queries"
+import { useUpdateEvent, useToggleAttendance, useRemoveParticipant } from "@/lib/hooks/event-mutations"
 
-// Type definitions
-interface EventParticipant {
-  id: number
-  name: string
-  avatar: string
-  enrolledAt: string
-  present: boolean
-}
-
-interface EventData {
-  id: number
-  name: string
-  date: string
-  startTime: string
-  endTime: string
-  location: string
-  status: string
-  description: string
-  instructor: string
-  participants: EventParticipant[]
-}
+// Import types from hooks
+import type { EventData, EventParticipant } from "@/lib/hooks/event-queries"
 
 export default function EventDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const [eventData, setEventData] = useState<EventData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [isEnrolled, setIsEnrolled] = useState(false)
-  const [isEnrollDialogOpen, setIsEnrollDialogOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
-  const [isAddStudentOpen, setIsAddStudentOpen] = useState(false)
-  // Add search state for participants - moved to correct position to fix hook order
   const [participantSearchTerm, setParticipantSearchTerm] = useState("")
 
-  // Mock events data - this should eventually be replaced with API calls
-  const mockEvents: EventData[] = [
-    {
-      id: 1,
-      name: "Corrida no Parque",
-      date: "2024-08-15",
-      startTime: "07:00",
-      endTime: "08:00",
-      location: "Parque Ibirapuera",
-      status: "Aberto",
-      description: "Corrida matinal de 5km no parque para todos os níveis. Venha participar desta atividade ao ar livre e conhecer outros alunos da academia!",
-      instructor: "Prof. Carlos Santos",
-      participants: [
-        { id: 1, name: "Maria Silva", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-20", present: true },
-        { id: 2, name: "João Santos", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-21", present: false },
-        { id: 3, name: "Ana Costa", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-22", present: true },
-      ],
-    },
-    {
-      id: 2,
-      name: "Workshop de Yoga",
-      date: "2024-08-20",
-      startTime: "14:00",
-      endTime: "16:00",
-      location: "Studio Principal",
-      status: "Aberto",
-      description: "Workshop intensivo de Yoga com técnicas avançadas de respiração e posturas. Aprenda com especialistas e aprofunde sua prática.",
-      instructor: "Prof. Marina Costa",
-      participants: [
-        { id: 4, name: "Patricia Oliveira", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-15", present: true },
-        { id: 5, name: "Roberto Silva", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-16", present: true },
-        { id: 6, name: "Fernanda Costa", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-17", present: false },
-      ],
-    },
-    {
-      id: 3,
-      name: "Competição de CrossFit",
-      date: "2024-08-25",
-      startTime: "09:00",
-      endTime: "12:00",
-      location: "Área Externa",
-      status: "Aberto",
-      description: "Competição amistosa de CrossFit com diferentes categorias. Venha testar seus limites e se divertir com outros atletas!",
-      instructor: "Prof. Roberto Lima",
-      participants: [
-        { id: 7, name: "Carlos Lima", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-18", present: true },
-        { id: 8, name: "Lucia Ferreira", avatar: "/placeholder.svg?height=40&width=40", enrolledAt: "2024-07-19", present: false },
-      ],
-    },
-  ]
+  // React Query hooks
+  const eventId = params.id as string
+  const { data: eventData, isLoading, error } = useEvent(eventId) as { data: EventData | undefined, isLoading: boolean, error: any }
+  const { data: students = [] } = useStudentLookup()
+  const { data: trainers = [] } = useTrainerLookup()
+  
+  // Mutations
+  const updateEventMutation = useUpdateEvent()
+  const toggleAttendanceMutation = useToggleAttendance()
+  const removeParticipantMutation = useRemoveParticipant()
 
-  // Edit form state - fixed to include missing properties
-  const [eventForm, setEventForm] = useState({
-    name: "",
-    date: "",
-    startTime: "",
-    endTime: "",
-    location: "",
-    description: "",
-    students: [] as string[],
-    attendance: {} as Record<string, boolean>,
-  })
+  // Handle mutations
+  const handleToggleAttendance = async (participantId: string) => {
+    try {
+      await toggleAttendanceMutation.mutateAsync({ eventId, studentId: participantId })
+    } catch (error) {
+      console.error('Failed to toggle attendance:', error)
+    }
+  }
 
-  useEffect(() => {
-    // Simulate fetching event data based on ID
-    const fetchEventData = async () => {
-      setLoading(true)
-      try {
-        // In a real application, this would be an API call
+  const handleRemoveParticipant = async (participantId: string) => {
+    try {
+      await removeParticipantMutation.mutateAsync({ eventId, studentId: participantId })
+    } catch (error) {
+      console.error('Failed to remove participant:', error)
+    }
+  }
 
-
-        // For now, find the event from mock data
-        const eventId = parseInt(params.id as string)
-        const event = mockEvents.find(e => e.id === eventId)
-
-        if (event) {
-          setEventData(event)
-          // Initialize form with event data
-          setEventForm({
-            name: event.name,
-            date: event.date,
-            startTime: event.startTime,
-            endTime: event.endTime,
-            location: event.location,
-            description: event.description,
-            students: event.participants.map(p => p.name),
-            attendance: event.participants.reduce((acc, p) => ({ ...acc, [p.name]: p.present }), {}),
-          })
-        } else {
-          // Handle event not found
-          console.error('Event not found')
-          router.push('/events')
+  const handleEventEdit = async (formData: any) => {
+    try {
+      await updateEventMutation.mutateAsync({
+        id: eventId,
+        data: {
+          name: formData.name,
+          date: formData.date,
+          startTime: formData.startTime,
+          endTime: formData.endTime,
+          location: formData.location,
+          description: formData.description,
+          trainerId: formData.trainerId,
+          participantIds: formData.participantIds || [],
         }
-      } catch (error) {
-        console.error('Error fetching event data:', error)
-        router.push('/events')
-      } finally {
-        setLoading(false)
-      }
+      })
+      setIsEditOpen(false)
+    } catch (error) {
+      console.error('Failed to update event:', error)
     }
+  }
 
-    if (params.id) {
-      fetchEventData()
-    }
-  }, [params.id, router])
-
-  if (loading) {
+  if (isLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+            <Loader2 className="h-8 w-8 animate-spin mx-auto" />
             <p className="mt-2 text-sm text-muted-foreground">Carregando dados do evento...</p>
+          </div>
+        </div>
+      </Layout>
+    )
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-lg font-semibold text-red-600">Erro ao carregar evento</p>
+            <p className="text-sm text-muted-foreground mt-2">{error.message}</p>
+            <Button
+              variant="outline"
+              onClick={() => router.push('/events')}
+              className="mt-4"
+            >
+              Voltar para lista de eventos
+            </Button>
           </div>
         </div>
       </Layout>
@@ -183,27 +123,6 @@ export default function EventDetailPage() {
     )
   }
 
-  // Mock students for selection
-  const availableStudents = [
-    "Maria Silva",
-    "João Santos",
-    "Ana Costa",
-    "Carlos Lima",
-    "Lucia Ferreira",
-    "Patricia Oliveira",
-    "Roberto Alves",
-    "Fernanda Costa",
-  ]
-
-  // Available instructors for the modal
-  const availableInstructors = [
-    "Prof. Carlos Santos",
-    "Prof. Marina Costa",
-    "Prof. Roberto Lima",
-    "Prof. Ana Silva",
-    "Prof. João Pedro"
-  ]
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Aberto":
@@ -217,13 +136,6 @@ export default function EventDetailPage() {
     }
   }
 
-  const handleEnrollment = () => {
-    setIsEnrolled(!isEnrolled)
-    setIsEnrollDialogOpen(false)
-    // Mock enrollment logic
-    console.log(isEnrolled ? "Unenrolling from event" : "Enrolling in event")
-  }
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString("pt-BR", {
@@ -234,121 +146,11 @@ export default function EventDetailPage() {
     })
   }
 
-  const handleTimeChange = (field: "startTime" | "endTime", value: string) => {
-    setEventForm((prev) => {
-      const newForm = { ...prev, [field]: value }
-
-      // Validate times
-      if (newForm.startTime && newForm.endTime) {
-        const start = new Date(`2000-01-01T${newForm.startTime}`)
-        const end = new Date(`2000-01-01T${newForm.endTime}`)
-
-        if (end < start) {
-          // If end time is earlier than start time, set end time to start time
-          newForm.endTime = newForm.startTime
-        }
-      }
-
-      return newForm
-    })
-  }
-
-  const toggleAttendance = (participantName: string) => {
-    if (!eventData) return
-
-    setEventData(prev => {
-      if (!prev) return prev
-      const updated = {
-        ...prev,
-        participants: prev.participants.map(p =>
-          p.name === participantName ? { ...p, present: !p.present } : p
-        )
-      }
-      return updated
-    })
-  }
-
-  const removeStudent = (studentName: string) => {
-    if (!eventData) return
-
-    setEventData(prev => {
-      if (!prev) return prev
-      const updated = {
-        ...prev,
-        participants: prev.participants.filter(p => p.name !== studentName)
-      }
-      return updated
-    })
-  }
-
-  const handleSaveEvent = () => {
-    if (!eventData) return
-
-    setEventData(prev => {
-      if (!prev) return prev
-      return {
-        ...prev,
-        name: eventForm.name,
-        date: eventForm.date,
-        startTime: eventForm.startTime,
-        endTime: eventForm.endTime,
-        location: eventForm.location,
-        description: eventForm.description,
-      }
-    })
-    setIsEditOpen(false)
-  }
-
   // Filter participants based on search term - moved to after early returns
-  const filteredParticipants = eventData ? eventData.participants.filter(participant =>
-    participant.name.toLowerCase().includes(participantSearchTerm.toLowerCase())
-  ) : []
+  const filteredParticipants = eventData?.participants?.filter(participant =>
+    participant.name?.toLowerCase().includes(participantSearchTerm.toLowerCase())
+  ) || []
 
-  // Filter students based on search term
-  const handleQuickAddStudent = (student: string) => {
-    if (!eventForm.students.includes(student)) {
-      setEventForm((prev) => ({
-        ...prev,
-        students: [...prev.students, student],
-        attendance: {
-          ...prev.attendance,
-          [student]: false,
-        },
-      }))
-    }
-    setIsAddStudentOpen(false)
-  }
-
-  // Handle event edit from modal
-  const handleEventEdit = (formData: any) => {
-    if (!eventData) return
-
-    // Convert form participants to EventParticipant objects
-    const updatedParticipants = formData.students.map((studentName: string, index: number) => {
-      const existingParticipant = eventData.participants.find(p => p.name === studentName)
-      return existingParticipant || {
-        id: Date.now() + index,
-        name: studentName,
-        avatar: "/placeholder.svg?height=40&width=40",
-        enrolledAt: new Date().toISOString().split('T')[0],
-        present: formData.attendance?.[studentName] || false
-      }
-    })
-
-    const updatedEvent = {
-      ...eventData,
-      name: formData.name,
-      date: formData.date,
-      startTime: formData.startTime,
-      endTime: formData.endTime,
-      location: formData.location,
-      description: formData.description,
-      instructor: formData.instructor,
-      participants: updatedParticipants
-    }
-
-    setEventData(updatedEvent)
-  }
 
   return (
     <Layout>
@@ -437,15 +239,15 @@ export default function EventDetailPage() {
                         <Avatar className="flex-shrink-0">
                           <AvatarFallback className="select-none">
                             {participant.name
-                                .split(" ")
+                                ?.split(" ")
                                 .map((n) => n[0])
-                                .join("")}
+                                .join("") || 'U'}
                           </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium truncate">{participant.name}</p>
+                          <p className="font-medium truncate">{participant.name || 'Nome não informado'}</p>
                           <p className="text-sm text-muted-foreground">
-                            Inscrito em {new Date(participant.enrolledAt).toLocaleDateString("pt-BR")}
+                            Inscrito em {participant.enrolledAt ? new Date(participant.enrolledAt).toLocaleDateString("pt-BR") : 'Data não informada'}
                           </p>
                         </div>
                       </div>
@@ -453,14 +255,17 @@ export default function EventDetailPage() {
                         <Button
                             size="sm"
                             variant={participant.present ? "default" : "outline"}
-                            onClick={() => toggleAttendance(participant.name)}
+                            onClick={() => handleToggleAttendance(participant.id)}
+                            disabled={toggleAttendanceMutation.isPending}
                             className={`h-8 text-xs flex-1 sm:flex-none min-w-0 ${
                                 participant.present
                                     ? "bg-green-600 hover:bg-green-700 text-white"
                                     : "border-red-600 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
                             }`}
                         >
-                          {participant.present ? (
+                          {toggleAttendanceMutation.isPending ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : participant.present ? (
                               <>
                                 <CheckCircle className="w-3 h-3 mr-1"/>
                                 Presente
@@ -475,10 +280,15 @@ export default function EventDetailPage() {
                         <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => removeStudent(participant.name)}
+                            onClick={() => handleRemoveParticipant(participant.id)}
+                            disabled={removeParticipantMutation.isPending}
                             className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
                         >
-                          <X className="w-4 h-4"/>
+                          {removeParticipantMutation.isPending ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <X className="w-4 h-4"/>
+                          )}
                         </Button>
                       </div>
                     </div>
@@ -506,14 +316,12 @@ export default function EventDetailPage() {
             endTime: eventData.endTime,
             location: eventData.location,
             description: eventData.description,
-            instructor: eventData.instructor,
-            students: eventData.participants.map(p => p.name),
-            attendance: eventData.participants.reduce((acc, p) => ({ ...acc, [p.name]: p.present }), {})
+            trainerId: eventData.instructorId,
+            participantIds: eventData.participants?.map(p => p.id).filter(Boolean) || [],
+            attendance: eventData.participants?.reduce((acc, p) => ({ ...acc, [p.id]: p.present }), {} as Record<string, boolean>) || {}
           }}
           onClose={() => setIsEditOpen(false)}
           onSubmit={handleEventEdit}
-          availableStudents={availableStudents}
-          instructors={availableInstructors}
         />
       </div>
     </Layout>
