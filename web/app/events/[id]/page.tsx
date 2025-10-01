@@ -123,18 +123,6 @@ export default function EventDetailPage() {
     )
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Aberto":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      case "Lotado":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-      case "Cancelado":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-    }
-  }
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -179,7 +167,6 @@ export default function EventDetailPage() {
                 <Trophy className="w-5 h-5"/>
                 Informações do Evento
               </CardTitle>
-              <Badge className={getStatusColor(eventData.status)}>{eventData.status}</Badge>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">

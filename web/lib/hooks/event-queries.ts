@@ -40,7 +40,6 @@ export interface EventData {
   description: string;
   instructorId: string;
   instructor: string;
-  status: string;
   participants: EventParticipant[];
   createdAt: string;
   updatedAt: string;

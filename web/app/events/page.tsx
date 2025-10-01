@@ -52,18 +52,6 @@ export default function EventsPage() {
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Aberto":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      case "Lotado":
-        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-      case "Cancelado":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-    }
-  }
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -146,7 +134,6 @@ export default function EventsPage() {
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-lg truncate">{event.name}</CardTitle>
                   </div>
-                  <Badge className={getStatusColor(event.status)}>{event.status}</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">

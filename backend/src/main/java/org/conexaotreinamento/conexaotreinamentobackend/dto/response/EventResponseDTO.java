@@ -1,7 +1,6 @@
 package org.conexaotreinamento.conexaotreinamentobackend.dto.response;
 
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Event;
-import org.conexaotreinamento.conexaotreinamentobackend.enums.EventStatus;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -20,7 +19,6 @@ public record EventResponseDTO(
         String description,
         UUID instructorId,
         String instructor,
-        String status,
         List<EventParticipantResponseDTO> participants,
         Instant createdAt,
         Instant updatedAt,
@@ -52,7 +50,6 @@ public record EventResponseDTO(
                 e.getDescription(),
                 instructorId,
                 instructorName,
-                e.getStatus() != null ? e.getStatus().getDisplayName() : EventStatus.OPEN.name(),
                 participantDTOs,
                 e.getCreatedAt(),
                 e.getUpdatedAt(),

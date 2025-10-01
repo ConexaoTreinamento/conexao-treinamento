@@ -5,7 +5,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.conexaotreinamento.conexaotreinamentobackend.enums.EventStatus;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -57,10 +56,6 @@ public class Event {
     @Setter
     private Trainer trainer;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status")
-    @Setter
-    private EventStatus status = EventStatus.OPEN;
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<EventParticipant> participants;
