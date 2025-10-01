@@ -5,7 +5,9 @@ import org.conexaotreinamento.conexaotreinamentobackend.dto.request.AssignPlanRe
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.StudentPlanRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentPlanAssignmentResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentPlanResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.service.StudentPlanService;
+import org.conexaotreinamento.conexaotreinamentobackend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -22,6 +25,8 @@ public class StudentPlanController {
     
     @Autowired
     private StudentPlanService studentPlanService;
+    @Autowired
+    private UserService userService;
 
     // Plan management endpoints
     @GetMapping
@@ -54,13 +59,17 @@ public class StudentPlanController {
             @PathVariable UUID studentId, 
             @Valid @RequestBody AssignPlanRequestDTO requestDTO) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String principal = authentication != null ? authentication.getName() : null;
-        if (principal == null) {
+        String userEmail = authentication != null ? authentication.getName() : null;
+        if (userEmail == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-        // Tests set Authentication#getName to the UUID string of the user
-        UUID assignedByUserId = UUID.fromString(principal);
-        
+
+        Optional<UserResponseDTO> userByEmail = userService.getUserByEmail(userEmail);
+        if (userByEmail.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        UUID assignedByUserId = userByEmail.get().id();
+
         StudentPlanAssignmentResponseDTO assignedPlan = studentPlanService.assignPlanToStudent(
             studentId, requestDTO, assignedByUserId);
         return ResponseEntity.status(HttpStatus.CREATED).body(assignedPlan);
