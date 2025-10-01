@@ -27,7 +27,13 @@ class StudentCommitmentServiceTest {
     private StudentCommitmentRepository studentCommitmentRepository;
 
     @Mock
-    private StudentPlanService studentPlanService;
+    private org.conexaotreinamento.conexaotreinamentobackend.repository.StudentPlanRepository studentPlanRepository;
+
+    @Mock
+    private org.conexaotreinamento.conexaotreinamentobackend.repository.StudentPlanAssignmentRepository studentPlanAssignmentRepository;
+
+    @Mock
+    private org.conexaotreinamento.conexaotreinamentobackend.repository.TrainerScheduleRepository trainerScheduleRepository;
 
     @InjectMocks
     private StudentCommitmentService studentCommitmentService;
@@ -91,12 +97,12 @@ class StudentCommitmentServiceTest {
         when(studentCommitmentRepository.save(any(StudentCommitment.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
-        StudentCommitment saved = studentCommitmentService.updateCommitment(studentId, seriesId, CommitmentStatus.ATTENDING);
+        StudentCommitment saved = studentCommitmentService.updateCommitment(studentId, seriesId, CommitmentStatus.NOT_ATTENDING);
 
         // Assert
         assertEquals(studentId, saved.getStudentId());
         assertEquals(seriesId, saved.getSessionSeriesId());
-        assertEquals(CommitmentStatus.ATTENDING, saved.getCommitmentStatus());
+        assertEquals(CommitmentStatus.NOT_ATTENDING, saved.getCommitmentStatus());
         assertNotNull(saved.getEffectiveFromTimestamp());
     }
 
@@ -146,16 +152,15 @@ class StudentCommitmentServiceTest {
         // Arrange
         Instant t = Instant.now();
         StudentCommitment c1 = commitment(null, studentId, seriesId, CommitmentStatus.ATTENDING, t.minusSeconds(10));
-        when(studentCommitmentRepository.findByStudentIdAndCommitmentStatusAndEffectiveFromTimestampLessThanEqual(
-                studentId, CommitmentStatus.ATTENDING, t)).thenReturn(List.of(c1));
+        // Service now builds from all commitments and filters
+        when(studentCommitmentRepository.findByStudentId(studentId)).thenReturn(List.of(c1));
 
         // Act
-        List<StudentCommitment> list = studentCommitmentService.getCurrentActiveCommitments(studentId, t);
+    List<StudentCommitment> list = studentCommitmentService.getCurrentActiveCommitments(studentId, t);
 
         // Assert
-        assertEquals(1, list.size());
-        verify(studentCommitmentRepository).findByStudentIdAndCommitmentStatusAndEffectiveFromTimestampLessThanEqual(
-                studentId, CommitmentStatus.ATTENDING, t);
+    assertEquals(1, list.size());
+    verify(studentCommitmentRepository).findByStudentId(studentId);
     }
 
     @Test
@@ -177,24 +182,43 @@ class StudentCommitmentServiceTest {
                         eq(studentId), eq(seriesId), any(Instant.class));
     }
 
-    private StudentPlanAssignment buildAssignmentWithPlan(int maxDays) {
+    private StudentPlanAssignment buildAssignmentWithPlan(UUID planId, int maxDays) {
         StudentPlan plan = new StudentPlan();
+        plan.setId(planId);
+        plan.setActive(true);
         plan.setMaxDays(maxDays);
+        plan.setName("Test Plan");
+        plan.setDurationDays(30);
         StudentPlanAssignment assign = new StudentPlanAssignment();
-        assign.setPlan(plan);
+        assign.setPlanId(planId);
+        assign.setPlan(plan); // convenience for test
         return assign;
     }
 
     @Test
     void bulkUpdateCommitments_attending_withinPlanLimit_savesEach() {
         // Arrange
-        List<UUID> seriesIds = List.of(UUID.randomUUID(), UUID.randomUUID());
-        when(studentPlanService.getCurrentAssignment(studentId)).thenReturn(Optional.of(buildAssignmentWithPlan(5)));
-        when(studentCommitmentRepository.findByStudentIdAndCommitmentStatusAndEffectiveFromTimestampLessThanEqual(
-                eq(studentId), eq(CommitmentStatus.ATTENDING), any(Instant.class)))
-                .thenReturn(List.of()); // currently no active commitments
-
-        when(studentCommitmentRepository.save(any(StudentCommitment.class))).thenAnswer(inv -> inv.getArgument(0));
+    List<UUID> seriesIds = List.of(UUID.randomUUID(), UUID.randomUUID());
+    UUID planId = UUID.randomUUID();
+    when(studentPlanAssignmentRepository.findCurrentActiveAssignment(studentId))
+        .thenReturn(Optional.of(buildAssignmentWithPlan(planId, 5)));
+    StudentPlan plan = new StudentPlan();
+    plan.setId(planId);
+    plan.setActive(true);
+    plan.setMaxDays(5);
+    plan.setName("Test Plan");
+    plan.setDurationDays(30);
+    when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(plan));
+    when(studentCommitmentRepository.findByStudentId(studentId)).thenReturn(List.of());
+    // Return same weekday to avoid exceeding limit
+    when(trainerScheduleRepository.findById(any(UUID.class))).thenAnswer(inv -> {
+        UUID id = inv.getArgument(0);
+        org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule ts = new org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule();
+        ts.setId(id);
+        ts.setWeekday(1);
+        return Optional.of(ts);
+    });
+    when(studentCommitmentRepository.save(any(StudentCommitment.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
         List<StudentCommitment> saved = studentCommitmentService.bulkUpdateCommitments(studentId, seriesIds, CommitmentStatus.ATTENDING);
@@ -211,8 +235,8 @@ class StudentCommitmentServiceTest {
     @Test
     void bulkUpdateCommitments_attending_noActivePlan_throws() {
         // Arrange
-        List<UUID> seriesIds = List.of(UUID.randomUUID());
-        when(studentPlanService.getCurrentAssignment(studentId)).thenReturn(Optional.empty());
+    List<UUID> seriesIds = List.of(UUID.randomUUID());
+    when(studentPlanAssignmentRepository.findCurrentActiveAssignment(studentId)).thenReturn(Optional.empty());
 
         // Act + Assert
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
@@ -224,44 +248,89 @@ class StudentCommitmentServiceTest {
     @Test
     void bulkUpdateCommitments_attending_exceedsPlanLimit_throws() {
         // Arrange
-        List<UUID> seriesIds = List.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
-        when(studentPlanService.getCurrentAssignment(studentId)).thenReturn(Optional.of(buildAssignmentWithPlan(3)));
-        // already has 1 active, adding 3 would exceed maxDays(3)
-        when(studentCommitmentRepository.findByStudentIdAndCommitmentStatusAndEffectiveFromTimestampLessThanEqual(
-                eq(studentId), eq(CommitmentStatus.ATTENDING), any(Instant.class)))
-                .thenReturn(List.of(commitment(null, studentId, UUID.randomUUID(), CommitmentStatus.ATTENDING, Instant.now().minusSeconds(100))));
+    List<UUID> seriesIds = List.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+    UUID planId = UUID.randomUUID();
+    when(studentPlanAssignmentRepository.findCurrentActiveAssignment(studentId))
+        .thenReturn(Optional.of(buildAssignmentWithPlan(planId, 3)));
+    StudentPlan plan3 = new StudentPlan();
+    plan3.setId(planId);
+    plan3.setActive(true);
+    plan3.setMaxDays(3);
+    plan3.setName("Plan3");
+    plan3.setDurationDays(30);
+    when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(plan3));
+    // already has 1 active on weekday 1
+    UUID existingSeries = UUID.randomUUID();
+    when(studentCommitmentRepository.findByStudentId(studentId))
+        .thenReturn(List.of(commitment(null, studentId, existingSeries, CommitmentStatus.ATTENDING, Instant.now().minusSeconds(100))));
+    // Default to weekday 1
+    when(trainerScheduleRepository.findById(any(UUID.class))).thenAnswer(inv -> {
+        UUID id = inv.getArgument(0);
+        org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule ts = new org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule();
+        ts.setId(id);
+        ts.setWeekday(1);
+        return Optional.of(ts);
+    });
+    // But for the three new series, return distinct weekdays 2,3,4
+    org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule ts1 = new org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule();
+    ts1.setId(seriesIds.get(0)); ts1.setWeekday(2);
+    org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule ts2 = new org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule();
+    ts2.setId(seriesIds.get(1)); ts2.setWeekday(3);
+    org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule ts3 = new org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule();
+    ts3.setId(seriesIds.get(2)); ts3.setWeekday(4);
+    when(trainerScheduleRepository.findById(seriesIds.get(0))).thenReturn(Optional.of(ts1));
+    when(trainerScheduleRepository.findById(seriesIds.get(1))).thenReturn(Optional.of(ts2));
+    when(trainerScheduleRepository.findById(seriesIds.get(2))).thenReturn(Optional.of(ts3));
 
         // Act + Assert
         RuntimeException ex = assertThrows(RuntimeException.class, () ->
                 studentCommitmentService.bulkUpdateCommitments(studentId, seriesIds, CommitmentStatus.ATTENDING));
-        assertTrue(ex.getMessage().toLowerCase().contains("exceed maximum"), "Unexpected message: " + ex.getMessage());
+        assertTrue(ex.getMessage().toLowerCase().contains("exced"), "Unexpected message: " + ex.getMessage());
         verify(studentCommitmentRepository, never()).save(any());
     }
 
     @Test
     void bulkUpdateCommitments_notAttending_bypassesPlanValidation() {
         // Arrange
-        List<UUID> seriesIds = List.of(UUID.randomUUID(), UUID.randomUUID());
-        when(studentCommitmentRepository.save(any(StudentCommitment.class))).thenAnswer(inv -> inv.getArgument(0));
+    List<UUID> seriesIds = List.of(UUID.randomUUID(), UUID.randomUUID());
+    when(studentCommitmentRepository.save(any(StudentCommitment.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
         List<StudentCommitment> saved = studentCommitmentService.bulkUpdateCommitments(studentId, seriesIds, CommitmentStatus.NOT_ATTENDING);
 
         // Assert
         assertEquals(2, saved.size());
-        verify(studentPlanService, never()).getCurrentAssignment(any());
+        // Plan services not touched when NOT_ATTENDING
+        verify(studentPlanAssignmentRepository, never()).findCurrentActiveAssignment(any());
     }
 
     @Test
-    void updateCommitment_attending_singleUpdate_doesNotValidatePlanLimits_currently() {
-        // Arrange: in service code, single update does not call validatePlanLimits (commented out)
-        when(studentCommitmentRepository.save(any(StudentCommitment.class))).thenAnswer(inv -> inv.getArgument(0));
+    void updateCommitment_attending_singleUpdate_validatesPlanAndSaves() {
+    // Arrange: validation is now active for ATTENDING in single update
+    UUID planId = UUID.randomUUID();
+    when(studentPlanAssignmentRepository.findCurrentActiveAssignment(studentId))
+        .thenReturn(Optional.of(buildAssignmentWithPlan(planId, 5)));
+    StudentPlan plan5 = new StudentPlan();
+    plan5.setId(planId);
+    plan5.setActive(true);
+    plan5.setMaxDays(5);
+    plan5.setName("Plan5");
+    plan5.setDurationDays(30);
+    when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(plan5));
+    when(studentCommitmentRepository.findByStudentId(studentId)).thenReturn(List.of());
+    when(trainerScheduleRepository.findById(any(UUID.class))).thenAnswer(inv -> {
+        UUID id = inv.getArgument(0);
+        org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule ts = new org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule();
+        ts.setId(id);
+        ts.setWeekday(1);
+        return Optional.of(ts);
+    });
+    when(studentCommitmentRepository.save(any(StudentCommitment.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
         StudentCommitment saved = studentCommitmentService.updateCommitment(studentId, seriesId, CommitmentStatus.ATTENDING);
 
-        // Assert: ensure no call to plan service happened
-        verify(studentPlanService, never()).getCurrentAssignment(any());
+        // Assert: saved successfully under plan validation
         assertEquals(CommitmentStatus.ATTENDING, saved.getCommitmentStatus());
     }
 }

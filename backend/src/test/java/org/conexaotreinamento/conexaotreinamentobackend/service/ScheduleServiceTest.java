@@ -127,9 +127,9 @@ class ScheduleServiceTest {
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
         when(studentCommitmentRepository.findBySessionSeriesId(schedule.getId())).thenReturn(List.of());
 
-        // Build an existing instance that matches the generated sessionId
-        String expectedSessionId = "yoga-basics__" + date + "__09:00";
-        ScheduledSession existing = buildExistingSession(UUID.randomUUID(), expectedSessionId, schedule.getId(), trainerId, date, start, end, "Bring water bottle", true);
+    // Build an existing instance (legacy 3-part id), service should still emit canonical 4-part id
+    String legacySessionId = "yoga-basics__" + date + "__09:00";
+    ScheduledSession existing = buildExistingSession(UUID.randomUUID(), legacySessionId, schedule.getId(), trainerId, date, start, end, "Bring water bottle", true);
 
         when(scheduledSessionRepository.findByStartTimeBetweenAndActiveTrue(any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(List.of(existing));
@@ -140,7 +140,9 @@ class ScheduleServiceTest {
         // Assert
         assertEquals(1, sessions.size());
         SessionResponseDTO dto = sessions.get(0);
-        assertEquals(expectedSessionId, dto.getSessionId());
+        // Expect canonical 4-part id including trainerId for disambiguation
+        String expectedCanonical = "yoga-basics__" + date + "__09:00__" + trainerId;
+        assertEquals(expectedCanonical, dto.getSessionId());
         assertEquals("Bring water bottle", dto.getNotes());
         assertTrue(dto.isInstanceOverride());
     }

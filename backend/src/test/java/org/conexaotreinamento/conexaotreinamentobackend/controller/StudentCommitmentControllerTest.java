@@ -52,7 +52,9 @@ class StudentCommitmentControllerTest {
 
     @BeforeEach
     void setup() {
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+    mockMvc = MockMvcBuilders.standaloneSetup(controller)
+        .setControllerAdvice(new org.conexaotreinamento.conexaotreinamentobackend.exception.GlobalExceptionHandler())
+        .build();
         studentId = UUID.randomUUID();
         seriesId = UUID.randomUUID();
     }
