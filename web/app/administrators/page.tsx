@@ -182,7 +182,11 @@ export default function AdministratorsPage() {
           Array.isArray(q.queryKey) &&
           q.queryKey[0]?._id === "findAllAdministrators",
       });
-      setIsCreateOpen(false);
+
+      setTimeout(() => {
+        setIsCreateOpen(false);
+        setShowSuccess(false);
+      }, 1000);
     } catch (error: any) {
       if (error?.status === 409) {
         setErrors({ email: "Email já está em uso" });
