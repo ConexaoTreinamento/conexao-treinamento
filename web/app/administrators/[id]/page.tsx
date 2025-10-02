@@ -7,24 +7,14 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Shield } from "lucide-react"
 import Layout from "@/components/layout"
-import { getAuthHeaders } from "../page"
-
-interface AdministratorData {
-  id: string
-  firstName: string
-  lastName: string
-  email: string
-  fullName: string
-  joinDate: string
-  active: boolean
-}
+import { useQuery } from "@tanstack/react-query"
+import { findAdministratorByIdOptions } from "@/lib/api-client/@tanstack/react-query.gen"
+import type { ListAdministratorsDto } from "@/lib/api-client/types.gen"
 
 export default function AdministratorProfilePage() {
   const router = useRouter()
   const params = useParams()
   const [userRole, setUserRole] = useState<string>("")
-  const [administratorData, setAdministratorData] = useState<AdministratorData | null>(null)
-  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const role = localStorage.getItem("userRole") || "professor"
@@ -34,34 +24,21 @@ export default function AdministratorProfilePage() {
       router.push("/schedule")
       return
     }
+  }, [router])
 
-    const fetchAdministratorData = async () => {
-      setLoading(true)
-      try {
-        const response = await fetch(`http://localhost:8080/administrators/${params.id}`, {headers: getAuthHeaders()})
-        if (!response.ok) {
-          throw new Error("Erro ao buscar administrador")
-        }
-        const data: AdministratorData = await response.json()
-        setAdministratorData(data)
-      } catch (error) {
-        console.error("Erro ao buscar administrador:", error)
-        router.push("/administrators")
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    if (params.id) {
-      fetchAdministratorData()
-    }
-  }, [router, params.id])
+  // Usando React Query
+  const { data: administratorData, isLoading, error } = useQuery({
+    ...findAdministratorByIdOptions({
+      path: { id: params.id as string }
+    }),
+    enabled: !!params.id && userRole === "admin"
+  })
 
   if (userRole !== "admin") {
     return null
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
@@ -74,7 +51,7 @@ export default function AdministratorProfilePage() {
     )
   }
 
-  if (!administratorData) {
+  if (error || !administratorData) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
@@ -93,7 +70,7 @@ export default function AdministratorProfilePage() {
     )
   }
 
-  const initials = `${administratorData.firstName.charAt(0)}${administratorData.lastName.charAt(0)}`.toUpperCase()
+  const initials = `${administratorData.firstName?.charAt(0) || ''}${administratorData.lastName?.charAt(0) || ''}`.toUpperCase()
 
   return (
     <Layout>
@@ -126,7 +103,7 @@ export default function AdministratorProfilePage() {
                       Administrador
                     </Badge>
                     {!administratorData.active && (
-                      <Badge variant="destructive">Inativo</Badge> //mudei, mas será que precisa aqui tambem?
+                      <Badge variant="destructive">Inativo</Badge>
                     )}
                   </div>
                 </div>
@@ -152,7 +129,7 @@ export default function AdministratorProfilePage() {
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Data de Criação</label>
-                <p className="text-sm">{new Date(administratorData.joinDate).toLocaleDateString("pt-BR")}</p>
+                <p className="text-sm">{administratorData.joinDate ? new Date(administratorData.joinDate).toLocaleDateString("pt-BR") : 'N/A'}</p>
               </div>
             </div>
           </CardContent>
