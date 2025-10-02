@@ -427,7 +427,7 @@ function SchedulePageContent() {
                 {userRole === "admin" && (
                   <Button size="sm" className="mt-3 bg-green-600 hover:bg-green-700" onClick={handleOpenClassModal}>
                     <Plus className="w-4 h-4 mr-1" />
-                    Criar turma
+                    Criar aula
                   </Button>
                 )}
               </CardContent>
