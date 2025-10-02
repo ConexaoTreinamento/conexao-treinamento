@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useEffect, useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
+import type React from "react";
+import { useEffect, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -13,35 +13,45 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Mail, Plus, Search, Shield, AlertCircle, CheckCircle } from "lucide-react"
-import { useRouter } from "next/navigation"
-import Layout from "@/components/layout"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { createAdministratorMutation, findAllAdministratorsOptions } from "@/lib/api-client/@tanstack/react-query.gen"
-import { apiClient } from "@/lib/client"
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Mail,
+  Plus,
+  Search,
+  Shield,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import Layout from "@/components/layout";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  createAdministratorMutation,
+  findAllAdministratorsOptions,
+} from "@/lib/api-client/@tanstack/react-query.gen";
+import { apiClient } from "@/lib/client";
 
 interface FormData {
-  firstName: string
-  lastName: string
-  email: string
-  password: string
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
 }
 
 interface ValidationErrors {
-  firstName?: string
-  lastName?: string
-  email?: string
-  password?: string
-  general?: string
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  password?: string;
+  general?: string;
 }
 
 export default function AdministratorsPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [userRole, setUserRole] = useState<string>("")
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [showSuccess, setShowSuccess] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("");
+  const [userRole, setUserRole] = useState<string>("");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<FormData>({
@@ -49,138 +59,153 @@ export default function AdministratorsPage() {
     lastName: "",
     email: "",
     password: "",
-  })
-  const [errors, setErrors] = useState<ValidationErrors>({})
-  const [touched, setTouched] = useState<{ [key: string]: boolean }>({})
+  });
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
 
-  const router = useRouter()
-  const queryClient = useQueryClient()
+  const router = useRouter();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    const role = localStorage.getItem("userRole") || "professor"
-    setUserRole(role)
+    const role = localStorage.getItem("userRole") || "professor";
+    setUserRole(role);
 
     if (role !== "admin") {
-      router.push("/schedule")
+      router.push("/schedule");
     }
-  }, [router])
+  }, [router]);
 
   // Load administrators via useQuery
-  const {
-    data: administrators = [],
-    isLoading,
-  } = useQuery({
+  const { data: administrators = [], isLoading } = useQuery({
     ...findAllAdministratorsOptions({
       client: apiClient,
-      query: { pageable: {} } // TODO: implement pagination maybe?
+      query: { pageable: {} }, // TODO: implement pagination maybe?
     }),
     select: (res) => res.content ?? [],
-  })
+  });
 
-  const { mutateAsync: createAdministrator, isPending: isSubmitting } = useMutation(
-    createAdministratorMutation()
-  )
+  const { mutateAsync: createAdministrator, isPending: isSubmitting } =
+    useMutation(createAdministratorMutation());
 
   const filteredAdministrators = administrators.filter((admin) => {
-    const fullName = admin.fullName || `${admin.firstName} ${admin.lastName}`
+    const fullName = admin.fullName || `${admin.firstName} ${admin.lastName}`;
     return (
       fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       admin.email!.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  })
+    );
+  });
 
   // ---------------- Validation helpers ----------------
   const validateField = (name: string, value: string): string => {
     switch (name) {
       case "firstName":
-        if (!value.trim()) return "Nome é obrigatório"
-        if (value.length > 100) return "Nome deve ter no máximo 100 caracteres"
-        return ""
+        if (!value.trim()) return "Nome é obrigatório";
+        if (value.length > 100) return "Nome deve ter no máximo 100 caracteres";
+        return "";
       case "lastName":
-        if (!value.trim()) return "Sobrenome é obrigatório"
-        if (value.length > 100) return "Sobrenome deve ter no máximo 100 caracteres"
-        return ""
+        if (!value.trim()) return "Sobrenome é obrigatório";
+        if (value.length > 100)
+          return "Sobrenome deve ter no máximo 100 caracteres";
+        return "";
       case "email":
-        if (!value.trim()) return "Email é obrigatório"
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(value)) return "Email deve ter um formato válido (nome@domínio)"
-        if (value.length > 255) return "Email deve ter no máximo 255 caracteres"
-        return ""
+        if (!value.trim()) return "Email é obrigatório";
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value))
+          return "Email deve ter um formato válido (nome@domínio)";
+        if (value.length > 255)
+          return "Email deve ter no máximo 255 caracteres";
+        return "";
       case "password":
-        if (!value.trim()) return "Senha é obrigatória"
-        if (value.length < 6) return "Senha deve ter pelo menos 6 caracteres"
-        if (value.length > 255) return "Senha deve ter no máximo 255 caracteres"
-        return ""
+        if (!value.trim()) return "Senha é obrigatória";
+        if (value.length < 6) return "Senha deve ter pelo menos 6 caracteres";
+        if (value.length > 255)
+          return "Senha deve ter no máximo 255 caracteres";
+        return "";
       default:
-        return ""
+        return "";
     }
-  }
+  };
 
   const handleFieldChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (touched[name]) {
-      setErrors((prev) => ({ ...prev, [name]: validateField(name, value) }))
+      setErrors((prev) => ({ ...prev, [name]: validateField(name, value) }));
     }
-  }
+  };
 
   const handleFieldBlur = (name: string) => {
-    setTouched((prev) => ({ ...prev, [name]: true }))
-    setErrors((prev) => ({ ...prev, [name]: validateField(name, formData[name as keyof FormData]) }))
-  }
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    setErrors((prev) => ({
+      ...prev,
+      [name]: validateField(name, formData[name as keyof FormData]),
+    }));
+  };
 
   const validateForm = (): boolean => {
-    const newErrors: ValidationErrors = {}
+    const newErrors: ValidationErrors = {};
     Object.keys(formData).forEach((key) => {
-      const error = validateField(key, formData[key as keyof FormData])
-      if (error) newErrors[key as keyof ValidationErrors] = error
-    })
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+      const error = validateField(key, formData[key as keyof FormData]);
+      if (error) newErrors[key as keyof ValidationErrors] = error;
+    });
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const resetForm = () => {
-    setFormData({ firstName: "", lastName: "", email: "", password: "" })
-    setErrors({})
-    setTouched({})
-    setShowSuccess(false)
-  }
+    setFormData({ firstName: "", lastName: "", email: "", password: "" });
+    setErrors({});
+    setTouched({});
+    setShowSuccess(false);
+  };
 
   // Submit handler
   const handleCreateAdmin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setTouched({ firstName: true, lastName: true, email: true, password: true })
+    e.preventDefault();
+    setTouched({
+      firstName: true,
+      lastName: true,
+      email: true,
+      password: true,
+    });
 
-    if (!validateForm()) return
+    if (!validateForm()) return;
 
     try {
       await createAdministrator({
         body: formData,
         client: apiClient,
-      })
-      setShowSuccess(true)
-      resetForm()
+      });
+      setShowSuccess(true);
+      resetForm();
       await queryClient.invalidateQueries({
-        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === "findAllAdministrators",
-      })
-      setIsCreateOpen(false)
-      setShowSuccess(false)
+        predicate: (q) =>
+          Array.isArray(q.queryKey) &&
+          q.queryKey[0]?._id === "findAllAdministrators",
+      });
+
+      setTimeout(() => {
+        setIsCreateOpen(false);
+        setShowSuccess(false);
+      }, 1000);
     } catch (error: any) {
       if (error?.status === 409) {
-        setErrors({ email: "Email já está em uso" })
+        setErrors({ email: "Email já está em uso" });
       } else if (error?.status === 400 && error?.fieldErrors) {
-        setErrors(error.fieldErrors)
+        setErrors(error.fieldErrors);
       } else {
-        setErrors({ general: error?.message || "Erro ao cadastrar administrador" })
+        setErrors({
+          general: error?.message || "Erro ao cadastrar administrador",
+        });
       }
     }
-  }
+  };
 
-  if (userRole !== "admin") return null
+  if (userRole !== "admin") return null;
 
   const handleDialogOpenChange = (open: boolean) => {
-    setIsCreateOpen(open)
-    if (!open) resetForm()
-  }
+    setIsCreateOpen(open);
+    if (!open) resetForm();
+  };
 
   return (
     <Layout>
@@ -189,7 +214,9 @@ export default function AdministratorsPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold">Administradores</h1>
-            <p className="text-muted-foreground">Gerencie todos os administradores do sistema</p>
+            <p className="text-muted-foreground">
+              Gerencie todos os administradores do sistema
+            </p>
           </div>
           <Dialog open={isCreateOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
@@ -202,7 +229,8 @@ export default function AdministratorsPage() {
               <DialogHeader>
                 <DialogTitle>Cadastrar Novo Administrador</DialogTitle>
                 <DialogDescription>
-                  Preencha as informações do administrador. Campos com * são obrigatórios.
+                  Preencha as informações do administrador. Campos com * são
+                  obrigatórios.
                 </DialogDescription>
               </DialogHeader>
 
@@ -210,7 +238,9 @@ export default function AdministratorsPage() {
               {showSuccess && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-green-600" />
-                  <span className="text-green-800 font-medium">Administrador cadastrado com sucesso!</span>
+                  <span className="text-green-800 font-medium">
+                    Administrador cadastrado com sucesso!
+                  </span>
                 </div>
               )}
 
@@ -232,9 +262,15 @@ export default function AdministratorsPage() {
                     <Input
                       id="firstName"
                       value={formData.firstName}
-                      onChange={(e) => handleFieldChange('firstName', e.target.value)}
-                      onBlur={() => handleFieldBlur('firstName')}
-                      className={errors.firstName ? "border-red-500 focus:border-red-500" : ""}
+                      onChange={(e) =>
+                        handleFieldChange("firstName", e.target.value)
+                      }
+                      onBlur={() => handleFieldBlur("firstName")}
+                      className={
+                        errors.firstName
+                          ? "border-red-500 focus:border-red-500"
+                          : ""
+                      }
                       placeholder="Digite o nome"
                       maxLength={100}
                       disabled={isSubmitting}
@@ -255,9 +291,15 @@ export default function AdministratorsPage() {
                     <Input
                       id="lastName"
                       value={formData.lastName}
-                      onChange={(e) => handleFieldChange('lastName', e.target.value)}
-                      onBlur={() => handleFieldBlur('lastName')}
-                      className={errors.lastName ? "border-red-500 focus:border-red-500" : ""}
+                      onChange={(e) =>
+                        handleFieldChange("lastName", e.target.value)
+                      }
+                      onBlur={() => handleFieldBlur("lastName")}
+                      className={
+                        errors.lastName
+                          ? "border-red-500 focus:border-red-500"
+                          : ""
+                      }
                       placeholder="Digite o sobrenome"
                       maxLength={100}
                       disabled={isSubmitting}
@@ -279,9 +321,15 @@ export default function AdministratorsPage() {
                       id="email"
                       type="email"
                       value={formData.email}
-                      onChange={(e) => handleFieldChange('email', e.target.value)}
-                      onBlur={() => handleFieldBlur('email')}
-                      className={errors.email ? "border-red-500 focus:border-red-500" : ""}
+                      onChange={(e) =>
+                        handleFieldChange("email", e.target.value)
+                      }
+                      onBlur={() => handleFieldBlur("email")}
+                      className={
+                        errors.email
+                          ? "border-red-500 focus:border-red-500"
+                          : ""
+                      }
                       placeholder="nome@dominio.com"
                       maxLength={255}
                       disabled={isSubmitting}
@@ -303,9 +351,15 @@ export default function AdministratorsPage() {
                       id="password"
                       type="password"
                       value={formData.password}
-                      onChange={(e) => handleFieldChange('password', e.target.value)}
-                      onBlur={() => handleFieldBlur('password')}
-                      className={errors.password ? "border-red-500 focus:border-red-500" : ""}
+                      onChange={(e) =>
+                        handleFieldChange("password", e.target.value)
+                      }
+                      onBlur={() => handleFieldBlur("password")}
+                      className={
+                        errors.password
+                          ? "border-red-500 focus:border-red-500"
+                          : ""
+                      }
                       placeholder="Mínimo 6 caracteres"
                       maxLength={255}
                       disabled={isSubmitting}
@@ -324,8 +378,8 @@ export default function AdministratorsPage() {
                     type="button"
                     variant="outline"
                     onClick={() => {
-                      setIsCreateOpen(false)
-                      resetForm()
+                      setIsCreateOpen(false);
+                      resetForm();
                     }}
                     disabled={isSubmitting}
                   >
@@ -367,7 +421,8 @@ export default function AdministratorsPage() {
         {/* Results Summary */}
         {searchTerm && (
           <div className="text-sm text-muted-foreground">
-            Mostrando {filteredAdministrators.length} de {administrators.length} administradores
+            Mostrando {filteredAdministrators.length} de {administrators.length}{" "}
+            administradores
           </div>
         )}
 
@@ -382,8 +437,10 @@ export default function AdministratorsPage() {
         {!isLoading && (
           <div className="space-y-3">
             {filteredAdministrators.map((admin) => {
-              const fullName = admin.fullName || `${admin.firstName} ${admin.lastName}`
-              const initials = `${admin.firstName?.charAt(0) || ''}${admin.lastName?.charAt(0) || ''}`.toUpperCase()
+              const fullName =
+                admin.fullName || `${admin.firstName} ${admin.lastName}`;
+              const initials =
+                `${admin.firstName?.charAt(0) || ""}${admin.lastName?.charAt(0) || ""}`.toUpperCase();
 
               return (
                 <Card
@@ -394,17 +451,22 @@ export default function AdministratorsPage() {
                   <CardContent className="p-4">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                        <span className="text-blue-700 dark:text-blue-300 font-semibold select-none">{initials}</span>
+                        <span className="text-blue-700 dark:text-blue-300 font-semibold select-none">
+                          {initials}
+                        </span>
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-lg flex-1 min-w-0">{fullName}</h3>
+                          <h3 className="font-semibold text-lg flex-1 min-w-0">
+                            {fullName}
+                          </h3>
                           <div className="flex items-center gap-2">
                             <Badge
-                              className={admin.active
-                                ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-                                : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
+                              className={
+                                admin.active
+                                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                                  : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300"
                               }
                             >
                               <Shield className="w-3 h-3 mr-1" />
@@ -419,13 +481,16 @@ export default function AdministratorsPage() {
                         </div>
 
                         <div className="text-xs text-muted-foreground mt-1">
-                          Criado em: {new Date(admin.createdAt!).toLocaleDateString('pt-BR')}
+                          Criado em:{" "}
+                          {new Date(admin.createdAt!).toLocaleDateString(
+                            "pt-BR",
+                          )}
                         </div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              )
+              );
             })}
           </div>
         )}
@@ -436,20 +501,27 @@ export default function AdministratorsPage() {
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Shield className="w-6 h-6 text-blue-700 dark:text-blue-300" />
               </div>
-              <h3 className="text-lg font-semibold mb-2">Nenhum administrador encontrado</h3>
+              <h3 className="text-lg font-semibold mb-2">
+                Nenhum administrador encontrado
+              </h3>
               <p className="text-muted-foreground mb-4">
                 {searchTerm
                   ? "Tente ajustar o termo de busca."
                   : "Comece adicionando o primeiro administrador."}
               </p>
-              <Button className="bg-green-600 hover:bg-green-700" onClick={() => setIsCreateOpen(true)}>
+              <Button
+                className="bg-green-600 hover:bg-green-700"
+                onClick={() => setIsCreateOpen(true)}
+              >
                 <Plus className="w-4 h-4 mr-2" />
-                {searchTerm ? "Adicionar Novo Administrador" : "Adicionar Primeiro Administrador"}
+                {searchTerm
+                  ? "Adicionar Novo Administrador"
+                  : "Adicionar Primeiro Administrador"}
               </Button>
             </CardContent>
           </Card>
         )}
       </div>
     </Layout>
-  )
+  );
 }
