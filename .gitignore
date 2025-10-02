@@ -1,0 +1,7 @@
+﻿web/.next
+web/node_modules
+web/.idea
+docs/api/openapi.json
+.idea
+.env
+!.env.test
