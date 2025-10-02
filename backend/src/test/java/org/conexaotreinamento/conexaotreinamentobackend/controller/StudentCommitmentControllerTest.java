@@ -23,9 +23,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete; // unused but kept for parity
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -52,7 +54,9 @@ class StudentCommitmentControllerTest {
 
     @BeforeEach
     void setup() {
-        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
+    mockMvc = MockMvcBuilders.standaloneSetup(controller)
+        .setControllerAdvice(new org.conexaotreinamento.conexaotreinamentobackend.exception.GlobalExceptionHandler())
+        .build();
         studentId = UUID.randomUUID();
         seriesId = UUID.randomUUID();
     }
@@ -112,15 +116,19 @@ class StudentCommitmentControllerTest {
     }
 
     @Test
-    void updateCommitment_badRequest_onRuntimeException() throws Exception {
+    void updateCommitment_propagatesRuntimeException_whenServiceFails() throws Exception {
         when(studentCommitmentService.updateCommitment(any(), any(), any(), any())).thenThrow(new RuntimeException("oops"));
 
         String body = "{ \"commitmentStatus\": \"ATTENDING\" }";
 
-        mockMvc.perform(post("/commitments/students/{studentId}/sessions/{sessionSeriesId}", studentId, seriesId)
+    jakarta.servlet.ServletException ex = assertThrows(jakarta.servlet.ServletException.class,
+                () -> mockMvc.perform(post("/commitments/students/{studentId}/sessions/{sessionSeriesId}", studentId, seriesId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isBadRequest());
+                        .content(body)));
+        Throwable cause = ex.getCause();
+        assertNotNull(cause);
+        assertTrue(cause instanceof RuntimeException);
+        assertTrue(cause.getMessage().contains("oops"));
     }
 
     @Test
@@ -228,15 +236,19 @@ class StudentCommitmentControllerTest {
     }
 
     @Test
-    void bulkUpdateCommitments_badRequest_onRuntimeException() throws Exception {
+    void bulkUpdateCommitments_propagatesRuntimeException_whenServiceFails() throws Exception {
         when(studentCommitmentService.bulkUpdateCommitments(any(), anyList(), any(), any())).thenThrow(new RuntimeException("bad"));
 
         String body = "{ \"sessionSeriesIds\": [\"" + UUID.randomUUID() + "\"], \"commitmentStatus\": \"NOT_ATTENDING\" }";
 
-        mockMvc.perform(post("/commitments/students/{studentId}/bulk", studentId)
+    jakarta.servlet.ServletException ex = assertThrows(jakarta.servlet.ServletException.class,
+                () -> mockMvc.perform(post("/commitments/students/{studentId}/bulk", studentId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
-                .andExpect(status().isBadRequest());
+                        .content(body)));
+        Throwable cause = ex.getCause();
+        assertNotNull(cause);
+        assertTrue(cause instanceof RuntimeException);
+        assertTrue(cause.getMessage().contains("bad"));
     }
 
     @Test

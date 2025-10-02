@@ -1,0 +1,14 @@
+package org.conexaotreinamento.conexaotreinamentobackend.dto.request;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.UUID;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class SessionTrainerUpdateRequestDTO {
+    private UUID trainerId; // null means unassign
+}

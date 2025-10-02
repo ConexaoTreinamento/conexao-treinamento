@@ -20,7 +20,7 @@ CREATE TABLE trainer_schedules (
 -- 2. Create scheduled_sessions table for lazy session instance creation
 CREATE TABLE scheduled_sessions (
     id UUID PRIMARY KEY,
-    session_series_id UUID NOT NULL, -- Links to trainer_schedules.id
+    session_series_id UUID, -- Links to trainer_schedules.id
     session_id VARCHAR(255) NOT NULL UNIQUE, -- Human-readable ID like "yoga-2025-09-19-09:00"
     trainer_id UUID REFERENCES trainers(id), -- Can be null for cancelled sessions
     start_time TIMESTAMP WITH TIME ZONE NOT NULL,

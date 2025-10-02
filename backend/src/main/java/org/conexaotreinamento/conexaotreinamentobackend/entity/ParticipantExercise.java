@@ -42,6 +42,9 @@ public class ParticipantExercise {
     
     @Column(name = "exercise_notes", columnDefinition = "TEXT")
     private String exerciseNotes;
+
+    @Column(name = "done", nullable = false)
+    private boolean done = false;
     
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
