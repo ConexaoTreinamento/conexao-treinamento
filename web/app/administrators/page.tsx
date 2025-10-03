@@ -78,13 +78,12 @@ export default function AdministratorsPage() {
     onSuccess: () => {
       setShowSuccess(true)
       resetForm()
-      queryClient.invalidateQueries({ queryKey: ['findAllAdministrators'] })
+      queryClient.invalidateQueries({
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllAdministrators'
+      })
       
-      // Close dialog after showing success
-      setTimeout(() => {
-        setIsCreateOpen(false)
-        setShowSuccess(false)
-      }, 2000)
+      setIsCreateOpen(false)
+      setShowSuccess(false)
     },
     onError: (error: any) => {
       console.error('Erro ao criar administrador:', error)
