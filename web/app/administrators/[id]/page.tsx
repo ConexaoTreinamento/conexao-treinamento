@@ -22,7 +22,6 @@ export default function AdministratorProfilePage() {
 
     if (role !== "admin") {
       router.push("/schedule")
-      return
     }
   }, [router])
 

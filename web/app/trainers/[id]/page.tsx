@@ -9,7 +9,6 @@ import { useRouter, useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Layout from "@/components/layout"
 import TrainerModal from "@/components/trainer-modal"
-import { ListTrainersDto, TrainerResponseDto, update } from "@/lib/api-client"
 import { findTrainerByIdOptions, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -26,11 +25,6 @@ export default function TrainerProfilePage() {
     ...findTrainerByIdOptions({
       path: { id: params.id as string },
       client: apiClient,
-      security: [{
-        type: "http",
-        scheme: "bearer",
-        in: "header",
-      },]
     })
   })
 
@@ -73,11 +67,6 @@ export default function TrainerProfilePage() {
         path: { id: String(updatedTrainer?.id) },
         body: updatedTrainer,
         client: apiClient,
-        security: [{
-          type: "http",
-          scheme: "bearer",
-          in: "header",
-        }],
       })
       await queryClient.invalidateQueries({
         predicate: function (q) {
@@ -195,14 +184,25 @@ export default function TrainerProfilePage() {
                 </div>
               </div>
               <div className="w-full flex flex-row justify-center pt-4 border-t">
-                <Button
-                  size="sm"
-                  className="bg-green-600 hover:bg-green-700 w-full"
-                  onClick={handleEditTrainer}
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Editar Perfil
-                </Button>
+                <div className="grid grid-cols-2 gap-2 w-full">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => router.push(`/trainers/${params.id}/trainer-schedule`)}
+                  >
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Horários
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700 w-full"
+                    onClick={handleEditTrainer}
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Editar
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

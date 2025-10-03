@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useEffect, useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
+import type React from "react";
+import { useEffect, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -23,10 +23,10 @@ import { findAllAdministratorsOptions, createAdministratorAndUserMutation } from
 import type { ListAdministratorsDto, CreateAdministratorAndUserData } from "@/lib/api-client/types.gen"
 
 interface FormData {
-  firstName: string
-  lastName: string
-  email: string
-  password: string
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
 }
 
 interface ValidationErrors {
@@ -49,23 +49,22 @@ export default function AdministratorsPage() {
     firstName: "",
     lastName: "",
     email: "",
-    password: ""
-  })
-  const [errors, setErrors] = useState<ValidationErrors>({})
-  const [touched, setTouched] = useState<{ [key: string]: boolean }>({})
+    password: "",
+  });
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
 
   const router = useRouter()
   const queryClient = useQueryClient()
 
   useEffect(() => {
-    const role = localStorage.getItem("userRole") || "professor"
-    setUserRole(role)
+    const role = localStorage.getItem("userRole") || "professor";
+    setUserRole(role);
 
-    // Redirect if not admin
     if (role !== "admin") {
       router.push("/schedule")
     }
-  }, [router])
+  }, [router]);
 
   // Usando React Query para buscar administradores
   const { data: administrators = [], isLoading } = useQuery({
@@ -109,86 +108,77 @@ export default function AdministratorsPage() {
   // Validate individual fields
   const validateField = (name: string, value: string): string => {
     switch (name) {
-      case 'firstName':
-        if (!value.trim()) return "Nome é obrigatório"
-        if (value.length > 100) return "Nome deve ter no máximo 100 caracteres"
-        return ""
-
-      case 'lastName':
-        if (!value.trim()) return "Sobrenome é obrigatório"
-        if (value.length > 100) return "Sobrenome deve ter no máximo 100 caracteres"
-        return ""
-
-      case 'email':
-        if (!value.trim()) return "Email é obrigatório"
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(value)) return "Email deve ter um formato válido (nome@domínio)"
-        if (value.length > 255) return "Email deve ter no máximo 255 caracteres"
-        return ""
-
-      case 'password':
-        if (!value.trim()) return "Senha é obrigatória"
-        if (value.length < 6) return "Senha deve ter pelo menos 6 caracteres"
-        if (value.length > 255) return "Senha deve ter no máximo 255 caracteres"
-        return ""
-
+      case "firstName":
+        if (!value.trim()) return "Nome é obrigatório";
+        if (value.length > 100) return "Nome deve ter no máximo 100 caracteres";
+        return "";
+      case "lastName":
+        if (!value.trim()) return "Sobrenome é obrigatório";
+        if (value.length > 100)
+          return "Sobrenome deve ter no máximo 100 caracteres";
+        return "";
+      case "email":
+        if (!value.trim()) return "Email é obrigatório";
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value))
+          return "Email deve ter um formato válido (nome@domínio)";
+        if (value.length > 255)
+          return "Email deve ter no máximo 255 caracteres";
+        return "";
+      case "password":
+        if (!value.trim()) return "Senha é obrigatória";
+        if (value.length < 6) return "Senha deve ter pelo menos 6 caracteres";
+        if (value.length > 255)
+          return "Senha deve ter no máximo 255 caracteres";
+        return "";
       default:
-        return ""
+        return "";
     }
-  }
+  };
 
-  // Handle field changes
   const handleFieldChange = (name: string, value: string) => {
-    setFormData(prev => ({ ...prev, [name]: value }))
-
-    // Real-time validation
+    setFormData((prev) => ({ ...prev, [name]: value }));
     if (touched[name]) {
-      const error = validateField(name, value)
-      setErrors(prev => ({ ...prev, [name]: error }))
+      setErrors((prev) => ({ ...prev, [name]: validateField(name, value) }));
     }
-  }
+  };
 
-  // Handle field blur
   const handleFieldBlur = (name: string) => {
-    setTouched(prev => ({ ...prev, [name]: true }))
-    const error = validateField(name, formData[name as keyof FormData])
-    setErrors(prev => ({ ...prev, [name]: error }))
-  }
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    setErrors((prev) => ({
+      ...prev,
+      [name]: validateField(name, formData[name as keyof FormData]),
+    }));
+  };
 
-  // Validate all fields
   const validateForm = (): boolean => {
-    const newErrors: ValidationErrors = {}
+    const newErrors: ValidationErrors = {};
+    Object.keys(formData).forEach((key) => {
+      const error = validateField(key, formData[key as keyof FormData]);
+      if (error) newErrors[key as keyof ValidationErrors] = error;
+    });
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-    Object.keys(formData).forEach(key => {
-      const error = validateField(key, formData[key as keyof FormData])
-      if (error) newErrors[key as keyof ValidationErrors] = error
-    })
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  // Reset form
   const resetForm = () => {
-    setFormData({ firstName: "", lastName: "", email: "", password: "" })
-    setErrors({})
-    setTouched({})
-    setShowSuccess(false)
-  }
+    setFormData({ firstName: "", lastName: "", email: "", password: "" });
+    setErrors({});
+    setTouched({});
+    setShowSuccess(false);
+  };
 
-  // Handle form submit
+  // Submit handler
   const handleCreateAdmin = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
+    setTouched({
+      firstName: true,
+      lastName: true,
+      email: true,
+      password: true,
+    });
 
-    // Mark all fields as touched
-    setTouched({ firstName: true, lastName: true, email: true, password: true })
-
-    if (!validateForm()) {
-      return
-    }
-
-    setIsSubmitting(true)
-    setErrors({})
+    if (!validateForm()) return;
 
     createAdministrator.mutate({
       body: formData
@@ -197,17 +187,12 @@ export default function AdministratorsPage() {
     setIsSubmitting(false)
   }
 
-  // Don't render if not admin
-  if (userRole !== "admin") {
-    return null
-  }
+  if (userRole !== "admin") return null;
 
   const handleDialogOpenChange = (open: boolean) => {
-    setIsCreateOpen(open)
-    if (!open) {
-      resetForm()
-    }
-  }
+    setIsCreateOpen(open);
+    if (!open) resetForm();
+  };
 
   return (
     <Layout>
@@ -216,7 +201,9 @@ export default function AdministratorsPage() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold">Administradores</h1>
-            <p className="text-muted-foreground">Gerencie todos os administradores do sistema</p>
+            <p className="text-muted-foreground">
+              Gerencie todos os administradores do sistema
+            </p>
           </div>
           <Dialog open={isCreateOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
@@ -229,7 +216,8 @@ export default function AdministratorsPage() {
               <DialogHeader>
                 <DialogTitle>Cadastrar Novo Administrador</DialogTitle>
                 <DialogDescription>
-                  Preencha as informações do administrador. Campos com * são obrigatórios.
+                  Preencha as informações do administrador. Campos com * são
+                  obrigatórios.
                 </DialogDescription>
               </DialogHeader>
 
@@ -237,7 +225,9 @@ export default function AdministratorsPage() {
               {showSuccess && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-green-600" />
-                  <span className="text-green-800 font-medium">Administrador cadastrado com sucesso!</span>
+                  <span className="text-green-800 font-medium">
+                    Administrador cadastrado com sucesso!
+                  </span>
                 </div>
               )}
 
@@ -424,5 +414,5 @@ export default function AdministratorsPage() {
         )}
       </div>
     </Layout>
-  )
+  );
 }
