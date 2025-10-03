@@ -7,10 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Shield } from "lucide-react"
 import Layout from "@/components/layout"
-
 import { useQuery } from "@tanstack/react-query"
 import { findAdministratorByIdOptions } from "@/lib/api-client/@tanstack/react-query.gen"
-import { apiClient } from "@/lib/client"
+import type { ListAdministratorsDto } from "@/lib/api-client/types.gen"
 
 export default function AdministratorProfilePage() {
   const router = useRouter()
@@ -26,15 +25,17 @@ export default function AdministratorProfilePage() {
     }
   }, [router])
 
-  const { data: administratorData, isLoading } = useQuery({
+  // Usando React Query
+  const { data: administratorData, isLoading, error } = useQuery({
     ...findAdministratorByIdOptions({
-      path: { id: String(params.id) },
-      client: apiClient,
+      path: { id: params.id as string }
     }),
-    enabled: !!params.id && userRole === "admin",
+    enabled: !!params.id && userRole === "admin"
   })
 
-  if (userRole !== "admin") return null
+  if (userRole !== "admin") {
+    return null
+  }
 
   if (isLoading) {
     return (
@@ -49,7 +50,7 @@ export default function AdministratorProfilePage() {
     )
   }
 
-  if (!administratorData) {
+  if (error || !administratorData) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-64">
@@ -68,7 +69,7 @@ export default function AdministratorProfilePage() {
     )
   }
 
-  const initials = !administratorData.firstName || !administratorData.lastName ? "" : `${administratorData.firstName?.charAt(0)}${administratorData.lastName?.charAt(0)}`.toUpperCase()
+  const initials = `${administratorData.firstName?.charAt(0) || ''}${administratorData.lastName?.charAt(0) || ''}`.toUpperCase()
 
   return (
     <Layout>
@@ -127,11 +128,7 @@ export default function AdministratorProfilePage() {
               </div>
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Data de Criação</label>
-                <p className="text-sm">{new Date(administratorData.createdAt!).toLocaleDateString("pt-BR")}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground">Última Atualização</label>
-                <p className="text-sm">{new Date(administratorData.updatedAt!).toLocaleDateString("pt-BR")}</p>
+                <p className="text-sm">{administratorData.joinDate ? new Date(administratorData.joinDate).toLocaleDateString("pt-BR") : 'N/A'}</p>
               </div>
             </div>
           </CardContent>

@@ -201,7 +201,7 @@ export type EventResponseDto = {
     deletedAt?: string;
 };
 
-export type AdministratorRequestDto = {
+export type CreateAdministratorDto = {
     firstName: string;
     lastName: string;
     email: string;
@@ -214,21 +214,21 @@ export type AdministratorResponseDto = {
     lastName?: string;
     email?: string;
     fullName?: string;
+    active?: boolean;
     createdAt?: string;
     updatedAt?: string;
-    active?: boolean;
 };
 
 export type CreateUserRequestDto = {
     email: string;
     password: string;
-    role?: 'ROLE_ADMIN' | 'ROLE_TRAINER';
+    role?: 'ROLE_ADMIN' | 'ROLE_TRAINER' | 'ROLE_STUDENT';
 };
 
 export type UserResponseDto = {
     id?: string;
     email?: string;
-    role?: 'ROLE_ADMIN' | 'ROLE_TRAINER';
+    role?: 'ROLE_ADMIN' | 'ROLE_TRAINER' | 'ROLE_STUDENT';
 };
 
 export type ListTrainersDto = {
@@ -252,8 +252,8 @@ export type Exercise = {
     createdAt?: string;
     updatedAt?: string;
     deletedAt?: string;
-    active?: boolean;
     inactive?: boolean;
+    active?: boolean;
 };
 
 export type ParticipantExercise = {
@@ -304,9 +304,9 @@ export type SessionParticipant = {
     deletedAt?: string;
     active?: boolean;
     exercises?: Array<ParticipantExercise>;
-    present?: boolean;
     included?: boolean;
     excluded?: boolean;
+    present?: boolean;
 };
 
 export type SessionUpdateRequestDto = {
@@ -337,8 +337,8 @@ export type Student = {
     createdAt?: string;
     updatedAt?: string;
     deletedAt?: string;
-    active?: boolean;
     inactive?: boolean;
+    active?: boolean;
 };
 
 export type Trainer = {
@@ -497,8 +497,18 @@ export type JwtResponseDto = {
     token?: string;
 };
 
+export type ListAdministratorsDto = {
+    id?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    fullName?: string;
+    active?: boolean;
+    joinDate?: string;
+};
+
 export type PatchUserRoleRequestDto = {
-    role?: 'ROLE_ADMIN' | 'ROLE_TRAINER';
+    role?: 'ROLE_ADMIN' | 'ROLE_TRAINER' | 'ROLE_STUDENT';
 };
 
 export type ParticipantExerciseUpdateRequestDto = {
@@ -539,45 +549,45 @@ export type Pageable = {
 };
 
 export type PageUserResponseDto = {
-    totalPages?: number;
     totalElements?: number;
+    totalPages?: number;
+    numberOfElements?: number;
+    first?: boolean;
+    last?: boolean;
+    sort?: SortObject;
+    pageable?: PageableObject;
     size?: number;
     content?: Array<UserResponseDto>;
     number?: number;
-    sort?: SortObject;
-    first?: boolean;
-    last?: boolean;
-    numberOfElements?: number;
-    pageable?: PageableObject;
     empty?: boolean;
 };
 
 export type PageableObject = {
-    offset?: number;
     sort?: SortObject;
+    paged?: boolean;
     pageNumber?: number;
     pageSize?: number;
-    paged?: boolean;
     unpaged?: boolean;
+    offset?: number;
 };
 
 export type SortObject = {
-    empty?: boolean;
-    unsorted?: boolean;
     sorted?: boolean;
+    unsorted?: boolean;
+    empty?: boolean;
 };
 
 export type PageStudentResponseDto = {
-    totalPages?: number;
     totalElements?: number;
+    totalPages?: number;
+    numberOfElements?: number;
+    first?: boolean;
+    last?: boolean;
+    sort?: SortObject;
+    pageable?: PageableObject;
     size?: number;
     content?: Array<StudentResponseDto>;
     number?: number;
-    sort?: SortObject;
-    first?: boolean;
-    last?: boolean;
-    numberOfElements?: number;
-    pageable?: PageableObject;
     empty?: boolean;
 };
 
@@ -586,16 +596,16 @@ export type ScheduleResponseDto = {
 };
 
 export type PageExerciseResponseDto = {
-    totalPages?: number;
     totalElements?: number;
+    totalPages?: number;
+    numberOfElements?: number;
+    first?: boolean;
+    last?: boolean;
+    sort?: SortObject;
+    pageable?: PageableObject;
     size?: number;
     content?: Array<ExerciseResponseDto>;
     number?: number;
-    sort?: SortObject;
-    first?: boolean;
-    last?: boolean;
-    numberOfElements?: number;
-    pageable?: PageableObject;
     empty?: boolean;
 };
 
@@ -625,17 +635,17 @@ export type TrainerSchedule = {
     dayOfWeek?: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
 };
 
-export type PageAdministratorResponseDto = {
-    totalPages?: number;
+export type PageListAdministratorsDto = {
     totalElements?: number;
-    size?: number;
-    content?: Array<AdministratorResponseDto>;
-    number?: number;
-    sort?: SortObject;
+    totalPages?: number;
+    numberOfElements?: number;
     first?: boolean;
     last?: boolean;
-    numberOfElements?: number;
+    sort?: SortObject;
     pageable?: PageableObject;
+    size?: number;
+    content?: Array<ListAdministratorsDto>;
+    number?: number;
     empty?: boolean;
 };
 
@@ -935,7 +945,7 @@ export type UpdateEventResponses = {
 
 export type UpdateEventResponse = UpdateEventResponses[keyof UpdateEventResponses];
 
-export type DeleteAdministratorData = {
+export type SoftDeleteAdministratorUserData = {
     body?: never;
     path: {
         id: string;
@@ -944,7 +954,7 @@ export type DeleteAdministratorData = {
     url: '/administrators/{id}';
 };
 
-export type DeleteAdministratorResponses = {
+export type SoftDeleteAdministratorUserResponses = {
     /**
      * OK
      */
@@ -964,7 +974,7 @@ export type FindAdministratorByIdResponses = {
     /**
      * OK
      */
-    200: AdministratorResponseDto;
+    200: ListAdministratorsDto;
 };
 
 export type FindAdministratorByIdResponse = FindAdministratorByIdResponses[keyof FindAdministratorByIdResponses];
@@ -987,8 +997,8 @@ export type PatchAdministratorResponses = {
 
 export type PatchAdministratorResponse = PatchAdministratorResponses[keyof PatchAdministratorResponses];
 
-export type UpdateAdministratorData = {
-    body: AdministratorRequestDto;
+export type UpdateAdministratorAndUserData = {
+    body: CreateAdministratorDto;
     path: {
         id: string;
     };
@@ -996,14 +1006,14 @@ export type UpdateAdministratorData = {
     url: '/administrators/{id}';
 };
 
-export type UpdateAdministratorResponses = {
+export type UpdateAdministratorAndUserResponses = {
     /**
      * OK
      */
     200: AdministratorResponseDto;
 };
 
-export type UpdateAdministratorResponse = UpdateAdministratorResponses[keyof UpdateAdministratorResponses];
+export type UpdateAdministratorAndUserResponse = UpdateAdministratorAndUserResponses[keyof UpdateAdministratorAndUserResponses];
 
 export type GetAllUsersSimpleData = {
     body?: never;
@@ -1520,11 +1530,7 @@ export type LoginResponse = LoginResponses[keyof LoginResponses];
 export type FindAllAdministratorsData = {
     body?: never;
     path?: never;
-    query: {
-        search?: string;
-        includeInactive?: boolean;
-        pageable: Pageable;
-    };
+    query?: never;
     url: '/administrators';
 };
 
@@ -1532,26 +1538,26 @@ export type FindAllAdministratorsResponses = {
     /**
      * OK
      */
-    200: PageAdministratorResponseDto;
+    200: Array<ListAdministratorsDto>;
 };
 
 export type FindAllAdministratorsResponse = FindAllAdministratorsResponses[keyof FindAllAdministratorsResponses];
 
-export type CreateAdministratorData = {
-    body: AdministratorRequestDto;
+export type CreateAdministratorAndUserData = {
+    body: CreateAdministratorDto;
     path?: never;
     query?: never;
     url: '/administrators';
 };
 
-export type CreateAdministratorResponses = {
+export type CreateAdministratorAndUserResponses = {
     /**
      * OK
      */
-    200: AdministratorResponseDto;
+    200: ListAdministratorsDto;
 };
 
-export type CreateAdministratorResponse = CreateAdministratorResponses[keyof CreateAdministratorResponses];
+export type CreateAdministratorAndUserResponse = CreateAdministratorAndUserResponses[keyof CreateAdministratorAndUserResponses];
 
 export type PatchData = {
     body: PatchUserRoleRequestDto;
@@ -1679,24 +1685,6 @@ export type ToggleAttendanceResponses = {
 };
 
 export type ToggleAttendanceResponse = ToggleAttendanceResponses[keyof ToggleAttendanceResponses];
-
-export type RestoreAdministratorData = {
-    body?: never;
-    path: {
-        id: string;
-    };
-    query?: never;
-    url: '/administrators/{id}/restore';
-};
-
-export type RestoreAdministratorResponses = {
-    /**
-     * OK
-     */
-    200: AdministratorResponseDto;
-};
-
-export type RestoreAdministratorResponse = RestoreAdministratorResponses[keyof RestoreAdministratorResponses];
 
 export type FindTrainerByUserIdData = {
     body?: never;
@@ -2000,6 +1988,42 @@ export type GetAvailableSessionSeriesResponses = {
 };
 
 export type GetAvailableSessionSeriesResponse = GetAvailableSessionSeriesResponses[keyof GetAvailableSessionSeriesResponses];
+
+export type TestData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/administrators/test';
+};
+
+export type TestResponses = {
+    /**
+     * OK
+     */
+    200: string;
+};
+
+export type TestResponse = TestResponses[keyof TestResponses];
+
+export type FindAllPaginatedData = {
+    body?: never;
+    path?: never;
+    query: {
+        search?: string;
+        includeInactive?: boolean;
+        pageable: Pageable;
+    };
+    url: '/administrators/paginated';
+};
+
+export type FindAllPaginatedResponses = {
+    /**
+     * OK
+     */
+    200: PageListAdministratorsDto;
+};
+
+export type FindAllPaginatedResponse = FindAllPaginatedResponses[keyof FindAllPaginatedResponses];
 
 export type RemoveSessionParticipantData = {
     body?: never;
