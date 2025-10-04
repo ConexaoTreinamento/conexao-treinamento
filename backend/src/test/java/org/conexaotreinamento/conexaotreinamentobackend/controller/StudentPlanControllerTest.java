@@ -5,6 +5,9 @@ import org.conexaotreinamento.conexaotreinamentobackend.dto.request.StudentPlanR
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentPlanAssignmentResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentPlanResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.service.StudentPlanService;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
+import org.conexaotreinamento.conexaotreinamentobackend.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,7 +22,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -36,6 +38,9 @@ class StudentPlanControllerTest {
     @Mock
     private StudentPlanService studentPlanService;
 
+    @Mock
+    private UserService userService;
+
     @InjectMocks
     private StudentPlanController controller;
 
@@ -44,6 +49,7 @@ class StudentPlanControllerTest {
     private UUID planId;
     private UUID studentId;
     private UUID userId;
+    private String adminEmail = "admin@example.com";
 
     @BeforeEach
     void setup() {
@@ -145,13 +151,17 @@ class StudentPlanControllerTest {
     void assignPlanToStudent_validAuth_returns201_andUsesAuthPrincipalAsUserId() throws Exception {
         // Arrange security context
         Authentication auth = mock(Authentication.class);
-        when(auth.getName()).thenReturn(userId.toString());
+        when(auth.getName()).thenReturn(adminEmail);
         org.springframework.security.core.context.SecurityContext securityContext = mock(org.springframework.security.core.context.SecurityContext.class);
         when(securityContext.getAuthentication()).thenReturn(auth);
         SecurityContextHolder.setContext(securityContext);
 
-        AssignPlanRequestDTO req = new AssignPlanRequestDTO(planId, LocalDate.now(), "notes");
-        StudentPlanAssignmentResponseDTO assigned = assignDto(UUID.randomUUID(), studentId, planId, "Stu Dent", "Gold", "admin@example.com");
+    // Mock user lookup by email to provide the expected userId
+    when(userService.getUserByEmail(adminEmail))
+        .thenReturn(java.util.Optional.of(new UserResponseDTO(userId, adminEmail, Role.ROLE_ADMIN)));
+
+    AssignPlanRequestDTO req = new AssignPlanRequestDTO(planId, LocalDate.now(), "notes");
+        StudentPlanAssignmentResponseDTO assigned = assignDto(UUID.randomUUID(), studentId, planId, "Stu Dent", "Gold", adminEmail);
         when(studentPlanService.assignPlanToStudent(eq(studentId), any(AssignPlanRequestDTO.class), eq(userId)))
                 .thenReturn(assigned);
 

@@ -4,6 +4,7 @@ import { type ClientOptions, createClient, createConfig } from './api-client/cli
 export const apiClient = createClient(
   createConfig<ClientOptions>({
     baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
+    auth: auth => localStorage.getItem("token") ?? undefined,
     querySerializer: (params: Record<string, unknown>) => {
       const searchParams = new URLSearchParams()
 
@@ -35,11 +36,3 @@ export const apiClient = createClient(
     },
   }),
 )
-
-apiClient.interceptors.request.use(async (request, opts) => {
-  const token = localStorage.getItem('token')
-  if (token) {
-    request.headers.set('Authorization', `Bearer ${token}`)
-  }
-  return request
-})

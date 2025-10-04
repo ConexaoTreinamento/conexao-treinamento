@@ -30,7 +30,7 @@ export const useCreateStudent = () => {
         // ignore
       }
       await queryClient.invalidateQueries({
-        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === "findAll",
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === "findAllStudents",
       });
     },
   });
@@ -52,7 +52,7 @@ export const useUpdateStudent = (options: UseMutationOptions<StudentResponseDto,
       }
       // Invalidate the students list
       await Promise.all([queryClient.invalidateQueries({
-        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAll'
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllStudents'
       }),
         // Invalidate the specific cached student (findById) so the details refresh
         queryClient.invalidateQueries({
@@ -73,7 +73,7 @@ export const useDeleteStudent = () => {
         await (base.onSuccess)(...args);
       }
       await queryClient.invalidateQueries({
-        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === "findAll",
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === "findAllStudents",
       });
     },
   });
@@ -88,7 +88,7 @@ export const useRestoreStudent = () => {
     onSuccess: async (...args) => {
       if (base.onSuccess) await (base.onSuccess)(...args);
       await queryClient.invalidateQueries({
-        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === "findAll",
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === "findAllStudents",
       });
     },
   });

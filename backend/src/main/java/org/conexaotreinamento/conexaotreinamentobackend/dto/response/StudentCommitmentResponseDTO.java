@@ -16,4 +16,9 @@ public class StudentCommitmentResponseDTO {
     private String studentName;
     private CommitmentStatus commitmentStatus;
     private List<ExerciseResponseDTO> exercises;
+    // Detailed participant exercise records (with performance data) for this session instance
+    private List<ParticipantExerciseResponseDTO> participantExercises;
+    // Attendance info for this specific session instance, if materialized
+    private Boolean present;
+    private String attendanceNotes;
 }
