@@ -8,6 +8,7 @@ import StudentForm, { type StudentFormData } from "@/components/student-form"
 import { Button } from "@/components/ui/button"
 import { apiClient } from "@/lib/client"
 import { useToast } from "@/hooks/use-toast"
+import { handleHttpError } from "@/lib/error-utils"
 import type {StudentResponseDto, StudentRequestDto, AnamnesisResponseDto} from "@/lib/api-client/types.gen"
 import {useUpdateStudent} from "@/lib/hooks/student-mutations";
 import { useQueryClient } from "@tanstack/react-query"
@@ -209,8 +210,8 @@ export default function EditStudentPage() {
       } as StudentRequestDto
 
       await updateStudent({ path: { id }, body: requestBody, client: apiClient })
-    } catch (e) {
-      toast({ title: "Erro ao atualizar", description: "Não foi possível salvar as alterações.", duration: 4000 })
+    } catch (e: any) {
+      handleHttpError(e, "atualizar aluno", "Não foi possível salvar as alterações. Tente novamente.")
     }
   }
 
