@@ -89,6 +89,19 @@ export default function EventDetailPage() {
   }
 
   const handleEventEdit = async (formData: EventFormData) => {
+    const desiredAttendance = formData.attendance ?? {}
+    const currentAttendance = (eventData?.participants ?? []).reduce<Record<string, boolean>>((acc, participant) => {
+      if (participant.id) {
+        acc[participant.id] = Boolean(participant.present)
+      }
+      return acc
+    }, {})
+
+    const attendanceChanges = Object.entries(desiredAttendance).filter(([studentId, desiredValue]) => {
+      const previousValue = currentAttendance[studentId] ?? false
+      return desiredValue !== previousValue
+    })
+
     try {
       await updateEventMutation.mutateAsync({
         path: { id: eventId },
@@ -103,6 +116,17 @@ export default function EventDetailPage() {
           participantIds: formData.participantIds || [],
         }
       })
+
+      for (const [studentId] of attendanceChanges) {
+        try {
+          await toggleAttendanceMutation.mutateAsync({
+            path: { id: eventId, studentId },
+          })
+        } catch (toggleError) {
+          console.error(`Failed to toggle attendance for participant ${studentId}:`, toggleError)
+        }
+      }
+
       setIsEditOpen(false)
     } catch (error) {
       console.error('Failed to update event:', error)
@@ -346,7 +370,6 @@ export default function EventDetailPage() {
         <EventModal
           open={isEditOpen}
           mode="edit"
-          eventId={eventId}
           initialData={{
             name: eventData.name || "",
             date: eventData.date || "",

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,12 +15,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { CheckCircle, X, Loader2 } from "lucide-react"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import {
   getStudentsForLookupOptions,
   getTrainersForLookupOptions,
-  toggleAttendanceMutation as toggleAttendanceMutationFactory,
-  findEventByIdQueryKey,
 } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import type { StudentLookupDto, TrainerLookupDto } from "@/lib/api-client/types.gen"
@@ -41,7 +39,6 @@ interface EventModalProps {
   open: boolean
   mode: "create" | "edit"
   initialData?: Partial<EventFormData>
-  eventId?: string
   onClose: () => void
   onSubmit: (data: EventFormData) => void
 }
@@ -50,12 +47,9 @@ export default function EventModal({
   open,
   mode,
   initialData,
-  eventId,
   onClose,
   onSubmit,
 }: EventModalProps) {
-    const queryClient = useQueryClient()
-
     const studentsQuery = useQuery(getStudentsForLookupOptions({ client: apiClient }))
     const trainersQuery = useQuery(getTrainersForLookupOptions({ client: apiClient }))
 
@@ -82,8 +76,6 @@ export default function EventModal({
       participantIds: [],
       attendance: {},
     })
-    const [pendingStudentId, setPendingStudentId] = useState<string | null>(null)
-
     useEffect(() => {
       if (initialData) {
         setFormData({
@@ -162,59 +154,16 @@ export default function EventModal({
       })
     }
 
-    const invalidateEventQueries = useCallback(async () => {
-      if (!eventId) return
-
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: findEventByIdQueryKey({ client: apiClient, path: { id: eventId } }),
-        }),
-        queryClient.invalidateQueries({
-          predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0]?._id === "findAllEvents",
-        }),
-      ])
-    }, [eventId, queryClient])
-
-    const toggleAttendanceMutation = useMutation({
-      ...toggleAttendanceMutationFactory({ client: apiClient }),
-      onSuccess: invalidateEventQueries,
-    })
-
     const toggleAttendance = (studentId: string) => {
-      let previousValue = false
-
       setFormData(prev => {
-        previousValue = Boolean(prev.attendance?.[studentId])
         return {
           ...prev,
           attendance: {
             ...prev.attendance,
-            [studentId]: !previousValue,
+            [studentId]: !prev.attendance?.[studentId],
           },
         }
       })
-
-      if (!eventId) {
-        return
-      }
-
-      setPendingStudentId(studentId)
-
-      toggleAttendanceMutation
-        .mutateAsync({ path: { id: eventId, studentId } })
-        .catch((error) => {
-          console.error("Failed to toggle attendance:", error)
-          setFormData(prev => ({
-            ...prev,
-            attendance: {
-              ...prev.attendance,
-              [studentId]: previousValue,
-            },
-          }))
-        })
-        .finally(() => {
-          setPendingStudentId(current => (current === studentId ? null : current))
-        })
     }
 
     const handleSubmit = () => {
@@ -357,11 +306,6 @@ export default function EventModal({
                 <div className="border rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
                   {formData.participantIds.map((studentId) => {
                     const student = students.find((s) => s.id === studentId)
-                    const isPending =
-                      mode === "edit" &&
-                      toggleAttendanceMutation.isPending &&
-                      pendingStudentId === studentId
-
                     return (
                       <div key={studentId} className="flex items-center justify-between p-2 bg-muted rounded">
                         <span className="text-sm">{student?.name || "Aluno desconhecido"}</span>
@@ -371,16 +315,11 @@ export default function EventModal({
                               size="sm"
                               variant="ghost"
                               onClick={() => toggleAttendance(studentId)}
-                              disabled={isPending}
                               className={`h-6 w-6 p-0 ${
                                 formData.attendance?.[studentId] ? "text-green-600" : "text-muted-foreground"
                               }`}
                             >
-                              {isPending ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <CheckCircle className="w-3 h-3" />
-                              )}
+                              <CheckCircle className="w-3 h-3" />
                             </Button>
                           )}
                           <Button
