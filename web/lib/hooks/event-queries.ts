@@ -1,25 +1,13 @@
-import { useQuery, UseQueryOptions } from "@tanstack/react-query";
-
-// Helper function for API calls
-const apiCall = async (endpoint: string, options: RequestInit = {}) => {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-  const token = localStorage.getItem('token');
-  
-  const response = await fetch(`${baseUrl}${endpoint}`, {
-    ...options,
-    headers: {
-      'Authorization': token ? `Bearer ${token}` : '',
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-  
-  if (!response.ok) {
-    throw new Error(`API call failed: ${response.status}`);
-  }
-  
-  return response.json();
-};
+// DEPRECATED: This file previously contained custom React Query hooks for events.
+// The project now uses generated hooks from the OpenAPI client located at
+// `@/lib/api-client/@tanstack/react-query.gen`.
+//
+// We keep minimal type exports here temporarily to avoid breaking imports
+// during the migration. Remove this file once all imports have been updated.
+// If you still see usages of useEvents/useEvent/useStudentLookup/useTrainerLookup,
+// refactor them to the generated counterparts (findAllEventsOptions, findEventByIdOptions, etc.).
+//
+// Any attempt to call the old hooks will throw to highlight lingering references.
 
 // Event Types - based on our backend DTOs
 export interface EventParticipant {
@@ -57,68 +45,10 @@ export interface TrainerLookup {
 }
 
 // Query Keys
-export const eventKeys = {
-  all: ['events'] as const,
-  lists: () => [...eventKeys.all, 'list'] as const,
-  list: (filters: { search?: string; includeInactive?: boolean }) =>
-    [...eventKeys.lists(), filters] as const,
-  details: () => [...eventKeys.all, 'detail'] as const,
-  detail: (id: string) => [...eventKeys.details(), id] as const,
-  lookups: () => [...eventKeys.all, 'lookups'] as const,
-  students: () => [...eventKeys.lookups(), 'students'] as const,
-  trainers: () => [...eventKeys.lookups(), 'trainers'] as const,
-};
+export const eventKeys: Readonly<Record<string, never>> = Object.freeze({})
 
 // Hooks
-export const useEvents = (params: {
-  search?: string;
-  includeInactive?: boolean;
-} = {}) => {
-  const { search, includeInactive = false } = params;
-
-  return useQuery({
-    queryKey: eventKeys.list({ search, includeInactive }),
-    queryFn: async (): Promise<EventData[]> => {
-      const searchParams = new URLSearchParams();
-      if (search) searchParams.append('search', search);
-      if (includeInactive) searchParams.append('includeInactive', 'true');
-      
-      return apiCall(`/events?${searchParams.toString()}`);
-    },
-    staleTime: 1, // 5 minutes
-  });
-};
-
-export const useEvent = (
-  id: string,
-  queryOptions?: Omit<UseQueryOptions<EventData, Error>, 'queryKey' | 'queryFn'>
-) => {
-  return useQuery({
-    queryKey: eventKeys.detail(id),
-    queryFn: async (): Promise<EventData> => {
-      return apiCall(`/events/${id}`);
-    },
-    staleTime: 1,
-    ...queryOptions,
-  });
-};
-
-export const useStudentLookup = () => {
-  return useQuery({
-    queryKey: eventKeys.students(),
-    queryFn: async (): Promise<StudentLookup[]> => {
-      return apiCall('/events/lookup/students');
-    },
-    staleTime: 1, // 10 minutes - lookup data doesn't change often
-  });
-};
-
-export const useTrainerLookup = () => {
-  return useQuery({
-    queryKey: eventKeys.trainers(),
-    queryFn: async (): Promise<TrainerLookup[]> => {
-      return apiCall('/events/lookup/trainers');
-    },
-    staleTime: 1, // 10 minutes - lookup data doesn't change often
-  });
-};
+export function useEvents() { throw new Error('useEvents deprecated - use generated findAllEventsOptions with useQuery') }
+export function useEvent() { throw new Error('useEvent deprecated - use generated findEventByIdOptions with useQuery') }
+export function useStudentLookup() { throw new Error('useStudentLookup deprecated - replace with generated lookup query (not yet migrated)') }
+export function useTrainerLookup() { throw new Error('useTrainerLookup deprecated - replace with generated lookup query (not yet migrated)') }
