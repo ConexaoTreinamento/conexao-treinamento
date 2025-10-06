@@ -20,6 +20,7 @@ import {
 import { apiClient } from "@/lib/client"
 import type { EventResponseDto, EventParticipantResponseDto } from "@/lib/api-client/types.gen"
 import type { EventFormData } from "@/components/event-modal"
+import type { StudentSummary } from "@/components/student-picker"
 
 export default function EventDetailPage() {
   const router = useRouter()
@@ -189,6 +190,15 @@ export default function EventDetailPage() {
 
 
   const participants: EventParticipantResponseDto[] = eventData.participants ?? []
+  const participantDetails = participants.reduce<Record<string, StudentSummary>>((acc, participant) => {
+    if (!participant.id) return acc
+    acc[participant.id] = {
+      id: participant.id,
+      name: participant.name,
+      surname: undefined,
+    }
+    return acc
+  }, {})
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "Data não informada"
@@ -387,7 +397,8 @@ export default function EventDetailPage() {
                 if (!p.id) return acc
                 acc[p.id] = Boolean(p.present)
                 return acc
-              }, {} as Record<string, boolean>)
+              }, {} as Record<string, boolean>),
+            participantDetails,
           }}
           onClose={() => setIsEditOpen(false)}
           onSubmit={handleEventEdit}
