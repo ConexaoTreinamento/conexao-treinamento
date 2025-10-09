@@ -2,8 +2,10 @@ package org.conexaotreinamento.conexaotreinamentobackend.controller;
 
 import java.util.UUID;
 
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.ChangePasswordRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchUserRoleRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.ResetTrainerPasswordDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.service.UserService;
 import org.springframework.data.domain.Page;
@@ -11,6 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -49,5 +53,38 @@ public class UserController {
         return ResponseEntity.ok(userService.patch(id, request));
     }
 
+    @PostMapping("/users/me/change-password")
+    public ResponseEntity<Void> changeOwnPassword(@RequestBody @Valid ChangePasswordRequestDTO request) {
+    // 1. Search for the currently authenticated user
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    String userEmail = authentication != null ? authentication.getName() : null;
+    if (userEmail == null) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+
+    // 2. Busca o usuário pelo e-mail e obtém o ID
+    var userOpt = userService.getUserByEmail(userEmail);
+    if (userOpt.isEmpty()) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    }
+    UUID currentUserId = userOpt.get().id();
+
+    // 3. Call the service method to change the password
+    //userService.changeOwnPassword(currentUserId, request);
+
+    // 4. return success response
+    return ResponseEntity.noContent().build();
+}
+
+    @PatchMapping("/users/{id}/reset-password")
+    public ResponseEntity<Void> resetPassword(
+            @PathVariable UUID id,
+            @RequestBody @Valid ResetTrainerPasswordDTO request
+    ) {
+        // Call the service method to reset the password
+        // userService.resetPassword(id, request);
+
+        return ResponseEntity.noContent().build();
+    }
 
 }
