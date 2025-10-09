@@ -3,6 +3,7 @@ package org.conexaotreinamento.conexaotreinamentobackend.service;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.ChangePasswordRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchUserRoleRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
@@ -97,5 +98,23 @@ public class UserService {
 
         User savedUser = userRepository.save(user);
         return UserResponseDTO.fromEntity(savedUser);
+    }
+
+    @Transactional
+    public UserResponseDTO changeOwnPassword(UUID currentUserId, ChangePasswordRequestDTO request) {
+        if (!request.newPassword().equals(request.confirmPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The new password and confirm password do not match.");
+        }
+
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
+
+        if (!passwordEncoder.matches(request.oldPassword(), user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The old password is incorrect.");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+
+        return UserResponseDTO.fromEntity(user);
     }
 }
