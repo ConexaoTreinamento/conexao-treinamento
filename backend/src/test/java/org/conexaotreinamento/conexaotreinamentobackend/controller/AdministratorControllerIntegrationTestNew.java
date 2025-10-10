@@ -19,7 +19,9 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -180,5 +182,147 @@ class AdministratorControllerIntegrationTestNew {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    @DisplayName("Should delete administrator successfully (soft delete)")
+    void shouldDeleteAdministratorSuccessfully() throws Exception {
+        // Given - Create an administrator
+        User user = new User("admin@example.com", passwordEncoder.encode("password"), Role.ROLE_ADMIN);
+        user = userRepository.save(user);
+        Administrator admin = new Administrator();
+        admin.setUserId(user.getId());
+        admin.setFirstName("João");
+        admin.setLastName("Silva");
+        admin = administratorRepository.save(admin);
+
+        // When & Then
+        mockMvc.perform(delete("/administrators/{id}", admin.getId()))
+                .andExpect(status().isNoContent());
+
+        // Verify the user is soft deleted
+        User deletedUser = userRepository.findById(user.getId()).orElseThrow();
+        assertThat(deletedUser.isInactive()).isTrue();
+        assertThat(deletedUser.getDeletedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Should restore administrator successfully")
+    void shouldRestoreAdministratorSuccessfully() throws Exception {
+        // Given - Create and delete an administrator
+        User user = new User("admin@example.com", passwordEncoder.encode("password"), Role.ROLE_ADMIN);
+        user = userRepository.save(user);
+        Administrator admin = new Administrator();
+        admin.setUserId(user.getId());
+        admin.setFirstName("João");
+        admin.setLastName("Silva");
+        admin = administratorRepository.save(admin);
+
+        // Delete the administrator (soft delete)
+        user.deactivate();
+        userRepository.save(user);
+
+        // When & Then
+        mockMvc.perform(patch("/administrators/{id}/restore", admin.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(admin.getId().toString()))
+                .andExpect(jsonPath("$.firstName").value("João"))
+                .andExpect(jsonPath("$.lastName").value("Silva"))
+                .andExpect(jsonPath("$.email").value("admin@example.com"))
+                .andExpect(jsonPath("$.active").value(true));
+
+        // Verify the user is restored
+        User restoredUser = userRepository.findById(user.getId()).orElseThrow();
+        assertThat(restoredUser.isActive()).isTrue();
+        assertThat(restoredUser.getDeletedAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("Should return 404 when restoring non-existent administrator")
+    void shouldReturn404WhenRestoringNonExistentAdministrator() throws Exception {
+        // Given
+        java.util.UUID nonExistentId = java.util.UUID.randomUUID();
+
+        // When & Then
+        mockMvc.perform(patch("/administrators/{id}/restore", nonExistentId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Administrator not found"));
+    }
+
+    @Test
+    @DisplayName("Should return 409 when restoring already active administrator")
+    void shouldReturn409WhenRestoringAlreadyActiveAdministrator() throws Exception {
+        // Given - Create an active administrator
+        User user = new User("admin@example.com", passwordEncoder.encode("password"), Role.ROLE_ADMIN);
+        user = userRepository.save(user);
+        Administrator admin = new Administrator();
+        admin.setUserId(user.getId());
+        admin.setFirstName("João");
+        admin.setLastName("Silva");
+        admin = administratorRepository.save(admin);
+
+        // When & Then - Try to restore already active administrator
+        mockMvc.perform(patch("/administrators/{id}/restore", admin.getId()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("User is already active"));
+    }
+
+    @Test
+    @DisplayName("Should list administrators including inactive when flag is true")
+    void shouldListAdministratorsIncludingInactiveWhenFlagIsTrue() throws Exception {
+        // Given - Create one active and one inactive administrator
+        User activeUser = new User("active@example.com", passwordEncoder.encode("password"), Role.ROLE_ADMIN);
+        activeUser = userRepository.save(activeUser);
+        Administrator activeAdmin = new Administrator();
+        activeAdmin.setUserId(activeUser.getId());
+        activeAdmin.setFirstName("Active");
+        activeAdmin.setLastName("Admin");
+        administratorRepository.save(activeAdmin);
+
+        User inactiveUser = new User("inactive@example.com", passwordEncoder.encode("password"), Role.ROLE_ADMIN);
+        inactiveUser.deactivate();
+        inactiveUser = userRepository.save(inactiveUser);
+        Administrator inactiveAdmin = new Administrator();
+        inactiveAdmin.setUserId(inactiveUser.getId());
+        inactiveAdmin.setFirstName("Inactive");
+        inactiveAdmin.setLastName("Admin");
+        administratorRepository.save(inactiveAdmin);
+
+        // When & Then - Should list both when includeInactive=true
+        mockMvc.perform(get("/administrators/paginated")
+                        .param("includeInactive", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(2));
+    }
+
+    @Test
+    @DisplayName("Should list only active administrators when flag is false")
+    void shouldListOnlyActiveAdministratorsWhenFlagIsFalse() throws Exception {
+        // Given - Create one active and one inactive administrator
+        User activeUser = new User("active@example.com", passwordEncoder.encode("password"), Role.ROLE_ADMIN);
+        activeUser = userRepository.save(activeUser);
+        Administrator activeAdmin = new Administrator();
+        activeAdmin.setUserId(activeUser.getId());
+        activeAdmin.setFirstName("Active");
+        activeAdmin.setLastName("Admin");
+        administratorRepository.save(activeAdmin);
+
+        User inactiveUser = new User("inactive@example.com", passwordEncoder.encode("password"), Role.ROLE_ADMIN);
+        inactiveUser.deactivate();
+        inactiveUser = userRepository.save(inactiveUser);
+        Administrator inactiveAdmin = new Administrator();
+        inactiveAdmin.setUserId(inactiveUser.getId());
+        inactiveAdmin.setFirstName("Inactive");
+        inactiveAdmin.setLastName("Admin");
+        administratorRepository.save(inactiveAdmin);
+
+        // When & Then - Should list only active when includeInactive=false
+        mockMvc.perform(get("/administrators/paginated")
+                        .param("includeInactive", "false"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].firstName").value("Active"));
     }
 }
