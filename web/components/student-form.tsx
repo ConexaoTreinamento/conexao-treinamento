@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { User, Plus, Trash2 } from "lucide-react"
 import {hasInsomniaTypes, impairmentTypes} from "@/lib/students-data";
+import { IMaskInput } from 'react-imask' 
 
 interface PhysicalImpairment {
   id: string
@@ -112,6 +113,7 @@ export default function StudentForm({
     }
   })
 
+
   // Reset form once when initialData becomes available (handles async load / page refresh)
   const initializedRef = useRef(false)
   useEffect(() => {
@@ -173,12 +175,30 @@ export default function StudentForm({
             </div>
             <div className="space-y-2">
               <Label htmlFor={`email-${id}`}>Email *</Label>
-              <Input id={`email-${id}`} type="email" {...register("email", { required: true })} />
+              <Input 
+                id={`email-${id}`} 
+                type="email" 
+                placeholder="nome@dominio.com"
+                {...register("email", { 
+                  required: true,
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: "Formato de email invalido"
+                  } 
+                })} 
+              />
               {errors.email && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor={`phone-${id}`}>Telefone *</Label>
-              <Input id={`phone-${id}`} {...register("phone", { required: true })} placeholder="(11) 99999-9999" />
+              <IMaskInput
+                id={`phone-${id}`}
+                {...register("phone", { required: true })}
+                mask="00 00000 0000"
+                onAccept={(value: string) => setValue("phone", value, { shouldValidate: true })}
+                placeholder="(51) 12345 6789"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+              />
               {errors.phone && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
@@ -221,12 +241,12 @@ export default function StudentForm({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2 md:col-span-2">
               <Label htmlFor={`street-${id}`}>Rua *</Label>
-              <Input id={`street-${id}`} {...register("street", { required: true })} />
+              <Input id={`street-${id}`} {...register("street", { required: true })} placeholder="Ex: Rua das Palmeiras" />
               {errors.street && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor={`number-${id}`}>Número *</Label>
-              <Input id={`number-${id}`} {...register("number", { required: true })} />
+              <Input id={`number-${id}`} {...register("number", { required: true })} placeholder="456 "/>
               {errors.number && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
@@ -235,12 +255,19 @@ export default function StudentForm({
             </div>
             <div className="space-y-2">
               <Label htmlFor={`neighborhood-${id}`}>Bairro *</Label>
-              <Input id={`neighborhood-${id}`} {...register("neighborhood", { required: true })} />
+              <Input id={`neighborhood-${id}`} {...register("neighborhood", { required: true })}  placeholder="Jardins"/>
               {errors.neighborhood && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor={`cep-${id}`}>CEP *</Label>
-              <Input id={`cep-${id}`} {...register("cep", { required: true })} />
+              <IMaskInput
+                {...register("cep", { required: true })}
+                id={`cep-${id}`}
+                mask="00000-000"
+                onAccept={(value: string) => setValue("cep", value, { shouldValidate: true })}
+                placeholder="12345-678"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+              />
               {errors.cep && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
           </div>
@@ -261,7 +288,14 @@ export default function StudentForm({
             </div>
             <div className="space-y-2">
               <Label htmlFor={`emergencyPhone-${id}`}>Telefone *</Label>
-              <Input id={`emergencyPhone-${id}`} {...register("emergencyPhone", { required: true })} />
+              <IMaskInput
+                id={`emergencyPhone-${id}`}
+                {...register("emergencyPhone", { required: true })}
+                mask="00 00000 0000"
+                onAccept={(value: string) => setValue("emergencyPhone", value, { shouldValidate: true })}
+                placeholder="(51) 12345 6789"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+              />
               {errors.emergencyPhone && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
