@@ -53,7 +53,7 @@ public class UserController {
         return ResponseEntity.ok(userService.patch(id, request));
     }
 
-    @PostMapping("/users/me/change-password")
+    @PostMapping("/me/change-password")
     public ResponseEntity<Void> changeOwnPassword(@RequestBody @Valid ChangePasswordRequestDTO request) {
         // 1. Search for the currently authenticated user
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -73,7 +73,7 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/users/{id}/reset-password")
+    @PatchMapping("/{id}/reset-password")
     public ResponseEntity<Void> resetPassword(
             @PathVariable UUID id,
             @RequestBody @Valid ResetTrainerPasswordDTO request
