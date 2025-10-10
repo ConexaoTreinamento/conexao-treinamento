@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -20,6 +20,7 @@ import { getTrainersForLookupOptions } from "@/lib/api-client/@tanstack/react-qu
 import { apiClient } from "@/lib/client"
 import type { TrainerLookupDto } from "@/lib/api-client/types.gen"
 import { StudentPicker, type StudentSummary } from "@/components/student-picker"
+import { Controller, useForm } from "react-hook-form"
 
 export interface EventFormData {
   name: string
@@ -42,6 +43,19 @@ interface EventModalProps {
   onSubmit: (data: EventFormData) => void
 }
 
+const buildInitialValues = (data?: Partial<EventFormData>): EventFormData => ({
+  name: data?.name ?? "",
+  date: data?.date ?? "",
+  startTime: data?.startTime ?? "",
+  endTime: data?.endTime ?? "",
+  location: data?.location ?? "",
+  description: data?.description ?? "",
+  trainerId: data?.trainerId ?? "",
+  participantIds: [...(data?.participantIds ?? [])],
+  attendance: { ...(data?.attendance ?? {}) },
+  participantDetails: { ...(data?.participantDetails ?? {}) },
+})
+
 export default function EventModal({
   open,
   mode,
@@ -49,157 +63,136 @@ export default function EventModal({
   onClose,
   onSubmit,
 }: EventModalProps) {
-    const trainersQuery = useQuery(getTrainersForLookupOptions({ client: apiClient }))
+  const trainersQuery = useQuery(getTrainersForLookupOptions({ client: apiClient }))
 
-    const trainersData = trainersQuery.data ?? []
-    const trainersLoading = trainersQuery.isLoading
+  const trainersData = trainersQuery.data ?? []
+  const trainersLoading = trainersQuery.isLoading
 
-    const trainers = (trainersData ?? []).filter(
-      (trainer): trainer is TrainerLookupDto & { id: string } => Boolean(trainer?.id)
-    )
+  const trainers = (trainersData ?? []).filter(
+    (trainer): trainer is TrainerLookupDto & { id: string } => Boolean(trainer?.id)
+  )
 
-    const [formData, setFormData] = useState<EventFormData>({
-      name: "",
-      date: "",
-      startTime: "",
-      endTime: "",
-      location: "",
-      description: "",
-      trainerId: "",
-      participantIds: [],
-      attendance: {},
-      participantDetails: {},
-    })
-    const [isAddParticipantDialogOpen, setIsAddParticipantDialogOpen] = useState(false)
-    useEffect(() => {
-      if (initialData) {
-        setFormData({
-          name: initialData.name || "",
-          date: initialData.date || "",
-          startTime: initialData.startTime || "",
-          endTime: initialData.endTime || "",
-          location: initialData.location || "",
-          description: initialData.description || "",
-          trainerId: initialData.trainerId || "",
-          participantIds: initialData.participantIds || [],
-          attendance: initialData.attendance || {},
-          participantDetails: initialData.participantDetails || {},
-        })
-      } else {
-        setFormData({
-          name: "",
-          date: "",
-          startTime: "",
-          endTime: "",
-          location: "",
-          description: "",
-          trainerId: "",
-          participantIds: [],
-          attendance: {},
-          participantDetails: {},
-        })
+  const [isAddParticipantDialogOpen, setIsAddParticipantDialogOpen] = useState(false)
+
+  const { control, handleSubmit, watch, setValue, reset, getValues, register } = useForm<EventFormData>({
+    mode: "onChange",
+    defaultValues: buildInitialValues(initialData),
+  })
+
+  useEffect(() => {
+    if (open) {
+      reset(buildInitialValues(initialData))
+    }
+  }, [initialData, open, reset])
+
+  useEffect(() => {
+    if (!open) {
+      setIsAddParticipantDialogOpen(false)
+    }
+  }, [open])
+
+  const formValues = watch()
+  const participantIds = formValues.participantIds ?? []
+  const attendance = formValues.attendance ?? {}
+  const participantDetails = formValues.participantDetails ?? {}
+
+  const handleTimeChange = (
+    field: "startTime" | "endTime",
+    value: string,
+    onChange: (value: string) => void
+  ) => {
+    const otherField = field === "startTime" ? "endTime" : "startTime"
+    const otherValue = getValues(otherField)
+    const hasCompleteStart = (field === "startTime" ? value : otherValue)?.length === 5
+    const hasCompleteEnd = (field === "endTime" ? value : otherValue)?.length === 5
+
+    if (hasCompleteStart && hasCompleteEnd && value && otherValue) {
+      const start = field === "startTime" ? value : otherValue
+      const end = field === "endTime" ? value : otherValue
+      const startDate = new Date(`2000-01-01T${start}`)
+      const endDate = new Date(`2000-01-01T${end}`)
+      if (endDate < startDate) {
+        if (field === "startTime") {
+          onChange(value)
+          setValue(otherField, value, { shouldDirty: true, shouldValidate: true })
+        }
+        return
       }
-    }, [initialData, open])
-
-    const handleTimeChange = (field: "startTime" | "endTime", value: string) => {
-      setFormData(prev => {
-        const next = { ...prev, [field]: value }
-
-        const hasCompleteStart = next.startTime?.length === 5
-        const hasCompleteEnd = next.endTime?.length === 5
-
-        if (hasCompleteStart && hasCompleteEnd) {
-          const start = new Date(`2000-01-01T${next.startTime}`)
-          const end = new Date(`2000-01-01T${next.endTime}`)
-
-          if (end < start) {
-            if (field === "startTime") {
-              next.endTime = value
-            } else {
-              return prev
-            }
-          }
-        }
-
-        return next
-      })
     }
 
-    const addParticipant = (student: StudentSummary): boolean => {
-      let added = false
-      setFormData(prev => {
-        if (prev.participantIds.includes(student.id)) {
-          return prev
-        }
-        added = true
-        return {
-          ...prev,
-          participantIds: [...prev.participantIds, student.id],
-          attendance: {
-            ...prev.attendance,
-            [student.id]: prev.attendance?.[student.id] ?? false,
-          },
-          participantDetails: {
-            ...(prev.participantDetails || {}),
-            [student.id]: student,
-          },
-        }
-      })
-      return added
+    onChange(value)
+  }
+
+  const addParticipant = (student: StudentSummary): boolean => {
+    const ids = getValues("participantIds") ?? []
+    if (ids.includes(student.id)) {
+      return false
     }
 
-    const handleAddStudent = (student: StudentSummary) => {
-      addParticipant(student)
-    }
+    const nextAttendance = { ...(getValues("attendance") ?? {}) }
+    const nextDetails = { ...(getValues("participantDetails") ?? {}) }
 
-    const handleRemoveStudent = (studentId: string) => {
-      setFormData(prev => {
-        const nextAttendance = { ...prev.attendance }
-        delete nextAttendance[studentId]
-        const nextDetails = { ...(prev.participantDetails || {}) }
-        delete nextDetails[studentId]
+    nextAttendance[student.id] = nextAttendance[student.id] ?? false
+    nextDetails[student.id] = student
 
-        return {
-          ...prev,
-          participantIds: prev.participantIds.filter(id => id !== studentId),
-          attendance: nextAttendance,
-          participantDetails: nextDetails,
-        }
-      })
-    }
+    setValue("participantIds", [...ids, student.id], { shouldDirty: true, shouldValidate: true })
+    setValue("attendance", nextAttendance, { shouldDirty: true })
+    setValue("participantDetails", nextDetails, { shouldDirty: true })
+    return true
+  }
 
-    const toggleAttendance = (studentId: string) => {
-      setFormData(prev => {
-        return {
-          ...prev,
-          attendance: {
-            ...prev.attendance,
-            [studentId]: !prev.attendance?.[studentId],
-          },
-        }
-      })
-    }
+  const handleAddStudent = (student: StudentSummary) => {
+    addParticipant(student)
+  }
 
-    const handleSubmit = () => {
-      onSubmit(formData)
-      onClose()
-    }
+  const handleRemoveStudent = (studentId: string) => {
+    const ids = getValues("participantIds") ?? []
+    const nextAttendance = { ...(getValues("attendance") ?? {}) }
+    const nextDetails = { ...(getValues("participantDetails") ?? {}) }
 
-    const isFormValid = () => {
-      return (
-        formData.name.trim() &&
-        formData.date &&
-        formData.startTime &&
-        formData.endTime &&
-        formData.location.trim() &&
-        formData.trainerId
-      )
-    }
+    delete nextAttendance[studentId]
+    delete nextDetails[studentId]
 
-    const currentParticipants = formData.participantIds.length
+    setValue(
+      "participantIds",
+      ids.filter(id => id !== studentId),
+      { shouldDirty: true, shouldValidate: true }
+    )
+    setValue("attendance", nextAttendance, { shouldDirty: true })
+    setValue("participantDetails", nextDetails, { shouldDirty: true })
+  }
+
+  const toggleAttendance = (studentId: string) => {
+    const nextAttendance = { ...(getValues("attendance") ?? {}) }
+    nextAttendance[studentId] = !nextAttendance[studentId]
+    setValue("attendance", nextAttendance, { shouldDirty: true })
+  }
+
+  const submitForm = handleSubmit((data) => {
+    onSubmit(data)
+    onClose()
+  })
+
+  const isFormValid = Boolean(
+    formValues.name?.trim() &&
+    formValues.date &&
+    formValues.startTime &&
+    formValues.endTime &&
+    formValues.location?.trim() &&
+    formValues.trainerId
+  )
+
+  const currentParticipants = participantIds.length
 
     return (
-      <Dialog open={open} onOpenChange={onClose}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          onClose()
+        }
+      }}
+    >
         <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -218,9 +211,8 @@ export default function EventModal({
                 <Label htmlFor="eventName">Nome do Evento *</Label>
                 <Input
                   id="eventName"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="Ex: Corrida no Parque"
+                  {...register("name", { required: true })}
                 />
               </div>
             </div>
@@ -231,26 +223,39 @@ export default function EventModal({
                 <Input
                   id="eventDate"
                   type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+                  {...register("date", { required: true })}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="eventStartTime">Horário de Início *</Label>
-                <Input
-                  id="eventStartTime"
-                  type="time"
-                  value={formData.startTime}
-                  onChange={(e) => handleTimeChange("startTime", e.target.value)}
+                <Controller
+                  control={control}
+                  name="startTime"
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Input
+                      id="eventStartTime"
+                      type="time"
+                      value={field.value}
+                      onChange={(e) => handleTimeChange("startTime", e.target.value, field.onChange)}
+                    />
+                  )}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="eventEndTime">Horário de Fim *</Label>
-                <Input
-                  id="eventEndTime"
-                  type="time"
-                  value={formData.endTime}
-                  onChange={(e) => handleTimeChange("endTime", e.target.value)}
+                <Controller
+                  control={control}
+                  name="endTime"
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Input
+                      id="eventEndTime"
+                      type="time"
+                      value={field.value}
+                      onChange={(e) => handleTimeChange("endTime", e.target.value, field.onChange)}
+                    />
+                  )}
                 />
               </div>
             </div>
@@ -259,30 +264,33 @@ export default function EventModal({
               <Label htmlFor="eventLocation">Local *</Label>
               <Input
                 id="eventLocation"
-                value={formData.location}
-                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
                 placeholder="Ex: Parque Ibirapuera"
+                {...register("location", { required: true })}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="eventInstructor">Instrutor *</Label>
-                <Select
-                  value={formData.trainerId}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, trainerId: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={trainersLoading ? "Carregando..." : "Selecione o instrutor"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {trainers.map((trainer) => (
-                      <SelectItem key={trainer.id} value={trainer.id}>
-                        {trainer.name || "Nome não informado"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  control={control}
+                  name="trainerId"
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={trainersLoading ? "Carregando..." : "Selecione o instrutor"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {trainers.map((trainer) => (
+                          <SelectItem key={trainer.id} value={trainer.id}>
+                            {trainer.name || "Nome não informado"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
             </div>
 
@@ -290,10 +298,9 @@ export default function EventModal({
               <Label htmlFor="eventDescription">Descrição</Label>
               <Textarea
                 id="eventDescription"
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 placeholder="Descreva o evento..."
                 rows={3}
+                {...register("description")}
               />
             </div>
 
@@ -317,7 +324,7 @@ export default function EventModal({
                     <DialogDescription>Escolha um aluno da lista paginada.</DialogDescription>
                   </DialogHeader>
                   <StudentPicker
-                    excludedStudentIds={formData.participantIds}
+                    excludedStudentIds={participantIds}
                     onSelect={handleAddStudent}
                     pageSize={10}
                   />
@@ -329,10 +336,10 @@ export default function EventModal({
                 </DialogContent>
               </Dialog>
 
-              {formData.participantIds.length > 0 ? (
+              {participantIds.length > 0 ? (
                 <div className="border rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
-                  {formData.participantIds.map((studentId) => {
-                    const summary = formData.participantDetails?.[studentId]
+                  {participantIds.map((studentId) => {
+                    const summary = participantDetails?.[studentId]
                     const displayName = summary ? `${summary.name ?? ""} ${summary.surname ?? ""}`.trim() : ""
                     const fallbackName = displayName || summary?.id || studentId
 
@@ -346,7 +353,7 @@ export default function EventModal({
                               variant="ghost"
                               onClick={() => toggleAttendance(studentId)}
                               className={`h-6 w-6 p-0 ${
-                                formData.attendance?.[studentId] ? "text-green-600" : "text-muted-foreground"
+                                attendance?.[studentId] ? "text-green-600" : "text-muted-foreground"
                               }`}
                             >
                               <CheckCircle className="w-3 h-3" />
@@ -378,9 +385,9 @@ export default function EventModal({
               Cancelar
             </Button>
             <Button
-              onClick={handleSubmit}
+              onClick={submitForm}
               className="bg-green-600 hover:bg-green-700"
-              disabled={!isFormValid() || trainersLoading}
+              disabled={!isFormValid || trainersLoading}
             >
               {trainersLoading ? (
                 <>
