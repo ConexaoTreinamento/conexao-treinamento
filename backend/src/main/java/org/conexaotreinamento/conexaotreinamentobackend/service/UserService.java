@@ -8,6 +8,7 @@ import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRe
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchUserRoleRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
+import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -85,20 +86,24 @@ public class UserService {
         return UserResponseDTO.fromEntity(savedUser);
     }
 
-    @Transactional
-    public UserResponseDTO resetUserPassword(UUID userId, String newPassword) {
-        if (newPassword == null || newPassword.trim().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
-        }
-
-        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-
-        user.setPassword(passwordEncoder.encode(newPassword));
-
-        User savedUser = userRepository.save(user);
-        return UserResponseDTO.fromEntity(savedUser);
+@Transactional
+public UserResponseDTO resetUserPassword(UUID userId, String newPassword) {
+    if (newPassword == null || newPassword.trim().isEmpty()) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
     }
+
+    User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+    if (!user.getRole().equals(Role.ROLE_TRAINER)) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only trainers can have their password reset by this endpoint.");
+    }
+
+    user.setPassword(passwordEncoder.encode(newPassword));
+
+    User savedUser = userRepository.save(user);
+    return UserResponseDTO.fromEntity(savedUser);
+}
 
     @Transactional
     public UserResponseDTO changeOwnPassword(UUID currentUserId, ChangePasswordRequestDTO request) {
