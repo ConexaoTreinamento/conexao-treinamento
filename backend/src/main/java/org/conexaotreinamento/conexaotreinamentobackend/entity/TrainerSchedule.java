@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -17,6 +20,8 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(exclude = "trainer")
+@ToString(exclude = "trainer")
 public class TrainerSchedule {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -25,6 +30,7 @@ public class TrainerSchedule {
     @Column(name = "trainer_id", nullable = false)
     private UUID trainerId;
     
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "trainer_id", insertable = false, updatable = false)
     private Trainer trainer;

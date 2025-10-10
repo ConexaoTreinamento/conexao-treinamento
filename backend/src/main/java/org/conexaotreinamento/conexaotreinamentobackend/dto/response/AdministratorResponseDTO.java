@@ -11,20 +11,20 @@ public record AdministratorResponseDTO(
         String lastName,
         String email,
         String fullName,
+        boolean active,
         Instant createdAt,
-        Instant updatedAt,
-        boolean active
+        Instant updatedAt
 ) {
-    public static AdministratorResponseDTO fromEntity(Administrator administrator) {
+    public static AdministratorResponseDTO fromEntity(Administrator administrator, String email, boolean active, Instant createdAt, Instant updatedAt) {
         return new AdministratorResponseDTO(
                 administrator.getId(),
                 administrator.getFirstName(),
                 administrator.getLastName(),
-                administrator.getEmail(),
+                email,
                 administrator.getFullName(),
-                administrator.getCreatedAt(),
-                administrator.getUpdatedAt(),
-                administrator.isActive()
+                active,
+                createdAt,
+                updatedAt
         );
     }
 }
