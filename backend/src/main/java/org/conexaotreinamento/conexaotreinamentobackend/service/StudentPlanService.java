@@ -40,8 +40,7 @@ public class StudentPlanService {
                 "Plan with name '" + requestDTO.getName() + "' already exists");
         }
         
-        StudentPlan plan = new StudentPlan();
-        plan.setId(UUID.randomUUID());
+    StudentPlan plan = new StudentPlan(); // Leave id null so @GeneratedValue treats as new
         plan.setName(requestDTO.getName());
         plan.setMaxDays(requestDTO.getMaxDays());
         plan.setDurationDays(requestDTO.getDurationDays());
@@ -72,6 +71,7 @@ public class StudentPlanService {
         studentPlanRepository.save(plan);
     }
     
+    @Transactional(readOnly = true)
     public List<StudentPlanResponseDTO> getAllActivePlans() {
         return studentPlanRepository.findByActiveTrueOrderByNameAsc()
             .stream()
@@ -79,6 +79,7 @@ public class StudentPlanService {
             .toList();
     }
     
+    @Transactional(readOnly = true)
     public StudentPlanResponseDTO getPlanById(UUID planId) {
         StudentPlan plan = studentPlanRepository.findByIdAndActiveTrue(planId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
@@ -102,8 +103,8 @@ public class StudentPlanService {
                 "Plan not found or inactive"));
         
         // Validate assigning user exists
-        User assigningUser = userRepository.findById(assignedByUserId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assigning user not found"));
+//        User assigningUser = userRepository.findById(assignedByUserId)
+//            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assigning user not found"));
         
         LocalDate startDate = requestDTO.getStartDate();
         LocalDate endDate = startDate.plusDays(plan.getDurationDays());
@@ -119,7 +120,6 @@ public class StudentPlanService {
         
         // Create new assignment
         StudentPlanAssignment assignment = new StudentPlanAssignment();
-        assignment.setId(UUID.randomUUID());
         assignment.setStudentId(studentId);
         assignment.setPlanId(requestDTO.getPlanId());
         assignment.setStartDate(startDate);
@@ -128,9 +128,10 @@ public class StudentPlanService {
         assignment.setAssignmentNotes(requestDTO.getAssignmentNotes());
         
         StudentPlanAssignment savedAssignment = assignmentRepository.save(assignment);
-        return mapToAssignmentResponseDTO(savedAssignment, student, plan, assigningUser);
+        return mapToAssignmentResponseDTO(savedAssignment, student, plan, null);
     }
     
+    @Transactional(readOnly = true)
     public List<StudentPlanAssignmentResponseDTO> getStudentPlanHistory(UUID studentId) {
         // Validate student exists
         studentRepository.findById(studentId)
@@ -142,6 +143,7 @@ public class StudentPlanService {
             .toList();
     }
     
+    @Transactional(readOnly = true)
     public StudentPlanAssignmentResponseDTO getCurrentStudentPlan(UUID studentId) {
         // Validate student exists
         studentRepository.findById(studentId)
@@ -154,10 +156,12 @@ public class StudentPlanService {
     }
     
     // Helper method for internal service use
+    @Transactional(readOnly = true)
     public java.util.Optional<StudentPlanAssignment> getCurrentAssignment(UUID studentId) {
         return assignmentRepository.findCurrentActiveAssignment(studentId);
     }
     
+    @Transactional(readOnly = true)
     public List<StudentPlanAssignmentResponseDTO> getExpiringSoonAssignments(int days) {
         LocalDate futureDate = LocalDate.now().plusDays(days);
         return assignmentRepository.findExpiringSoon(futureDate)
@@ -166,6 +170,7 @@ public class StudentPlanService {
             .toList();
     }
     
+    @Transactional(readOnly = true)
     public List<StudentPlanAssignmentResponseDTO> getAllCurrentlyActiveAssignments() {
         return assignmentRepository.findAllCurrentlyActive()
             .stream()
@@ -187,7 +192,7 @@ public class StudentPlanService {
     }
     
     private StudentPlanAssignmentResponseDTO mapToAssignmentResponseDTO(StudentPlanAssignment assignment) {
-        return mapToAssignmentResponseDTO(assignment, null, null, null);
+        return mapToAssignmentResponseDTO(assignment, assignment.getStudent(), assignment.getPlan(), assignment.getAssignedByUser());
     }
     
     private StudentPlanAssignmentResponseDTO mapToAssignmentResponseDTO(StudentPlanAssignment assignment,

@@ -1,10 +1,7 @@
 package org.conexaotreinamento.conexaotreinamentobackend.entity;
 
-import java.time.Instant;
 import java.util.UUID;
 
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import jakarta.persistence.Column;
@@ -14,7 +11,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -23,12 +19,18 @@ import lombok.Setter;
 @Table(name = "administrators")
 @EntityListeners(AuditingEntityListener.class)
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Setter
+@NoArgsConstructor
 public class Administrator {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false)
     private UUID id;
+
+    @Column(name = "user_id", nullable = false)
+    @Setter
+    private UUID userId;
 
     @Column(name = "first_name", nullable = false, length = 100)
     @Setter
@@ -37,49 +39,6 @@ public class Administrator {
     @Column(name = "last_name", nullable = false, length = 100)
     @Setter
     private String lastName;
-
-    @Column(nullable = false, length = 255, unique = true)
-    @Setter
-    private String email;
-
-    @Column(nullable = false, length = 255)
-    @Setter
-    private String password;
-
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
-
-    @LastModifiedDate
-    @Column(name = "updated_at")
-    private Instant updatedAt;
-
-    @Column(name = "deleted_at")
-    @Setter
-    private Instant deletedAt;
-
-    public Administrator(String firstName, String lastName, String email, String password) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.password = password;
-    }
-
-    public boolean isActive() {
-        return deletedAt == null;
-    }
-
-    public boolean isInactive() {
-        return deletedAt != null;
-    }
-
-    public void activate() {
-        this.deletedAt = null;
-    }
-
-    public void deactivate() {
-        this.deletedAt = Instant.now();
-    }
 
     public String getFullName() {
         return firstName + " " + lastName;

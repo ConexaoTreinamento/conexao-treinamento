@@ -1,0 +1,81 @@
+name: Mirror to AGES GitLab (HTTPS)
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Test Network Connectivity
+        run: |
+          echo "=== Network Diagnostics ==="
+          echo "Testing basic connectivity..."
+          ping -c 3 tools.ages.pucrs.br || echo "Ping failed"
+          
+          echo "Testing DNS resolution..."
+          nslookup tools.ages.pucrs.br || echo "DNS lookup failed"
+          
+          echo "Testing HTTPS connectivity..."
+          curl -I https://tools.ages.pucrs.br || echo "HTTPS connection failed"
+
+      - name: Remove existing remote (if exists)
+        run: |
+          git remote remove gitlab || true
+
+      - name: Add GitLab remote (HTTPS)
+        run: |
+          echo "Adding GitLab remote..."
+          git remote add gitlab https://tools.ages.pucrs.br/conexao-treinamento/backend
+          git remote -v
+
+      - name: Configure Git credentials
+        run: |
+          echo "Configuring Git credentials..."
+          git config --global credential.helper store
+          echo "https://${{ secrets.GITLAB_USERNAME }}:${{ secrets.GITLAB_PASSWORD }}@tools.ages.pucrs.br" > ~/.git-credentials
+          chmod 600 ~/.git-credentials
+
+      - name: Verify GitLab credentials
+        run: |
+          echo "Verifying GitLab credentials..."
+          git ls-remote gitlab || {
+            echo "❌ Failed to authenticate with GitLab"
+            echo "Please check your GITLAB_USERNAME and GITLAB_PASSWORD secrets"
+            exit 1
+          }
+          echo "✅ GitLab authentication successful"
+
+      - name: Push to GitLab
+        run: |
+          echo "Starting push to GitLab..."
+          git push --force gitlab main:main
+          echo "Repository mirrored to GitLab"
+
+      - name: Verify push success
+        run: |
+          echo "Verifying push success..."
+          git ls-remote gitlab main
+          echo "✅ Verification successful - main branch exists on GitLab"
+
+      - name: Cleanup credentials
+        if: always()
+        run: |
+          echo "Cleaning up credentials..."
+          rm -f ~/.git-credentials
+          git config --global --unset credential.helper

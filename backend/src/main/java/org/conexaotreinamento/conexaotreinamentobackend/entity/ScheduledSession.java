@@ -22,7 +22,7 @@ public class ScheduledSession {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
     
-    @Column(name = "session_series_id", nullable = false)
+    @Column(name = "session_series_id", nullable = true)
     private UUID sessionSeriesId;
     
     @Column(name = "session_id", nullable = false, unique = true)
@@ -40,9 +40,9 @@ public class ScheduledSession {
     
     @Column(name = "end_time", nullable = false)
     private LocalDateTime endTime;
-    
-    @Column(name = "max_participants", nullable = false)
-    private int maxParticipants = 1;
+
+    @Column(name = "canceled", nullable = false)
+    private boolean canceled = false; // explicit cancellation separate from soft delete
     
     @Column(name = "series_name", nullable = false)
     private String seriesName;
