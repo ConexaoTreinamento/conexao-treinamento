@@ -308,4 +308,89 @@ class AdministratorServiceTest {
         verify(administratorRepository).findById(administratorId);
         verify(userService).delete(userId);
     }
+
+    @Test
+    @DisplayName("Should restore administrator successfully")
+    void shouldRestoreAdministratorSuccessfully() {
+        // Given
+        user.deactivate(); // Mark user as inactive
+        UserResponseDTO restoredUserResponse = new UserResponseDTO(userId, "joao@example.com", Role.ROLE_ADMIN);
+        
+        // Create a restored (active) user
+        User restoredUser = new User("joao@example.com", "password123", Role.ROLE_ADMIN);
+        
+        when(administratorRepository.findById(administratorId)).thenReturn(Optional.of(administrator));
+        when(userService.restore(userId)).thenReturn(restoredUserResponse);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(restoredUser));
+
+        // When
+        AdministratorResponseDTO result = administratorService.restore(administratorId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(administratorId);
+        assertThat(result.email()).isEqualTo("joao@example.com");
+        assertThat(result.active()).isTrue();
+        
+        verify(administratorRepository).findById(administratorId);
+        verify(userService).restore(userId);
+        verify(userRepository).findById(userId);
+    }
+
+    @Test
+    @DisplayName("Should throw not found when trying to restore non-existent administrator")
+    void shouldThrowNotFoundWhenTryingToRestoreNonExistentAdministrator() {
+        // Given
+        when(administratorRepository.findById(administratorId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> administratorService.restore(administratorId))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Administrator not found")
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
+        
+        verify(administratorRepository).findById(administratorId);
+        verify(userService, never()).restore(any());
+    }
+
+    @Test
+    @DisplayName("Should throw conflict when trying to restore already active administrator")
+    void shouldThrowConflictWhenTryingToRestoreAlreadyActiveAdministrator() {
+        // Given
+        when(administratorRepository.findById(administratorId)).thenReturn(Optional.of(administrator));
+        when(userService.restore(userId)).thenThrow(
+            new ResponseStatusException(HttpStatus.CONFLICT, "User is already active")
+        );
+
+        // When & Then
+        assertThatThrownBy(() -> administratorService.restore(administratorId))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("User is already active")
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.CONFLICT);
+        
+        verify(administratorRepository).findById(administratorId);
+        verify(userService).restore(userId);
+    }
+
+    @Test
+    @DisplayName("Should throw conflict when restoring administrator with email conflict")
+    void shouldThrowConflictWhenRestoringAdministratorWithEmailConflict() {
+        // Given
+        when(administratorRepository.findById(administratorId)).thenReturn(Optional.of(administrator));
+        when(userService.restore(userId)).thenThrow(
+            new ResponseStatusException(HttpStatus.CONFLICT, "Cannot restore user due to email conflict with another active user")
+        );
+
+        // When & Then
+        assertThatThrownBy(() -> administratorService.restore(administratorId))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Cannot restore user due to email conflict")
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.CONFLICT);
+        
+        verify(administratorRepository).findById(administratorId);
+        verify(userService).restore(userId);
+    }
 }
