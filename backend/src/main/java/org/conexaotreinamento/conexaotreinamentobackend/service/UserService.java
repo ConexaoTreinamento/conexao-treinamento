@@ -86,7 +86,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponseDTO updateUserPassword(UUID userId, String newPassword) {
+    public UserResponseDTO resetUserPassword(UUID userId, String newPassword) {
         if (newPassword == null || newPassword.trim().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
         }

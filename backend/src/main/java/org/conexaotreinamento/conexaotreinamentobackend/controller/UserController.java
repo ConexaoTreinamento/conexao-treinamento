@@ -78,7 +78,7 @@ public class UserController {
             @PathVariable UUID id,
             @RequestBody @Valid ResetTrainerPasswordDTO request
     ) {
-        userService.updateUserPassword(id, request.newPassword());
+        userService.resetUserPassword(id, request.newPassword());
         return ResponseEntity.noContent().build();
     }
 
