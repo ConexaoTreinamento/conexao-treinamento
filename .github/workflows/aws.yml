@@ -1,5 +1,6 @@
 # This workflow will build and push a new container image to Amazon ECR,
 # and then will deploy a new task definition to Amazon ECS, when there is a push to the "develop" branch.
+# Test deployment - October 2025
 #
 # To use this workflow, you will need to complete the following set-up steps:
 #
@@ -28,17 +29,15 @@ name: Deploy to Amazon ECS
 
 on:
   push:
-    branches: [ "develop" ]
+    branches: [ "awsdeploy" ]
 
 env:
-  AWS_REGION: MY_AWS_REGION                   # set this to your preferred AWS region, e.g. us-west-1
-  ECR_REPOSITORY: MY_ECR_REPOSITORY           # set this to your Amazon ECR repository name
-  ECS_SERVICE: MY_ECS_SERVICE                 # set this to your Amazon ECS service name
-  ECS_CLUSTER: MY_ECS_CLUSTER                 # set this to your Amazon ECS cluster name
-  ECS_TASK_DEFINITION: MY_ECS_TASK_DEFINITION # set this to the path to your Amazon ECS task definition
-                                               # file, e.g. .aws/task-definition.json
-  CONTAINER_NAME: MY_CONTAINER_NAME           # set this to the name of the container in the
-                                               # containerDefinitions section of your task definition
+  AWS_REGION: us-east-2
+  ECR_REPOSITORY: ecr/conexao-treinamento
+  ECS_SERVICE: ecs-fargate-task-definition-service-d6h1iw6p
+  ECS_CLUSTER: ecs-cluster-conexao-treinamento
+  ECS_TASK_DEFINITION: .aws/task-definition.json
+  CONTAINER_NAME: backend
 
 permissions:
   contents: read
@@ -73,6 +72,7 @@ jobs:
         # Build a docker container and
         # push it to ECR so that it can
         # be deployed to ECS.
+        cd backend
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
