@@ -1,0 +1,2 @@
+-- Placeholder migration to maintain sequence
+-- This migration intentionally left empty to fill the gap in migration numbering
