@@ -252,8 +252,8 @@ export type Exercise = {
     createdAt?: string;
     updatedAt?: string;
     deletedAt?: string;
-    inactive?: boolean;
     active?: boolean;
+    inactive?: boolean;
 };
 
 export type ParticipantExercise = {
@@ -304,9 +304,9 @@ export type SessionParticipant = {
     deletedAt?: string;
     active?: boolean;
     exercises?: Array<ParticipantExercise>;
+    present?: boolean;
     included?: boolean;
     excluded?: boolean;
-    present?: boolean;
 };
 
 export type SessionUpdateRequestDto = {
@@ -337,8 +337,8 @@ export type Student = {
     createdAt?: string;
     updatedAt?: string;
     deletedAt?: string;
-    inactive?: boolean;
     active?: boolean;
+    inactive?: boolean;
 };
 
 export type Trainer = {
@@ -551,42 +551,43 @@ export type Pageable = {
 export type PageUserResponseDto = {
     totalElements?: number;
     totalPages?: number;
-    numberOfElements?: number;
-    first?: boolean;
-    last?: boolean;
-    sort?: SortObject;
-    pageable?: PageableObject;
     size?: number;
     content?: Array<UserResponseDto>;
     number?: number;
+    sort?: SortObject;
+    first?: boolean;
+    last?: boolean;
+    numberOfElements?: number;
+    pageable?: PageableObject;
     empty?: boolean;
 };
 
 export type PageableObject = {
+    offset?: number;
     sort?: SortObject;
     paged?: boolean;
+    pageNumber?: number;
     pageSize?: number;
     unpaged?: boolean;
-    offset?: number;
 };
 
 export type SortObject = {
+    empty?: boolean;
     sorted?: boolean;
     unsorted?: boolean;
-    empty?: boolean;
 };
 
 export type PageStudentResponseDto = {
     totalElements?: number;
     totalPages?: number;
-    numberOfElements?: number;
-    first?: boolean;
-    last?: boolean;
-    sort?: SortObject;
-    pageable?: PageableObject;
     size?: number;
     content?: Array<StudentResponseDto>;
     number?: number;
+    sort?: SortObject;
+    first?: boolean;
+    last?: boolean;
+    numberOfElements?: number;
+    pageable?: PageableObject;
     empty?: boolean;
 };
 
@@ -597,15 +598,25 @@ export type ScheduleResponseDto = {
 export type PageExerciseResponseDto = {
     totalElements?: number;
     totalPages?: number;
-    numberOfElements?: number;
-    first?: boolean;
-    last?: boolean;
-    sort?: SortObject;
-    pageable?: PageableObject;
     size?: number;
     content?: Array<ExerciseResponseDto>;
     number?: number;
+    sort?: SortObject;
+    first?: boolean;
+    last?: boolean;
+    numberOfElements?: number;
+    pageable?: PageableObject;
     empty?: boolean;
+};
+
+export type TrainerLookupDto = {
+    id?: string;
+    name?: string;
+};
+
+export type StudentLookupDto = {
+    id?: string;
+    name?: string;
 };
 
 export type TrainerSchedule = {
@@ -627,14 +638,14 @@ export type TrainerSchedule = {
 export type PageListAdministratorsDto = {
     totalElements?: number;
     totalPages?: number;
-    numberOfElements?: number;
-    first?: boolean;
-    last?: boolean;
-    sort?: SortObject;
-    pageable?: PageableObject;
     size?: number;
     content?: Array<ListAdministratorsDto>;
     number?: number;
+    sort?: SortObject;
+    first?: boolean;
+    last?: boolean;
+    numberOfElements?: number;
+    pageable?: PageableObject;
     empty?: boolean;
 };
 
@@ -1290,110 +1301,88 @@ export type CreateOneOffSessionResponses = {
 
 export type CreateOneOffSessionResponse = CreateOneOffSessionResponses[keyof CreateOneOffSessionResponses];
 
-export type UpdateSessionTrainerData = {
-    body: SessionTrainerUpdateRequestDto;
-    path: {
-        sessionId: string;
-    };
-    query?: never;
-    url: '/schedule/sessions/{sessionId}/trainer';
-};
-
-export type UpdateSessionTrainerResponses = {
-    /**
-     * OK
-     */
-    200: string;
-};
-
-export type UpdateSessionTrainerResponse = UpdateSessionTrainerResponses[keyof UpdateSessionTrainerResponses];
-
-export type AddSessionParticipantData = {
-    body: SessionParticipantAddRequestDto;
-    path: {
-        sessionId: string;
-    };
-    query?: never;
-    url: '/schedule/sessions/{sessionId}/participants';
-};
-
-export type AddSessionParticipantResponses = {
-    /**
-     * OK
-     */
-    200: string;
-};
-
-export type AddSessionParticipantResponse = AddSessionParticipantResponses[keyof AddSessionParticipantResponses];
-
-export type UpdatePresenceData = {
-    body: SessionParticipantPresenceRequestDto;
-    path: {
-        sessionId: string;
-        studentId: string;
-    };
-    query?: never;
-    url: '/schedule/sessions/{sessionId}/participants/{studentId}/presence';
-};
-
-export type UpdatePresenceResponses = {
-    /**
-     * OK
-     */
-    200: string;
-};
-
-export type UpdatePresenceResponse = UpdatePresenceResponses[keyof UpdatePresenceResponses];
-
-export type AddRegisteredParticipantExerciseData = {
-    body: ParticipantExerciseCreateRequestDto;
-    path: {
-        sessionId: string;
-        studentId: string;
-    };
-    query?: never;
-    url: '/schedule/sessions/{sessionId}/participants/{studentId}/exercises';
-};
-
-export type AddRegisteredParticipantExerciseResponses = {
-    /**
-     * OK
-     */
-    200: string;
-};
-
-export type AddRegisteredParticipantExerciseResponse = AddRegisteredParticipantExerciseResponses[keyof AddRegisteredParticipantExerciseResponses];
-
-export type CancelOrRestoreSessionData = {
-    body: SessionCancelRequestDto;
-    path: {
-        sessionId: string;
-    };
-    query?: never;
-    url: '/schedule/sessions/{sessionId}/cancel';
-};
-
-export type CancelOrRestoreSessionResponses = {
-    /**
-     * OK
-     */
-    200: string;
-};
-
-export type CancelOrRestoreSessionResponse = CancelOrRestoreSessionResponses[keyof CancelOrRestoreSessionResponses];
-
-export type CreateOneOffSessionData = {
-    body: OneOffSessionCreateRequestDto;
+export type GetAllPlansData = {
+    body?: never;
     path?: never;
     query?: never;
-    url: '/schedule/sessions/one-off';
+    url: '/plans';
 };
 
-export type CreateOneOffSessionResponses = {
+export type GetAllPlansResponses = {
     /**
      * OK
      */
-    200: SessionResponseDto;
+    200: Array<StudentPlanResponseDto>;
+};
+
+export type GetAllPlansResponse = GetAllPlansResponses[keyof GetAllPlansResponses];
+
+export type CreatePlanData = {
+    body: StudentPlanRequestDto;
+    path?: never;
+    query?: never;
+    url: '/plans';
+};
+
+export type CreatePlanResponses = {
+    /**
+     * OK
+     */
+    200: StudentPlanResponseDto;
+};
+
+export type CreatePlanResponse = CreatePlanResponses[keyof CreatePlanResponses];
+
+export type AssignPlanToStudentData = {
+    body: AssignPlanRequestDto;
+    path: {
+        studentId: string;
+    };
+    query?: never;
+    url: '/plans/students/{studentId}/assign';
+};
+
+export type AssignPlanToStudentResponses = {
+    /**
+     * OK
+     */
+    200: StudentPlanAssignmentResponseDto;
+};
+
+export type AssignPlanToStudentResponse = AssignPlanToStudentResponses[keyof AssignPlanToStudentResponses];
+
+export type FindAllExercisesData = {
+    body?: never;
+    path?: never;
+    query: {
+        search?: string;
+        includeInactive?: boolean;
+        pageable: Pageable;
+    };
+    url: '/exercises';
+};
+
+export type FindAllExercisesResponses = {
+    /**
+     * OK
+     */
+    200: PageExerciseResponseDto;
+};
+
+export type FindAllExercisesResponse = FindAllExercisesResponses[keyof FindAllExercisesResponses];
+
+export type CreateExerciseData = {
+    body: ExerciseRequestDto;
+    path?: never;
+    query?: never;
+    url: '/exercises';
+};
+
+export type CreateExerciseResponses = {
+    /**
+     * OK
+     */
+    200: ExerciseResponseDto;
 };
 
 export type CreateExerciseResponse = CreateExerciseResponses[keyof CreateExerciseResponses];
@@ -1660,38 +1649,39 @@ export type RestoreExerciseResponses = {
 
 export type RestoreExerciseResponse = RestoreExerciseResponses[keyof RestoreExerciseResponses];
 
-export type RestoreAdministratorData = {
+export type RestoreEventData = {
     body?: never;
     path: {
         id: string;
     };
     query?: never;
-    url: '/administrators/{id}/restore';
+    url: '/events/{id}/restore';
 };
 
-export type RestoreAdministratorResponses = {
+export type RestoreEventResponses = {
     /**
      * OK
      */
-    200: AdministratorResponseDto;
+    200: EventResponseDto;
 };
 
-export type RestoreAdministratorResponse = RestoreAdministratorResponses[keyof RestoreAdministratorResponses];
+export type RestoreEventResponse = RestoreEventResponses[keyof RestoreEventResponses];
 
-export type FindTrainerByUserIdData = {
+export type ToggleAttendanceData = {
     body?: never;
     path: {
         id: string;
+        studentId: string;
     };
     query?: never;
-    url: '/trainers/userId/{id}';
+    url: '/events/{id}/participants/{studentId}/attendance';
 };
 
-export type FindTrainerByUserIdResponses = {
+export type ToggleAttendanceResponses = {
     /**
      * OK
      */
-    200: ListTrainersDto;
+    200: EventResponseDto;
 };
 
 export type ToggleAttendanceResponse = ToggleAttendanceResponses[keyof ToggleAttendanceResponses];
@@ -1855,6 +1845,38 @@ export type GetAllActiveAssignmentsResponses = {
 
 export type GetAllActiveAssignmentsResponse = GetAllActiveAssignmentsResponses[keyof GetAllActiveAssignmentsResponses];
 
+export type GetTrainersForLookupData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/events/lookup/trainers';
+};
+
+export type GetTrainersForLookupResponses = {
+    /**
+     * OK
+     */
+    200: Array<TrainerLookupDto>;
+};
+
+export type GetTrainersForLookupResponse = GetTrainersForLookupResponses[keyof GetTrainersForLookupResponses];
+
+export type GetStudentsForLookupData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/events/lookup/students';
+};
+
+export type GetStudentsForLookupResponses = {
+    /**
+     * OK
+     */
+    200: Array<StudentLookupDto>;
+};
+
+export type GetStudentsForLookupResponse = GetStudentsForLookupResponses[keyof GetStudentsForLookupResponses];
+
 export type GetStudentCommitmentsData = {
     body?: never;
     path: {
@@ -1966,6 +1988,24 @@ export type GetAvailableSessionSeriesResponses = {
 };
 
 export type GetAvailableSessionSeriesResponse = GetAvailableSessionSeriesResponses[keyof GetAvailableSessionSeriesResponses];
+
+export type FindAdministratorByUserIdData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/administrators/user/{id}';
+};
+
+export type FindAdministratorByUserIdResponses = {
+    /**
+     * OK
+     */
+    200: ListAdministratorsDto;
+};
+
+export type FindAdministratorByUserIdResponse = FindAdministratorByUserIdResponses[keyof FindAdministratorByUserIdResponses];
 
 export type TestData = {
     body?: never;
