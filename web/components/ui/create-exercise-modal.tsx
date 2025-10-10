@@ -12,6 +12,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { handleHttpError } from "@/lib/error-utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen";
 import { apiClient } from "@/lib/client";
@@ -49,11 +50,7 @@ export default function CreateExerciseModal({ isOpen, onClose }: CreateExerciseM
                 predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllExercises'
             })
         } catch (error: any) {
-            toast({
-                title: "Erro ao criar exercício",
-                description: error.message || "Ocorreu um erro ao criar o exercício.",
-                variant: "destructive",
-            });
+            handleHttpError(error, "criar exercício", "Ocorreu um erro ao criar o exercício. Tente novamente.");
         }
     };
 
