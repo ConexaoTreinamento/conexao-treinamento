@@ -54,6 +54,11 @@ public class AdministratorService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Administrator not found"));
     }
 
+    public ListAdministratorsDTO findByUserId(UUID id) {
+        return administratorRepository.findActiveAdministratorByUserId(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Administrator not found"));
+    }
+
     public List<ListAdministratorsDTO> findAll() {
         return administratorRepository.findAllAdministratorProfiles(true);
     }
