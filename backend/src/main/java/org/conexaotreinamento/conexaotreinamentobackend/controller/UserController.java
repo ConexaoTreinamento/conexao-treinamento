@@ -55,35 +55,30 @@ public class UserController {
 
     @PostMapping("/users/me/change-password")
     public ResponseEntity<Void> changeOwnPassword(@RequestBody @Valid ChangePasswordRequestDTO request) {
-    // 1. Search for the currently authenticated user
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    String userEmail = authentication != null ? authentication.getName() : null;
-    if (userEmail == null) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        // 1. Search for the currently authenticated user
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String userEmail = authentication != null ? authentication.getName() : null;
+        if (userEmail == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        var userOpt = userService.getUserByEmail(userEmail);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        UUID currentUserId = userOpt.get().id();
+
+        userService.changeOwnPassword(currentUserId, request);
+
+        return ResponseEntity.noContent().build();
     }
-
-    // 2. Busca o usuário pelo e-mail e obtém o ID
-    var userOpt = userService.getUserByEmail(userEmail);
-    if (userOpt.isEmpty()) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-    }
-    UUID currentUserId = userOpt.get().id();
-
-    // 3. Call the service method to change the password
-    //userService.changeOwnPassword(currentUserId, request);
-
-    // 4. return success response
-    return ResponseEntity.noContent().build();
-}
 
     @PatchMapping("/users/{id}/reset-password")
     public ResponseEntity<Void> resetPassword(
             @PathVariable UUID id,
             @RequestBody @Valid ResetTrainerPasswordDTO request
     ) {
-        // Call the service method to reset the password
-        // userService.resetPassword(id, request);
-
+        userService.updateUserPassword(id, request.newPassword());
         return ResponseEntity.noContent().build();
     }
 
