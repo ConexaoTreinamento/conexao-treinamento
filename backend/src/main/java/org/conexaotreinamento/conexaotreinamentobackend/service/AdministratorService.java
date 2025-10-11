@@ -163,4 +163,25 @@ public class AdministratorService {
         Optional<Administrator> administrator = administratorRepository.findById(administratorId);
         administrator.ifPresent(value -> userService.delete(value.getUserId()));
     }
+
+    @Transactional
+    public AdministratorResponseDTO restore(UUID administratorId) {
+        Administrator administrator = administratorRepository.findById(administratorId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Administrator not found"));
+        
+        // Reativar o usuário associado
+        UserResponseDTO restoredUser = userService.restore(administrator.getUserId());
+        
+        // Buscar o User atualizado
+        User user = userRepository.findById(administrator.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        
+        return AdministratorResponseDTO.fromEntity(
+            administrator, 
+            user.getEmail(), 
+            user.isActive(), 
+            user.getCreatedAt(), 
+            user.getUpdatedAt()
+        );
+    }
 }
