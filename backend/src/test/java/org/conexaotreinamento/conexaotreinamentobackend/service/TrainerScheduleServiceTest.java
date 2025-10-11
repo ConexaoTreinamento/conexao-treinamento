@@ -132,6 +132,43 @@ class TrainerScheduleServiceTest {
     }
 
     @Test
+    void createSchedule_ignoresExistingSoftDeletedState_andBuildsFreshEntity() {
+        // Arrange: payload that looks like a previously deleted schedule
+        TrainerSchedule payload = new TrainerSchedule();
+        payload.setId(scheduleId);
+        payload.setTrainerId(trainerId);
+        payload.setWeekday(2);
+        payload.setSeriesName("Spin Class");
+        payload.setStartTime(LocalTime.of(7, 0));
+        payload.setEndTime(LocalTime.of(8, 0));
+        payload.setIntervalDuration(45);
+        payload.setActive(false);
+        payload.setDeletedAt(Instant.now().minusSeconds(600));
+
+        ArgumentCaptor<TrainerSchedule> captor = ArgumentCaptor.forClass(TrainerSchedule.class);
+        when(trainerScheduleRepository.save(any(TrainerSchedule.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        TrainerSchedule result = trainerScheduleService.createSchedule(payload);
+
+        // Assert: repository receives a fresh entity, not the payload reference
+        verify(trainerScheduleRepository).save(captor.capture());
+        TrainerSchedule persisted = captor.getValue();
+
+        assertNotSame(payload, persisted, "createSchedule should build a fresh entity instance");
+        assertNull(persisted.getId(), "New schedule should not reuse the previous identifier");
+        assertTrue(persisted.isActive(), "New schedule must start active");
+        assertNull(persisted.getDeletedAt(), "New schedule should not inherit deletedAt timestamp");
+        assertEquals(payload.getTrainerId(), persisted.getTrainerId());
+        assertEquals(payload.getWeekday(), persisted.getWeekday());
+        assertEquals(payload.getStartTime(), persisted.getStartTime());
+        assertEquals(payload.getEndTime(), persisted.getEndTime());
+        assertEquals(payload.getIntervalDuration(), persisted.getIntervalDuration());
+        assertEquals(payload.getSeriesName(), persisted.getSeriesName());
+        assertNotNull(result.getEffectiveFromTimestamp(), "Fresh schedule should receive an effective timestamp");
+    }
+
+    @Test
     void updateSchedule_updatesFields_andSaves_whenFound() {
         // Arrange: existing schedule
         TrainerSchedule existing = newSchedule(scheduleId, trainerId, 1, "Yoga", "09:00", "10:00", 60);
