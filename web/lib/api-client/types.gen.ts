@@ -555,10 +555,10 @@ export type PageUserResponseDto = {
     content?: Array<UserResponseDto>;
     number?: number;
     sort?: SortObject;
-    first?: boolean;
-    last?: boolean;
     numberOfElements?: number;
     pageable?: PageableObject;
+    first?: boolean;
+    last?: boolean;
     empty?: boolean;
 };
 
@@ -584,10 +584,10 @@ export type PageStudentResponseDto = {
     content?: Array<StudentResponseDto>;
     number?: number;
     sort?: SortObject;
-    first?: boolean;
-    last?: boolean;
     numberOfElements?: number;
     pageable?: PageableObject;
+    first?: boolean;
+    last?: boolean;
     empty?: boolean;
 };
 
@@ -602,10 +602,10 @@ export type PageExerciseResponseDto = {
     content?: Array<ExerciseResponseDto>;
     number?: number;
     sort?: SortObject;
-    first?: boolean;
-    last?: boolean;
     numberOfElements?: number;
     pageable?: PageableObject;
+    first?: boolean;
+    last?: boolean;
     empty?: boolean;
 };
 
@@ -642,10 +642,10 @@ export type PageListAdministratorsDto = {
     content?: Array<ListAdministratorsDto>;
     number?: number;
     sort?: SortObject;
-    first?: boolean;
-    last?: boolean;
     numberOfElements?: number;
     pageable?: PageableObject;
+    first?: boolean;
+    last?: boolean;
     empty?: boolean;
 };
 
@@ -1995,7 +1995,7 @@ export type FindAdministratorByUserIdData = {
         id: string;
     };
     query?: never;
-    url: '/administrators/user/{id}';
+    url: '/administrators/userId/{id}';
 };
 
 export type FindAdministratorByUserIdResponses = {

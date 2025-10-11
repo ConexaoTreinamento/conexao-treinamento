@@ -1128,7 +1128,7 @@ export const findAdministratorByUserId = <ThrowOnError extends boolean = false>(
                 type: 'http'
             }
         ],
-        url: '/administrators/user/{id}',
+        url: '/administrators/userId/{id}',
         ...options
     });
 };

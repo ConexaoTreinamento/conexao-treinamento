@@ -14,7 +14,7 @@ import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Clock, Award } from 
 import Layout from "@/components/layout"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
-import { findTrainerByUserIdOptions, findTrainerByIdOptions, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { findTrainerByUserIdOptions, findTrainerByIdOptions, updateTrainerAndUserMutation, findAdministratorByUserIdOptions, updateAdministratorAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 
 export default function ProfilePage() {
@@ -54,6 +54,36 @@ export default function ProfilePage() {
     setUserName(name);
   }, []);
 
+
+  // Admin integration
+  const { data: adminDataByUser, isLoading: isLoadingAdminId } = useQuery({
+    ...findAdministratorByUserIdOptions({
+      path: { id: userId },
+      client: apiClient,
+    }),
+    enabled: !!userId && !!token && userRole === "admin",
+  })
+
+  const adminId = adminDataByUser?.id
+
+  const updateAdminMutation = useMutation({
+    ...updateAdministratorAndUserMutation({
+      client: apiClient,
+    }),
+    onSuccess: () => {
+      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!" })
+      queryClient.invalidateQueries({ queryKey: ["findAdministratorByUserId"] })
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as alterações",
+        variant: "destructive",
+      })
+    },
+  })
+
+  // Trainer integration
   const { data: trainerDataByUser, isLoading: isLoadingTrainerId } = useQuery({
     ...findTrainerByUserIdOptions({
       path: { id: userId },
@@ -90,14 +120,14 @@ export default function ProfilePage() {
   })
 
   useEffect(() => {
-    if (userRole === "admin") {
+    if (userRole === "admin" && adminDataByUser) {
       setProfileData({
-        name: "Admin Principal",
-        email: "admin@gym.com",
-        phone: "(11) 99999-0000",
-        address: "Rua das Flores, 123 - São Paulo, SP",
-        birthDate: "1985-05-15",
-        joinDate: "2020-01-01",
+        name: adminDataByUser.fullName ?? "",
+        email: adminDataByUser.email ?? "",
+        phone: "",
+        address: "",
+        birthDate: "",
+        joinDate: adminDataByUser.joinDate ?? "",
         specialties: ["Gestão", "Administração", "Planejamento"],
         avatar: "/placeholder.svg?height=100&width=100"
       })
@@ -113,7 +143,7 @@ export default function ProfilePage() {
         avatar: "/placeholder.svg?height=100&width=100"
       })
     }
-  }, [userRole, trainerData])
+  }, [userRole, trainerData, adminDataByUser])
 
   useEffect(() => {
     if (profileData.specialties) {
@@ -140,7 +170,24 @@ export default function ProfilePage() {
   }
 
   const handleSave = () => {
-    if (!trainerId || userRole === "admin") return
+    if (userRole === "admin") {
+      if (!adminId) return
+      // Para atualizar admin, precisa de firstName, lastName, email, password
+      // Como não temos password aqui, pode ser enviado vazio ou não enviado
+      const [firstName = "", ...rest] = (profileData.name ?? "").split(" ")
+      const lastName = rest.join(" ")
+      updateAdminMutation.mutate({
+        path: { id: String(adminId) },
+        body: {
+          firstName,
+          lastName,
+          email: profileData.email,
+          password: ""
+        },
+      })
+      return
+    }
+    if (!trainerId) return
     updateTrainerMutation.mutate({
       path: { id: String(trainerId) },
       body: { ...profileData },
@@ -148,6 +195,31 @@ export default function ProfilePage() {
   }
 
   const handleChangePassword = () => {
+    if (userRole === "admin") {
+      if (!adminId) return
+      if (newPassword !== confirmPassword) {
+        toast({
+          title: "Erro",
+          description: "As senhas não coincidem!",
+          variant: "destructive"
+        })
+        return
+      }
+      const [firstName = "", ...rest] = (profileData.name ?? "").split(" ")
+      const lastName = rest.join(" ")
+      updateAdminMutation.mutate({
+        path: { id: String(adminId) },
+        body: {
+          firstName,
+          lastName,
+          email: profileData.email,
+          password: newPassword
+        },
+      })
+      setNewPassword("")
+      setConfirmPassword("")
+      return
+    }
     if (!trainerId) return
     if (newPassword !== confirmPassword) {
       toast({
@@ -165,7 +237,7 @@ export default function ProfilePage() {
     setConfirmPassword("")
   }
 
-  const isLoading = isLoadingTrainerId || isLoadingTrainer || updateTrainerMutation.isPending
+  const isLoading = (userRole === "admin" ? isLoadingAdminId || updateAdminMutation.isPending : isLoadingTrainerId || isLoadingTrainer || updateTrainerMutation.isPending)
 
   const stats = userRole === "admin" ? [
       { label: "Alunos", value: "142", icon: User },
