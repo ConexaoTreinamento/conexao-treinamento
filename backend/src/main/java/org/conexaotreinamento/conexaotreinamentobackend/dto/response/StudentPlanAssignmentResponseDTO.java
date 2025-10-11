@@ -19,6 +19,7 @@ public class StudentPlanAssignmentResponseDTO {
     private String planName; // For convenience
     private Integer planMaxDays; // For convenience
     private Integer planDurationDays; // For convenience
+    private Integer assignedDurationDays;
     private LocalDate startDate;
     private LocalDate endDate;
     private UUID assignedByUserId;

@@ -31,6 +31,7 @@ public class StudentPlanService {
     private final StudentPlanAssignmentRepository assignmentRepository;
     private final StudentRepository studentRepository;
     private final UserRepository userRepository;
+    private final StudentCommitmentService studentCommitmentService;
     
     @Transactional
     public StudentPlanResponseDTO createPlan(StudentPlanRequestDTO requestDTO) {
@@ -107,18 +108,51 @@ public class StudentPlanService {
 //            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assigning user not found"));
         
         LocalDate startDate = requestDTO.getStartDate();
-        LocalDate endDate = startDate.plusDays(plan.getDurationDays());
-        
-        // Check for overlapping assignments
+        int assignedDurationDays = plan.getDurationDays();
+        StudentPlanAssignment currentAssignment = null;
+        StudentPlan oldPlan = null;
+
+        var currentAssignmentOpt = assignmentRepository.findCurrentActiveAssignment(studentId);
+        if (currentAssignmentOpt.isPresent()) {
+            currentAssignment = currentAssignmentOpt.get();
+            oldPlan = studentPlanRepository.findById(currentAssignment.getPlanId()).orElse(null);
+
+            long baselineDuration = currentAssignment.getAssignedDurationDays() != null
+                ? currentAssignment.getAssignedDurationDays()
+                : (oldPlan != null ? oldPlan.getDurationDays()
+                : Math.max(0, ChronoUnit.DAYS.between(currentAssignment.getStartDate(), currentAssignment.getEndDate())));
+
+            long daysConsumed = ChronoUnit.DAYS.between(currentAssignment.getStartDate(), startDate);
+            if (daysConsumed < 0) {
+                daysConsumed = 0;
+            }
+            long remainingDays = Math.max(0, baselineDuration - daysConsumed);
+            if (remainingDays > 0) {
+                assignedDurationDays = (int) remainingDays;
+            }
+
+            currentAssignment.setAssignedDurationDays((int) Math.min(baselineDuration, daysConsumed));
+            LocalDate trimmedEndDate = startDate.minusDays(1);
+            if (trimmedEndDate.isAfter(currentAssignment.getEndDate())) {
+                trimmedEndDate = currentAssignment.getEndDate();
+            }
+            currentAssignment.setEndDate(trimmedEndDate);
+            assignmentRepository.save(currentAssignment);
+        }
+
+        LocalDate endDate = startDate.plusDays(assignedDurationDays);
+
         List<StudentPlanAssignment> overlapping = assignmentRepository.findOverlappingAssignments(
             studentId, startDate, endDate);
-        
+        if (currentAssignment != null) {
+            UUID currentAssignmentId = currentAssignment.getId();
+            overlapping.removeIf(existing -> existing.getId().equals(currentAssignmentId));
+        }
         if (!overlapping.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, 
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
                 "Student already has an overlapping plan assignment for this period");
         }
-        
-        // Create new assignment
+
         StudentPlanAssignment assignment = new StudentPlanAssignment();
         assignment.setStudentId(studentId);
         assignment.setPlanId(requestDTO.getPlanId());
@@ -126,8 +160,13 @@ public class StudentPlanService {
         assignment.setEndDate(endDate);
         assignment.setAssignedByUserId(assignedByUserId);
         assignment.setAssignmentNotes(requestDTO.getAssignmentNotes());
-        
+        assignment.setAssignedDurationDays(assignedDurationDays);
+
         StudentPlanAssignment savedAssignment = assignmentRepository.save(assignment);
+
+        // Ensure student's schedule respects the new plan limits
+        studentCommitmentService.resetScheduleIfExceedsPlan(studentId, plan.getMaxDays());
+
         return mapToAssignmentResponseDTO(savedAssignment, student, plan, null);
     }
     
@@ -221,6 +260,7 @@ public class StudentPlanService {
         if (assigningUser != null) {
             dto.setAssignedByUserEmail(assigningUser.getEmail());
         }
+            dto.setAssignedDurationDays(assignment.getAssignedDurationDays());
         
         // Set computed fields
         dto.setActive(assignment.isActive());

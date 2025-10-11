@@ -198,6 +198,7 @@ class StudentCommitmentServiceTest {
         StudentPlanAssignment assign = new StudentPlanAssignment();
         assign.setPlanId(planId);
         assign.setPlan(plan); // convenience for test
+        assign.setAssignedDurationDays(plan.getDurationDays());
         return assign;
     }
 

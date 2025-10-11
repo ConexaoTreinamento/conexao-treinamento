@@ -50,6 +50,9 @@ public class StudentPlanAssignment {
     @Column(name = "assignment_notes", columnDefinition = "TEXT")
     private String assignmentNotes;
     
+    @Column(name = "assigned_duration_days", nullable = false)
+    private Integer assignedDurationDays;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
