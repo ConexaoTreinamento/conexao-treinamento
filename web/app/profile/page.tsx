@@ -122,13 +122,13 @@ export default function ProfilePage() {
   useEffect(() => {
     if (userRole === "admin" && adminDataByUser) {
       setProfileData({
-        name: adminDataByUser.fullName ?? "",
+        name: `${adminDataByUser.firstName ?? ""} ${adminDataByUser.lastName ?? ""}`.trim(),
         email: adminDataByUser.email ?? "",
         phone: "",
         address: "",
         birthDate: "",
-        joinDate: adminDataByUser.joinDate ?? "",
-        specialties: ["Gestão", "Administração", "Planejamento"],
+        joinDate: "",
+        specialties: [],
         avatar: "/placeholder.svg?height=100&width=100"
       })
     } else if (trainerData) {
@@ -291,21 +291,25 @@ export default function ProfilePage() {
                   <Mail className="w-4 h-4 text-muted-foreground" />
                   <span>{profileData.email}</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="w-4 h-4 text-muted-foreground" />
-                  <span>{profileData.phone}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="w-4 h-4 text-muted-foreground" />
-                  <span>{profileData.address}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span>Desde {profileData.joinDate ? new Date(profileData.joinDate).toLocaleDateString('pt-BR') : ""}</span>
-                </div>
+                {userRole !== "admin" && (
+                  <>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="w-4 h-4 text-muted-foreground" />
+                      <span>{profileData.phone}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <MapPin className="w-4 h-4 text-muted-foreground" />
+                      <span>{profileData.address}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="w-4 h-4 text-muted-foreground" />
+                      <span>Desde {profileData.joinDate ? new Date(profileData.joinDate).toLocaleDateString('pt-BR') : ""}</span>
+                    </div>
+                  </>
+                )}
               </div>
 
-              {profileData.specialties.length > 0 && (
+              {userRole !== "admin" && profileData.specialties.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Especialidades:</p>
                   <div className="flex flex-wrap gap-1">
@@ -343,7 +347,7 @@ export default function ProfilePage() {
             <Tabs defaultValue="personal" className="space-y-4">
               <TabsList>
                 <TabsTrigger value="personal">Informações</TabsTrigger>
-                <TabsTrigger value="professional">Profissional</TabsTrigger>
+                {userRole !== "admin" && <TabsTrigger value="professional">Profissional</TabsTrigger>}
                 <TabsTrigger value="security">Segurança</TabsTrigger>
               </TabsList>
 
@@ -377,81 +381,87 @@ export default function ProfilePage() {
                           onChange={(e) => handleInputChange("email", e.target.value)}
                         />
                       </div>
+                      {userRole !== "admin" && <>
+                        <div className="space-y-2">
+                          <Label htmlFor="phone">Telefone</Label>
+                          <Input
+                            id="phone"
+                            value={profileData.phone}
+                            onChange={(e) => handleInputChange("phone", e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="birthDate">Data de Nascimento</Label>
+                          <Input
+                            id="birthDate"
+                            type="date"
+                            value={profileData.birthDate}
+                            onChange={(e) => handleInputChange("birthDate", e.target.value)}
+                          />
+                        </div>
+                      </>}
+                    </div>
+                    {userRole !== "admin" && (
                       <div className="space-y-2">
-                        <Label htmlFor="phone">Telefone</Label>
+                        <Label htmlFor="address">Endereço</Label>
                         <Input
-                          id="phone"
-                          value={profileData.phone}
-                          onChange={(e) => handleInputChange("phone", e.target.value)}
+                          id="address"
+                          value={profileData.address}
+                          onChange={(e) => handleInputChange("address", e.target.value)}
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="birthDate">Data de Nascimento</Label>
-                        <Input
-                          id="birthDate"
-                          type="date"
-                          value={profileData.birthDate}
-                          onChange={(e) => handleInputChange("birthDate", e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Endereço</Label>
-                      <Input
-                        id="address"
-                        value={profileData.address}
-                        onChange={(e) => handleInputChange("address", e.target.value)}
-                      />
-                    </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
 
-              <TabsContent value="professional">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Award className="w-5 h-5" />
-                      Profissional
-                    </CardTitle>
-                    <CardDescription>
-                      Gerencie suas informações profissionais
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="joinDate">Data de Contratação</Label>
-                        <Input
-                          id="joinDate"
-                          type="date"
-                          value={profileData.joinDate}
-                          onChange={(e) => handleInputChange("joinDate", e.target.value)}
-                          disabled
-                        />
+              {userRole !== "admin" && (
+                <TabsContent value="professional">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Award className="w-5 h-5" />
+                        Profissional
+                      </CardTitle>
+                      <CardDescription>
+                        Gerencie suas informações profissionais
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="joinDate">Data de Contratação</Label>
+                          <Input
+                            id="joinDate"
+                            type="date"
+                            value={profileData.joinDate}
+                            onChange={(e) => handleInputChange("joinDate", e.target.value)}
+                            disabled
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="role">Função</Label>
+                          <Input
+                            id="role"
+                            value={userRole === "admin" ? "Administrador" : "Professor"}
+                            disabled
+                          />
+                        </div>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="role">Função</Label>
+                        <Label htmlFor="specialties">Especialidades</Label>
                         <Input
-                          id="role"
-                          value={userRole === "admin" ? "Administrador" : "Professor"}
-                          disabled
+                          id="specialties"
+                          value={specialtiesInput}
+                          onChange={(e) => handleInputChange("specialties", e.target.value)}
+                          onBlur={handleSpecialtiesBlur}
+                          placeholder="Musculação, Pilates, Yoga..."
                         />
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="specialties">Especialidades</Label>
-                      <Input
-                        id="specialties"
-                        value={specialtiesInput}
-                        onChange={(e) => handleInputChange("specialties", e.target.value)}
-                        onBlur={handleSpecialtiesBlur}
-                        placeholder="Musculação, Pilates, Yoga..."
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              )}
 
               <TabsContent value="security">
                 <Card>
