@@ -46,7 +46,7 @@ public class AdministratorController {
 
     @GetMapping("/userId/{id}")
     public ResponseEntity<ListAdministratorsDTO> findAdministratorByUserId(@PathVariable UUID id) {
-        return ResponseEntity.ok(administratorService.findById(id));
+        return ResponseEntity.ok(administratorService.findByUserId(id));
     }
 
     @GetMapping
