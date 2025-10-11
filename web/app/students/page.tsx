@@ -1,13 +1,12 @@
 "use client"
 
-import React, {type MouseEventHandler, Suspense, useState} from "react"
+import React, {type MouseEventHandler, useState} from "react"
 import type {
-  AnamnesisResponseDto,
-  StudentRequestDto,
-  StudentResponseDto,
-  StudentPlanAssignmentResponseDto
+    AnamnesisResponseDto,
+    StudentRequestDto,
+    StudentResponseDto
 } from "@/lib/api-client/types.gen"
-import {PlanAssignmentStatusBadge} from "@/lib/expiring-plans"
+import {UnifiedStatusBadge} from "@/lib/expiring-plans"
 import {Card, CardContent} from "@/components/ui/card"
 import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
@@ -33,17 +32,14 @@ import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui
 import {Checkbox} from "@/components/ui/checkbox"
 import ConfirmDeleteButton from "@/components/confirm-delete-button"
 import {useCreateStudent, useDeleteStudent, useRestoreStudent} from "@/lib/hooks/student-mutations"
-import {assignPlanToStudentMutation} from '@/lib/api-client/@tanstack/react-query.gen'
-import {useMutation, useQueryClient, useQueries} from '@tanstack/react-query'
 import {useToast} from "@/hooks/use-toast"
 import {useStudents} from "@/lib/hooks/student-queries";
 import {apiClient} from "@/lib/client";
-import {getExpiringSoonAssignmentsOptions, getCurrentStudentPlanOptions} from '@/lib/api-client/@tanstack/react-query.gen'
-import {useQuery} from '@tanstack/react-query'
 
 // Type-safe filter interface
 interface StudentFilters {
   status: "all" | "Ativo" | "Vencido" | "Inativo"
+  plan: "all" | "Mensal" | "Trimestral" | "Semestral" | "Anual"
   minAge: number | null
   maxAge: number | null
   profession: string
@@ -56,6 +52,7 @@ interface StudentFilters {
 // Default filter values
 const DEFAULT_FILTERS: StudentFilters = {
   status: "all",
+  plan: "all",
   minAge: null,
   maxAge: null,
   profession: "all",
@@ -69,6 +66,7 @@ const DEFAULT_FILTERS: StudentFilters = {
 const countActiveFilters = (filters: StudentFilters): number => {
   let count = 0
   if (filters.status !== DEFAULT_FILTERS.status) count++
+  if (filters.plan !== DEFAULT_FILTERS.plan) count++
   if (filters.minAge !== DEFAULT_FILTERS.minAge) count++
   if (filters.maxAge !== DEFAULT_FILTERS.maxAge) count++
   if (filters.profession !== DEFAULT_FILTERS.profession) count++
@@ -84,8 +82,7 @@ const StudentCard = (props: {
   onClick: () => void,
   initials: string,
   fullName: string,
-  badge: React.ReactNode,
-  planLabel: string,
+  expirationDate: Date,
   onNewEvaluationClicked: MouseEventHandler<HTMLButtonElement>,
   onClickedDelete: MouseEventHandler<HTMLButtonElement>,
   isRestoring: boolean,
@@ -113,7 +110,7 @@ const StudentCard = (props: {
                     <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-base leading-tight">{props.fullName}</h3>
                         <div className="flex flex-wrap gap-1 mt-1">
-                            {props.badge}
+                            <UnifiedStatusBadge expirationDate={props.expirationDate.toISOString()}/>
                         </div>
                     </div>
                 </div>
@@ -165,7 +162,7 @@ const StudentCard = (props: {
                 </div>
                 <div className="flex items-center gap-2">
                     <Calendar className="w-3 h-3 flex-shrink-0"/>
-          <span>{props.planLabel}</span>
+                    <span>Plano Mensal</span>
                 </div>
             </div>
 
@@ -194,7 +191,7 @@ const StudentCard = (props: {
                     <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-lg flex-1 min-w-0 truncate">{props.fullName}</h3>
                         <div className="flex gap-2 flex-shrink-0">
-                            {props.badge}
+                            <UnifiedStatusBadge expirationDate={props.expirationDate.toISOString()}/>
                         </div>
                     </div>
                 </div>
@@ -210,7 +207,7 @@ const StudentCard = (props: {
                     </div>
                     <div className="flex items-center gap-1">
                         <Calendar className="w-3 h-3 flex-shrink-0"/>
-            <span>{props.planLabel}</span>
+                        <span>Plano Mensal</span>
                     </div>
                 </div>
 
@@ -262,20 +259,6 @@ const StudentCard = (props: {
 );
 
 export default function StudentsPage() {
-  return (
-    <Suspense
-      fallback={(
-        <Layout>
-          <div className="p-6 text-sm text-muted-foreground">Carregando alunos...</div>
-        </Layout>
-      )}
-    >
-      <StudentsPageContent />
-    </Suspense>
-  )
-}
-
-function StudentsPageContent() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -293,28 +276,6 @@ function StudentsPageContent() {
   const { mutateAsync: deleteStudent, isPending: isDeleting } = useDeleteStudent()
   const { mutateAsync: restoreStudent, isPending: isRestoring } = useRestoreStudent()
   const { mutateAsync: createStudent } = useCreateStudent()
-  const queryClient = useQueryClient()
-  const assignPlan = useMutation({
-    ...assignPlanToStudentMutation({ client: apiClient }),
-    onSuccess: async (_data, variables) => {
-      await queryClient.invalidateQueries({
-        predicate: (query) => {
-          const [rawKey] = query.queryKey as [unknown]
-          if (!rawKey || typeof rawKey !== "object") return false
-          const key = rawKey as { _id?: string; path?: { studentId?: string } }
-          if (key._id === "getExpiringSoonAssignments") {
-            return true
-          }
-          if (key._id === "getCurrentStudentPlan") {
-            const studentId = variables?.path?.studentId
-            if (!studentId) return true
-            return key.path?.studentId === studentId
-          }
-          return false
-        }
-      })
-    }
-  })
   
   // Get current page from URL query params or default to 0
   // This allows users to share URLs with specific page numbers and maintains page state on refresh
@@ -360,6 +321,14 @@ function StudentsPageContent() {
   const hasInvalidDateRange = Boolean(watchedFilters.startDate && watchedFilters.endDate && watchedFilters.startDate > watchedFilters.endDate)
   const debouncedInvalidDateRange = Boolean(debouncedFilters.startDate && debouncedFilters.endDate && debouncedFilters.startDate > debouncedFilters.endDate)
 
+  React.useEffect(() => {
+    if (currentPage !== 0) {
+      setCurrentPage(0)
+    }
+    //We want to reset page only when debounced values change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchTerm, debouncedFilters])
+
   // Fetch students using React Query with debounced values
   const { data: studentsData, isLoading, error } = useStudents({
     ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
@@ -374,39 +343,9 @@ function StudentsPageContent() {
     pageSize: pageSize
   })
 
-  // Fetch expiring soon assignments (e.g. next 7 days) & all current plans for mapping
-  const { data: expiringSoonAssignments } = useQuery({
-    ...getExpiringSoonAssignmentsOptions({ client: apiClient, query: { days: 7 } }),
-    staleTime: 30_000,
-    refetchInterval: 60_000,
-  })
-
-  // We'll lazily fetch current plan per student only if needed for fallback (optional optimization skipped)
-  // Build quick lookup maps
-  const expiringMap = new Map<string, StudentPlanAssignmentResponseDto>()
-  expiringSoonAssignments?.forEach(a => { if (a.studentId) expiringMap.set(a.studentId, a) })
-
-  // Prepare current plan queries only for students on the current page that are NOT in expiringMap
-  const studentIdsNeedingCurrentPlan = (studentsData?.content || [])
-    .map(s => s.id)
-    .filter((id): id is string => Boolean(id) && !expiringMap.has(id!))
-
-  const currentPlanQueries = useQueries({
-    queries: studentIdsNeedingCurrentPlan.map(studentId => ({
-      ...getCurrentStudentPlanOptions({ client: apiClient, path: { studentId } }),
-      staleTime: 30_000,
-    }))
-  })
-
-  const currentPlanMap = new Map<string, StudentPlanAssignmentResponseDto | null>()
-  currentPlanQueries.forEach((q, idx) => {
-    const sid = studentIdsNeedingCurrentPlan[idx]
-    if (sid) currentPlanMap.set(sid, (q.data as StudentPlanAssignmentResponseDto | null | undefined) ?? null)
-  })
-
   // Helper data extraction with proper typing
-  const totalPages = studentsData?.totalPages || 0
-  const totalElements = studentsData?.totalElements || 0
+  const totalPages = studentsData?.page?.totalPages || 0
+  const totalElements = studentsData?.page?.totalElements || 0
 
   // Helper function to get student age from birthdate
   const getStudentAge = (birthDate: string): number => {
@@ -480,7 +419,7 @@ function StudentsPageContent() {
       });
 
       const requestBody = {
-        email: formData.email!,
+        email: formData.email,
         name: formData.name,
         surname: formData.surname,
         gender: formData.sex || "O",
@@ -495,8 +434,8 @@ function StudentsPageContent() {
         emergencyContactName: formData.emergencyName,
         emergencyContactPhone: formData.emergencyPhone,
         emergencyContactRelationship: formData.emergencyRelationship,
-    objectives: formData.objectives,
-    observations: formData.impairmentObservations,
+        objectives: formData.objectives,
+        observations: formData.impairmentObservations,
         anamnesis: hasAnamnesis ? {
           medication: formData.medication,
           isDoctorAwareOfPhysicalActivity: formData.isDoctorAwareOfPhysicalActivity,
@@ -533,31 +472,8 @@ function StudentsPageContent() {
           }))
       } as StudentRequestDto;
 
-      const created = await createStudent({ body: requestBody, client: apiClient })
-
-      let assignedPlan = false
-      // Automatic plan assignment (fire and forget with basic error handling)
-      if (created?.id && formData.plan) {
-        try {
-          await assignPlan.mutateAsync({
-            path: { studentId: created.id },
-            body: {
-              planId: formData.plan,
-              startDate: new Date().toISOString().substring(0, 10),
-              assignmentNotes: 'Assinado automaticamente no cadastro.'
-            },
-            client: apiClient
-          })
-          assignedPlan = true
-        } catch (e) {
-          // Non-blocking: just notify
-          toast({ title: 'Aluno criado, mas falha ao atribuir plano', variant: 'destructive', duration: 4000 })
-          // eslint-disable-next-line no-console
-          console.error(e)
-        }
-      }
-
-      toast({ title: "Aluno criado", description: assignedPlan ? "Aluno e plano atribuídos." : "Aluno cadastrado com sucesso.", duration: 3000 })      
+      await createStudent({ body: requestBody, client: apiClient })
+      toast({ title: "Aluno criado", description: "Aluno cadastrado com sucesso.", duration: 3000 })
       setIsCreateOpen(false)
     } catch (e) {
       toast({ title: "Erro ao criar aluno", description: "Não foi possível criar o aluno.", duration: 4000 })
@@ -680,6 +596,30 @@ function StudentsPageContent() {
                                 <SelectItem value="Ativo">Ativo</SelectItem>
                                 <SelectItem value="Vencido">Vencido</SelectItem>
                                 <SelectItem value="Inativo">Inativo</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="plan"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Plano</FormLabel>
+                          <FormControl>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">Todos</SelectItem>
+                                <SelectItem value="Mensal">Mensal</SelectItem>
+                                <SelectItem value="Trimestral">Trimestral</SelectItem>
+                                <SelectItem value="Semestral">Semestral</SelectItem>
+                                <SelectItem value="Anual">Anual</SelectItem>
                               </SelectContent>
                             </Select>
                           </FormControl>
@@ -879,18 +819,16 @@ function StudentsPageContent() {
               .join('')
               .toUpperCase()
 
-            const expiring = student.id ? expiringMap.get(student.id) : undefined
-            const currentPlan = student.id ? currentPlanMap.get(student.id) : undefined
-            const badgeNode = <PlanAssignmentStatusBadge assignment={expiring || currentPlan || null} />
-            const activePlan = expiring || currentPlan || null
-            const planName = activePlan?.planName?.trim()
-            const planLabel = planName
-              ? (planName.toLowerCase().startsWith("plano") ? planName : `Plano: ${planName}`)
-              : "Plano: não atribuído"
+            // For now, use mock plan expiration since backend doesn't have this yet
+            // In real implementation, this would come from the backend
+            const expirationDate = student.registrationDate ? new Date(student.registrationDate) : new Date()
+            expirationDate.setFullYear(expirationDate.getFullYear() + 2)
+            expirationDate.setMonth(expirationDate.getMonth() + 5)
+            expirationDate.setDate(expirationDate.getDate() + 20)
             return (
               <StudentCard key={student.id} student={student}
                            onClick={() => router.push(`/students/${student.id}`)} initials={initials}
-                           fullName={fullName} badge={badgeNode} planLabel={planLabel} onNewEvaluationClicked={e => {
+                           fullName={fullName} expirationDate={expirationDate} onNewEvaluationClicked={e => {
                   e.stopPropagation()
                   router.push(`/students/${student.id}/evaluation/new`)
               }} onClickedDelete={async e => {

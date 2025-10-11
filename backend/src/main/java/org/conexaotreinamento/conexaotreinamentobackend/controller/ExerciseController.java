@@ -23,17 +23,17 @@ public class ExerciseController {
     private final ExerciseService exerciseService;
 
     @PostMapping
-    public ResponseEntity<ExerciseResponseDTO> createExercise(@RequestBody @Valid ExerciseRequestDTO request) {
+    public ResponseEntity<ExerciseResponseDTO> create(@RequestBody @Valid ExerciseRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(exerciseService.create(request));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ExerciseResponseDTO> findExerciseById(@PathVariable UUID id) {
+    public ResponseEntity<ExerciseResponseDTO> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(exerciseService.findById(id));
     }
 
     @GetMapping
-    public ResponseEntity<Page<ExerciseResponseDTO>> findAllExercises(
+    public ResponseEntity<Page<ExerciseResponseDTO>> findAll(
             @RequestParam(required = false) String search,
             @RequestParam(required = false, defaultValue = "false") boolean includeInactive,
             @PageableDefault(size = 20) Pageable pageable) {
@@ -41,23 +41,23 @@ public class ExerciseController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ExerciseResponseDTO> updateExercise(@PathVariable UUID id, @RequestBody @Valid ExerciseRequestDTO request) {
+    public ResponseEntity<ExerciseResponseDTO> update(@PathVariable UUID id, @RequestBody @Valid ExerciseRequestDTO request) {
         return ResponseEntity.ok(exerciseService.update(id, request));
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<ExerciseResponseDTO> patchExercise(@PathVariable UUID id, @RequestBody @Valid PatchExerciseRequestDTO request) {
+    public ResponseEntity<ExerciseResponseDTO> patch(@PathVariable UUID id, @RequestBody @Valid PatchExerciseRequestDTO request) {
         return ResponseEntity.ok(exerciseService.patch(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteExercise(@PathVariable UUID id) {
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
         exerciseService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/restore")
-    public ResponseEntity<ExerciseResponseDTO> restoreExercise(@PathVariable UUID id) {
+    public ResponseEntity<ExerciseResponseDTO> restore(@PathVariable UUID id) {
         return ResponseEntity.ok(exerciseService.restore(id));
     }
 }

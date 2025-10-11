@@ -31,7 +31,13 @@ export default function HomePage() {
     e.preventDefault()
     // Mock login logic
     const result = await login({
-      body: { email, password }, client: apiClient
+      body: { email, password }, client: apiClient, security: [
+        {
+          type: "http",
+          scheme: "bearer",
+          in: "header",
+        }
+      ]
     });
     const payload = getJWTTokenPayload(result.token!)
     if (payload.role && result.token) {

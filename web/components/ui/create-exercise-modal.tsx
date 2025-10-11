@@ -12,30 +12,36 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen";
-import { apiClient } from "@/lib/client";
+import { getAuthHeaders } from "@/app/administrators/page";
 
 interface CreateExerciseModalProps {
     isOpen: boolean;
     onClose: () => void;
+    onExerciseCreated: () => void;
 }
 
-export default function CreateExerciseModal({ isOpen, onClose }: CreateExerciseModalProps) {
+export default function CreateExerciseModal({ isOpen, onClose, onExerciseCreated }: CreateExerciseModalProps) {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
-
-    const queryClient= useQueryClient();
-    const { mutateAsync: createExercise, isPending: isCreating } = useMutation(
-        createExerciseMutation()
-    )
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setIsLoading(true);
 
         try {
-            createExercise({ client: apiClient, body: { name, description } })
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+            const response = await fetch(`${API_URL}/exercises`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ name, description }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Erro ao criar exercício');
+            }
 
             toast({
                 title: "Exercício criado",
@@ -44,16 +50,16 @@ export default function CreateExerciseModal({ isOpen, onClose }: CreateExerciseM
 
             setName("");
             setDescription("");
+            onExerciseCreated();
             onClose();
-            await queryClient.invalidateQueries({
-                predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllExercises'
-            })
         } catch (error: any) {
             toast({
                 title: "Erro ao criar exercício",
                 description: error.message || "Ocorreu um erro ao criar o exercício.",
                 variant: "destructive",
             });
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -91,8 +97,8 @@ export default function CreateExerciseModal({ isOpen, onClose }: CreateExerciseM
                         <Button type="button" variant="outline" onClick={onClose}>
                             Cancelar
                         </Button>
-                        <Button type="submit" disabled={isCreating}>
-                            {isCreating ? "Criando..." : "Criar Exercício"}
+                        <Button type="submit" disabled={isLoading}>
+                            {isLoading ? "Criando..." : "Criar Exercício"}
                         </Button>
                     </DialogFooter>
                 </form>

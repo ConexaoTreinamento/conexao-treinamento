@@ -8,14 +8,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Search, Filter, Phone, Mail, Calendar, Clock, Edit, Trash2, UserPlus } from "lucide-react"
+import { Search, Filter, Plus, User, Phone, Mail, Calendar, Clock, Edit, Trash2, UserPlus } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import TrainerModal from "@/components/trainer-modal"
-import { createTrainerAndUserMutation, findAllTrainersOptions, softDeleteTrainerUserMutation, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { createTrainerAndUserMutation, createTrainerAndUserOptions, findAllTrainersOptions, softDeleteTrainerUserMutation, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { TrainerResponseDto } from "@/lib/api-client"
+import { createTrainerAndUser, TrainerResponseDto } from "@/lib/api-client"
 import { apiClient } from "@/lib/client"
+import { client } from "@/lib/api-client/client.gen"
 
 // Interface for trainer data to match the modal
 
@@ -46,6 +47,11 @@ export default function TrainersPage() {
   const { data: trainers, isLoading, error } = useQuery({
     ...findAllTrainersOptions({
       client: apiClient,
+      security: [{
+        type: "http",
+        scheme: "bearer",
+        in: "header",
+      },]
     })
   })
 
@@ -70,6 +76,11 @@ export default function TrainersPage() {
       await createTrainer({
         body: formData,
         client: apiClient,
+        security: [{
+          type: "http",
+          scheme: "bearer",
+          in: "header",
+        }],
       })
     } else {
       // Update existing trainer
@@ -77,6 +88,11 @@ export default function TrainersPage() {
         path: { id: String(editingTrainer?.id) },
         body: formData,
         client: apiClient,
+        security: [{
+          type: "http",
+          scheme: "bearer",
+          in: "header",
+        }],
       })
     }
     await queryClient.invalidateQueries({
@@ -90,7 +106,11 @@ export default function TrainersPage() {
   const handleDeleteTrainer = async (trainerId: string) => {
     if (confirm("Tem certeza que deseja excluir este professor?")) {
       await deleteTrainer({
-        path: { id: String(trainerId) }, client: apiClient
+        path: { id: String(trainerId) }, client: apiClient, security: [{
+          type: "http",
+          scheme: "bearer",
+          in: "header",
+        }]
       });
       await queryClient.invalidateQueries({
         predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllTrainers'

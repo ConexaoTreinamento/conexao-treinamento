@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { useParams } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -14,10 +13,8 @@ import { User, Mail, Phone, MapPin, Calendar, Save, Camera, Shield, Clock, Award
 import Layout from "@/components/layout"
 
 export default function ProfilePage() {
-  const { id } = useParams();
   const [userRole, setUserRole] = useState<string>("")
   const [userName, setUserName] = useState<string>("")
-  const [isLoading, setIsLoading] = useState(false)
   const [profileData, setProfileData] = useState({
     name: "",
     email: "",
@@ -35,11 +32,8 @@ export default function ProfilePage() {
     const name = localStorage.getItem("userName")
     setUserRole(role || "")
     setUserName(name || "")
-    if (!id) return;
-    setIsLoading(true);
-
-    // Busca dados do perfil no backend
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    
+    // Mock profile data based on role
     if (role === "admin") {
       setProfileData({
         name: "Admin Principal",
@@ -53,46 +47,28 @@ export default function ProfilePage() {
         avatar: "/placeholder.svg?height=100&width=100"
       })
     } else {
-    fetch(`${apiUrl}/trainers/${id}`)
-      .then(res => res.json())
-      .then(data => setProfileData({
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        address: data.address,
-        birthDate: data.birthDate,
-        joinDate: data.createdAt,
-        bio: data.bio || "",
-        specialties: Array.isArray(data.specialties) ? data.specialties : [],
+      setProfileData({
+        name: "Professor Silva",
+        email: "professor@gym.com",
+        phone: "(11) 88888-0000",
+        address: "Rua dos Professores, 456 - São Paulo, SP",
+        birthDate: "1990-08-20",
+        joinDate: "2022-03-15",
+        bio: "Professor especializado em musculação e treinamento funcional.",
+        specialties: ["Musculação", "Treinamento Funcional", "Reabilitação"],
         avatar: "/placeholder.svg?height=100&width=100"
-      }))
-      .catch(() => {
-        // Trate erro
       })
-      .finally(() => setIsLoading(false));
     }
-  }, [id]);
+  }, [])
 
   const handleInputChange = (field: string, value: string) => {
-    if (field === "specialties") {
-      setProfileData(prev => ({
-        ...prev,
-        specialties: value.split(",").map(s => s.trim()).filter(s => s.length > 0)
-      }))
-    } else {
-      setProfileData(prev => ({ ...prev, [field]: value }))
-    }
+    setProfileData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleSave = async () => {
-    setIsLoading(true);
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    await fetch(`${apiUrl}/trainers/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(profileData),
-    });
-    setIsLoading(false);
+  const handleSave = () => {
+    // Mock save functionality
+    console.log("Saving profile:", profileData)
+    localStorage.setItem("userName", profileData.name)
   }
 
   const stats = userRole === "admin" ? [
@@ -117,9 +93,9 @@ export default function ProfilePage() {
               Gerencie suas informações pessoais e configurações
             </p>
           </div>
-          <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700" disabled={isLoading}>
+          <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700">
             <Save className="w-4 h-4 mr-2" />
-            {isLoading ? "Salvando..." : "Salvar Alterações"}
+            Salvar Alterações
           </Button>
         </div>
 
@@ -157,7 +133,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span>Desde {profileData.joinDate ? new Date(profileData.joinDate).toLocaleDateString('pt-BR') : ""}</span>
+                  <span>Desde {new Date(profileData.joinDate).toLocaleDateString('pt-BR')}</span>
                 </div>
               </div>
               

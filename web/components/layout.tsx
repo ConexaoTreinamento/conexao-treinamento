@@ -7,7 +7,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
-import { Menu, BarChart3, Users, Calendar, UserCheck, Dumbbell, User, Sun, Moon, LogOut, Shield, Crown } from "lucide-react"
+import { Menu, BarChart3, Users, Calendar, UserCheck, Dumbbell, User, Sun, Moon, LogOut, Shield } from "lucide-react"
 import { useTheme } from "next-themes"
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import Image from "next/image"
@@ -20,7 +20,6 @@ const navigation = [
 	{ name: "Administradores", href: "/administrators", icon: Shield, adminOnly: true },
 	{ name: "Exercícios", href: "/exercises", icon: Dumbbell },
 	{ name: "Eventos", href: "/events", icon: Calendar },
-	{ name: "Planos", href: "/plans", icon: Crown },
 	{ name: "Relatórios", href: "/reports", icon: BarChart3, adminOnly: true },
 ]
 
@@ -65,7 +64,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 	const handleLogout = () => {
 		localStorage.removeItem("userRole")
 		localStorage.removeItem("userName")
-		localStorage.removeItem("token")
 		router.push("/")
 	}
 

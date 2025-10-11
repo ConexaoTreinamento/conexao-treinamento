@@ -29,11 +29,6 @@ public class TrainerController {
         return ResponseEntity.ok(trainerService.findById(id));
     }
 
-    @GetMapping("/userId/{id}")
-    public ResponseEntity<ListTrainersDTO> findTrainerByUserId(@PathVariable UUID id) {
-        return ResponseEntity.ok(trainerService.findByUserId(id));
-    }
-
     @GetMapping
     public ResponseEntity<List<ListTrainersDTO>> findAllTrainers() {
         return ResponseEntity.ok(trainerService.findAll());

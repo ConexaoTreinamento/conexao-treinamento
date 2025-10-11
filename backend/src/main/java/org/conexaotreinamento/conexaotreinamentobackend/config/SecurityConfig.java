@@ -141,7 +141,6 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/auth/**").permitAll()
                         .requestMatchers("/users/**").permitAll()
-                        .requestMatchers("/actuator/health/**").permitAll() // Enable Actuator to monitor the application
                         .requestMatchers("/swagger-ui.html").permitAll()
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
@@ -163,7 +162,13 @@ public class SecurityConfig {
                                 .decoder(jwtDecoder())
                                 .jwtAuthenticationConverter(jwtAuthenticationConverter())))
                 .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().permitAll());
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/users/**").authenticated()
+                        .requestMatchers("/exercises/**").permitAll()
+                        .requestMatchers("/swagger-ui.html").permitAll()
+                        .requestMatchers("/swagger-ui/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**").permitAll()
+                        .anyRequest().authenticated());
 
         return http.build();
     }

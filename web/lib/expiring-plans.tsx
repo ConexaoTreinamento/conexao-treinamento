@@ -1,5 +1,4 @@
 import { Badge } from "@/components/ui/badge"
-import type { StudentPlanAssignmentResponseDto } from '@/lib/api-client/types.gen'
 
 export interface ExpiringPlanData {
   planExpirationDate: string
@@ -60,33 +59,6 @@ export const UnifiedStatusBadge = ({expirationDate}: {expirationDate: string}) =
   }
 
   // For plans that don't expire soon, show the basic status
-  return <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-xs">Ativo</Badge>
-}
-
-// New badge that uses full assignment DTO (preferred going forward)
-export const PlanAssignmentStatusBadge = ({ assignment }: { assignment?: StudentPlanAssignmentResponseDto | null }) => {
-  if(!assignment) {
-    return <Badge variant="outline" className="text-xs">Sem Plano</Badge>
-  }
-
-  const expired = Boolean(assignment.expired || (assignment.endDate && new Date(assignment.endDate) < new Date()))
-  // Compute days remaining if not supplied
-  let daysRemaining = assignment.daysRemaining
-  if(daysRemaining == null && assignment.endDate) {
-    daysRemaining = calculateDaysUntilExpiration(assignment.endDate)
-  }
-
-  if(expired || (daysRemaining != null && daysRemaining < 0)) {
-    return <Badge variant="destructive" className="text-xs">Expirado</Badge>
-  }
-
-  if(daysRemaining === 0) return <Badge variant="destructive" className="text-xs">Expira Hoje</Badge>
-  if(daysRemaining === 1) return <Badge variant="destructive" className="text-xs">1 dia restante</Badge>
-  if(daysRemaining != null && daysRemaining <= 2) return <Badge variant="destructive" className="text-xs">{daysRemaining} dias restantes</Badge>
-  if(daysRemaining != null && daysRemaining <= 5) return <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-400 text-xs">{daysRemaining} dias</Badge>
-  if(daysRemaining != null && daysRemaining <= 7) return <Badge variant="secondary" className="text-xs">{daysRemaining} dias</Badge>
-
-  // Not expiring soon: simple active token
   return <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-xs">Ativo</Badge>
 }
 

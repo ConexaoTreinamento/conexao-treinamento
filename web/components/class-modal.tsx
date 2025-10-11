@@ -1,137 +1,277 @@
 "use client"
 
-import { useEffect, useMemo } from "react"
-import { useForm, Controller } from "react-hook-form"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { useQuery } from "@tanstack/react-query"
-import { findAllTrainersOptions } from "@/lib/api-client/@tanstack/react-query.gen"
-import { apiClient } from "@/lib/client"
+import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { X } from "lucide-react"
 
-interface OneOffClassData {
+interface ClassModalData {
   name: string
-  trainerId: string
-  trainerName?: string
-  startTime: string
-  endTime: string
+  instructor: string
+  maxStudents: string
+  description: string
+  weekDays: string[]
+  times: { day: string; startTime: string; endTime: string }[]
 }
 
 interface ClassModalProps {
   open: boolean
-  mode?: "create" | "edit"
-  initialData?: Partial<OneOffClassData>
+  mode: "create" | "edit"
+  initialData?: ClassModalData
+  trainers: string[]
   onClose: () => void
-  onSubmitData: (data: OneOffClassData) => void
+  onSubmitData: (data: ClassModalData) => void
 }
 
-export default function ClassModal({ open, mode = "create", initialData, onClose, onSubmitData }: ClassModalProps) {
-  const { control, register, handleSubmit, reset, watch } = useForm<OneOffClassData>({
-    defaultValues: {
-      name: initialData?.name || "",
-      trainerId: initialData?.trainerId || "",
-      trainerName: initialData?.trainerName || undefined,
-      startTime: initialData?.startTime || "",
-      endTime: initialData?.endTime || "",
-    }
+export default function ClassModal({
+  open,
+  mode,
+  initialData,
+  trainers,
+  onClose,
+  onSubmitData,
+}: ClassModalProps) {
+  const [form, setForm] = useState<ClassModalData>({
+    name: "",
+    instructor: "",
+    maxStudents: "2",
+    description: "",
+    weekDays: [],
+    times: [],
   })
 
-  const trainersQuery = useQuery({
-    ...findAllTrainersOptions({ client: apiClient })
-  })
-  const trainerOptions = useMemo(
-    () => (trainersQuery.data || []).map(t => ({ id: t.id || "", name: t.name || "—" })).filter(t => t.id),
-    [trainersQuery.data]
-  )
+  const weekDays = [
+    { value: "monday", label: "Segunda" },
+    { value: "tuesday", label: "Terça" },
+    { value: "wednesday", label: "Quarta" },
+    { value: "thursday", label: "Quinta" },
+    { value: "friday", label: "Sexta" },
+    { value: "saturday", label: "Sábado" },
+    { value: "sunday", label: "Domingo" },
+  ]
 
+  // Initialize form with initial data when editing
   useEffect(() => {
-    if (open) {
-      reset({
-        name: initialData?.name || "",
-        trainerId: initialData?.trainerId || "",
-        trainerName: initialData?.trainerName,
-        startTime: initialData?.startTime || "",
-        endTime: initialData?.endTime || "",
+    if (initialData) {
+      setForm(initialData)
+    } else {
+      setForm({
+        name: "",
+        instructor: "",
+        maxStudents: "2",
+        description: "",
+        weekDays: [],
+        times: [],
       })
     }
-  }, [open, initialData, reset])
+  }, [initialData, mode, open])
 
-  const name = watch("name")
-  const trainerId = watch("trainerId")
-  const startTime = watch("startTime")
-  const endTime = watch("endTime")
-  const isValid = useMemo(() => {
-    if (!name || !trainerId || !startTime || !endTime) return false
-    return endTime >= startTime
-  }, [name, trainerId, startTime, endTime])
+  const handleWeekDayToggle = (dayValue: string) => {
+    setForm((prev) => {
+      const isSelected = prev.weekDays.includes(dayValue)
 
-  const onSubmit = (data: OneOffClassData) => {
-    if (!isValid) return
-    const tn = trainerOptions.find(t => t.id === data.trainerId)?.name
-    onSubmitData({ ...data, trainerName: tn })
-    if (mode === "create") {
-      reset({ name: "", trainerId: "", startTime: "", endTime: "" })
+      if (isSelected) {
+        // Remove day and its time
+        return {
+          ...prev,
+          weekDays: prev.weekDays.filter((d) => d !== dayValue),
+          times: prev.times.filter((t) => t.day !== dayValue),
+        }
+      } else {
+        // Add day and copy time from first day if exists
+        const firstTime = prev.times[0]
+        const newTime = firstTime
+          ? { day: dayValue, startTime: firstTime.startTime, endTime: firstTime.endTime }
+          : { day: dayValue, startTime: "", endTime: "" }
+
+        return {
+          ...prev,
+          weekDays: [...prev.weekDays, dayValue],
+          times: [...prev.times, newTime],
+        }
+      }
+    })
+  }
+
+  const handleTimeChange = (dayValue: string, field: "startTime" | "endTime", value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      times: prev.times.map((t) => {
+        if (t.day === dayValue) {
+          const updatedTime = { ...t, [field]: value }
+
+          // Validate times
+          if (updatedTime.startTime && updatedTime.endTime) {
+            const start = new Date(`2000-01-01T${updatedTime.startTime}`)
+            const end = new Date(`2000-01-01T${updatedTime.endTime}`)
+
+            if (end < start) {
+              // If end time is earlier than start time, set end time to start time
+              updatedTime.endTime = updatedTime.startTime
+            }
+          }
+
+          return updatedTime
+        }
+        return t
+      }),
+    }))
+  }
+
+  const handleSubmit = () => {
+    if (form.name && form.instructor && (mode === "edit" || form.weekDays.length > 0)) {
+      onSubmitData(form)
+      if (mode === "create") {
+        setForm({
+          name: "",
+          instructor: "",
+          maxStudents: "2",
+          description: "",
+          weekDays: [],
+          times: [],
+        })
+      }
+      onClose()
     }
+  }
+
+  const handleClose = () => {
     onClose()
   }
 
-  const handleClose = () => onClose()
-
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-sm max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Nova Aula" : "Editar Aula"}</DialogTitle>
-          <DialogDescription>Aula avulsa para o dia selecionado</DialogDescription>
+          <DialogTitle>{mode === "create" ? "Nova Turma" : "Editar Modalidade"}</DialogTitle>
+          <DialogDescription>
+            {mode === "create" ? "Crie uma nova turma regular" : "Edite as informações da modalidade"}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="className">Nome</Label>
-            <Input id="className" placeholder="Ex: Pilates Iniciante" {...register("name")} />
-          </div>
-          <div className="space-y-2">
-            <Label>Professor</Label>
-            <Controller
-              name="trainerId"
-              control={control}
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={trainersQuery.isLoading ? "Carregando..." : "Selecione"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {trainerOptions.map(t => (
-                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+            <Label htmlFor="className">Nome da {mode === "create" ? "Turma" : "Modalidade"}</Label>
+            <Input
+              id="className"
+              value={form.name}
+              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              placeholder="Ex: Pilates Iniciante"
             />
           </div>
-          <div className="space-y-3">
-            <Label>Horário</Label>
-            <div className="p-3 border rounded-lg space-y-2">
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-xs">Início</Label>
-                  <Input type="time" className="h-8" {...register("startTime")} />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Fim</Label>
-                  <Input type="time" className="h-8" {...register("endTime")} />
-                </div>
-              </div>
-              {startTime && endTime && endTime < startTime && (
-                <p className="text-xs text-red-500">Horário final deve ser após o inicial.</p>
-              )}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="instructor">Professor</Label>
+              <Select
+                value={form.instructor}
+                onValueChange={(value) => setForm((prev) => ({ ...prev, instructor: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {trainers.map((trainer) => (
+                    <SelectItem key={trainer} value={trainer}>
+                      {trainer}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" onClick={handleClose} className="flex-1">Cancelar</Button>
-            <Button onClick={handleSubmit(onSubmit)} disabled={!isValid || trainersQuery.isLoading} className="bg-green-600 hover:bg-green-700 flex-1 disabled:opacity-60">
-              {mode === "create" ? "Criar Aula" : "Salvar"}
+
+          <div className="space-y-2">
+            <Label>Dias da Semana</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {weekDays.map((day) => (
+                <div key={day.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={day.value}
+                    checked={form.weekDays.includes(day.value)}
+                    onCheckedChange={() => handleWeekDayToggle(day.value)}
+                  />
+                  <Label htmlFor={day.value} className="text-sm">
+                    {day.label}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {form.weekDays.length > 0 && (
+            <div className="space-y-3">
+              <Label>Horários por Dia</Label>
+              {form.weekDays.map((dayValue) => {
+                const dayLabel = weekDays.find((d) => d.value === dayValue)?.label
+                const timeForDay = form.times.find((t) => t.day === dayValue)
+
+                return (
+                  <div key={dayValue} className="p-3 border rounded-lg space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="font-medium">{dayLabel}</Label>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleWeekDayToggle(dayValue)}
+                        className="h-6 w-6 p-0"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Início</Label>
+                        <Input
+                          type="time"
+                          value={timeForDay?.startTime || ""}
+                          onChange={(e) => handleTimeChange(dayValue, "startTime", e.target.value)}
+                          className="h-8"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Fim</Label>
+                        <Input
+                          type="time"
+                          value={timeForDay?.endTime || ""}
+                          onChange={(e) => handleTimeChange(dayValue, "endTime", e.target.value)}
+                          className="h-8"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {mode === "create" && (
+            <div className="space-y-2">
+              <Label htmlFor="maxStudents">Máx. Alunos</Label>
+              <Input
+                id="maxStudents"
+                type="number"
+                value={form.maxStudents}
+                onChange={(e) => setForm((prev) => ({ ...prev, maxStudents: e.target.value }))}
+                placeholder="2"
+              />
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-4">
+            <Button variant="outline" onClick={handleClose} className="flex-1">
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700 flex-1">
+              {mode === "create" ? "Criar Turma" : "Salvar Alterações"}
             </Button>
           </div>
         </div>

@@ -32,17 +32,17 @@ public class StudentController {
     private final StudentService studentService;
 
     @PostMapping
-    public ResponseEntity<StudentResponseDTO> createStudent(@RequestBody @Valid StudentRequestDTO request) {
+    public ResponseEntity<StudentResponseDTO> create(@RequestBody @Valid StudentRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(studentService.create(request));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<StudentResponseDTO> findStudentById(@PathVariable UUID id) {
+    public ResponseEntity<StudentResponseDTO> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(studentService.findById(id));
     }
 
     @GetMapping
-    public ResponseEntity<Page<StudentResponseDTO>> findAllStudents(
+    public ResponseEntity<Page<StudentResponseDTO>> findAll(
             @RequestParam(required = false) String search,
             
             @RequestParam(required = false)
@@ -94,18 +94,18 @@ public class StudentController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<StudentResponseDTO> updateStudent(@PathVariable UUID id, @RequestBody @Valid StudentRequestDTO request) {
+    public ResponseEntity<StudentResponseDTO> update(@PathVariable UUID id, @RequestBody @Valid StudentRequestDTO request) {
         return ResponseEntity.ok(studentService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteStudent(@PathVariable UUID id) {
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
         studentService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/restore")
-    public ResponseEntity<StudentResponseDTO> restoreStudent(@PathVariable UUID id) {
+    public ResponseEntity<StudentResponseDTO> restore(@PathVariable UUID id) {
         return ResponseEntity.ok(studentService.restore(id));
     }
 }

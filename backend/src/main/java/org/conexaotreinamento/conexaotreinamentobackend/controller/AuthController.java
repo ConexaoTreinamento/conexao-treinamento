@@ -1,6 +1,5 @@
 package org.conexaotreinamento.conexaotreinamentobackend.controller;
 
-import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.LoginRequestDTO;
@@ -17,7 +16,6 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/login")
-    @SecurityRequirements()
     public ResponseEntity<JwtResponseDTO> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
         JwtResponseDTO response = authService.login(loginRequest);
         return ResponseEntity.ok(response);

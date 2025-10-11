@@ -1,7 +1,6 @@
 package org.conexaotreinamento.conexaotreinamentobackend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.conexaotreinamento.conexaotreinamentobackend.config.TestContainerConfig;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.LoginRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.JwtResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
@@ -14,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -30,7 +28,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
-@Import(TestContainerConfig.class)
 @DisplayName("AuthController Integration Tests")
 class AuthControllerIntegrationTest {
 
@@ -192,6 +189,13 @@ class AuthControllerIntegrationTest {
         mockMvc.perform(get("/users")
                 .header("Authorization", TestAuthUtils.createAuthorizationHeader(token)))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Should return 401 when accessing protected endpoint without token")
+    void shouldReturn401WhenAccessingProtectedEndpointWithoutToken() throws Exception {
+        mockMvc.perform(get("/users"))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
