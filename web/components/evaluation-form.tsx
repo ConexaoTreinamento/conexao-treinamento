@@ -11,7 +11,6 @@ import { useRouter } from "next/navigation"
 
 interface EvaluationData {
   id?: string
-  date?: string
   weight: string
   height: string
   bmi: string
@@ -107,7 +106,6 @@ export default function EvaluationForm({
     if (initialData) {
       setEvaluationData({
         id: initialData.id,
-        date: initialData.date,
         weight: initialData.weight || "",
         height: initialData.height || "",
         bmi: initialData.bmi || "",
@@ -218,24 +216,26 @@ export default function EvaluationForm({
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="weight">Peso (kg)</Label>
+                <Label htmlFor="weight">Peso (kg) *</Label>
                 <Input
                   id="weight"
                   type="number"
                   step="0.1"
                   placeholder="70.5"
+                  required
                   value={evaluationData.weight}
                   onChange={(e) => handleInputChange("basic", "weight", e.target.value)}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="height">Altura (cm)</Label>
+                <Label htmlFor="height">Altura (cm) *</Label>
                 <Input
                   id="height"
                   type="number"
                   step="0.1"
                   placeholder="175.0"
+                  required
                   value={evaluationData.height}
                   onChange={(e) => handleInputChange("basic", "height", e.target.value)}
                 />
@@ -255,6 +255,7 @@ export default function EvaluationForm({
                   />
                   <Calculator className="w-4 h-4 text-muted-foreground" />
                 </div>
+                <p className="text-xs text-muted-foreground">Calculado automaticamente</p>
               </div>
             </div>
           </CardContent>
