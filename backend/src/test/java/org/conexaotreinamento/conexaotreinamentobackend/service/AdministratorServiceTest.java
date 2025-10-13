@@ -1,34 +1,34 @@
 package org.conexaotreinamento.conexaotreinamentobackend.service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.AdministratorRequestDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchAdministratorRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateAdministratorDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AdministratorResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListAdministratorsDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Administrator;
+import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
+import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.AdministratorRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,359 +36,361 @@ import org.springframework.web.server.ResponseStatusException;
 class AdministratorServiceTest {
 
     @Mock
-    private AdministratorRepository repository;
+    private AdministratorRepository administratorRepository;
 
     @Mock
-    private PasswordEncoder passwordEncoder;
+    private UserService userService;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private AdministratorService administratorService;
 
-    private Administrator administrator;
     private UUID administratorId;
-    private AdministratorRequestDTO administratorRequestDTO;
-    private PatchAdministratorRequestDTO patchRequestDTO;
+    private UUID userId;
+    private Administrator administrator;
+    private User user;
+    private CreateAdministratorDTO createAdministratorDTO;
+    private ListAdministratorsDTO listAdministratorsDTO;
 
     @BeforeEach
     void setUp() {
         administratorId = UUID.randomUUID();
-        administrator = new Administrator("João", "Silva", "joao@example.com", "encodedPassword");
+        userId = UUID.randomUUID();
         
-        administratorRequestDTO = new AdministratorRequestDTO("João", "Silva", "joao@example.com", "senha123");
-        patchRequestDTO = new PatchAdministratorRequestDTO("João Modificado", null, null, null);
+        administrator = new Administrator();
+        administrator.setId(administratorId);
+        administrator.setUserId(userId);
+        administrator.setFirstName("João");
+        administrator.setLastName("Silva");
+
+        user = new User("joao@example.com", "password123", Role.ROLE_ADMIN);
+
+        createAdministratorDTO = new CreateAdministratorDTO(
+            "João",
+            "Silva", 
+            "joao@example.com",
+            "password123"
+        );
+
+        listAdministratorsDTO = new ListAdministratorsDTO(
+            administratorId,
+            "João",
+            "Silva",
+            "joao@example.com",
+            "João Silva",
+            true,
+            Instant.now()
+        );
     }
 
     @Test
     @DisplayName("Should create administrator successfully")
     void shouldCreateAdministratorSuccessfully() {
         // Given
-        when(repository.existsByEmailIgnoringCaseAndDeletedAtIsNull("joao@example.com")).thenReturn(false);
-        when(passwordEncoder.encode("senha123")).thenReturn("encodedPassword");
-        when(repository.save(any(Administrator.class))).thenReturn(administrator);
+        UUID newUserId = UUID.randomUUID();
+        UUID newAdministratorId = UUID.randomUUID();
+        CreateAdministratorDTO request = new CreateAdministratorDTO(
+            "João Silva",
+            "Santos",
+            "joao@test.com",
+            "password123"
+        );
+
+        UserResponseDTO userResponse = new UserResponseDTO(newUserId, "joao@test.com", Role.ROLE_ADMIN);
+        
+        Administrator savedAdministrator = new Administrator();
+        savedAdministrator.setId(newAdministratorId);
+        savedAdministrator.setUserId(newUserId);
+        savedAdministrator.setFirstName("João Silva");
+        savedAdministrator.setLastName("Santos");
+
+        ListAdministratorsDTO expectedResult = new ListAdministratorsDTO(
+            newAdministratorId,
+            "João Silva",
+            "Santos",
+            "joao@test.com",
+            "João Silva Santos",
+            true,
+            Instant.now()
+        );
+
+        when(administratorRepository.existsByEmailIgnoreCase("joao@test.com")).thenReturn(false);
+        when(userService.createUser(any())).thenReturn(userResponse);
+        when(administratorRepository.save(any(Administrator.class))).thenReturn(savedAdministrator);
+        when(administratorRepository.findActiveAdministratorProfileById(newAdministratorId)).thenReturn(Optional.of(expectedResult));
 
         // When
-        AdministratorResponseDTO result = administratorService.create(administratorRequestDTO);
+        ListAdministratorsDTO result = administratorService.create(request);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.firstName()).isEqualTo("João");
-        assertThat(result.lastName()).isEqualTo("Silva");
-        assertThat(result.email()).isEqualTo("joao@example.com");
-        assertThat(result.fullName()).isEqualTo("João Silva");
-        
-        verify(repository).existsByEmailIgnoringCaseAndDeletedAtIsNull("joao@example.com");
-        verify(passwordEncoder).encode("senha123");
-        verify(repository).save(any(Administrator.class));
+        assertThat(result.id()).isEqualTo(newAdministratorId);
+        assertThat(result.firstName()).isEqualTo("João Silva");
+        assertThat(result.lastName()).isEqualTo("Santos");
+        assertThat(result.email()).isEqualTo("joao@test.com");
+        assertThat(result.fullName()).isEqualTo("João Silva Santos");
+        assertThat(result.active()).isTrue();
+        assertThat(result.joinDate()).isNotNull();
+
+        verify(administratorRepository).existsByEmailIgnoreCase("joao@test.com");
+        verify(userService).createUser(any());
+        verify(administratorRepository).save(any(Administrator.class));
+        verify(administratorRepository).findActiveAdministratorProfileById(newAdministratorId);
     }
 
     @Test
-    @DisplayName("Should throw conflict when email already exists")
-    void shouldThrowConflictWhenEmailAlreadyExists() {
+    @DisplayName("Should throw conflict when user email already exists")
+    void shouldThrowConflictWhenUserEmailAlreadyExists() {
         // Given
-        when(repository.existsByEmailIgnoringCaseAndDeletedAtIsNull("joao@example.com")).thenReturn(true);
+        when(userService.createUser(any())).thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "User with this email already exists"));
 
         // When & Then
-        assertThatThrownBy(() -> administratorService.create(administratorRequestDTO))
+        assertThatThrownBy(() -> administratorService.create(createAdministratorDTO))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Email já está em uso")
-                .satisfies(ex -> {
-                    ResponseStatusException rse = (ResponseStatusException) ex;
-                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-                });
+                .hasMessageContaining("User with this email already exists")
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.CONFLICT);
 
-        verify(repository).existsByEmailIgnoringCaseAndDeletedAtIsNull("joao@example.com");
-        verify(passwordEncoder, never()).encode(anyString());
-        verify(repository, never()).save(any(Administrator.class));
+        verify(userService).createUser(any());
+        verify(administratorRepository, never()).save(any());
     }
 
     @Test
     @DisplayName("Should find administrator by id successfully")
     void shouldFindAdministratorByIdSuccessfully() {
         // Given
-        when(repository.findByIdAndDeletedAtIsNull(administratorId)).thenReturn(Optional.of(administrator));
+        when(administratorRepository.findActiveAdministratorProfileById(administratorId)).thenReturn(Optional.of(listAdministratorsDTO));
 
         // When
-        AdministratorResponseDTO result = administratorService.findById(administratorId);
+        ListAdministratorsDTO result = administratorService.findById(administratorId);
 
         // Then
         assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(administratorId);
         assertThat(result.firstName()).isEqualTo("João");
         assertThat(result.lastName()).isEqualTo("Silva");
         assertThat(result.email()).isEqualTo("joao@example.com");
-        
-        verify(repository).findByIdAndDeletedAtIsNull(administratorId);
+        assertThat(result.active()).isTrue();
+
+        verify(administratorRepository).findActiveAdministratorProfileById(administratorId);
     }
 
     @Test
     @DisplayName("Should throw not found when administrator does not exist")
     void shouldThrowNotFoundWhenAdministratorDoesNotExist() {
         // Given
-        when(repository.findByIdAndDeletedAtIsNull(administratorId)).thenReturn(Optional.empty());
+        when(administratorRepository.findActiveAdministratorProfileById(administratorId)).thenReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> administratorService.findById(administratorId))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Administrador não encontrado")
-                .satisfies(ex -> {
-                    ResponseStatusException rse = (ResponseStatusException) ex;
-                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-                });
+                .hasMessageContaining("Administrator not found")
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
 
-        verify(repository).findByIdAndDeletedAtIsNull(administratorId);
+        verify(administratorRepository).findActiveAdministratorProfileById(administratorId);
     }
 
     @Test
-    @DisplayName("Should find all administrators with default pagination")
-    void shouldFindAllAdministratorsWithDefaultPagination() {
+    @DisplayName("Should find all administrators successfully")
+    void shouldFindAllAdministratorsSuccessfully() {
         // Given
-        List<Administrator> administrators = List.of(administrator);
-        Page<Administrator> page = new PageImpl<>(administrators);
-        Pageable pageable = PageRequest.of(0, 20);
-        
-        when(repository.findByDeletedAtIsNull(any(Pageable.class))).thenReturn(page);
+        List<ListAdministratorsDTO> administrators = List.of(listAdministratorsDTO);
+        when(administratorRepository.findAllAdministratorProfiles(true)).thenReturn(administrators);
 
         // When
-        Page<AdministratorResponseDTO> result = administratorService.findAll(null, pageable, false);
+        List<ListAdministratorsDTO> result = administratorService.findAll();
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).firstName()).isEqualTo("João");
-        
-        verify(repository).findByDeletedAtIsNull(any(Pageable.class));
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).firstName()).isEqualTo("João");
+
+        verify(administratorRepository).findAllAdministratorProfiles(true);
     }
 
     @Test
-    @DisplayName("Should find all administrators with search term")
-    void shouldFindAllAdministratorsWithSearchTerm() {
+    @DisplayName("Should return empty list when no administrators exist")
+    void shouldReturnEmptyListWhenNoAdministratorsExist() {
         // Given
-        List<Administrator> administrators = List.of(administrator);
-        Page<Administrator> page = new PageImpl<>(administrators);
-        Pageable pageable = PageRequest.of(0, 20);
-        
-        when(repository.findBySearchTermAndDeletedAtIsNull(anyString(), any(Pageable.class))).thenReturn(page);
+        when(administratorRepository.findAllAdministratorProfiles(true)).thenReturn(List.of());
 
         // When
-        Page<AdministratorResponseDTO> result = administratorService.findAll("João", pageable, false);
+        List<ListAdministratorsDTO> result = administratorService.findAll();
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).firstName()).isEqualTo("João");
-        
-        verify(repository).findBySearchTermAndDeletedAtIsNull(anyString(), any(Pageable.class));
+        assertThat(result).isEmpty();
+
+        verify(administratorRepository).findAllAdministratorProfiles(true);
     }
 
     @Test
-    @DisplayName("Should find all administrators including inactive")
-    void shouldFindAllAdministratorsIncludingInactive() {
+    @DisplayName("Should update administrator successfully with password")
+    void shouldUpdateAdministratorSuccessfullyWithPassword() {
         // Given
-        List<Administrator> administrators = List.of(administrator);
-        Page<Administrator> page = new PageImpl<>(administrators);
-        Pageable pageable = PageRequest.of(0, 20);
+        CreateAdministratorDTO updateAdministratorDTO = new CreateAdministratorDTO(
+            "João Updated",
+            "Silva Updated",
+            "joao@example.com",
+            "newpassword123"
+        );
         
-        when(repository.findAll(any(Pageable.class))).thenReturn(page);
+        UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "joao@example.com", Role.ROLE_ADMIN);
+        
+        when(administratorRepository.findById(administratorId)).thenReturn(Optional.of(administrator));
+        when(userService.updateUserEmail(userId, "joao@example.com")).thenReturn(updatedUserResponse);
+        when(userService.updateUserPassword(userId, "newpassword123")).thenReturn(updatedUserResponse);
+        when(administratorRepository.save(administrator)).thenReturn(administrator);
+        when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.of(user));
 
         // When
-        Page<AdministratorResponseDTO> result = administratorService.findAll(null, pageable, true);
+        AdministratorResponseDTO result = administratorService.put(administratorId, updateAdministratorDTO);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.getContent()).hasSize(1);
-        
-        verify(repository).findAll(any(Pageable.class));
+        assertThat(result.id()).isEqualTo(administratorId);
+        assertThat(result.email()).isEqualTo("joao@example.com");
+
+        verify(administratorRepository).findById(administratorId);
+        verify(userService).updateUserEmail(userId, "joao@example.com");
+        verify(userService).updateUserPassword(userId, "newpassword123");
+        verify(administratorRepository).save(administrator);
+        verify(userRepository).findByIdAndDeletedAtIsNull(userId);
     }
 
     @Test
-    @DisplayName("Should update administrator successfully")
-    void shouldUpdateAdministratorSuccessfully() {
+    @DisplayName("Should update administrator successfully without password")
+    void shouldUpdateAdministratorSuccessfullyWithoutPassword() {
         // Given
-        AdministratorRequestDTO updateRequest = new AdministratorRequestDTO("João Updated", "Silva Updated", "joao.updated@example.com", "newPassword");
+        CreateAdministratorDTO updateAdministratorDTO = new CreateAdministratorDTO(
+            "João Updated",
+            "Silva Updated",
+            "joao.updated@example.com",
+            null // No password provided
+        );
         
-        when(repository.findByIdAndDeletedAtIsNull(administratorId)).thenReturn(Optional.of(administrator));
-        when(repository.existsByEmailIgnoringCaseAndDeletedAtIsNull("joao.updated@example.com")).thenReturn(false);
-        when(passwordEncoder.encode("newPassword")).thenReturn("newEncodedPassword");
-        when(repository.save(administrator)).thenReturn(administrator);
+        UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "joao.updated@example.com", Role.ROLE_ADMIN);
+        
+        when(administratorRepository.findById(administratorId)).thenReturn(Optional.of(administrator));
+        when(userService.updateUserEmail(userId, "joao.updated@example.com")).thenReturn(updatedUserResponse);
+        when(administratorRepository.save(administrator)).thenReturn(administrator);
+        when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.of(user));
 
         // When
-        AdministratorResponseDTO result = administratorService.update(administratorId, updateRequest);
+        AdministratorResponseDTO result = administratorService.put(administratorId, updateAdministratorDTO);
 
         // Then
         assertThat(result).isNotNull();
-        verify(repository).findByIdAndDeletedAtIsNull(administratorId);
-        verify(repository).existsByEmailIgnoringCaseAndDeletedAtIsNull("joao.updated@example.com");
-        verify(passwordEncoder).encode("newPassword");
-        verify(repository).save(administrator);
+        assertThat(result.id()).isEqualTo(administratorId);
+        assertThat(result.email()).isEqualTo("joao.updated@example.com");
+
+        verify(administratorRepository).findById(administratorId);
+        verify(userService).updateUserEmail(userId, "joao.updated@example.com");
+        verify(userService, never()).updateUserPassword(any(), any());
+        verify(administratorRepository).save(administrator);
+        verify(userRepository).findByIdAndDeletedAtIsNull(userId);
     }
 
     @Test
-    @DisplayName("Should throw conflict when updating to existing email")
-    void shouldThrowConflictWhenUpdatingToExistingEmail() {
-        // Given
-        AdministratorRequestDTO updateRequest = new AdministratorRequestDTO("João", "Silva", "existing@example.com", "senha123");
-        
-        when(repository.findByIdAndDeletedAtIsNull(administratorId)).thenReturn(Optional.of(administrator));
-        when(repository.existsByEmailIgnoringCaseAndDeletedAtIsNull("existing@example.com")).thenReturn(true);
-
-        // When & Then
-        assertThatThrownBy(() -> administratorService.update(administratorId, updateRequest))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Email já está em uso")
-                .satisfies(ex -> {
-                    ResponseStatusException rse = (ResponseStatusException) ex;
-                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-                });
-
-        verify(repository).findByIdAndDeletedAtIsNull(administratorId);
-        verify(repository).existsByEmailIgnoringCaseAndDeletedAtIsNull("existing@example.com");
-        verify(repository, never()).save(any(Administrator.class));
-    }
-
-    @Test
-    @DisplayName("Should patch administrator successfully")
-    void shouldPatchAdministratorSuccessfully() {
-        // Given
-        when(repository.findByIdAndDeletedAtIsNull(administratorId)).thenReturn(Optional.of(administrator));
-        when(repository.save(administrator)).thenReturn(administrator);
-
-        // When
-        AdministratorResponseDTO result = administratorService.patch(administratorId, patchRequestDTO);
-
-        // Then
-        assertThat(result).isNotNull();
-        verify(repository).findByIdAndDeletedAtIsNull(administratorId);
-        verify(repository).save(administrator);
-    }
-
-    @Test
-    @DisplayName("Should patch administrator email with validation")
-    void shouldPatchAdministratorEmailWithValidation() {
-        // Given
-        PatchAdministratorRequestDTO patchWithEmail = new PatchAdministratorRequestDTO(null, null, "new@example.com", null);
-        
-        when(repository.findByIdAndDeletedAtIsNull(administratorId)).thenReturn(Optional.of(administrator));
-        when(repository.existsByEmailIgnoringCaseAndDeletedAtIsNull("new@example.com")).thenReturn(false);
-        when(repository.save(administrator)).thenReturn(administrator);
-
-        // When
-        AdministratorResponseDTO result = administratorService.patch(administratorId, patchWithEmail);
-
-        // Then
-        assertThat(result).isNotNull();
-        verify(repository).findByIdAndDeletedAtIsNull(administratorId);
-        verify(repository).existsByEmailIgnoringCaseAndDeletedAtIsNull("new@example.com");
-        verify(repository).save(administrator);
-    }
-
-    @Test
-    @DisplayName("Should patch administrator password with encoding")
-    void shouldPatchAdministratorPasswordWithEncoding() {
-        // Given
-        PatchAdministratorRequestDTO patchWithPassword = new PatchAdministratorRequestDTO(null, null, null, "newPassword");
-        
-        when(repository.findByIdAndDeletedAtIsNull(administratorId)).thenReturn(Optional.of(administrator));
-        when(passwordEncoder.encode("newPassword")).thenReturn("encodedNewPassword");
-        when(repository.save(administrator)).thenReturn(administrator);
-
-        // When
-        AdministratorResponseDTO result = administratorService.patch(administratorId, patchWithPassword);
-
-        // Then
-        assertThat(result).isNotNull();
-        verify(repository).findByIdAndDeletedAtIsNull(administratorId);
-        verify(passwordEncoder).encode("newPassword");
-        verify(repository).save(administrator);
-    }
-
-    @Test
-    @DisplayName("Should delete administrator successfully (soft delete)")
+    @DisplayName("Should delete administrator successfully")
     void shouldDeleteAdministratorSuccessfully() {
         // Given
-        when(repository.findByIdAndDeletedAtIsNull(administratorId)).thenReturn(Optional.of(administrator));
-        when(repository.save(administrator)).thenReturn(administrator);
+        when(administratorRepository.findById(administratorId)).thenReturn(Optional.of(administrator));
+        doNothing().when(userService).delete(userId);
 
         // When
         administratorService.delete(administratorId);
 
         // Then
-        verify(repository).findByIdAndDeletedAtIsNull(administratorId);
-        verify(repository).save(administrator);
-        // Verify that deactivate() was called (would set deletedAt timestamp)
-    }
-
-    @Test
-    @DisplayName("Should throw not found when deleting non-existent administrator")
-    void shouldThrowNotFoundWhenDeletingNonExistentAdministrator() {
-        // Given
-        when(repository.findByIdAndDeletedAtIsNull(administratorId)).thenReturn(Optional.empty());
-
-        // When & Then
-        assertThatThrownBy(() -> administratorService.delete(administratorId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Administrador não encontrado")
-                .satisfies(ex -> {
-                    ResponseStatusException rse = (ResponseStatusException) ex;
-                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-                });
-
-        verify(repository).findByIdAndDeletedAtIsNull(administratorId);
-        verify(repository, never()).save(any(Administrator.class));
+        verify(administratorRepository).findById(administratorId);
+        verify(userService).delete(userId);
     }
 
     @Test
     @DisplayName("Should restore administrator successfully")
     void shouldRestoreAdministratorSuccessfully() {
         // Given
-        Administrator inactiveAdmin = new Administrator("João", "Silva", "joao@example.com", "password");
-        inactiveAdmin.deactivate(); // make it inactive
+        user.deactivate(); // Mark user as inactive
+        UserResponseDTO restoredUserResponse = new UserResponseDTO(userId, "joao@example.com", Role.ROLE_ADMIN);
         
-        when(repository.findById(administratorId)).thenReturn(Optional.of(inactiveAdmin));
-        when(repository.save(inactiveAdmin)).thenReturn(inactiveAdmin);
+        // Create a restored (active) user
+        User restoredUser = new User("joao@example.com", "password123", Role.ROLE_ADMIN);
+        
+        when(administratorRepository.findById(administratorId)).thenReturn(Optional.of(administrator));
+        when(userService.restore(userId)).thenReturn(restoredUserResponse);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(restoredUser));
 
         // When
         AdministratorResponseDTO result = administratorService.restore(administratorId);
 
         // Then
         assertThat(result).isNotNull();
-        verify(repository).findById(administratorId);
-        verify(repository).save(inactiveAdmin);
+        assertThat(result.id()).isEqualTo(administratorId);
+        assertThat(result.email()).isEqualTo("joao@example.com");
+        assertThat(result.active()).isTrue();
+        
+        verify(administratorRepository).findById(administratorId);
+        verify(userService).restore(userId);
+        verify(userRepository).findById(userId);
     }
 
     @Test
-    @DisplayName("Should throw bad request when trying to restore active administrator")
-    void shouldThrowBadRequestWhenTryingToRestoreActiveAdministrator() {
-        // Given - administrator is already active
-        when(repository.findById(administratorId)).thenReturn(Optional.of(administrator));
-
-        // When & Then
-        assertThatThrownBy(() -> administratorService.restore(administratorId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Administrador já está ativo")
-                .satisfies(ex -> {
-                    ResponseStatusException rse = (ResponseStatusException) ex;
-                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-                });
-
-        verify(repository).findById(administratorId);
-        verify(repository, never()).save(any(Administrator.class));
-    }
-
-    @Test
-    @DisplayName("Should throw not found when restoring non-existent administrator")
-    void shouldThrowNotFoundWhenRestoringNonExistentAdministrator() {
+    @DisplayName("Should throw not found when trying to restore non-existent administrator")
+    void shouldThrowNotFoundWhenTryingToRestoreNonExistentAdministrator() {
         // Given
-        when(repository.findById(administratorId)).thenReturn(Optional.empty());
+        when(administratorRepository.findById(administratorId)).thenReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> administratorService.restore(administratorId))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Administrador não encontrado")
-                .satisfies(ex -> {
-                    ResponseStatusException rse = (ResponseStatusException) ex;
-                    assertThat(rse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-                });
+                .hasMessageContaining("Administrator not found")
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
+        
+        verify(administratorRepository).findById(administratorId);
+        verify(userService, never()).restore(any());
+    }
 
-        verify(repository).findById(administratorId);
-        verify(repository, never()).save(any(Administrator.class));
+    @Test
+    @DisplayName("Should throw conflict when trying to restore already active administrator")
+    void shouldThrowConflictWhenTryingToRestoreAlreadyActiveAdministrator() {
+        // Given
+        when(administratorRepository.findById(administratorId)).thenReturn(Optional.of(administrator));
+        when(userService.restore(userId)).thenThrow(
+            new ResponseStatusException(HttpStatus.CONFLICT, "User is already active")
+        );
+
+        // When & Then
+        assertThatThrownBy(() -> administratorService.restore(administratorId))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("User is already active")
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.CONFLICT);
+        
+        verify(administratorRepository).findById(administratorId);
+        verify(userService).restore(userId);
+    }
+
+    @Test
+    @DisplayName("Should throw conflict when restoring administrator with email conflict")
+    void shouldThrowConflictWhenRestoringAdministratorWithEmailConflict() {
+        // Given
+        when(administratorRepository.findById(administratorId)).thenReturn(Optional.of(administrator));
+        when(userService.restore(userId)).thenThrow(
+            new ResponseStatusException(HttpStatus.CONFLICT, "Cannot restore user due to email conflict with another active user")
+        );
+
+        // When & Then
+        assertThatThrownBy(() -> administratorService.restore(administratorId))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Cannot restore user due to email conflict")
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.CONFLICT);
+        
+        verify(administratorRepository).findById(administratorId);
+        verify(userService).restore(userId);
     }
 }

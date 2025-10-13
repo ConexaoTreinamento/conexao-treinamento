@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,19 +14,25 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { CheckCircle, X } from "lucide-react"
-import AddStudentDialog from "@/components/add-student-dialog"
+import { CheckCircle, X, Loader2 } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { getTrainersForLookupOptions } from "@/lib/api-client/@tanstack/react-query.gen"
+import { apiClient } from "@/lib/client"
+import type { TrainerLookupDto } from "@/lib/api-client/types.gen"
+import { StudentPicker, type StudentSummary } from "@/components/student-picker"
+import { Controller, useForm } from "react-hook-form"
 
-interface EventFormData {
+export interface EventFormData {
   name: string
   date: string
   startTime: string
   endTime: string
   location: string
   description: string
-  instructor: string
-  students: string[]
+  trainerId: string
+  participantIds: string[]
   attendance?: Record<string, boolean>
+  participantDetails?: Record<string, StudentSummary | undefined>
 }
 
 interface EventModalProps {
@@ -35,9 +41,20 @@ interface EventModalProps {
   initialData?: Partial<EventFormData>
   onClose: () => void
   onSubmit: (data: EventFormData) => void
-  availableStudents: string[]
-  instructors: string[]
 }
+
+const buildInitialValues = (data?: Partial<EventFormData>): EventFormData => ({
+  name: data?.name ?? "",
+  date: data?.date ?? "",
+  startTime: data?.startTime ?? "",
+  endTime: data?.endTime ?? "",
+  location: data?.location ?? "",
+  description: data?.description ?? "",
+  trainerId: data?.trainerId ?? "",
+  participantIds: [...(data?.participantIds ?? [])],
+  attendance: { ...(data?.attendance ?? {}) },
+  participantDetails: { ...(data?.participantDetails ?? {}) },
+})
 
 export default function EventModal({
   open,
@@ -45,283 +62,344 @@ export default function EventModal({
   initialData,
   onClose,
   onSubmit,
-  availableStudents,
-  instructors,
 }: EventModalProps) {
-  const [formData, setFormData] = useState<EventFormData>({
-    name: "",
-    date: "",
-    startTime: "",
-    endTime: "",
-    location: "",
-    description: "",
-    instructor: "",
-    students: [],
-    attendance: {},
+  const trainersQuery = useQuery(getTrainersForLookupOptions({ client: apiClient }))
+
+  const trainersData = trainersQuery.data ?? []
+  const trainersLoading = trainersQuery.isLoading
+
+  const trainers = (trainersData ?? []).filter(
+    (trainer): trainer is TrainerLookupDto & { id: string } => Boolean(trainer?.id)
+  )
+
+  const [isAddParticipantDialogOpen, setIsAddParticipantDialogOpen] = useState(false)
+
+  const { control, handleSubmit, watch, setValue, reset, getValues, register } = useForm<EventFormData>({
+    mode: "onChange",
+    defaultValues: buildInitialValues(initialData),
   })
 
-  // Initialize form data when modal opens or initialData changes
   useEffect(() => {
-    if (initialData) {
-      setFormData({
-        name: initialData.name || "",
-        date: initialData.date || "",
-        startTime: initialData.startTime || "",
-        endTime: initialData.endTime || "",
-        location: initialData.location || "",
-        description: initialData.description || "",
-        instructor: initialData.instructor || "",
-        students: initialData.students || [],
-        attendance: initialData.attendance || {},
-      })
-    } else {
-      // Reset form for create mode
-      setFormData({
-        name: "",
-        date: "",
-        startTime: "",
-        endTime: "",
-        location: "",
-        description: "",
-        instructor: "",
-        students: [],
-        attendance: {},
-      })
+    if (open) {
+      reset(buildInitialValues(initialData))
     }
-  }, [initialData, open])
+  }, [initialData, open, reset])
 
-  const handleTimeChange = (field: "startTime" | "endTime", value: string) => {
-    setFormData((prev) => {
-      const newForm = { ...prev, [field]: value }
+  useEffect(() => {
+    if (!open) {
+      setIsAddParticipantDialogOpen(false)
+    }
+  }, [open])
 
-      // Validate times
-      if (newForm.startTime && newForm.endTime) {
-        const start = new Date(`2000-01-01T${newForm.startTime}`)
-        const end = new Date(`2000-01-01T${newForm.endTime}`)
+  const formValues = watch()
+  const participantIds = formValues.participantIds ?? []
+  const attendance = formValues.attendance ?? {}
+  const participantDetails = formValues.participantDetails ?? {}
 
-        if (end < start) {
-          // If end time is earlier than start time, set end time to start time
-          newForm.endTime = newForm.startTime
+  const handleTimeChange = (
+    field: "startTime" | "endTime",
+    value: string,
+    onChange: (value: string) => void
+  ) => {
+    const otherField = field === "startTime" ? "endTime" : "startTime"
+    const otherValue = getValues(otherField)
+    const hasCompleteStart = (field === "startTime" ? value : otherValue)?.length === 5
+    const hasCompleteEnd = (field === "endTime" ? value : otherValue)?.length === 5
+
+    if (hasCompleteStart && hasCompleteEnd && value && otherValue) {
+      const start = field === "startTime" ? value : otherValue
+      const end = field === "endTime" ? value : otherValue
+      const startDate = new Date(`2000-01-01T${start}`)
+      const endDate = new Date(`2000-01-01T${end}`)
+      if (endDate < startDate) {
+        if (field === "startTime") {
+          onChange(value)
+          setValue(otherField, value, { shouldDirty: true, shouldValidate: true })
         }
+        return
       }
-
-      return newForm
-    })
-  }
-
-  const handleAddStudent = (student: string) => {
-    if (!formData.students.includes(student)) {
-      setFormData(prev => ({
-        ...prev,
-        students: [...prev.students, student],
-        attendance: {
-          ...prev.attendance,
-          [student]: false,
-        },
-      }))
     }
+
+    onChange(value)
   }
 
-  const handleRemoveStudent = (student: string) => {
-    setFormData(prev => {
-      const newAttendance = { ...prev.attendance }
-      delete newAttendance[student]
-      return {
-        ...prev,
-        students: prev.students.filter(s => s !== student),
-        attendance: newAttendance,
-      }
-    })
+  const addParticipant = (student: StudentSummary): boolean => {
+    const ids = getValues("participantIds") ?? []
+    if (ids.includes(student.id)) {
+      return false
+    }
+
+    const nextAttendance = { ...(getValues("attendance") ?? {}) }
+    const nextDetails = { ...(getValues("participantDetails") ?? {}) }
+
+    nextAttendance[student.id] = nextAttendance[student.id] ?? false
+    nextDetails[student.id] = student
+
+    setValue("participantIds", [...ids, student.id], { shouldDirty: true, shouldValidate: true })
+    setValue("attendance", nextAttendance, { shouldDirty: true })
+    setValue("participantDetails", nextDetails, { shouldDirty: true })
+    return true
   }
 
-  const toggleAttendance = (student: string) => {
-    setFormData(prev => ({
-      ...prev,
-      attendance: {
-        ...prev.attendance,
-        [student]: !prev.attendance?.[student],
-      },
-    }))
+  const handleAddStudent = (student: StudentSummary) => {
+    addParticipant(student)
   }
 
-  const handleSubmit = () => {
-    onSubmit(formData)
+  const handleRemoveStudent = (studentId: string) => {
+    const ids = getValues("participantIds") ?? []
+    const nextAttendance = { ...(getValues("attendance") ?? {}) }
+    const nextDetails = { ...(getValues("participantDetails") ?? {}) }
+
+    delete nextAttendance[studentId]
+    delete nextDetails[studentId]
+
+    setValue(
+      "participantIds",
+      ids.filter(id => id !== studentId),
+      { shouldDirty: true, shouldValidate: true }
+    )
+    setValue("attendance", nextAttendance, { shouldDirty: true })
+    setValue("participantDetails", nextDetails, { shouldDirty: true })
+  }
+
+  const toggleAttendance = (studentId: string) => {
+    const nextAttendance = { ...(getValues("attendance") ?? {}) }
+    nextAttendance[studentId] = !nextAttendance[studentId]
+    setValue("attendance", nextAttendance, { shouldDirty: true })
+  }
+
+  const submitForm = handleSubmit((data) => {
+    onSubmit(data)
     onClose()
-  }
+  })
 
-  const isFormValid = () => {
-    return formData.name.trim() &&
-           formData.date &&
-           formData.startTime &&
-           formData.endTime &&
-           formData.location.trim() &&
-           formData.instructor
-  }
-
-  const currentParticipants = formData.students.length
-
-  return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {mode === "create" ? "Criar Novo Evento" : "Editar Evento"}
-          </DialogTitle>
-          <DialogDescription>
-            {mode === "create"
-              ? "Preencha as informações para criar um novo evento"
-              : "Edite as informações do evento"
-            }
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-6">
-          {/* Basic Information */}
-          <div className="w-full">
-            <div className="space-y-2">
-              <Label htmlFor="eventName">Nome do Evento *</Label>
-              <Input
-                id="eventName"
-                value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Ex: Corrida no Parque"
-              />
-            </div>
-          </div>
-
-          {/* Date and Time */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="eventDate">Data *</Label>
-              <Input
-                id="eventDate"
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="eventStartTime">Horário de Início *</Label>
-              <Input
-                id="eventStartTime"
-                type="time"
-                value={formData.startTime}
-                onChange={(e) => handleTimeChange("startTime", e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="eventEndTime">Horário de Fim *</Label>
-              <Input
-                id="eventEndTime"
-                type="time"
-                value={formData.endTime}
-                onChange={(e) => handleTimeChange("endTime", e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Location and Instructor */}
-          <div className="space-y-2">
-            <Label htmlFor="eventLocation">Local *</Label>
-            <Input
-              id="eventLocation"
-              value={formData.location}
-              onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-              placeholder="Ex: Parque Ibirapuera"
-            />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="eventInstructor">Instrutor *</Label>
-              <Select
-                value={formData.instructor}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, instructor: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o instrutor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {instructors.map((instructor) => (
-                    <SelectItem key={instructor} value={instructor}>
-                      {instructor}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="eventDescription">Descrição</Label>
-            <Textarea
-              id="eventDescription"
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Descreva o evento..."
-              rows={3}
-            />
-          </div>
-
-          {/* Participants */}
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-              <Label>
-                Participantes ({currentParticipants})
-              </Label>
-              <AddStudentDialog
-                students={availableStudents}
-                onAddStudent={handleAddStudent}
-                excludeStudents={formData.students}
-              />
-            </div>
-
-            {formData.students.length > 0 && (
-              <div className="border rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
-                {formData.students.map((student) => (
-                  <div key={student} className="flex items-center justify-between p-2 bg-muted rounded">
-                    <span className="text-sm">{student}</span>
-                    <div className="flex items-center gap-1">
-                      {/* Only show attendance toggle in edit mode */}
-                      {mode === "edit" && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => toggleAttendance(student)}
-                          className={`h-6 w-6 p-0 ${formData.attendance?.[student] ? "text-green-600" : "text-muted-foreground"}`}
-                        >
-                          <CheckCircle className="w-3 h-3" />
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleRemoveStudent(student)}
-                        className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                      >
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            className="bg-green-600 hover:bg-green-700"
-            disabled={!isFormValid()}
-          >
-            {mode === "create" ? "Criar Evento" : "Salvar Alterações"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+  const isFormValid = Boolean(
+    formValues.name?.trim() &&
+    formValues.date &&
+    formValues.startTime &&
+    formValues.endTime &&
+    formValues.location?.trim() &&
+    formValues.trainerId
   )
-}
+
+  const currentParticipants = participantIds.length
+
+    return (
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          onClose()
+        }
+      }}
+    >
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {mode === "create" ? "Criar Novo Evento" : "Editar Evento"}
+            </DialogTitle>
+            <DialogDescription>
+              {mode === "create"
+                ? "Preencha as informações para criar um novo evento"
+                : "Edite as informações do evento"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            <div className="w-full">
+              <div className="space-y-2">
+                <Label htmlFor="eventName">Nome do Evento *</Label>
+                <Input
+                  id="eventName"
+                  placeholder="Ex: Corrida no Parque"
+                  {...register("name", { required: true })}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="eventDate">Data *</Label>
+                <Input
+                  id="eventDate"
+                  type="date"
+                  {...register("date", { required: true })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="eventStartTime">Horário de Início *</Label>
+                <Controller
+                  control={control}
+                  name="startTime"
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Input
+                      id="eventStartTime"
+                      type="time"
+                      value={field.value}
+                      onChange={(e) => handleTimeChange("startTime", e.target.value, field.onChange)}
+                    />
+                  )}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="eventEndTime">Horário de Fim *</Label>
+                <Controller
+                  control={control}
+                  name="endTime"
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Input
+                      id="eventEndTime"
+                      type="time"
+                      value={field.value}
+                      onChange={(e) => handleTimeChange("endTime", e.target.value, field.onChange)}
+                    />
+                  )}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="eventLocation">Local *</Label>
+              <Input
+                id="eventLocation"
+                placeholder="Ex: Parque Ibirapuera"
+                {...register("location", { required: true })}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="eventInstructor">Instrutor *</Label>
+                <Controller
+                  control={control}
+                  name="trainerId"
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={trainersLoading ? "Carregando..." : "Selecione o instrutor"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {trainers.map((trainer) => (
+                          <SelectItem key={trainer.id} value={trainer.id}>
+                            {trainer.name || "Nome não informado"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="eventDescription">Descrição</Label>
+              <Textarea
+                id="eventDescription"
+                placeholder="Descreva o evento..."
+                rows={3}
+                {...register("description")}
+              />
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <Label>Participantes ({currentParticipants})</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Adicione ou gerencie os participantes desta aula especial.
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setIsAddParticipantDialogOpen(true)}>
+                  Adicionar Aluno
+                </Button>
+              </div>
+
+              <Dialog open={isAddParticipantDialogOpen} onOpenChange={setIsAddParticipantDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Adicionar aluno ao evento</DialogTitle>
+                    <DialogDescription>Escolha um aluno da lista paginada.</DialogDescription>
+                  </DialogHeader>
+                  <StudentPicker
+                    excludedStudentIds={participantIds}
+                    onSelect={handleAddStudent}
+                    pageSize={10}
+                  />
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsAddParticipantDialogOpen(false)}>
+                      Fechar
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {participantIds.length > 0 ? (
+                <div className="border rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
+                  {participantIds.map((studentId) => {
+                    const summary = participantDetails?.[studentId]
+                    const displayName = summary ? `${summary.name ?? ""} ${summary.surname ?? ""}`.trim() : ""
+                    const fallbackName = displayName || summary?.id || studentId
+
+                    return (
+                      <div key={studentId} className="flex items-center justify-between p-2 bg-muted rounded">
+                        <span className="text-sm">{fallbackName}</span>
+                        <div className="flex items-center gap-1">
+                          {mode === "edit" && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => toggleAttendance(studentId)}
+                              className={`h-6 w-6 p-0 ${
+                                attendance?.[studentId] ? "text-green-600" : "text-muted-foreground"
+                              }`}
+                            >
+                              <CheckCircle className="w-3 h-3" />
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleRemoveStudent(studentId)}
+                            className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Nenhum participante adicionado ainda.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={submitForm}
+              className="bg-green-600 hover:bg-green-700"
+              disabled={!isFormValid || trainersLoading}
+            >
+              {trainersLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Carregando...
+                </>
+              ) : (
+                mode === "create" ? "Criar Evento" : "Salvar Alterações"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    )
+  }

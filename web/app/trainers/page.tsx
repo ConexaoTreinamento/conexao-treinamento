@@ -8,21 +8,23 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Search, Filter, Plus, User, Phone, Mail, Calendar, Clock, Edit, Trash2, UserPlus } from "lucide-react"
+import { Search, Filter, Phone, Mail, Calendar, Clock, Edit, Trash2, UserPlus } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import TrainerModal from "@/components/trainer-modal"
-import { createTrainerAndUserMutation, createTrainerAndUserOptions, findAllTrainersOptions, softDeleteTrainerUserMutation, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { createTrainerAndUserMutation, findAllTrainersOptions, softDeleteTrainerUserMutation, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createTrainerAndUser, TrainerResponseDto } from "@/lib/api-client"
+import { TrainerResponseDto } from "@/lib/api-client"
 import { apiClient } from "@/lib/client"
-import { client } from "@/lib/api-client/client.gen"
+import { useToast } from "@/hooks/use-toast"
+import { handleHttpError } from "@/lib/error-utils"
 
 // Interface for trainer data to match the modal
 
 export default function TrainersPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [userRole, setUserRole] = useState<string>("admin")
+  const { toast } = useToast()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<"create" | "edit">("create")
   const [editingTrainer, setEditingTrainer] = useState<TrainerResponseDto | null>(null)
@@ -47,11 +49,6 @@ export default function TrainersPage() {
   const { data: trainers, isLoading, error } = useQuery({
     ...findAllTrainersOptions({
       client: apiClient,
-      security: [{
-        type: "http",
-        scheme: "bearer",
-        in: "header",
-      },]
     })
   })
 
@@ -71,50 +68,45 @@ export default function TrainersPage() {
 
   // Handle modal submission
   const handleModalSubmit = async (formData: any) => {
-    if (modalMode === "create") {
-      // Create new trainer
-      await createTrainer({
-        body: formData,
-        client: apiClient,
-        security: [{
-          type: "http",
-          scheme: "bearer",
-          in: "header",
-        }],
+    try {
+      if (modalMode === "create") {
+        // Create new trainer
+        await createTrainer({
+          body: formData,
+          client: apiClient,
+        })
+      } else {
+        // Update existing trainer
+        await updateTrainer({
+          path: { id: String(editingTrainer?.id) },
+          body: formData,
+          client: apiClient,
+        })
+      }
+      await queryClient.invalidateQueries({
+          predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllTrainers'
       })
-    } else {
-      // Update existing trainer
-      await updateTrainer({
-        path: { id: String(editingTrainer?.id) },
-        body: formData,
-        client: apiClient,
-        security: [{
-          type: "http",
-          scheme: "bearer",
-          in: "header",
-        }],
-      })
+      setIsModalOpen(false)
+      setEditingTrainer(null)
+    } catch (error: any) {
+      const action = modalMode === "create" ? "criar treinador" : "atualizar treinador"
+      handleHttpError(error, action, `Não foi possível ${action}. Tente novamente.`)
     }
-    await queryClient.invalidateQueries({
-        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllTrainers'
-    })
-    setIsModalOpen(false)
-    setEditingTrainer(null)
   }
 
   // Handle trainer deletion
   const handleDeleteTrainer = async (trainerId: string) => {
     if (confirm("Tem certeza que deseja excluir este professor?")) {
-      await deleteTrainer({
-        path: { id: String(trainerId) }, client: apiClient, security: [{
-          type: "http",
-          scheme: "bearer",
-          in: "header",
-        }]
-      });
-      await queryClient.invalidateQueries({
-        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllTrainers'
-      })
+      try {
+        await deleteTrainer({
+          path: { id: String(trainerId) }, client: apiClient
+        });
+        await queryClient.invalidateQueries({
+          predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllTrainers'
+        })
+      } catch (error: any) {
+        handleHttpError(error, "excluir treinador", "Não foi possível excluir o treinador. Tente novamente.")
+      }
     }
   }
 

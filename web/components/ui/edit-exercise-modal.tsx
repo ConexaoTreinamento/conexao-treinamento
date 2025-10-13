@@ -12,29 +12,31 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
-import { getAuthHeaders } from "@/app/administrators/page";
+import { handleHttpError } from "@/lib/error-utils";
+import { patchExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiClient } from "@/lib/client";
+import { ExerciseResponseDto } from "@/lib/api-client";
 
 interface EditExerciseModalProps {
     isOpen: boolean;
     onClose: () => void;
-    exercise: {
-        id: number;
-        name: string;
-        description?: string;
-    } | null;
-    onExerciseUpdated: () => void;
+    exercise: ExerciseResponseDto | null;
 }
 
-export default function EditExerciseModal({ isOpen, onClose, exercise, onExerciseUpdated }: EditExerciseModalProps) {
+export default function EditExerciseModal({ isOpen, onClose, exercise }: EditExerciseModalProps) {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
+    const queryClient = useQueryClient();
 
+    const { mutateAsync: editExercise, isPending: isEditing } = useMutation(
+        patchExerciseMutation()
+    )
     // Preenche os dados iniciais quando abrir o modal
     useEffect(() => {
         if (exercise) {
-            setName(exercise.name);
+            setName(exercise.name!);
             setDescription(exercise.description || "");
         }
     }, [exercise]);
@@ -43,38 +45,28 @@ export default function EditExerciseModal({ isOpen, onClose, exercise, onExercis
         e.preventDefault();
         if (!exercise) return;
 
-        setIsLoading(true);
-
         try {
-            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-            const response = await fetch(`${API_URL}/exercises/${exercise.id}`, {
-                method: 'PUT',
-                headers: getAuthHeaders(),
-                body: JSON.stringify({ name, description }),
+            await editExercise({
+                path: { id: String(exercise?.id) }, client: apiClient, body: { name, description }
             });
-
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Erro ao atualizar exercício');
-            }
 
             toast({
                 title: "Exercício atualizado",
                 description: "O exercício foi atualizado com sucesso.",
             });
 
-            onExerciseUpdated();
+            await queryClient.invalidateQueries({
+                predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllExercises'
+            })
             onClose();
         } catch (error: any) {
-            toast({
-                title: "Erro ao atualizar exercício",
-                description: error.message || "Ocorreu um erro ao atualizar o exercício.",
-                variant: "destructive",
-            });
-        } finally {
-            setIsLoading(false);
+            handleHttpError(error, "deletar exercício", "Erro ao deletar exercício. Tente novamente.")
         }
     };
+
+
+
+
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -110,8 +102,8 @@ export default function EditExerciseModal({ isOpen, onClose, exercise, onExercis
                         <Button type="button" variant="outline" onClick={onClose}>
                             Cancelar
                         </Button>
-                        <Button type="submit" disabled={isLoading}>
-                            {isLoading ? "Salvando..." : "Salvar Alterações"}
+                        <Button type="submit" disabled={isEditing}>
+                            {isEditing ? "Salvando..." : "Salvar Alterações"}
                         </Button>
                     </DialogFooter>
                 </form>
