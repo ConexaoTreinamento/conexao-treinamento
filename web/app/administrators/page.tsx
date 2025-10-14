@@ -378,7 +378,10 @@ export default function AdministratorsPage() {
               </Card>
             ) : (
               filteredAdministrators.map((admin) => (
-                <Card key={admin.id} className="hover:shadow-md transition-shadow">
+                <Card key={admin.id} 
+                  className="hover:shadow-md transition-shadow cursor-pointer" 
+                  onClick={() => router.push(`/administrators/${admin.id}`)}
+                > 
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
