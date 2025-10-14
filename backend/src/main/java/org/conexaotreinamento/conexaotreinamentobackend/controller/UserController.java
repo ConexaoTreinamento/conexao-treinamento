@@ -57,6 +57,7 @@ public class UserController {
     public ResponseEntity<Void> changeOwnPassword(@RequestBody @Valid ChangePasswordRequestDTO request) {
         // 1. Search for the currently authenticated user
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+         
         String userEmail = authentication != null ? authentication.getName() : null;
         if (userEmail == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
