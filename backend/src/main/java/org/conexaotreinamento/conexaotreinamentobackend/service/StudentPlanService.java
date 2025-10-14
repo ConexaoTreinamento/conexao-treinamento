@@ -151,7 +151,7 @@ public class StudentPlanService {
         }
         if (!overlapping.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                "Student already has an overlapping plan assignment for this period");
+                "O aluno já possui um plano atribuído que se sobrepõe ao período indicado.");
         }
 
         StudentPlanAssignment assignment = new StudentPlanAssignment();
