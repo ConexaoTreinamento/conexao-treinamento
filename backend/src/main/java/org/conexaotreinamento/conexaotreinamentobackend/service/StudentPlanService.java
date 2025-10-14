@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -112,7 +113,7 @@ public class StudentPlanService {
         StudentPlanAssignment currentAssignment = null;
         StudentPlan oldPlan = null;
 
-        var currentAssignmentOpt = assignmentRepository.findCurrentActiveAssignment(studentId);
+        Optional<StudentPlanAssignment> currentAssignmentOpt = assignmentRepository.findCurrentActiveAssignment(studentId);
         if (currentAssignmentOpt.isPresent()) {
             currentAssignment = currentAssignmentOpt.get();
             oldPlan = studentPlanRepository.findById(currentAssignment.getPlanId()).orElse(null);
