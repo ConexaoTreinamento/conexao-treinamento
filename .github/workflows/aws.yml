@@ -28,7 +28,7 @@ name: Deploy to Amazon ECS
 
 on:
   push:
-    branches: [ "chore/aws-public-ip-api" ]
+    branches: [ "main" ]
 
 env:
   AWS_REGION: us-east-2
