@@ -109,7 +109,7 @@ public class StudentPlanService {
 //            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assigning user not found"));
         
         LocalDate startDate = requestDTO.getStartDate();
-        int assignedDurationDays = plan.getDurationDays();
+        int durationDays = plan.getDurationDays();
         StudentPlanAssignment currentAssignment = null;
         StudentPlan oldPlan = null;
 
@@ -118,10 +118,9 @@ public class StudentPlanService {
             currentAssignment = currentAssignmentOpt.get();
             oldPlan = studentPlanRepository.findById(currentAssignment.getPlanId()).orElse(null);
 
-            long baselineDuration = currentAssignment.getAssignedDurationDays() != null
-                ? currentAssignment.getAssignedDurationDays()
-                : (oldPlan != null ? oldPlan.getDurationDays()
-                : Math.max(0, ChronoUnit.DAYS.between(currentAssignment.getStartDate(), currentAssignment.getEndDate())));
+            long baselineDuration = currentAssignment.getDurationDays() != null
+                ? currentAssignment.getDurationDays()
+                : (oldPlan != null ? oldPlan.getDurationDays() : plan.getDurationDays());
 
             long daysConsumed = ChronoUnit.DAYS.between(currentAssignment.getStartDate(), startDate);
             if (daysConsumed < 0) {
@@ -129,22 +128,18 @@ public class StudentPlanService {
             }
             long remainingDays = Math.max(0, baselineDuration - daysConsumed);
             if (remainingDays > 0) {
-                assignedDurationDays = (int) remainingDays;
+                durationDays = (int) remainingDays;
             }
 
-            currentAssignment.setAssignedDurationDays((int) Math.min(baselineDuration, daysConsumed));
-            LocalDate trimmedEndDate = startDate.minusDays(1);
-            if (trimmedEndDate.isAfter(currentAssignment.getEndDate())) {
-                trimmedEndDate = currentAssignment.getEndDate();
-            }
-            currentAssignment.setEndDate(trimmedEndDate);
+            int consumed = (int) Math.min(baselineDuration, daysConsumed);
+            currentAssignment.setDurationDays(Math.max(0, consumed));
             assignmentRepository.save(currentAssignment);
         }
 
-        LocalDate endDate = startDate.plusDays(assignedDurationDays);
+        LocalDate endExclusive = startDate.plusDays(Math.max(0, durationDays));
 
         List<StudentPlanAssignment> overlapping = assignmentRepository.findOverlappingAssignments(
-            studentId, startDate, endDate);
+            studentId, startDate, endExclusive);
         if (currentAssignment != null) {
             UUID currentAssignmentId = currentAssignment.getId();
             overlapping.removeIf(existing -> existing.getId().equals(currentAssignmentId));
@@ -158,10 +153,9 @@ public class StudentPlanService {
         assignment.setStudentId(studentId);
         assignment.setPlanId(requestDTO.getPlanId());
         assignment.setStartDate(startDate);
-        assignment.setEndDate(endDate);
+        assignment.setDurationDays(durationDays);
         assignment.setAssignedByUserId(assignedByUserId);
         assignment.setAssignmentNotes(requestDTO.getAssignmentNotes());
-        assignment.setAssignedDurationDays(assignedDurationDays);
 
         StudentPlanAssignment savedAssignment = assignmentRepository.save(assignment);
 
@@ -244,7 +238,7 @@ public class StudentPlanService {
         dto.setStudentId(assignment.getStudentId());
         dto.setPlanId(assignment.getPlanId());
         dto.setStartDate(assignment.getStartDate());
-        dto.setEndDate(assignment.getEndDate());
+    dto.setDurationDays(assignment.getDurationDays());
         dto.setAssignedByUserId(assignment.getAssignedByUserId());
         dto.setAssignmentNotes(assignment.getAssignmentNotes());
         dto.setCreatedAt(assignment.getCreatedAt());
@@ -261,7 +255,6 @@ public class StudentPlanService {
         if (assigningUser != null) {
             dto.setAssignedByUserEmail(assigningUser.getEmail());
         }
-            dto.setAssignedDurationDays(assignment.getAssignedDurationDays());
         
         // Set computed fields
         dto.setActive(assignment.isActive());
@@ -270,7 +263,7 @@ public class StudentPlanService {
         
         // Calculate days remaining
         if (assignment.isActive()) {
-            dto.setDaysRemaining(ChronoUnit.DAYS.between(LocalDate.now(), assignment.getEndDate()));
+            dto.setDaysRemaining(ChronoUnit.DAYS.between(LocalDate.now(), assignment.getEndDateExclusive()));
         } else {
             dto.setDaysRemaining(0);
         }

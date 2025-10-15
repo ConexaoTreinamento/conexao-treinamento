@@ -36,9 +36,9 @@ public class StudentPlanAssignment {
     
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
-    
-    @Column(name = "end_date", nullable = false)
-    private LocalDate endDate;
+
+    @Column(name = "duration_days", nullable = false)
+    private Integer durationDays;
     
     @Column(name = "assigned_by_user_id", nullable = false)
     private UUID assignedByUserId;
@@ -49,9 +49,6 @@ public class StudentPlanAssignment {
     
     @Column(name = "assignment_notes", columnDefinition = "TEXT")
     private String assignmentNotes;
-    
-    @Column(name = "assigned_duration_days", nullable = false)
-    private Integer assignedDurationDays;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -60,28 +57,54 @@ public class StudentPlanAssignment {
     // Computed active status based on current date
     public boolean isActive() {
         LocalDate now = LocalDate.now();
-        return !now.isBefore(startDate) && !now.isAfter(endDate);
+        return isActiveOn(now);
     }
-    
+
     // Check if active on specific date
     public boolean isActiveOn(LocalDate date) {
-        return !date.isBefore(startDate) && !date.isAfter(endDate);
+        if (durationDays == null || durationDays <= 0) {
+            return false;
+        }
+        LocalDate endExclusive = getEndDateExclusive();
+        return !date.isBefore(startDate) && date.isBefore(endExclusive);
     }
-    
+
     // Check if expired
     public boolean isExpired() {
-        return LocalDate.now().isAfter(endDate);
+        if (durationDays == null || durationDays <= 0) {
+            return true;
+        }
+        return LocalDate.now().isAfter(getEndDateExclusive().minusDays(1));
     }
-    
+
     // Check if starting soon (within days)
     public boolean isStartingSoon(int days) {
         LocalDate futureDate = LocalDate.now().plusDays(days);
-        return startDate.isAfter(LocalDate.now()) && !startDate.isAfter(futureDate);
+        return startDate.isAfter(LocalDate.now()) && startDate.isBefore(futureDate.plusDays(1));
     }
-    
+
     // Check if expiring soon (within days)
     public boolean isExpiringSoon(int days) {
-        LocalDate futureDate = LocalDate.now().plusDays(days);
-        return endDate.isAfter(LocalDate.now()) && !endDate.isAfter(futureDate);
+        if (durationDays == null || durationDays <= 0) {
+            return false;
+        }
+        LocalDate endInclusive = getEndDateInclusive();
+        LocalDate now = LocalDate.now();
+        LocalDate futureDate = now.plusDays(days);
+        return endInclusive.isAfter(now) && !endInclusive.isAfter(futureDate);
+    }
+
+    @Transient
+    public LocalDate getEndDateInclusive() {
+        if (durationDays == null || durationDays <= 0) {
+            return startDate.minusDays(1);
+        }
+        return startDate.plusDays(durationDays - 1);
+    }
+
+    @Transient
+    public LocalDate getEndDateExclusive() {
+        int days = durationDays != null ? Math.max(0, durationDays) : 0;
+        return startDate.plusDays(days);
     }
 }

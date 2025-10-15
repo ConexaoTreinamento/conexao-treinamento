@@ -64,16 +64,15 @@ class StudentPlanServiceTest {
         return p;
     }
 
-    private StudentPlanAssignment assignment(UUID id, UUID studentId, UUID planId, LocalDate start, LocalDate end, UUID assignedBy) {
+    private StudentPlanAssignment assignment(UUID id, UUID studentId, UUID planId, LocalDate start, LocalDate endExclusive, UUID assignedBy) {
         StudentPlanAssignment a = new StudentPlanAssignment();
         a.setId(id);
         a.setStudentId(studentId);
         a.setPlanId(planId);
         a.setStartDate(start);
-        a.setEndDate(end);
+        a.setDurationDays((int) Math.max(0, ChronoUnit.DAYS.between(start, endExclusive)));
         a.setAssignedByUserId(assignedBy);
         a.setAssignmentNotes("notes");
-        a.setAssignedDurationDays((int) Math.max(0, ChronoUnit.DAYS.between(start, end)));
         return a;
     }
 
@@ -314,10 +313,10 @@ class StudentPlanServiceTest {
         StudentPlan newPlan = newPlan(planId, "New", 2, 45, true);
         Student student = new Student("s@example.com", "Stu", "Dent", Student.Gender.M, LocalDate.of(1990, 1, 1));
 
-        LocalDate oldStart = LocalDate.now().minusDays(10);
-        LocalDate oldEnd = oldStart.plusDays(30);
-        StudentPlanAssignment currentAssignment = assignment(UUID.randomUUID(), studentId, oldPlanId, oldStart, oldEnd, userId);
-        currentAssignment.setAssignedDurationDays(30);
+    LocalDate oldStart = LocalDate.now().minusDays(10);
+    LocalDate oldEndExclusive = oldStart.plusDays(30);
+    StudentPlanAssignment currentAssignment = assignment(UUID.randomUUID(), studentId, oldPlanId, oldStart, oldEndExclusive, userId);
+    currentAssignment.setDurationDays(30);
 
         LocalDate newStart = LocalDate.now();
         AssignPlanRequestDTO request = new AssignPlanRequestDTO(planId, newStart, "upgrade");
@@ -334,10 +333,9 @@ class StudentPlanServiceTest {
         StudentPlanAssignmentResponseDTO response = studentPlanService.assignPlanToStudent(studentId, request, userId);
 
         // Assert
-        assertEquals(20, response.getAssignedDurationDays());
-        assertEquals(newStart.plusDays(20), response.getEndDate());
-        assertEquals(10, currentAssignment.getAssignedDurationDays());
-        assertEquals(newStart.minusDays(1), currentAssignment.getEndDate());
+        assertEquals(20, response.getDurationDays());
+        assertEquals(10, currentAssignment.getDurationDays());
+        assertEquals(newStart, currentAssignment.getEndDateExclusive());
         verify(studentCommitmentService).resetScheduleIfExceedsPlan(studentId, newPlan.getMaxDays());
     }
 }

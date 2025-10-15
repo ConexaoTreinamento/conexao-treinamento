@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, User, Phone, Mail, Calendar, MapPin, Activity, Edit, CalendarDays, Trash2, RotateCcw, History, PlusCircle } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
-import { UnifiedStatusBadge } from "@/lib/expiring-plans"
+import { PlanAssignmentStatusBadge, getAssignmentDaysRemaining, getAssignmentEndDate, getAssignmentDurationDays } from "@/lib/expiring-plans"
 import {hasInsomniaTypes, impairmentTypes, STUDENT_PROFILES} from "@/lib/students-data"
 import { useDeleteStudent, useRestoreStudent } from "@/lib/hooks/student-mutations";
 import {apiClient} from "@/lib/client";
@@ -58,21 +58,6 @@ interface Evaluation {
   }
 }
 
-interface ScheduleClass {
-  day: string
-  time: string
-  class: string
-  instructor: string
-}
-interface Exercise {
-  id: string
-  name: string
-  sets: number
-  reps: string
-  weight?: string
-  duration?: string
-  notes?: string
-}
 export default function StudentProfilePage() {
   const router = useRouter()
   const params = useParams()
@@ -286,6 +271,20 @@ export default function StudentProfilePage() {
     return age
   }
 
+  const currentAssignment = currentPlanQuery.data ?? null
+  const currentPlanEndDate = currentAssignment ? getAssignmentEndDate(currentAssignment) : undefined
+  const currentPlanDaysRemaining = currentAssignment ? getAssignmentDaysRemaining(currentAssignment) : undefined
+
+  const planHistoryEntries = (planHistoryQuery.data ?? []).map((entry) => {
+    const duration = getAssignmentDurationDays(entry) ?? entry.planMaxDays ?? null
+    return {
+      entry,
+      derivedEndDate: getAssignmentEndDate(entry) ?? null,
+      derivedDaysRemaining: getAssignmentDaysRemaining(entry),
+      derivedDuration: duration,
+    }
+  })
+
   return (
     <>
     <Layout>
@@ -317,12 +316,16 @@ export default function StudentProfilePage() {
               <div className="space-y-2">
                 <CardTitle className="text-lg">{getFullName(studentData)}</CardTitle>
                 <div className="flex flex-wrap justify-center gap-2">
-                  {currentPlanQuery.data && (
+                  {currentAssignment && (
                     <>
-                      {currentPlanQuery.data.endDate && (
-                        <UnifiedStatusBadge expirationDate={currentPlanQuery.data.endDate} />
+                      <PlanAssignmentStatusBadge assignment={currentAssignment} />
+                      <Badge variant="outline">{currentAssignment.planName}</Badge>
+                      {currentPlanEndDate && (
+                        <Badge variant="secondary">Fim: {new Date(currentPlanEndDate).toLocaleDateString('pt-BR')}</Badge>
                       )}
-                      <Badge variant="outline">{currentPlanQuery.data.planName}</Badge>
+                      {typeof currentPlanDaysRemaining === 'number' && currentPlanDaysRemaining >= 0 && (
+                        <Badge variant="outline">{currentPlanDaysRemaining} dias restantes</Badge>
+                      )}
                     </>
                   )}
                   {!currentPlanQuery.data && <Badge variant="secondary">Sem Plano</Badge>}
@@ -509,7 +512,7 @@ export default function StudentProfilePage() {
                   {planHistoryQuery.isLoading && <p className="text-xs text-muted-foreground">Carregando histórico...</p>}
                   {!planHistoryQuery.isLoading && planHistoryQuery.data && planHistoryQuery.data.length===0 && <p className="text-xs text-muted-foreground">Nenhum histórico encontrado.</p>}
                   <div className="space-y-2 max-h-72 overflow-auto pr-1">
-                    {planHistoryQuery.data?.map(h => (
+                    {planHistoryEntries.map(({ entry: h, derivedEndDate, derivedDaysRemaining, derivedDuration }) => (
                       <div key={h.id} className="p-3 rounded border flex items-center justify-between text-xs bg-muted/50">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -520,9 +523,9 @@ export default function StudentProfilePage() {
                           </div>
                           <div className="text-muted-foreground flex flex-wrap gap-2">
                             <span>Início: {h.startDate ? new Date(h.startDate).toLocaleDateString('pt-BR') : 'N/A'}</span>
-                            <span>Fim: {h.endDate ? new Date(h.endDate).toLocaleDateString('pt-BR') : 'N/A'}</span>
-                            <span>Dias: {h.planMaxDays}</span>
-                            <span>Restantes: {h.daysRemaining}</span>
+                            <span>Fim: {derivedEndDate ? new Date(derivedEndDate).toLocaleDateString('pt-BR') : 'N/A'}</span>
+                            <span>Duração: {derivedDuration != null ? `${derivedDuration} dias` : 'N/A'}</span>
+                            <span>Restantes: {typeof derivedDaysRemaining === 'number' ? Math.max(derivedDaysRemaining, 0) : (h.daysRemaining ?? 'N/A')}</span>
                           </div>
                         </div>
                         <div className="text-right min-w-[110px]">
