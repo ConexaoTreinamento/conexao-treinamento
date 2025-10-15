@@ -338,4 +338,36 @@ class StudentPlanServiceTest {
         assertEquals(newStart, currentAssignment.getEndDateExclusive());
         verify(studentCommitmentService).resetScheduleIfExceedsPlan(studentId, newPlan.getMaxDays());
     }
+
+    @Test
+    void assignPlanToStudent_doesNotTruncateDurationWhenNoOverlap() {
+        // Arrange
+        UUID oldPlanId = UUID.randomUUID();
+        StudentPlan oldPlan = newPlan(oldPlanId, "Old", 4, 10, true);
+        StudentPlan newPlan = newPlan(planId, "New", 2, 45, true);
+        Student student = new Student("s@example.com", "Stu", "Dent", Student.Gender.M, LocalDate.of(1990, 1, 1));
+
+        LocalDate oldStart = LocalDate.now().minusDays(5);
+        LocalDate newStart = oldStart.plusDays(oldPlan.getDurationDays());
+        StudentPlanAssignment currentAssignment = assignment(UUID.randomUUID(), studentId, oldPlanId, oldStart, oldStart.plusDays(oldPlan.getDurationDays()), userId);
+        currentAssignment.setDurationDays(oldPlan.getDurationDays());
+
+        AssignPlanRequestDTO request = new AssignPlanRequestDTO(planId, newStart, "upgrade");
+
+        when(studentRepository.findById(studentId)).thenReturn(Optional.of(student));
+        when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(newPlan));
+        when(studentPlanRepository.findById(oldPlanId)).thenReturn(Optional.of(oldPlan));
+        when(assignmentRepository.findCurrentActiveAssignment(studentId)).thenReturn(Optional.of(currentAssignment));
+        when(assignmentRepository.findOverlappingAssignments(eq(studentId), any(LocalDate.class), any(LocalDate.class)))
+            .thenReturn(new java.util.ArrayList<>());
+        when(assignmentRepository.save(any(StudentPlanAssignment.class))).thenAnswer(inv -> (StudentPlanAssignment) inv.getArgument(0));
+
+        // Act
+        StudentPlanAssignmentResponseDTO response = studentPlanService.assignPlanToStudent(studentId, request, userId);
+
+        // Assert
+        assertEquals(newPlan.getDurationDays(), response.getDurationDays());
+        assertEquals(oldPlan.getDurationDays(), currentAssignment.getDurationDays());
+        verify(studentCommitmentService).resetScheduleIfExceedsPlan(studentId, newPlan.getMaxDays());
+    }
 }

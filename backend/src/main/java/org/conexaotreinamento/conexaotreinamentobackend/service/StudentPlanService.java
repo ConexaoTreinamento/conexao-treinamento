@@ -118,22 +118,32 @@ public class StudentPlanService {
             currentAssignment = currentAssignmentOpt.get();
             oldPlan = studentPlanRepository.findById(currentAssignment.getPlanId()).orElse(null);
 
-            long baselineDuration = currentAssignment.getDurationDays() != null
-                ? currentAssignment.getDurationDays()
-                : (oldPlan != null ? oldPlan.getDurationDays() : plan.getDurationDays());
-
-            long daysConsumed = ChronoUnit.DAYS.between(currentAssignment.getStartDate(), startDate);
-            if (daysConsumed < 0) {
-                daysConsumed = 0;
-            }
-            long remainingDays = Math.max(0, baselineDuration - daysConsumed);
-            if (remainingDays > 0) {
-                durationDays = (int) remainingDays;
+            Long derivedBaseline = null;
+            if (currentAssignment.getDurationDays() != null) {
+                derivedBaseline = Long.valueOf(currentAssignment.getDurationDays());
+            } else if (oldPlan != null) {
+                derivedBaseline = Long.valueOf(oldPlan.getDurationDays());
             }
 
-            int consumed = (int) Math.min(baselineDuration, daysConsumed);
-            currentAssignment.setDurationDays(Math.max(0, consumed));
-            assignmentRepository.save(currentAssignment);
+            if (derivedBaseline != null && derivedBaseline > 0) {
+                long baselineDuration = derivedBaseline;
+                LocalDate currentAssignmentEndExclusive = currentAssignment.getStartDate().plusDays(Math.max(0, baselineDuration));
+
+                long daysConsumed = ChronoUnit.DAYS.between(currentAssignment.getStartDate(), startDate);
+                if (daysConsumed < 0) {
+                    daysConsumed = 0;
+                }
+
+                boolean overlaps = startDate.isBefore(currentAssignmentEndExclusive);
+                long remainingDays = Math.max(0, baselineDuration - daysConsumed);
+                if (overlaps && remainingDays > 0) {
+                    durationDays = (int) remainingDays;
+                }
+
+                int consumed = (int) Math.min(baselineDuration, daysConsumed);
+                currentAssignment.setDurationDays(Math.max(0, consumed));
+                assignmentRepository.save(currentAssignment);
+            }
         }
 
         LocalDate endExclusive = startDate.plusDays(Math.max(0, durationDays));
