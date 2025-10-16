@@ -1,107 +1,161 @@
-"use client"
+"use client";
 
-import { useState, useCallback } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { ArrowLeft, Calendar, CheckCircle, Clock, Edit, MapPin, Trophy, Users, X, XCircle, Loader2 } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { useParams, useRouter } from "next/navigation"
-import Layout from "@/components/layout"
-import EventModal from "@/components/event-modal"
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useState, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  ArrowLeft,
+  Calendar,
+  CheckCircle,
+  Clock,
+  Edit,
+  MapPin,
+  Trophy,
+  Users,
+  X,
+  XCircle,
+  Loader2,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useParams, useRouter } from "next/navigation";
+import Layout from "@/components/layout";
+import EventModal from "@/components/event-modal";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   findEventByIdOptions,
   findEventByIdQueryKey,
   updateEventMutation as updateEventMutationFactory,
   toggleAttendanceMutation as toggleAttendanceMutationFactory,
   removeParticipantMutation as removeParticipantMutationFactory,
-} from "@/lib/api-client/@tanstack/react-query.gen"
-import { apiClient } from "@/lib/client"
-import type { EventResponseDto, EventParticipantResponseDto } from "@/lib/api-client/types.gen"
-import type { EventFormData } from "@/components/event-modal"
-import type { StudentSummary } from "@/components/student-picker"
+} from "@/lib/api-client/@tanstack/react-query.gen";
+import { apiClient } from "@/lib/client";
+import type {
+  EventResponseDto,
+  EventParticipantResponseDto,
+} from "@/lib/api-client/types.gen";
+import type { EventFormData } from "@/components/event-modal";
+import type { StudentSummary } from "@/components/student-picker";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
 export default function EventDetailPage() {
-  const router = useRouter()
-  const params = useParams()
-  const [isEditOpen, setIsEditOpen] = useState(false)
-  const [participantSearchTerm, setParticipantSearchTerm] = useState("")
+  const router = useRouter();
+  const params = useParams();
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [participantSearchTerm, setParticipantSearchTerm] = useState("");
+  const [confirmationDialog, setConfirmationDialog] = useState<{
+    open: boolean;
+    participantId: string | null;
+    participantName: string;
+  }>({
+    open: false,
+    participantId: null,
+    participantName: "",
+  });
 
-  const queryClient = useQueryClient()
+  const queryClient = useQueryClient();
 
   // React Query hooks
-  const eventId = params.id as string
+  const eventId = params.id as string;
   const eventQuery = useQuery({
     ...findEventByIdOptions({ client: apiClient, path: { id: eventId } }),
     enabled: Boolean(eventId),
-  })
+  });
 
-  const eventData: EventResponseDto | undefined = eventQuery.data
-  const { isLoading, error } = eventQuery
-  
+  const eventData: EventResponseDto | undefined = eventQuery.data;
+  const { isLoading, error } = eventQuery;
+
   // Mutations
   const invalidateEventQueries = useCallback(async () => {
-    if (!eventId) return
+    if (!eventId) return;
 
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: findEventByIdQueryKey({ client: apiClient, path: { id: eventId } }) }),
+      queryClient.invalidateQueries({
+        queryKey: findEventByIdQueryKey({
+          client: apiClient,
+          path: { id: eventId },
+        }),
+      }),
       queryClient.invalidateQueries({
         predicate: (query) =>
-          Array.isArray(query.queryKey) && query.queryKey[0]?._id === "findAllEvents",
+          Array.isArray(query.queryKey) &&
+          query.queryKey[0]?._id === "findAllEvents",
       }),
-    ])
-  }, [eventId, queryClient])
+    ]);
+  }, [eventId, queryClient]);
 
   const updateEventMutation = useMutation({
     ...updateEventMutationFactory({ client: apiClient }),
     onSuccess: invalidateEventQueries,
-  })
+  });
 
   const toggleAttendanceMutation = useMutation({
     ...toggleAttendanceMutationFactory({ client: apiClient }),
     onSuccess: invalidateEventQueries,
-  })
+  });
 
   const removeParticipantMutation = useMutation({
     ...removeParticipantMutationFactory({ client: apiClient }),
     onSuccess: invalidateEventQueries,
-  })
+  });
 
   // Handle mutations
   const handleToggleAttendance = async (participantId: string) => {
     try {
       await toggleAttendanceMutation.mutateAsync({
         path: { id: eventId, studentId: participantId },
-      })
+      });
     } catch (error) {
-      console.error('Failed to toggle attendance:', error)
+      console.error("Failed to toggle attendance:", error);
     }
-  }
+  };
 
-  const handleRemoveParticipant = async (participantId: string) => {
+  const handleRemoveParticipantClick = (
+    participantId: string,
+    participantName: string,
+  ) => {
+    setConfirmationDialog({
+      open: true,
+      participantId,
+      participantName,
+    });
+  };
+
+  const handleRemoveParticipant = async () => {
+    if (!confirmationDialog.participantId) return;
+
     try {
       await removeParticipantMutation.mutateAsync({
-        path: { id: eventId, studentId: participantId },
-      })
+        path: { id: eventId, studentId: confirmationDialog.participantId },
+      });
+
+      setConfirmationDialog({
+        open: false,
+        participantId: null,
+        participantName: "",
+      });
     } catch (error) {
-      console.error('Failed to remove participant:', error)
+      console.error("Failed to remove participant:", error);
     }
-  }
+  };
 
   const handleEventEdit = async (formData: EventFormData) => {
-    const desiredAttendance = formData.attendance ?? {}
-    const currentAttendance = (eventData?.participants ?? []).reduce<Record<string, boolean>>((acc, participant) => {
+    const desiredAttendance = formData.attendance ?? {};
+    const currentAttendance = (eventData?.participants ?? []).reduce<
+      Record<string, boolean>
+    >((acc, participant) => {
       if (participant.id) {
-        acc[participant.id] = Boolean(participant.present)
+        acc[participant.id] = Boolean(participant.present);
       }
-      return acc
-    }, {})
+      return acc;
+    }, {});
 
-    const attendanceChanges = Object.entries(desiredAttendance).filter(([studentId, desiredValue]) => {
-      const previousValue = currentAttendance[studentId] ?? false
-      return desiredValue !== previousValue
-    })
+    const attendanceChanges = Object.entries(desiredAttendance).filter(
+      ([studentId, desiredValue]) => {
+        const previousValue = currentAttendance[studentId] ?? false;
+        return desiredValue !== previousValue;
+      },
+    );
 
     try {
       await updateEventMutation.mutateAsync({
@@ -115,24 +169,27 @@ export default function EventDetailPage() {
           description: formData.description,
           trainerId: formData.trainerId,
           participantIds: formData.participantIds || [],
-        }
-      })
+        },
+      });
 
       for (const [studentId] of attendanceChanges) {
         try {
           await toggleAttendanceMutation.mutateAsync({
             path: { id: eventId, studentId },
-          })
+          });
         } catch (toggleError) {
-          console.error(`Failed to toggle attendance for participant ${studentId}:`, toggleError)
+          console.error(
+            `Failed to toggle attendance for participant ${studentId}:`,
+            toggleError,
+          );
         }
       }
 
-      setIsEditOpen(false)
+      setIsEditOpen(false);
     } catch (error) {
-      console.error('Failed to update event:', error)
+      console.error("Failed to update event:", error);
     }
-  }
+  };
 
   if (isLoading) {
     return (
@@ -140,11 +197,13 @@ export default function EventDetailPage() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-            <p className="mt-2 text-sm text-muted-foreground">Carregando dados do evento...</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Carregando dados do evento...
+            </p>
           </div>
         </div>
       </Layout>
-    )
+    );
   }
 
   if (error) {
@@ -152,13 +211,15 @@ export default function EventDetailPage() {
       <Layout>
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <p className="text-lg font-semibold text-red-600">Erro ao carregar evento</p>
+            <p className="text-lg font-semibold text-red-600">
+              Erro ao carregar evento
+            </p>
             <p className="text-sm text-muted-foreground mt-2">
               {error instanceof Error ? error.message : "Erro desconhecido"}
             </p>
             <Button
               variant="outline"
-              onClick={() => router.push('/events')}
+              onClick={() => router.push("/events")}
               className="mt-4"
             >
               Voltar para lista de eventos
@@ -166,7 +227,7 @@ export default function EventDetailPage() {
           </div>
         </div>
       </Layout>
-    )
+    );
   }
 
   if (!eventData) {
@@ -177,7 +238,7 @@ export default function EventDetailPage() {
             <p className="text-lg font-semibold">Evento não encontrado</p>
             <Button
               variant="outline"
-              onClick={() => router.push('/events')}
+              onClick={() => router.push("/events")}
               className="mt-4"
             >
               Voltar para lista de eventos
@@ -185,37 +246,40 @@ export default function EventDetailPage() {
           </div>
         </div>
       </Layout>
-    )
+    );
   }
 
-
-  const participants: EventParticipantResponseDto[] = eventData.participants ?? []
-  const participantDetails = participants.reduce<Record<string, StudentSummary>>((acc, participant) => {
-    if (!participant.id) return acc
+  const participants: EventParticipantResponseDto[] =
+    eventData.participants ?? [];
+  const participantDetails = participants.reduce<
+    Record<string, StudentSummary>
+  >((acc, participant) => {
+    if (!participant.id) return acc;
     acc[participant.id] = {
       id: participant.id,
       name: participant.name,
       surname: undefined,
-    }
-    return acc
-  }, {})
+    };
+    return acc;
+  }, {});
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return "Data não informada"
-    const date = new Date(dateString)
+    if (!dateString) return "Data não informada";
+    const date = new Date(dateString);
     return date.toLocaleDateString("pt-BR", {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
-    })
-  }
+    });
+  };
 
   // Filter participants based on search term - moved to after early returns
   const filteredParticipants = participants.filter((participant) =>
-    participant.name?.toLowerCase().includes(participantSearchTerm.toLowerCase())
-  )
-
+    participant.name
+      ?.toLowerCase()
+      .includes(participantSearchTerm.toLowerCase()),
+  );
 
   return (
     <Layout>
@@ -223,16 +287,21 @@ export default function EventDetailPage() {
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="w-4 h-4"/>
+            <ArrowLeft className="w-4 h-4" />
           </Button>
           <div className="flex-1">
             <h1 className="text-2xl font-bold">{eventData.name}</h1>
             <p className="text-muted-foreground">
-              {formatDate(eventData.date)} • {eventData.startTime} - {eventData.endTime}
+              {formatDate(eventData.date)} • {eventData.startTime} -{" "}
+              {eventData.endTime}
             </p>
           </div>
-          <Button variant="outline" size="icon" onClick={() => setIsEditOpen(true)}>
-            <Edit className="w-4 h-4"/>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setIsEditOpen(true)}
+          >
+            <Edit className="w-4 h-4" />
           </Button>
         </div>
 
@@ -241,39 +310,43 @@ export default function EventDetailPage() {
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Trophy className="w-5 h-5"/>
+                <Trophy className="w-5 h-5" />
                 Informações do Evento
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="w-4 h-4 text-muted-foreground"/>
+                  <Calendar className="w-4 h-4 text-muted-foreground" />
                   <span>{formatDate(eventData.date)}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <Clock className="w-4 h-4 text-muted-foreground"/>
+                  <Clock className="w-4 h-4 text-muted-foreground" />
                   <span>
                     {eventData.startTime} - {eventData.endTime}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="w-4 h-4 text-muted-foreground"/>
+                  <MapPin className="w-4 h-4 text-muted-foreground" />
                   <span>{eventData.location}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <Users className="w-4 h-4 text-muted-foreground"/>
+                  <Users className="w-4 h-4 text-muted-foreground" />
                   <span>{participants.length} participantes</span>
                 </div>
               </div>
 
               <div className="pt-4 border-t">
-                <p className="text-sm text-muted-foreground mb-3">{eventData.description}</p>
+                <p className="text-sm text-muted-foreground mb-3">
+                  {eventData.description}
+                </p>
               </div>
 
               <div className="pt-4 border-t">
                 <p className="text-sm font-medium mb-2">Instrutor:</p>
-                <p className="text-sm text-muted-foreground">{eventData.instructor}</p>
+                <p className="text-sm text-muted-foreground">
+                  {eventData.instructor}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -283,22 +356,22 @@ export default function EventDetailPage() {
             <CardHeader>
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5"/>
+                  <Users className="w-5 h-5" />
                   Participantes ({participants.length})
                 </CardTitle>
                 <Input
-                    placeholder="Buscar participante..."
-                    value={participantSearchTerm}
-                    onChange={(e) => setParticipantSearchTerm(e.target.value)}
-                    className="max-w-sm"
+                  placeholder="Buscar participante..."
+                  value={participantSearchTerm}
+                  onChange={(e) => setParticipantSearchTerm(e.target.value)}
+                  className="max-w-sm"
                 />
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {filteredParticipants.map((participant) => {
-                  const participantId = participant.id
-                  if (!participantId) return null
+                  const participantId = participant.id;
+                  if (!participantId) return null;
 
                   return (
                     <div
@@ -315,9 +388,16 @@ export default function EventDetailPage() {
                           </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium truncate">{participant.name || "Nome não informado"}</p>
+                          <p className="font-medium truncate">
+                            {participant.name || "Nome não informado"}
+                          </p>
                           <p className="text-sm text-muted-foreground">
-                            Inscrito em {participant.enrolledAt ? new Date(participant.enrolledAt).toLocaleDateString("pt-BR") : "Data não informada"}
+                            Inscrito em{" "}
+                            {participant.enrolledAt
+                              ? new Date(
+                                  participant.enrolledAt,
+                                ).toLocaleDateString("pt-BR")
+                              : "Data não informada"}
                           </p>
                         </div>
                       </div>
@@ -350,7 +430,12 @@ export default function EventDetailPage() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleRemoveParticipant(participantId)}
+                          onClick={() =>
+                            handleRemoveParticipantClick(
+                              participantId,
+                              participant.name || "Participante",
+                            )
+                          }
                           disabled={removeParticipantMutation.isPending}
                           className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
                         >
@@ -362,14 +447,14 @@ export default function EventDetailPage() {
                         </Button>
                       </div>
                     </div>
-                  )
+                  );
                 })}
 
                 {filteredParticipants.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Users className="w-12 h-12 mx-auto mb-4 opacity-50"/>
-                      <p>Nenhum participante encontrado</p>
-                    </div>
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Nenhum participante encontrado</p>
+                  </div>
                 )}
               </div>
             </CardContent>
@@ -388,22 +473,37 @@ export default function EventDetailPage() {
             location: eventData.location || "",
             description: eventData.description || "",
             trainerId: eventData.instructorId || "",
-            participantIds:
-              participants
-                .map((p) => p.id)
-                .filter((id): id is string => Boolean(id)),
-            attendance:
-              participants.reduce((acc, p) => {
-                if (!p.id) return acc
-                acc[p.id] = Boolean(p.present)
-                return acc
-              }, {} as Record<string, boolean>),
+            participantIds: participants
+              .map((p) => p.id)
+              .filter((id): id is string => Boolean(id)),
+            attendance: participants.reduce(
+              (acc, p) => {
+                if (!p.id) return acc;
+                acc[p.id] = Boolean(p.present);
+                return acc;
+              },
+              {} as Record<string, boolean>,
+            ),
             participantDetails,
           }}
           onClose={() => setIsEditOpen(false)}
           onSubmit={handleEventEdit}
         />
+
+        {/* Confirmation Dialog for Participant Removal */}
+        <ConfirmationDialog
+          open={confirmationDialog.open}
+          onOpenChange={(open) =>
+            setConfirmationDialog((prev) => ({ ...prev, open }))
+          }
+          onConfirm={handleRemoveParticipant}
+          title="Remover Participante"
+          description={`Tem certeza que deseja remover ${confirmationDialog.participantName} deste evento? Esta ação não pode ser desfeita.`}
+          confirmText="Remover"
+          cancelText="Cancelar"
+          variant="destructive"
+        />
       </div>
     </Layout>
-  )
+  );
 }
