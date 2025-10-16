@@ -4,7 +4,7 @@ import { useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { ArrowLeft, Calendar, CheckCircle, Clock, Edit, MapPin, Trophy, Users, X, XCircle, Loader2 } from "lucide-react"
+import { ArrowLeft, Calendar, CheckCircle, Clock, Edit, MapPin, Trophy, Users, X, XCircle, Loader2, Trash2} from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useParams, useRouter } from "next/navigation"
 import Layout from "@/components/layout"
@@ -16,6 +16,7 @@ import {
   updateEventMutation as updateEventMutationFactory,
   toggleAttendanceMutation as toggleAttendanceMutationFactory,
   removeParticipantMutation as removeParticipantMutationFactory,
+  deleteEventMutation as deleteEventMutationFactory,
 } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import type { EventResponseDto, EventParticipantResponseDto } from "@/lib/api-client/types.gen"
@@ -66,6 +67,13 @@ export default function EventDetailPage() {
   const removeParticipantMutation = useMutation({
     ...removeParticipantMutationFactory({ client: apiClient }),
     onSuccess: invalidateEventQueries,
+  })
+
+  const deleteEventMutation = useMutation({
+    ...deleteEventMutationFactory({ client: apiClient }),
+    onSuccess: () => {
+      router.push('/events')
+    },
   })
 
   // Handle mutations
@@ -131,6 +139,16 @@ export default function EventDetailPage() {
       setIsEditOpen(false)
     } catch (error) {
       console.error('Failed to update event:', error)
+    }
+  }
+
+  const handleDeleteEvent = async () => {
+    try {
+      await deleteEventMutation.mutateAsync({
+        path: { id: eventId },
+      })
+    } catch (error) {
+      console.error('Failed to delete event:', error)
     }
   }
 
@@ -234,6 +252,19 @@ export default function EventDetailPage() {
           <Button variant="outline" size="icon" onClick={() => setIsEditOpen(true)}>
             <Edit className="w-4 h-4"/>
           </Button>
+          <Button
+              variant="outline"
+              size="icon"
+              onClick={handleDeleteEvent}
+              disabled={deleteEventMutation.isPending}
+              className="text-destructive hover:text-destructive"
+          >
+            {deleteEventMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin"/>
+            ) : (
+                <Trash2 className="w-4 h-4"/>
+            )}
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -301,67 +332,68 @@ export default function EventDetailPage() {
                   if (!participantId) return null
 
                   return (
-                    <div
-                      key={participantId}
-                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border gap-3"
-                    >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <Avatar className="flex-shrink-0">
-                          <AvatarFallback className="select-none">
-                            {participant.name
-                              ?.split(" ")
-                              .map((n) => n?.[0])
-                              .join("") || "U"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium truncate">{participant.name || "Nome não informado"}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Inscrito em {participant.enrolledAt ? new Date(participant.enrolledAt).toLocaleDateString("pt-BR") : "Data não informada"}
-                          </p>
+                      <div
+                          key={participantId}
+                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border gap-3"
+                      >
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <Avatar className="flex-shrink-0">
+                            <AvatarFallback className="select-none">
+                              {participant.name
+                                  ?.split(" ")
+                                  .map((n) => n?.[0])
+                                  .join("") || "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium truncate">{participant.name || "Nome não informado"}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Inscrito
+                              em {participant.enrolledAt ? new Date(participant.enrolledAt).toLocaleDateString("pt-BR") : "Data não informada"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Button
+                              size="sm"
+                              variant={participant.present ? "default" : "outline"}
+                              onClick={() => handleToggleAttendance(participantId)}
+                              disabled={toggleAttendanceMutation.isPending}
+                              className={`h-8 text-xs flex-1 sm:flex-none min-w-0 ${
+                                  participant.present
+                                      ? "bg-green-600 hover:bg-green-700 text-white"
+                                      : "border-red-600 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
+                              }`}
+                          >
+                            {toggleAttendanceMutation.isPending ? (
+                                <Loader2 className="w-3 h-3 animate-spin"/>
+                            ) : participant.present ? (
+                                <>
+                                  <CheckCircle className="w-3 h-3 mr-1"/>
+                                  Presente
+                                </>
+                            ) : (
+                                <>
+                                  <XCircle className="w-3 h-3 mr-1"/>
+                                  Ausente
+                                </>
+                            )}
+                          </Button>
+                          <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => handleRemoveParticipant(participantId)}
+                              disabled={removeParticipantMutation.isPending}
+                              className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
+                          >
+                            {removeParticipantMutation.isPending ? (
+                                <Loader2 className="w-3 h-3 animate-spin"/>
+                            ) : (
+                                <X className="w-4 h-4"/>
+                            )}
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <Button
-                          size="sm"
-                          variant={participant.present ? "default" : "outline"}
-                          onClick={() => handleToggleAttendance(participantId)}
-                          disabled={toggleAttendanceMutation.isPending}
-                          className={`h-8 text-xs flex-1 sm:flex-none min-w-0 ${
-                            participant.present
-                              ? "bg-green-600 hover:bg-green-700 text-white"
-                              : "border-red-600 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
-                          }`}
-                        >
-                          {toggleAttendanceMutation.isPending ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : participant.present ? (
-                            <>
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Presente
-                            </>
-                          ) : (
-                            <>
-                              <XCircle className="w-3 h-3 mr-1" />
-                              Ausente
-                            </>
-                          )}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleRemoveParticipant(participantId)}
-                          disabled={removeParticipantMutation.isPending}
-                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
-                        >
-                          {removeParticipantMutation.isPending ? (
-                            <Loader2 className="w-3 h-3 animate-spin" />
-                          ) : (
-                            <X className="w-4 h-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
                   )
                 })}
 
@@ -378,30 +410,30 @@ export default function EventDetailPage() {
 
         {/* Event Edit Modal - using new unified EventModal component */}
         <EventModal
-          open={isEditOpen}
-          mode="edit"
-          initialData={{
-            name: eventData.name || "",
-            date: eventData.date || "",
-            startTime: eventData.startTime || "",
-            endTime: eventData.endTime || "",
-            location: eventData.location || "",
-            description: eventData.description || "",
-            trainerId: eventData.instructorId || "",
-            participantIds:
-              participants
-                .map((p) => p.id)
-                .filter((id): id is string => Boolean(id)),
-            attendance:
-              participants.reduce((acc, p) => {
-                if (!p.id) return acc
-                acc[p.id] = Boolean(p.present)
-                return acc
-              }, {} as Record<string, boolean>),
-            participantDetails,
-          }}
-          onClose={() => setIsEditOpen(false)}
-          onSubmit={handleEventEdit}
+            open={isEditOpen}
+            mode="edit"
+            initialData={{
+              name: eventData.name || "",
+              date: eventData.date || "",
+              startTime: eventData.startTime || "",
+              endTime: eventData.endTime || "",
+              location: eventData.location || "",
+              description: eventData.description || "",
+              trainerId: eventData.instructorId || "",
+              participantIds:
+                  participants
+                      .map((p) => p.id)
+                      .filter((id): id is string => Boolean(id)),
+              attendance:
+                  participants.reduce((acc, p) => {
+                    if (!p.id) return acc
+                    acc[p.id] = Boolean(p.present)
+                    return acc
+                  }, {} as Record<string, boolean>),
+              participantDetails,
+            }}
+            onClose={() => setIsEditOpen(false)}
+            onSubmit={handleEventEdit}
         />
       </div>
     </Layout>
