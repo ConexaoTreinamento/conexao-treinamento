@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchUserRoleRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.ChangePasswordRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
@@ -341,25 +342,32 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("Should update user password successfully")
+    @DisplayName("Should update own password successfully")
     void shouldUpdateUserPasswordSuccessfully() {
         // Given
+        String oldPassword = "oldPass123";
         String newPassword = "newPassword123";
-        String encodedNewPassword = "encodedNewPassword";
-        when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.of(user));
+        String encodedOldPassword = "encodedOld";
+        String encodedNewPassword = "encodedNew";
+
+        user.setPassword(encodedOldPassword);
+
+        ChangePasswordRequestDTO request = new ChangePasswordRequestDTO(oldPassword, newPassword, newPassword);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(oldPassword, encodedOldPassword)).thenReturn(true);
         when(passwordEncoder.encode(newPassword)).thenReturn(encodedNewPassword);
-        when(userRepository.save(any(User.class))).thenReturn(user);
 
         // When
-        UserResponseDTO result = userService.resetUserPassword(userId, newPassword);
+        UserResponseDTO result = userService.changeOwnPassword(userId, request);
 
         // Then
         assertThat(result).isNotNull();
         assertThat(user.getPassword()).isEqualTo(encodedNewPassword);
 
-        verify(userRepository).findByIdAndDeletedAtIsNull(userId);
+        verify(userRepository).findById(userId);
+        verify(passwordEncoder).matches(oldPassword, encodedOldPassword);
         verify(passwordEncoder).encode(newPassword);
-        verify(userRepository).save(user);
     }
 
     @Test
