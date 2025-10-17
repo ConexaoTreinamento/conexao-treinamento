@@ -81,7 +81,7 @@ class StudentPlanControllerTest {
         dto.setPlanName(planName);
         dto.setAssignedByUserEmail(assignedByEmail);
         dto.setStartDate(LocalDate.now());
-        dto.setEndDate(LocalDate.now().plusDays(10));
+        dto.setDurationDays(10);
         dto.setActive(true);
         dto.setDaysRemaining(10);
         return dto;

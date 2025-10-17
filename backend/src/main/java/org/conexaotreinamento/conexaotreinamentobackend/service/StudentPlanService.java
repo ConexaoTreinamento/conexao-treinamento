@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -31,6 +32,7 @@ public class StudentPlanService {
     private final StudentPlanAssignmentRepository assignmentRepository;
     private final StudentRepository studentRepository;
     private final UserRepository userRepository;
+    private final StudentCommitmentService studentCommitmentService;
     
     @Transactional
     public StudentPlanResponseDTO createPlan(StudentPlanRequestDTO requestDTO) {
@@ -107,27 +109,69 @@ public class StudentPlanService {
 //            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assigning user not found"));
         
         LocalDate startDate = requestDTO.getStartDate();
-        LocalDate endDate = startDate.plusDays(plan.getDurationDays());
-        
-        // Check for overlapping assignments
-        List<StudentPlanAssignment> overlapping = assignmentRepository.findOverlappingAssignments(
-            studentId, startDate, endDate);
-        
-        if (!overlapping.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, 
-                "Student already has an overlapping plan assignment for this period");
+        int durationDays = plan.getDurationDays();
+        StudentPlanAssignment currentAssignment = null;
+        StudentPlan oldPlan = null;
+
+        Optional<StudentPlanAssignment> currentAssignmentOpt = assignmentRepository.findCurrentActiveAssignment(studentId);
+        if (currentAssignmentOpt.isPresent()) {
+            currentAssignment = currentAssignmentOpt.get();
+            oldPlan = studentPlanRepository.findById(currentAssignment.getPlanId()).orElse(null);
+
+            Long derivedBaseline = null;
+            if (currentAssignment.getDurationDays() != null) {
+                derivedBaseline = Long.valueOf(currentAssignment.getDurationDays());
+            } else if (oldPlan != null) {
+                derivedBaseline = Long.valueOf(oldPlan.getDurationDays());
+            }
+
+            if (derivedBaseline != null && derivedBaseline > 0) {
+                long baselineDuration = derivedBaseline;
+                LocalDate currentAssignmentEndExclusive = currentAssignment.getStartDate().plusDays(Math.max(0, baselineDuration));
+
+                long daysConsumed = ChronoUnit.DAYS.between(currentAssignment.getStartDate(), startDate);
+                if (daysConsumed < 0) {
+                    daysConsumed = 0;
+                }
+
+                boolean overlaps = startDate.isBefore(currentAssignmentEndExclusive);
+                long remainingDays = Math.max(0, baselineDuration - daysConsumed);
+                if (overlaps && remainingDays > 0) {
+                    durationDays = (int) remainingDays;
+                }
+
+                int consumed = (int) Math.min(baselineDuration, daysConsumed);
+                currentAssignment.setDurationDays(Math.max(0, consumed));
+                assignmentRepository.save(currentAssignment);
+            }
         }
-        
-        // Create new assignment
+
+        LocalDate endExclusive = startDate.plusDays(Math.max(0, durationDays));
+
+        List<StudentPlanAssignment> overlapping = assignmentRepository.findOverlappingAssignments(
+            studentId, startDate, endExclusive);
+        if (currentAssignment != null) {
+            UUID currentAssignmentId = currentAssignment.getId();
+            overlapping.removeIf(existing -> existing.getId().equals(currentAssignmentId));
+        }
+        if (!overlapping.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                "O aluno já possui um plano atribuído que se sobrepõe ao período indicado.");
+        }
+
         StudentPlanAssignment assignment = new StudentPlanAssignment();
         assignment.setStudentId(studentId);
         assignment.setPlanId(requestDTO.getPlanId());
         assignment.setStartDate(startDate);
-        assignment.setEndDate(endDate);
+        assignment.setDurationDays(durationDays);
         assignment.setAssignedByUserId(assignedByUserId);
         assignment.setAssignmentNotes(requestDTO.getAssignmentNotes());
-        
+
         StudentPlanAssignment savedAssignment = assignmentRepository.save(assignment);
+
+        // Ensure student's schedule respects the new plan limits
+        studentCommitmentService.resetScheduleIfExceedsPlan(studentId, plan.getMaxDays());
+
         return mapToAssignmentResponseDTO(savedAssignment, student, plan, null);
     }
     
@@ -204,7 +248,7 @@ public class StudentPlanService {
         dto.setStudentId(assignment.getStudentId());
         dto.setPlanId(assignment.getPlanId());
         dto.setStartDate(assignment.getStartDate());
-        dto.setEndDate(assignment.getEndDate());
+    dto.setDurationDays(assignment.getDurationDays());
         dto.setAssignedByUserId(assignment.getAssignedByUserId());
         dto.setAssignmentNotes(assignment.getAssignmentNotes());
         dto.setCreatedAt(assignment.getCreatedAt());
@@ -229,7 +273,7 @@ public class StudentPlanService {
         
         // Calculate days remaining
         if (assignment.isActive()) {
-            dto.setDaysRemaining(ChronoUnit.DAYS.between(LocalDate.now(), assignment.getEndDate()));
+            dto.setDaysRemaining(ChronoUnit.DAYS.between(LocalDate.now(), assignment.getEndDateExclusive()));
         } else {
             dto.setDaysRemaining(0);
         }
