@@ -71,12 +71,6 @@ public class TrainerSchedule {
         this.updatedAt = Instant.now();
     }
     
-    public void restore() {
-        this.active = true;
-        this.deletedAt = null;
-        this.updatedAt = Instant.now();
-    }
-
     public void updateTimestamp() {
         this.updatedAt = Instant.now();
     }
