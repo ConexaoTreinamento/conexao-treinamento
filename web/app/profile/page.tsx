@@ -277,19 +277,6 @@ export default function ProfilePage() {
     setConfirmPassword("")
   }
 
-  const isLoading = (userRole === "admin" ? isLoadingAdminId || updateAdminMutation.isPending : isLoadingTrainerId || isLoadingTrainer || updateTrainerMutation.isPending)
-
-  const stats = userRole === "admin" ? [
-      { label: "Alunos", value: "142", icon: User },
-      { label: "Professores", value: "8", icon: Award },
-      { label: "Anos na Academia", value: "4", icon: Calendar },
-      { label: "Eventos Organizados", value: "25", icon: Shield }
-    ] : [
-      { label: "Alunos Ativos", value: "35", icon: User },
-      { label: "Aulas por Semana", value: "12", icon: Calendar },
-      { label: "Horas Trabalhadas no mês", value: "120", icon: Clock },
-    ]
-
   return (
     <Layout>
       <div className="space-y-6">
@@ -366,23 +353,6 @@ export default function ProfilePage() {
 
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {stats.map((stat, index) => (
-                <Card key={index}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
-                        <p className="text-xl font-bold">{stat.value}</p>
-                      </div>
-                      <stat.icon className="w-6 h-6 text-green-600" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
             {/* Profile Form */}
             <Tabs defaultValue="personal" className="space-y-4">
               <TabsList>
@@ -536,8 +506,6 @@ export default function ProfilePage() {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="Digite sua nova senha"
-                        value={newPassword}
-                        onChange={e => setNewPassword(e.target.value)}
                         disabled={isChangingPassword}
                       />
                     </div>
@@ -549,8 +517,6 @@ export default function ProfilePage() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Confirme sua nova senha"
-                        value={confirmPassword}
-                        onChange={e => setConfirmPassword(e.target.value)}
                         disabled={isChangingPassword}
                       />
                     </div>
