@@ -64,13 +64,13 @@ class StudentPlanServiceTest {
         return p;
     }
 
-    private StudentPlanAssignment assignment(UUID id, UUID studentId, UUID planId, LocalDate start, LocalDate end, UUID assignedBy) {
+    private StudentPlanAssignment assignment(UUID id, UUID studentId, UUID planId, LocalDate start, LocalDate endExclusive, UUID assignedBy) {
         StudentPlanAssignment a = new StudentPlanAssignment();
         a.setId(id);
         a.setStudentId(studentId);
         a.setPlanId(planId);
         a.setStartDate(start);
-        a.setEndDate(end);
+        a.setDurationDays((int) Math.max(0, ChronoUnit.DAYS.between(start, endExclusive)));
         a.setAssignedByUserId(assignedBy);
         a.setAssignmentNotes("notes");
         a.setAssignedDurationDays((int) Math.max(0, ChronoUnit.DAYS.between(start, end)));
@@ -314,10 +314,10 @@ class StudentPlanServiceTest {
         StudentPlan newPlan = newPlan(planId, "New", 2, 45, true);
         Student student = new Student("s@example.com", "Stu", "Dent", Student.Gender.M, LocalDate.of(1990, 1, 1));
 
-        LocalDate oldStart = LocalDate.now().minusDays(10);
-        LocalDate oldEnd = oldStart.plusDays(30);
-        StudentPlanAssignment currentAssignment = assignment(UUID.randomUUID(), studentId, oldPlanId, oldStart, oldEnd, userId);
-        currentAssignment.setAssignedDurationDays(30);
+    LocalDate oldStart = LocalDate.now().minusDays(10);
+    LocalDate oldEndExclusive = oldStart.plusDays(30);
+    StudentPlanAssignment currentAssignment = assignment(UUID.randomUUID(), studentId, oldPlanId, oldStart, oldEndExclusive, userId);
+    currentAssignment.setDurationDays(30);
 
         LocalDate newStart = LocalDate.now();
         AssignPlanRequestDTO request = new AssignPlanRequestDTO(planId, newStart, "upgrade");
@@ -334,10 +334,41 @@ class StudentPlanServiceTest {
         StudentPlanAssignmentResponseDTO response = studentPlanService.assignPlanToStudent(studentId, request, userId);
 
         // Assert
-        assertEquals(20, response.getAssignedDurationDays());
-        assertEquals(newStart.plusDays(20), response.getEndDate());
-        assertEquals(10, currentAssignment.getAssignedDurationDays());
-        assertEquals(newStart.minusDays(1), currentAssignment.getEndDate());
+        assertEquals(20, response.getDurationDays());
+        assertEquals(10, currentAssignment.getDurationDays());
+        assertEquals(newStart, currentAssignment.getEndDateExclusive());
+        verify(studentCommitmentService).resetScheduleIfExceedsPlan(studentId, newPlan.getMaxDays());
+    }
+
+    @Test
+    void assignPlanToStudent_doesNotTruncateDurationWhenNoOverlap() {
+        // Arrange
+        UUID oldPlanId = UUID.randomUUID();
+        StudentPlan oldPlan = newPlan(oldPlanId, "Old", 4, 10, true);
+        StudentPlan newPlan = newPlan(planId, "New", 2, 45, true);
+        Student student = new Student("s@example.com", "Stu", "Dent", Student.Gender.M, LocalDate.of(1990, 1, 1));
+
+        LocalDate oldStart = LocalDate.now().minusDays(5);
+        LocalDate newStart = oldStart.plusDays(oldPlan.getDurationDays());
+        StudentPlanAssignment currentAssignment = assignment(UUID.randomUUID(), studentId, oldPlanId, oldStart, oldStart.plusDays(oldPlan.getDurationDays()), userId);
+        currentAssignment.setDurationDays(oldPlan.getDurationDays());
+
+        AssignPlanRequestDTO request = new AssignPlanRequestDTO(planId, newStart, "upgrade");
+
+        when(studentRepository.findById(studentId)).thenReturn(Optional.of(student));
+        when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(newPlan));
+        when(studentPlanRepository.findById(oldPlanId)).thenReturn(Optional.of(oldPlan));
+        when(assignmentRepository.findCurrentActiveAssignment(studentId)).thenReturn(Optional.of(currentAssignment));
+        when(assignmentRepository.findOverlappingAssignments(eq(studentId), any(LocalDate.class), any(LocalDate.class)))
+            .thenReturn(new java.util.ArrayList<>());
+        when(assignmentRepository.save(any(StudentPlanAssignment.class))).thenAnswer(inv -> (StudentPlanAssignment) inv.getArgument(0));
+
+        // Act
+        StudentPlanAssignmentResponseDTO response = studentPlanService.assignPlanToStudent(studentId, request, userId);
+
+        // Assert
+        assertEquals(newPlan.getDurationDays(), response.getDurationDays());
+        assertEquals(oldPlan.getDurationDays(), currentAssignment.getDurationDays());
         verify(studentCommitmentService).resetScheduleIfExceedsPlan(studentId, newPlan.getMaxDays());
     }
 }

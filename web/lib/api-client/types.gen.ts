@@ -453,8 +453,8 @@ export type StudentPlanAssignmentResponseDto = {
     planName?: string;
     planMaxDays?: number;
     planDurationDays?: number;
+    durationDays?: number;
     startDate?: string;
-    endDate?: string;
     assignedByUserId?: string;
     assignedByUserEmail?: string;
     assignmentNotes?: string;
@@ -549,8 +549,8 @@ export type Pageable = {
 };
 
 export type PageUserResponseDto = {
-    totalPages?: number;
     totalElements?: number;
+    totalPages?: number;
     size?: number;
     content?: Array<UserResponseDto>;
     number?: number;
@@ -565,21 +565,21 @@ export type PageUserResponseDto = {
 export type PageableObject = {
     offset?: number;
     sort?: SortObject;
+    unpaged?: boolean;
+    paged?: boolean;
     pageNumber?: number;
     pageSize?: number;
-    paged?: boolean;
-    unpaged?: boolean;
 };
 
 export type SortObject = {
     empty?: boolean;
-    sorted?: boolean;
     unsorted?: boolean;
+    sorted?: boolean;
 };
 
 export type PageStudentResponseDto = {
-    totalPages?: number;
     totalElements?: number;
+    totalPages?: number;
     size?: number;
     content?: Array<StudentResponseDto>;
     number?: number;
@@ -617,8 +617,8 @@ export type TrainerReportDto = {
 };
 
 export type PageExerciseResponseDto = {
-    totalPages?: number;
     totalElements?: number;
+    totalPages?: number;
     size?: number;
     content?: Array<ExerciseResponseDto>;
     number?: number;
@@ -657,8 +657,8 @@ export type TrainerSchedule = {
 };
 
 export type PageListAdministratorsDto = {
-    totalPages?: number;
     totalElements?: number;
+    totalPages?: number;
     size?: number;
     content?: Array<ListAdministratorsDto>;
     number?: number;
@@ -1706,6 +1706,24 @@ export type ToggleAttendanceResponses = {
 };
 
 export type ToggleAttendanceResponse = ToggleAttendanceResponses[keyof ToggleAttendanceResponses];
+
+export type RestoreAdministratorData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/administrators/{id}/restore';
+};
+
+export type RestoreAdministratorResponses = {
+    /**
+     * OK
+     */
+    200: AdministratorResponseDto;
+};
+
+export type RestoreAdministratorResponse = RestoreAdministratorResponses[keyof RestoreAdministratorResponses];
 
 export type FindTrainerByUserIdData = {
     body?: never;

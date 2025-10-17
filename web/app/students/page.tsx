@@ -402,7 +402,7 @@ function StudentsPageContent() {
   const currentPlanMap = new Map<string, StudentPlanAssignmentResponseDto | null>()
   currentPlanQueries.forEach((q, idx) => {
     const sid = studentIdsNeedingCurrentPlan[idx]
-    if (sid) currentPlanMap.set(sid, (q.data as StudentPlanAssignmentResponseDto | null | undefined) ?? null)
+    if (sid) currentPlanMap.set(sid, q.data ?? null)
   })
 
   // Helper data extraction with proper typing
