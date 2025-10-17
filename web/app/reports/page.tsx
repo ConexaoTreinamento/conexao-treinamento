@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Users, Clock, Calendar, Search, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
@@ -13,9 +14,45 @@ import { apiClient } from "@/lib/client"
 import { getReportsOptions, getTrainersForLookupOptions } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { AgeDistributionDto, TrainerLookupDto, TrainerReportDto } from "@/lib/api-client/types.gen"
 
-type PeriodKey = "week" | "month" | "quarter" | "year"
+type PeriodKey = "week" | "month" | "quarter" | "year" | "custom"
 
-const computePeriodRange = (period: PeriodKey) => {
+type CustomRange = {
+  start: string
+  end: string
+}
+
+const formatDateInput = (date: Date) => {
+  const year = date.getFullYear()
+  const month = `${date.getMonth() + 1}`.padStart(2, "0")
+  const day = `${date.getDate()}`.padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
+const createDateFromInput = (value: string, endOfDay = false) => {
+  if (!value) return null
+  const [year, month, day] = value.split("-").map(Number)
+  if (!year || !month || !day) return null
+  if (endOfDay) {
+    return new Date(year, month - 1, day, 23, 59, 59, 999)
+  }
+  return new Date(year, month - 1, day, 0, 0, 0, 0)
+}
+
+const computePeriodRange = (period: PeriodKey, customRange?: CustomRange) => {
+  if (period === "custom") {
+    const startDate = customRange?.start ? createDateFromInput(customRange.start, false) : null
+    const endDate = customRange?.end ? createDateFromInput(customRange.end, true) : null
+
+    if (!startDate || !endDate || startDate > endDate) {
+      return { start: "", end: "" }
+    }
+
+    return {
+      start: startDate.toISOString(),
+      end: endDate.toISOString(),
+    }
+  }
+
   const now = new Date()
   const start = new Date(now)
   const end = new Date(now)
@@ -65,6 +102,7 @@ const formatNumber = (value: number, maximumFractionDigits = 0) =>
 
 export default function ReportsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>("month")
+  const [customRange, setCustomRange] = useState<CustomRange>({ start: "", end: "" })
   const [selectedTrainer, setSelectedTrainer] = useState<string>("all")
   const [searchTerm, setSearchTerm] = useState("")
   const [userRole, setUserRole] = useState<string>("")
@@ -79,7 +117,49 @@ export default function ReportsPage() {
     }
   }, [router])
 
-  const periodRange = useMemo(() => computePeriodRange(selectedPeriod), [selectedPeriod])
+  const periodRange = useMemo(() => computePeriodRange(selectedPeriod, customRange), [selectedPeriod, customRange])
+
+  const customRangeError = useMemo(() => {
+    if (selectedPeriod !== "custom" || !customRange.start || !customRange.end) {
+      return false
+    }
+
+    const startDate = createDateFromInput(customRange.start)
+    const endDate = createDateFromInput(customRange.end)
+
+    if (!startDate || !endDate) return false
+
+    return startDate > endDate
+  }, [customRange.end, customRange.start, selectedPeriod])
+
+  const handlePeriodChange = (value: string) => {
+    const period = value as PeriodKey
+    setSelectedPeriod(period)
+
+    if (period === "custom") {
+      setCustomRange((previous) => {
+        if (previous.start && previous.end) {
+          return previous
+        }
+
+        const now = new Date()
+        const start = new Date(now)
+        start.setDate(now.getDate() - 6)
+
+        return {
+          start: formatDateInput(start),
+          end: formatDateInput(now),
+        }
+      })
+    }
+  }
+
+  const handleCustomRangeChange = (key: keyof CustomRange, value: string) => {
+    setCustomRange((previous) => ({
+      ...previous,
+      [key]: value,
+    }))
+  }
 
   const reportsQuery = useQuery({
     ...getReportsOptions({
@@ -190,7 +270,7 @@ export default function ReportsPage() {
             </SelectContent>
           </Select>
 
-          <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as PeriodKey)}>
+          <Select value={selectedPeriod} onValueChange={handlePeriodChange}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Período" />
             </SelectTrigger>
@@ -199,9 +279,44 @@ export default function ReportsPage() {
               <SelectItem value="month">Este Mês</SelectItem>
               <SelectItem value="quarter">Este Trimestre</SelectItem>
               <SelectItem value="year">Este Ano</SelectItem>
+              <SelectItem value="custom">Intervalo Personalizado</SelectItem>
             </SelectContent>
           </Select>
         </div>
+
+        {selectedPeriod === "custom" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="reports-custom-start">Data inicial</Label>
+              <Input
+                id="reports-custom-start"
+                type="date"
+                value={customRange.start}
+                max={customRange.end || undefined}
+                onChange={(event) => handleCustomRangeChange("start", event.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="reports-custom-end">Data final</Label>
+              <Input
+                id="reports-custom-end"
+                type="date"
+                value={customRange.end}
+                min={customRange.start || undefined}
+                onChange={(event) => handleCustomRangeChange("end", event.target.value)}
+              />
+            </div>
+            {(!customRange.start || !customRange.end || customRangeError) && (
+              <p
+                className={`text-sm sm:col-span-2 ${customRangeError ? "text-destructive" : "text-muted-foreground"}`}
+              >
+                {customRangeError
+                  ? "A data inicial não pode ser maior que a data final."
+                  : "Selecione a data inicial e final para aplicar o filtro."}
+              </p>
+            )}
+          </div>
+        )}
 
         {isError && (
           <Card className="border-destructive">
