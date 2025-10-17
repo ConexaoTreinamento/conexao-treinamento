@@ -351,7 +351,7 @@ class UserServiceTest {
         when(userRepository.save(any(User.class))).thenReturn(user);
 
         // When
-        UserResponseDTO result = userService.updateUserPassword(userId, newPassword);
+        UserResponseDTO result = userService.resetUserPassword(userId, newPassword);
 
         // Then
         assertThat(result).isNotNull();
@@ -366,13 +366,13 @@ class UserServiceTest {
     @DisplayName("Should throw bad request when password is null or empty")
     void shouldThrowBadRequestWhenPasswordIsNullOrEmpty() {
         // When & Then - null password
-        assertThatThrownBy(() -> userService.updateUserPassword(userId, null))
+        assertThatThrownBy(() -> userService.resetUserPassword(userId, null))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
                 .hasMessageContaining("Password is required");
 
         // When & Then - empty password
-        assertThatThrownBy(() -> userService.updateUserPassword(userId, "   "))
+        assertThatThrownBy(() -> userService.resetUserPassword(userId, "   "))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
                 .hasMessageContaining("Password is required");
@@ -388,7 +388,7 @@ class UserServiceTest {
         when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> userService.updateUserPassword(userId, "newPassword"))
+        assertThatThrownBy(() -> userService.resetUserPassword(userId, "newPassword"))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND)
                 .hasMessageContaining("User not found");
