@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { findTrainerByUserIdOptions, findTrainerByIdOptions, updateTrainerAndUserMutation, findAdministratorByUserIdOptions, updateAdministratorAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
+import { changeOwnPasswordMutation } from "@/lib/api-client/@tanstack/react-query.gen";
 
 export default function ProfilePage() {
   const { toast } = useToast()
@@ -25,11 +26,28 @@ export default function ProfilePage() {
   const [userId, setUserId] = useState<string>("")
   const [userRole, setUserRole] = useState<string>("")
   const [userName, setUserName] = useState<string>("")
+  const [isLoading, setIsLoading] = useState(false)
   const [specialtiesInput, setSpecialtiesInput] = useState("")
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [securityMessage, setSecurityMessage] = useState({ type: "", text: "" });
 
-  //const [currentPassword, setCurrentPassword] = useState("")
-  const [newPassword, setNewPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
+  const { mutate: changePassword, isPending: isChangingPassword } = useMutation({
+    ...changeOwnPasswordMutation(),
+
+    onSuccess: () => {
+      setSecurityMessage({ type: "success", text: "Senha alterada com sucesso!" });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+
+    onError: (error) => {
+      setSecurityMessage({ type: "error", text: "Falha ao alterar a senha." });
+      console.error(error);
+    },
+  });
 
   const [profileData, setProfileData] = useState({
     name: "",
@@ -158,6 +176,28 @@ export default function ProfilePage() {
       setProfileData(prev => ({ ...prev, [field]: value }))
     }
   }
+
+  const handlePasswordSubmit = () => {
+    setSecurityMessage({ type: "", text: "" });
+
+    if (newPassword !== confirmPassword) {
+      setSecurityMessage({ type: "error", text: "A nova senha e a confirmação não conferem." });
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    changePassword({
+      body: {
+        oldPassword: currentPassword,
+        newPassword,
+        confirmPassword
+      },
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+  };
 
   const handleSpecialtiesBlur = () => {
     setProfileData(prev => ({
@@ -483,6 +523,9 @@ export default function ProfilePage() {
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                         placeholder="Digite sua senha atual"
+                        value={currentPassword}
+                        onChange={e => setCurrentPassword(e.target.value)}
+                        disabled={isChangingPassword}
                       />
                     </div>*/}
                     <div className="space-y-2">
@@ -493,6 +536,9 @@ export default function ProfilePage() {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="Digite sua nova senha"
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                        disabled={isChangingPassword}
                       />
                     </div>
                     <div className="space-y-2">
@@ -503,14 +549,22 @@ export default function ProfilePage() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Confirme sua nova senha"
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        disabled={isChangingPassword}
                       />
                     </div>
+                    {securityMessage.text && (
+                      <div className={securityMessage.type === "error" ? "text-red-600 text-sm" : "text-green-600 text-sm"}>
+                        {securityMessage.text}
+                      </div>
+                    )}
                     <Button
                       variant="outline"
-                      onClick={handleChangePassword}
-                      disabled={isLoading}
+                      onClick={handlePasswordSubmit}
+                      disabled={isChangingPassword}
                     >
-                      {isLoading ? "Alterando..." : "Alterar Senha"}
+                      {isChangingPassword ? "Alterando..." : "Alterar Senha"}
                     </Button>
                   </CardContent>
                 </Card>
