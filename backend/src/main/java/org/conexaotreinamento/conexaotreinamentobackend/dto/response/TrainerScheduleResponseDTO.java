@@ -17,7 +17,6 @@ public class TrainerScheduleResponseDTO {
     private UUID trainerId;
     private Integer weekday;
     private LocalTime startTime;
-    private LocalTime endTime;
     private Integer intervalDuration;
     private String seriesName;
     private Instant effectiveFromTimestamp;

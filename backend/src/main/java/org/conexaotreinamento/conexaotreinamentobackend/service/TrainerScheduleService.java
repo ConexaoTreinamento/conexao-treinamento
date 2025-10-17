@@ -33,7 +33,6 @@ public class TrainerScheduleService {
         freshSchedule.setTrainerId(schedule.getTrainerId());
         freshSchedule.setWeekday(schedule.getWeekday());
         freshSchedule.setStartTime(schedule.getStartTime());
-        freshSchedule.setEndTime(schedule.getEndTime());
         freshSchedule.setIntervalDuration(schedule.getIntervalDuration());
         freshSchedule.setSeriesName(schedule.getSeriesName());
         freshSchedule.setEffectiveFromTimestamp(Instant.now());
@@ -47,7 +46,6 @@ public class TrainerScheduleService {
             .map(schedule -> {
                 schedule.setWeekday(updatedSchedule.getWeekday());
                 schedule.setStartTime(updatedSchedule.getStartTime());
-                schedule.setEndTime(updatedSchedule.getEndTime());
                 schedule.setIntervalDuration(updatedSchedule.getIntervalDuration());
                 schedule.setSeriesName(updatedSchedule.getSeriesName());
                 schedule.updateTimestamp();

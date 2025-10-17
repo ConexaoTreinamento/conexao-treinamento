@@ -28,9 +28,6 @@ public class TrainerScheduleRequestDTO {
     @NotNull(message = "Start time is required")
     private LocalTime startTime;
     
-    @NotNull(message = "End time is required")
-    private LocalTime endTime;
-    
     @Min(value = 15, message = "Interval duration must be at least 15 minutes")
     private Integer intervalDuration = 60;
     
