@@ -26,7 +26,7 @@ export default function ProfilePage() {
   const [userId, setUserId] = useState<string>("")
   const [userRole, setUserRole] = useState<string>("")
   const [userName, setUserName] = useState<string>("")
-  const [isLoading, setIsLoading] = useState(false)
+  //const [isLoading, setIsLoading] = useState(false)
   const [specialtiesInput, setSpecialtiesInput] = useState("")
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -277,6 +277,9 @@ export default function ProfilePage() {
     setConfirmPassword("")
   }
 
+  const isSaving = (updateAdminMutation.isPending || updateTrainerMutation.isPending)
+  const isLoading = isSaving || isChangingPassword || isLoadingAdminId || isLoadingTrainerId || isLoadingTrainer
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -485,7 +488,7 @@ export default function ProfilePage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/*<div className="space-y-2">
+                    <div className="space-y-2">
                       <Label htmlFor="currentPassword">Senha Atual</Label>
                       <Input
                         id="currentPassword"
@@ -493,21 +496,19 @@ export default function ProfilePage() {
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                         placeholder="Digite sua senha atual"
-                        value={currentPassword}
-                        onChange={e => setCurrentPassword(e.target.value)}
                         disabled={isChangingPassword}
                       />
-                    </div>*/}
+                    </div>
                     <div className="space-y-2">
                       <Label htmlFor="newPassword">Nova Senha</Label>
-                      <Input
-                        id="newPassword"
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="Digite sua nova senha"
-                        disabled={isChangingPassword}
-                      />
+                        <Input
+                          id="newPassword"
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Digite sua nova senha"
+                          disabled={isLoading}
+                        />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
@@ -517,7 +518,7 @@ export default function ProfilePage() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Confirme sua nova senha"
-                        disabled={isChangingPassword}
+                        disabled={isLoading}
                       />
                     </div>
                     {securityMessage.text && (
@@ -528,9 +529,9 @@ export default function ProfilePage() {
                     <Button
                       variant="outline"
                       onClick={handlePasswordSubmit}
-                      disabled={isChangingPassword}
+                      disabled={isLoading}
                     >
-                      {isChangingPassword ? "Alterando..." : "Alterar Senha"}
+                      {isLoading ? "Alterando..." : "Alterar Senha"}
                     </Button>
                   </CardContent>
                 </Card>

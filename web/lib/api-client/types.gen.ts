@@ -561,21 +561,21 @@ export type Pageable = {
 export type PageUserResponseDto = {
     totalElements?: number;
     totalPages?: number;
-    first?: boolean;
-    last?: boolean;
     size?: number;
     content?: Array<UserResponseDto>;
     number?: number;
     sort?: SortObject;
+    first?: boolean;
+    last?: boolean;
     numberOfElements?: number;
     pageable?: PageableObject;
     empty?: boolean;
 };
 
 export type PageableObject = {
-    paged?: boolean;
     offset?: number;
     sort?: SortObject;
+    paged?: boolean;
     pageNumber?: number;
     pageSize?: number;
     unpaged?: boolean;
@@ -584,19 +584,18 @@ export type PageableObject = {
 export type SortObject = {
     empty?: boolean;
     sorted?: boolean;
-    empty?: boolean;
     unsorted?: boolean;
 };
 
 export type PageStudentResponseDto = {
     totalElements?: number;
     totalPages?: number;
-    first?: boolean;
-    last?: boolean;
     size?: number;
     content?: Array<StudentResponseDto>;
     number?: number;
     sort?: SortObject;
+    first?: boolean;
+    last?: boolean;
     numberOfElements?: number;
     pageable?: PageableObject;
     empty?: boolean;
@@ -606,15 +605,36 @@ export type ScheduleResponseDto = {
     sessions?: Array<SessionResponseDto>;
 };
 
+export type AgeDistributionDto = {
+    ageRange?: string;
+    count?: number;
+    percentage?: number;
+};
+
+export type ReportsResponseDto = {
+    trainerReports?: Array<TrainerReportDto>;
+    ageDistribution?: Array<AgeDistributionDto>;
+};
+
+export type TrainerReportDto = {
+    id?: string;
+    name?: string;
+    hoursWorked?: number;
+    classesGiven?: number;
+    studentsManaged?: number;
+    compensation?: 'HOURLY' | 'MONTHLY';
+    specialties?: Array<string>;
+};
+
 export type PageExerciseResponseDto = {
     totalElements?: number;
     totalPages?: number;
-    first?: boolean;
-    last?: boolean;
     size?: number;
     content?: Array<ExerciseResponseDto>;
     number?: number;
     sort?: SortObject;
+    first?: boolean;
+    last?: boolean;
     numberOfElements?: number;
     pageable?: PageableObject;
     empty?: boolean;
@@ -649,12 +669,12 @@ export type TrainerSchedule = {
 export type PageListAdministratorsDto = {
     totalElements?: number;
     totalPages?: number;
-    first?: boolean;
-    last?: boolean;
     size?: number;
     content?: Array<ListAdministratorsDto>;
     number?: number;
     sort?: SortObject;
+    first?: boolean;
+    last?: boolean;
     numberOfElements?: number;
     pageable?: PageableObject;
     empty?: boolean;
@@ -1727,6 +1747,24 @@ export type ToggleAttendanceResponses = {
 
 export type ToggleAttendanceResponse = ToggleAttendanceResponses[keyof ToggleAttendanceResponses];
 
+export type RestoreAdministratorData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/administrators/{id}/restore';
+};
+
+export type RestoreAdministratorResponses = {
+    /**
+     * OK
+     */
+    200: AdministratorResponseDto;
+};
+
+export type RestoreAdministratorResponse = RestoreAdministratorResponses[keyof RestoreAdministratorResponses];
+
 export type FindTrainerByUserIdData = {
     body?: never;
     path: {
@@ -1781,6 +1819,26 @@ export type GetScheduleResponses = {
 };
 
 export type GetScheduleResponse = GetScheduleResponses[keyof GetScheduleResponses];
+
+export type GetReportsData = {
+    body?: never;
+    path?: never;
+    query: {
+        startDate: string;
+        endDate: string;
+        trainerId?: string;
+    };
+    url: '/reports';
+};
+
+export type GetReportsResponses = {
+    /**
+     * OK
+     */
+    200: ReportsResponseDto;
+};
+
+export type GetReportsResponse = GetReportsResponses[keyof GetReportsResponses];
 
 export type DeletePlanData = {
     body?: never;
