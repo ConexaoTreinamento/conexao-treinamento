@@ -459,8 +459,8 @@ export type StudentPlanAssignmentResponseDto = {
     planName?: string;
     planMaxDays?: number;
     planDurationDays?: number;
+    durationDays?: number;
     startDate?: string;
-    endDate?: string;
     assignedByUserId?: string;
     assignedByUserEmail?: string;
     assignmentNotes?: string;
@@ -575,16 +575,16 @@ export type PageUserResponseDto = {
 export type PageableObject = {
     offset?: number;
     sort?: SortObject;
+    unpaged?: boolean;
     paged?: boolean;
     pageNumber?: number;
     pageSize?: number;
-    unpaged?: boolean;
 };
 
 export type SortObject = {
     empty?: boolean;
-    sorted?: boolean;
     unsorted?: boolean;
+    sorted?: boolean;
 };
 
 export type PageStudentResponseDto = {

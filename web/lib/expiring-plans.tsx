@@ -8,6 +8,79 @@ export interface ExpiringPlanData {
 
 export type StudentStatus = "Ativo" | "Vencido" | "Inativo"
 
+const resolveAssignmentDuration = (assignment?: StudentPlanAssignmentResponseDto | null): number | undefined => {
+  if (!assignment) {
+    return undefined
+  }
+
+  if (assignment.durationDays !== undefined) {
+    return assignment.durationDays
+  }
+
+  if (assignment.planDurationDays !== undefined) {
+    return assignment.planDurationDays
+  }
+
+  return undefined
+}
+
+export const getAssignmentDurationDays = (assignment?: StudentPlanAssignmentResponseDto | null): number | undefined => {
+  if (!assignment) {
+    return undefined
+  }
+
+  return resolveAssignmentDuration(assignment)
+}
+
+const toIsoDate = (date: Date) => date.toISOString().split('T')[0]
+
+const normaliseDate = (isoDate: string) => {
+  const parsed = new Date(`${isoDate}T00:00:00Z`)
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed
+}
+
+export const getAssignmentEndDate = (assignment?: StudentPlanAssignmentResponseDto | null): string | undefined => {
+  if (!assignment?.startDate) {
+    return undefined
+  }
+
+  const start = normaliseDate(assignment.startDate)
+  if (!start) {
+    return undefined
+  }
+
+  const duration = resolveAssignmentDuration(assignment)
+  if (duration == null) {
+    return undefined
+  }
+
+  const numericDuration = Number(duration)
+  if (!Number.isFinite(numericDuration) || numericDuration <= 0) {
+    return toIsoDate(start)
+  }
+
+  const end = new Date(start)
+  end.setUTCDate(end.getUTCDate() + numericDuration - 1)
+  return toIsoDate(end)
+}
+
+export const getAssignmentDaysRemaining = (assignment?: StudentPlanAssignmentResponseDto | null): number | undefined => {
+  if (!assignment) {
+    return undefined
+  }
+
+  if (typeof assignment.daysRemaining === 'number') {
+    return assignment.daysRemaining
+  }
+
+  const endDate = getAssignmentEndDate(assignment)
+  if (!endDate) {
+    return undefined
+  }
+
+  return calculateDaysUntilExpiration(endDate)
+}
+
 // Calculate days until expiration based on plan expiration date
 export const calculateDaysUntilExpiration = (expirationDate: string): number => {
   const today = new Date()
@@ -65,26 +138,26 @@ export const UnifiedStatusBadge = ({expirationDate}: {expirationDate: string}) =
 
 // New badge that uses full assignment DTO (preferred going forward)
 export const PlanAssignmentStatusBadge = ({ assignment }: { assignment?: StudentPlanAssignmentResponseDto | null }) => {
-  if(!assignment) {
+  if (!assignment) {
     return <Badge variant="outline" className="text-xs">Sem Plano</Badge>
   }
 
-  const expired = Boolean(assignment.expired || (assignment.endDate && new Date(assignment.endDate) < new Date()))
-  // Compute days remaining if not supplied
-  let daysRemaining = assignment.daysRemaining
-  if(daysRemaining == null && assignment.endDate) {
-    daysRemaining = calculateDaysUntilExpiration(assignment.endDate)
+  const daysRemaining = getAssignmentDaysRemaining(assignment)
+  const expired = Boolean(assignment.expired || (daysRemaining != null && daysRemaining < 0))
+
+  if (!assignment.active && daysRemaining == null) {
+    return <Badge variant="outline" className="text-xs">Inativo</Badge>
   }
 
-  if(expired || (daysRemaining != null && daysRemaining < 0)) {
+  if (expired) {
     return <Badge variant="destructive" className="text-xs">Expirado</Badge>
   }
 
-  if(daysRemaining === 0) return <Badge variant="destructive" className="text-xs">Expira Hoje</Badge>
-  if(daysRemaining === 1) return <Badge variant="destructive" className="text-xs">1 dia restante</Badge>
-  if(daysRemaining != null && daysRemaining <= 2) return <Badge variant="destructive" className="text-xs">{daysRemaining} dias restantes</Badge>
-  if(daysRemaining != null && daysRemaining <= 5) return <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-400 text-xs">{daysRemaining} dias</Badge>
-  if(daysRemaining != null && daysRemaining <= 7) return <Badge variant="secondary" className="text-xs">{daysRemaining} dias</Badge>
+  if (daysRemaining === 0) return <Badge variant="destructive" className="text-xs">Expira Hoje</Badge>
+  if (daysRemaining === 1) return <Badge variant="destructive" className="text-xs">1 dia restante</Badge>
+  if (daysRemaining != null && daysRemaining <= 2) return <Badge variant="destructive" className="text-xs">{daysRemaining} dias restantes</Badge>
+  if (daysRemaining != null && daysRemaining <= 5) return <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-400 text-xs">{daysRemaining} dias</Badge>
+  if (daysRemaining != null && daysRemaining <= 7) return <Badge variant="secondary" className="text-xs">{daysRemaining} dias</Badge>
 
   // Not expiring soon: simple active token
   return <Badge variant="default" className="bg-green-600 hover:bg-green-700 text-xs">Ativo</Badge>
