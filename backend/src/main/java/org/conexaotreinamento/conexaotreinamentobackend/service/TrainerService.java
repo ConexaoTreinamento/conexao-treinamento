@@ -65,11 +65,6 @@ public class TrainerService {
         // Always update the associated user's email (mandatory)
         UserResponseDTO updatedUser = userService.updateUserEmail(trainer.getUserId(), request.email());
 
-        // Conditionally update password (optional)
-        if (request.hasPassword()) {
-            userService.updateUserPassword(trainer.getUserId(), request.password());
-        }
-
         // Update trainer fields
         trainer.setName(request.name());
         trainer.setPhone(request.phone());
