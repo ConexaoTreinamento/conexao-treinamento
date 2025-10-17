@@ -73,7 +73,6 @@ class StudentPlanServiceTest {
         a.setDurationDays((int) Math.max(0, ChronoUnit.DAYS.between(start, endExclusive)));
         a.setAssignedByUserId(assignedBy);
         a.setAssignmentNotes("notes");
-        a.setAssignedDurationDays((int) Math.max(0, ChronoUnit.DAYS.between(start, end)));
         return a;
     }
 
