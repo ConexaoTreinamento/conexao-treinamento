@@ -66,6 +66,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 		localStorage.removeItem("userRole")
 		localStorage.removeItem("userName")
 		localStorage.removeItem("token")
+		localStorage.removeItem("userId")
 		router.push("/")
 	}
 

@@ -232,17 +232,16 @@ class AdministratorServiceTest {
     void shouldUpdateAdministratorSuccessfullyWithPassword() {
         // Given
         CreateAdministratorDTO updateAdministratorDTO = new CreateAdministratorDTO(
-            "João Updated",
-            "Silva Updated",
-            "joao@example.com",
-            "newpassword123"
-        );
-        
+                "João Updated",
+                "Silva Updated",
+                "joao@example.com",
+                "newpassword123");
+
         UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "joao@example.com", Role.ROLE_ADMIN);
-        
+
         when(administratorRepository.findById(administratorId)).thenReturn(Optional.of(administrator));
         when(userService.updateUserEmail(userId, "joao@example.com")).thenReturn(updatedUserResponse);
-        when(userService.updateUserPassword(userId, "newpassword123")).thenReturn(updatedUserResponse);
+        when(userService.resetUserPassword(userId, "newpassword123")).thenReturn(updatedUserResponse);
         when(administratorRepository.save(administrator)).thenReturn(administrator);
         when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.of(user));
 
@@ -256,7 +255,7 @@ class AdministratorServiceTest {
 
         verify(administratorRepository).findById(administratorId);
         verify(userService).updateUserEmail(userId, "joao@example.com");
-        verify(userService).updateUserPassword(userId, "newpassword123");
+        verify(userService).resetUserPassword(userId, "newpassword123");
         verify(administratorRepository).save(administrator);
         verify(userRepository).findByIdAndDeletedAtIsNull(userId);
     }
@@ -266,14 +265,14 @@ class AdministratorServiceTest {
     void shouldUpdateAdministratorSuccessfullyWithoutPassword() {
         // Given
         CreateAdministratorDTO updateAdministratorDTO = new CreateAdministratorDTO(
-            "João Updated",
-            "Silva Updated",
-            "joao.updated@example.com",
-            null // No password provided
+                "João Updated",
+                "Silva Updated",
+                "joao.updated@example.com",
+                null // No password provided
         );
-        
+
         UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "joao.updated@example.com", Role.ROLE_ADMIN);
-        
+
         when(administratorRepository.findById(administratorId)).thenReturn(Optional.of(administrator));
         when(userService.updateUserEmail(userId, "joao.updated@example.com")).thenReturn(updatedUserResponse);
         when(administratorRepository.save(administrator)).thenReturn(administrator);
@@ -289,7 +288,7 @@ class AdministratorServiceTest {
 
         verify(administratorRepository).findById(administratorId);
         verify(userService).updateUserEmail(userId, "joao.updated@example.com");
-        verify(userService, never()).updateUserPassword(any(), any());
+        verify(userService, never()).resetUserPassword(any(), any());
         verify(administratorRepository).save(administrator);
         verify(userRepository).findByIdAndDeletedAtIsNull(userId);
     }
