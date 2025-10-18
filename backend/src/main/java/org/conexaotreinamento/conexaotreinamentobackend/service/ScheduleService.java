@@ -83,7 +83,7 @@ public class ScheduleService {
             for (TrainerSchedule schedule : daySchedules) {
                 String sessionId = generateSessionId(schedule, date);
                 LocalDateTime sessionStartTime = LocalDateTime.of(date, schedule.getStartTime());
-                LocalDateTime sessionEndTime = LocalDateTime.of(date, schedule.getEndTime());
+                LocalDateTime sessionEndTime = LocalDateTime.of(date, schedule.calculateEndTime());
                 
                 // Check if there's an existing session instance (canonical 4-part); fallback to legacy 3-part
                 ScheduledSession existingSession = existingSessionMap.get(sessionId);
@@ -318,11 +318,11 @@ public class ScheduleService {
 
     private SessionResponseDTO buildVirtualSessionDTO(TrainerSchedule schedule, LocalDate date, Instant sessionInstant) {
         SessionResponseDTO dto = new SessionResponseDTO();
-    dto.setSessionId(generateSessionId(schedule, date)); // canonical id
+        dto.setSessionId(generateSessionId(schedule, date)); // canonical id
         dto.setTrainerId(schedule.getTrainerId());
         trainerRepository.findById(schedule.getTrainerId()).ifPresent(t -> dto.setTrainerName(t.getName()));
         dto.setStartTime(LocalDateTime.of(date, schedule.getStartTime()));
-        dto.setEndTime(LocalDateTime.of(date, schedule.getEndTime()));
+        dto.setEndTime(LocalDateTime.of(date, schedule.calculateEndTime()));
         dto.setSeriesName(schedule.getSeriesName());
         dto.setNotes(null);
         dto.setInstanceOverride(false);
@@ -503,7 +503,7 @@ public class ScheduleService {
         session.setSessionId(generateSessionId(schedule, date));
         session.setTrainerId(schedule.getTrainerId());
         session.setStartTime(LocalDateTime.of(date, schedule.getStartTime()));
-        session.setEndTime(LocalDateTime.of(date, schedule.getEndTime()));
+        session.setEndTime(LocalDateTime.of(date, schedule.calculateEndTime()));
         session.setSeriesName(schedule.getSeriesName());
         session.setInstanceOverride(false); // Generated from schedule, no overrides
         session.setEffectiveFromTimestamp(Instant.now());

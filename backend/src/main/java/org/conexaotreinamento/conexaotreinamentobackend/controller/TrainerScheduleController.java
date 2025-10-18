@@ -77,7 +77,6 @@ public class TrainerScheduleController {
         schedule.setTrainerId(dto.getTrainerId());
         schedule.setWeekday(dto.getWeekday());
         schedule.setStartTime(dto.getStartTime());
-        schedule.setEndTime(dto.getEndTime());
         schedule.setIntervalDuration(dto.getIntervalDuration());
         schedule.setSeriesName(dto.getSeriesName());
         return schedule;
@@ -89,7 +88,6 @@ public class TrainerScheduleController {
         dto.setTrainerId(schedule.getTrainerId());
         dto.setWeekday(schedule.getWeekday());
         dto.setStartTime(schedule.getStartTime());
-        dto.setEndTime(schedule.getEndTime());
         dto.setIntervalDuration(schedule.getIntervalDuration());
         dto.setSeriesName(schedule.getSeriesName());
         dto.setEffectiveFromTimestamp(schedule.getEffectiveFromTimestamp());
