@@ -309,8 +309,8 @@ export type SessionParticipant = {
     active?: boolean;
     exercises?: Array<ParticipantExercise>;
     present?: boolean;
-    excluded?: boolean;
     included?: boolean;
+    excluded?: boolean;
 };
 
 export type SessionUpdateRequestDto = {
@@ -573,9 +573,9 @@ export type PageUserResponseDto = {
 export type PageableObject = {
     offset?: number;
     sort?: SortObject;
+    paged?: boolean;
     pageNumber?: number;
     pageSize?: number;
-    paged?: boolean;
     unpaged?: boolean;
 };
 
@@ -1768,7 +1768,7 @@ export type FindTrainerByUserIdData = {
         id: string;
     };
     query?: never;
-    url: '/trainers/userId/{id}';
+    url: '/trainers/user-profile/{id}';
 };
 
 export type FindTrainerByUserIdResponses = {
@@ -2091,7 +2091,7 @@ export type FindAdministratorByUserIdData = {
         id: string;
     };
     query?: never;
-    url: '/administrators/userId/{id}';
+    url: '/administrators/user-profile/{id}';
 };
 
 export type FindAdministratorByUserIdResponses = {
