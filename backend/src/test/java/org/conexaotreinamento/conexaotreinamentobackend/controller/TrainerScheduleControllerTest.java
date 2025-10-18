@@ -5,7 +5,6 @@ import org.conexaotreinamento.conexaotreinamentobackend.service.TrainerScheduleS
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -45,13 +44,12 @@ class TrainerScheduleControllerTest {
         scheduleId = UUID.randomUUID();
     }
 
-    private TrainerSchedule schedule(UUID id, UUID trainerId, int weekday, String start, String end, int interval, String seriesName) {
+    private TrainerSchedule schedule(UUID id, UUID trainerId, int weekday, String start, int interval, String seriesName) {
         TrainerSchedule ts = new TrainerSchedule();
         ts.setId(id);
         ts.setTrainerId(trainerId);
         ts.setWeekday(weekday);
         ts.setStartTime(LocalTime.parse(start));
-        ts.setEndTime(LocalTime.parse(end));
         ts.setIntervalDuration(interval);
         ts.setSeriesName(seriesName);
         ts.setEffectiveFromTimestamp(Instant.now());
@@ -62,7 +60,7 @@ class TrainerScheduleControllerTest {
     @Test
     void getSchedulesByTrainer_returnsOk_andMapsList() throws Exception {
         // Arrange
-        TrainerSchedule ts = schedule(UUID.randomUUID(), trainerId, 1, "08:00:00", "09:00:00", 45, "Pilates");
+        TrainerSchedule ts = schedule(UUID.randomUUID(), trainerId, 1, "08:00:00", 45, "Pilates");
         when(trainerScheduleService.getSchedulesByTrainer(trainerId)).thenReturn(List.of(ts));
 
         // Act + Assert
@@ -77,7 +75,7 @@ class TrainerScheduleControllerTest {
     @Test
     void getScheduleById_found_returnsOk() throws Exception {
         // Arrange
-        TrainerSchedule ts = schedule(scheduleId, trainerId, 4, "11:00:00", "12:00:00", 30, "Strength");
+        TrainerSchedule ts = schedule(scheduleId, trainerId, 4, "11:00:00", 30, "Strength");
         when(trainerScheduleService.getScheduleById(scheduleId)).thenReturn(Optional.of(ts));
 
         // Act + Assert
@@ -102,7 +100,6 @@ class TrainerScheduleControllerTest {
                 + "\"trainerId\":\"" + trainerId + "\","
                 + "\"weekday\":1,"
                 + "\"startTime\":\"07:00:00\","
-                + "\"endTime\":\"08:00:00\","
                 + "\"intervalDuration\":60,"
                 + "\"seriesName\":\"Morning Strength\""
                 + "}";

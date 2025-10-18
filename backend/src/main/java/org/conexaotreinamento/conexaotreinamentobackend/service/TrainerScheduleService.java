@@ -29,8 +29,16 @@ public class TrainerScheduleService {
     }
     
     public TrainerSchedule createSchedule(TrainerSchedule schedule) {
-        schedule.setEffectiveFromTimestamp(Instant.now());
-        return trainerScheduleRepository.save(schedule);
+        TrainerSchedule freshSchedule = new TrainerSchedule();
+        freshSchedule.setTrainerId(schedule.getTrainerId());
+        freshSchedule.setWeekday(schedule.getWeekday());
+        freshSchedule.setStartTime(schedule.getStartTime());
+        freshSchedule.setIntervalDuration(schedule.getIntervalDuration());
+        freshSchedule.setSeriesName(schedule.getSeriesName());
+        freshSchedule.setEffectiveFromTimestamp(Instant.now());
+        freshSchedule.setActive(true);
+        freshSchedule.setDeletedAt(null);
+        return trainerScheduleRepository.save(freshSchedule);
     }
     
     public TrainerSchedule updateSchedule(UUID id, TrainerSchedule updatedSchedule) {
@@ -38,7 +46,6 @@ public class TrainerScheduleService {
             .map(schedule -> {
                 schedule.setWeekday(updatedSchedule.getWeekday());
                 schedule.setStartTime(updatedSchedule.getStartTime());
-                schedule.setEndTime(updatedSchedule.getEndTime());
                 schedule.setIntervalDuration(updatedSchedule.getIntervalDuration());
                 schedule.setSeriesName(updatedSchedule.getSeriesName());
                 schedule.updateTimestamp();
