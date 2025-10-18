@@ -12,12 +12,35 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { User, Mail, Phone, MapPin, Calendar, Save, Camera, Shield, Clock, Award } from 'lucide-react'
 import Layout from "@/components/layout"
+import { useMutation } from "@tanstack/react-query";
+import { changeOwnPasswordMutation } from "@/lib/api-client/@tanstack/react-query.gen";
 
 export default function ProfilePage() {
   const { id } = useParams();
   const [userRole, setUserRole] = useState<string>("")
   const [userName, setUserName] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [securityMessage, setSecurityMessage] = useState({ type: "", text: "" });
+
+  const { mutate: changePassword, isPending: isChangingPassword } = useMutation({
+    ...changeOwnPasswordMutation(),
+
+    onSuccess: () => {
+      setSecurityMessage({ type: "success", text: "Senha alterada com sucesso!" });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+
+    onError: (error) => {
+      setSecurityMessage({ type: "error", text: "Falha ao alterar a senha." });
+      console.error(error);
+    },
+  });
+
   const [profileData, setProfileData] = useState({
     name: "",
     email: "",
@@ -53,23 +76,23 @@ export default function ProfilePage() {
         avatar: "/placeholder.svg?height=100&width=100"
       })
     } else {
-    fetch(`${apiUrl}/trainers/${id}`)
-      .then(res => res.json())
-      .then(data => setProfileData({
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        address: data.address,
-        birthDate: data.birthDate,
-        joinDate: data.createdAt,
-        bio: data.bio || "",
-        specialties: Array.isArray(data.specialties) ? data.specialties : [],
-        avatar: "/placeholder.svg?height=100&width=100"
-      }))
-      .catch(() => {
-        // Trate erro
-      })
-      .finally(() => setIsLoading(false));
+      fetch(`${apiUrl}/trainers/${id}`)
+        .then(res => res.json())
+        .then(data => setProfileData({
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          address: data.address,
+          birthDate: data.birthDate,
+          joinDate: data.createdAt,
+          bio: data.bio || "",
+          specialties: Array.isArray(data.specialties) ? data.specialties : [],
+          avatar: "/placeholder.svg?height=100&width=100"
+        }))
+        .catch(() => {
+          // Trate erro
+        })
+        .finally(() => setIsLoading(false));
     }
   }, [id]);
 
@@ -83,6 +106,28 @@ export default function ProfilePage() {
       setProfileData(prev => ({ ...prev, [field]: value }))
     }
   }
+
+  const handlePasswordSubmit = () => {
+    setSecurityMessage({ type: "", text: "" });
+
+    if (newPassword !== confirmPassword) {
+      setSecurityMessage({ type: "error", text: "A nova senha e a confirmação não conferem." });
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    changePassword({
+      body: {
+        oldPassword: currentPassword,
+        newPassword,
+        confirmPassword
+      },
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+  };
 
   const handleSave = async () => {
     setIsLoading(true);
@@ -160,7 +205,7 @@ export default function ProfilePage() {
                   <span>Desde {profileData.joinDate ? new Date(profileData.joinDate).toLocaleDateString('pt-BR') : ""}</span>
                 </div>
               </div>
-              
+
               {profileData.specialties.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Especialidades:</p>
@@ -336,6 +381,9 @@ export default function ProfilePage() {
                         id="currentPassword"
                         type="password"
                         placeholder="Digite sua senha atual"
+                        value={currentPassword}
+                        onChange={e => setCurrentPassword(e.target.value)}
+                        disabled={isChangingPassword}
                       />
                     </div>
                     <div className="space-y-2">
@@ -344,6 +392,9 @@ export default function ProfilePage() {
                         id="newPassword"
                         type="password"
                         placeholder="Digite sua nova senha"
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                        disabled={isChangingPassword}
                       />
                     </div>
                     <div className="space-y-2">
@@ -352,10 +403,22 @@ export default function ProfilePage() {
                         id="confirmPassword"
                         type="password"
                         placeholder="Confirme sua nova senha"
+                        value={confirmPassword}
+                        onChange={e => setConfirmPassword(e.target.value)}
+                        disabled={isChangingPassword}
                       />
                     </div>
-                    <Button variant="outline">
-                      Alterar Senha
+                    {securityMessage.text && (
+                      <div className={securityMessage.type === "error" ? "text-red-600 text-sm" : "text-green-600 text-sm"}>
+                        {securityMessage.text}
+                      </div>
+                    )}
+                    <Button
+                      variant="outline"
+                      onClick={handlePasswordSubmit}
+                      disabled={isChangingPassword}
+                    >
+                      {isChangingPassword ? "Alterando..." : "Alterar Senha"}
                     </Button>
                   </CardContent>
                 </Card>

@@ -229,6 +229,12 @@ export type UserResponseDto = {
     role?: 'ROLE_ADMIN' | 'ROLE_TRAINER' | 'ROLE_STUDENT';
 };
 
+export type ChangePasswordRequestDto = {
+    oldPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+};
+
 export type ListTrainersDto = {
     id?: string;
     name?: string;
@@ -303,8 +309,8 @@ export type SessionParticipant = {
     active?: boolean;
     exercises?: Array<ParticipantExercise>;
     present?: boolean;
-    excluded?: boolean;
     included?: boolean;
+    excluded?: boolean;
 };
 
 export type SessionUpdateRequestDto = {
@@ -509,6 +515,10 @@ export type PatchUserRoleRequestDto = {
     role?: 'ROLE_ADMIN' | 'ROLE_TRAINER' | 'ROLE_STUDENT';
 };
 
+export type ResetTrainerPasswordDto = {
+    newPassword: string;
+};
+
 export type ParticipantExerciseUpdateRequestDto = {
     setsCompleted?: number;
     repsCompleted?: number;
@@ -547,15 +557,15 @@ export type Pageable = {
 };
 
 export type PageUserResponseDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
+    first?: boolean;
+    last?: boolean;
     size?: number;
     content?: Array<UserResponseDto>;
     number?: number;
-    first?: boolean;
-    last?: boolean;
-    numberOfElements?: number;
     sort?: SortObject;
+    numberOfElements?: number;
     pageable?: PageableObject;
     empty?: boolean;
 };
@@ -563,9 +573,9 @@ export type PageUserResponseDto = {
 export type PageableObject = {
     offset?: number;
     sort?: SortObject;
-    pageNumber?: number;
-    pageSize?: number;
     paged?: boolean;
+    pageSize?: number;
+    pageNumber?: number;
     unpaged?: boolean;
 };
 
@@ -576,15 +586,15 @@ export type SortObject = {
 };
 
 export type PageStudentResponseDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
+    first?: boolean;
+    last?: boolean;
     size?: number;
     content?: Array<StudentResponseDto>;
     number?: number;
-    first?: boolean;
-    last?: boolean;
-    numberOfElements?: number;
     sort?: SortObject;
+    numberOfElements?: number;
     pageable?: PageableObject;
     empty?: boolean;
 };
@@ -615,15 +625,15 @@ export type TrainerReportDto = {
 };
 
 export type PageExerciseResponseDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
+    first?: boolean;
+    last?: boolean;
     size?: number;
     content?: Array<ExerciseResponseDto>;
     number?: number;
-    first?: boolean;
-    last?: boolean;
-    numberOfElements?: number;
     sort?: SortObject;
+    numberOfElements?: number;
     pageable?: PageableObject;
     empty?: boolean;
 };
@@ -654,15 +664,15 @@ export type TrainerSchedule = {
 };
 
 export type PageListAdministratorsDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
+    first?: boolean;
+    last?: boolean;
     size?: number;
     content?: Array<ListAdministratorsDto>;
     number?: number;
-    first?: boolean;
-    last?: boolean;
-    numberOfElements?: number;
     sort?: SortObject;
+    numberOfElements?: number;
     pageable?: PageableObject;
     empty?: boolean;
 };
@@ -1066,6 +1076,20 @@ export type CreateUserResponses = {
 };
 
 export type CreateUserResponse = CreateUserResponses[keyof CreateUserResponses];
+
+export type ChangeOwnPasswordData = {
+    body: ChangePasswordRequestDto;
+    path?: never;
+    query?: never;
+    url: '/users/me/change-password';
+};
+
+export type ChangeOwnPasswordResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
 
 export type FindAllTrainersData = {
     body?: never;
@@ -1594,6 +1618,22 @@ export type PatchResponses = {
 };
 
 export type PatchResponse = PatchResponses[keyof PatchResponses];
+
+export type ResetPasswordData = {
+    body: ResetTrainerPasswordDto;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/trainers/{id}/reset-password';
+};
+
+export type ResetPasswordResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
 
 export type RestoreStudentData = {
     body?: never;
