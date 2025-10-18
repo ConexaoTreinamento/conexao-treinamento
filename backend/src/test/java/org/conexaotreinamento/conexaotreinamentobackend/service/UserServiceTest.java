@@ -1,5 +1,12 @@
 package org.conexaotreinamento.conexaotreinamentobackend.service;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchUserRoleRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
@@ -10,8 +17,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -20,14 +31,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserService Unit Tests")
@@ -444,5 +447,85 @@ class UserServiceTest {
                 .containsExactlyInAnyOrder(Role.ROLE_ADMIN, Role.ROLE_TRAINER);
 
         verify(userRepository).findAllByDeletedAtIsNull(pageable);
+    }
+
+    @Test
+    @DisplayName("Should restore user successfully")
+    void shouldRestoreUserSuccessfully() {
+        // Given
+        user.deactivate(); // Mark as inactive
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailAndDeletedAtIsNull("john@example.com")).thenReturn(Optional.empty());
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        // When
+        UserResponseDTO result = userService.restore(userId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(userId);
+        assertThat(result.email()).isEqualTo("john@example.com");
+        assertThat(user.getDeletedAt()).isNull();
+        assertThat(user.isActive()).isTrue();
+        
+        verify(userRepository).findById(userId);
+        verify(userRepository).findByEmailAndDeletedAtIsNull("john@example.com");
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    @DisplayName("Should throw not found when restoring non-existent user")
+    void shouldThrowNotFoundWhenRestoringNonExistentUser() {
+        // Given
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> userService.restore(userId))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND)
+                .hasMessageContaining("User not found");
+        
+        verify(userRepository).findById(userId);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should throw conflict when restoring user that is already active")
+    void shouldThrowConflictWhenRestoringUserThatIsAlreadyActive() {
+        // Given
+        // User is already active (deletedAt = null by default)
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        // When & Then
+        assertThatThrownBy(() -> userService.restore(userId))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("status", HttpStatus.CONFLICT)
+                .hasMessageContaining("User is already active");
+        
+        verify(userRepository).findById(userId);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should throw conflict when restoring user with email conflict")
+    void shouldThrowConflictWhenRestoringUserWithEmailConflict() {
+        // Given
+        user.deactivate(); // Mark as inactive
+        User activeUser = new User("john@example.com", "password", Role.ROLE_TRAINER);
+        setIdViaReflection(activeUser, UUID.randomUUID());
+        
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailAndDeletedAtIsNull("john@example.com"))
+                .thenReturn(Optional.of(activeUser));
+
+        // When & Then
+        assertThatThrownBy(() -> userService.restore(userId))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasFieldOrPropertyWithValue("status", HttpStatus.CONFLICT)
+                .hasMessageContaining("Cannot restore user due to email conflict");
+        
+        verify(userRepository).findById(userId);
+        verify(userRepository).findByEmailAndDeletedAtIsNull("john@example.com");
+        verify(userRepository, never()).save(any());
     }
 }

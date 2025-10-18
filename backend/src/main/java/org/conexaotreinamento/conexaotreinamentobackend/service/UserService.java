@@ -56,6 +56,26 @@ public class UserService {
     }
 
     @Transactional
+    public UserResponseDTO restore(UUID id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        
+        if (user.isActive()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "User is already active");
+        }
+        
+        // Verificar se já existe outro usuário ativo com o mesmo email
+        if (userRepository.findByEmailAndDeletedAtIsNull(user.getEmail()).isPresent()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, 
+                "Cannot restore user due to email conflict with another active user");
+        }
+        
+        user.activate();
+        User savedUser = userRepository.save(user);
+        return UserResponseDTO.fromEntity(savedUser);
+    }
+
+    @Transactional
     public UserResponseDTO patch(UUID id, PatchUserRoleRequestDTO request) {
         User user = userRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));

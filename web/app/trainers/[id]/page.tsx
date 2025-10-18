@@ -12,13 +12,16 @@ import TrainerModal from "@/components/trainer-modal"
 import { findTrainerByIdOptions, updateTrainerAndUserMutation,resetPasswordMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useToast } from "@/hooks/use-toast"
+import { handleHttpError } from "@/lib/error-utils"
 
 
 export default function TrainerProfilePage() {
   const router = useRouter()
   const params = useParams()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerAndUserMutation())
+  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerAndUserMutation({ client: apiClient }));
+  const { toast } = useToast()
 
   const queryClient = useQueryClient();
 
@@ -72,26 +75,30 @@ export default function TrainerProfilePage() {
 
   // Handle modal submission
   const handleModalSubmit = async (formData: any) => {
-    if (trainerData) {
-      // Update the trainer data with new form data
-      const updatedTrainer = { ...trainerData, ...formData }
+    try {
+      if (trainerData) {
+        // Update the trainer data with new form data
+        const updatedTrainer = { ...trainerData, ...formData }
 
-      await updateTrainer({
-        path: { id: String(updatedTrainer?.id) },
-        body: updatedTrainer,
-        client: apiClient,
-      })
-      await queryClient.invalidateQueries({
-        predicate: function (q) {
-          console.log(q)
-          return false
-        }
-      })
-      await queryClient.invalidateQueries({
-        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findTrainerById'
-      })
+        await updateTrainer({
+          path: { id: String(updatedTrainer?.id) },
+          body: updatedTrainer,
+          client: apiClient,
+        })
+        await queryClient.invalidateQueries({
+          predicate: function (q) {
+            console.log(q)
+            return false
+          }
+        })
+        await queryClient.invalidateQueries({
+          predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findTrainerById'
+        })
+      }
+      setIsModalOpen(false)
+    } catch (error: any) {
+      handleHttpError(error, "atualizar treinador", "Não foi possível atualizar o treinador. Tente novamente.")
     }
-    setIsModalOpen(false)
   }
 
   if (isLoading) {

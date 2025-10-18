@@ -10,6 +10,7 @@ import Layout from "@/components/layout"
 import { useQuery } from "@tanstack/react-query"
 import { findAdministratorByIdOptions } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { ListAdministratorsDto } from "@/lib/api-client/types.gen"
+import { apiClient } from "@/lib/client"
 
 export default function AdministratorProfilePage() {
   const router = useRouter()
@@ -28,6 +29,7 @@ export default function AdministratorProfilePage() {
   // Usando React Query
   const { data: administratorData, isLoading, error } = useQuery({
     ...findAdministratorByIdOptions({
+      client: apiClient,
       path: { id: params.id as string }
     }),
     enabled: !!params.id && userRole === "admin"

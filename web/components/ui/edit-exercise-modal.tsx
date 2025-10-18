@@ -12,6 +12,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { handleHttpError } from "@/lib/error-utils";
 import { patchExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/client";
@@ -30,7 +31,7 @@ export default function EditExerciseModal({ isOpen, onClose, exercise }: EditExe
     const queryClient = useQueryClient();
 
     const { mutateAsync: editExercise, isPending: isEditing } = useMutation(
-        patchExerciseMutation()
+        patchExerciseMutation({ client: apiClient })
     )
     // Preenche os dados iniciais quando abrir o modal
     useEffect(() => {
@@ -58,13 +59,8 @@ export default function EditExerciseModal({ isOpen, onClose, exercise }: EditExe
                 predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllExercises'
             })
             onClose();
-        } catch (error) {
-            console.error('Erro ao deletar exercício:', error)
-            toast({
-                title: "Erro",
-                description: "Erro ao excluir exercício. Tente novamente.",
-                variant: "destructive",
-            })
+        } catch (error: any) {
+            handleHttpError(error, "deletar exercício", "Erro ao deletar exercício. Tente novamente.")
         }
     };
 

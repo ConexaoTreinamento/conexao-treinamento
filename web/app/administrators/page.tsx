@@ -21,6 +21,7 @@ import Layout from "@/components/layout"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { findAllAdministratorsOptions, createAdministratorAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { ListAdministratorsDto, CreateAdministratorAndUserData } from "@/lib/api-client/types.gen"
+import { apiClient } from "@/lib/client";
 
 interface FormData {
   firstName: string;
@@ -68,26 +69,26 @@ export default function AdministratorsPage() {
 
   // Usando React Query para buscar administradores
   const { data: administrators = [], isLoading } = useQuery({
-    ...findAllAdministratorsOptions({}),
+    ...findAllAdministratorsOptions({client: apiClient}),
     enabled: userRole === "admin"
   })
 
   // Mutation para criar administrador
   const createAdministrator = useMutation({
-    ...createAdministratorAndUserMutation({}),
+    ...createAdministratorAndUserMutation({client: apiClient}),
     onSuccess: () => {
       setShowSuccess(true)
       resetForm()
       queryClient.invalidateQueries({
         predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllAdministrators'
       })
-      
+
       setIsCreateOpen(false)
       setShowSuccess(false)
     },
     onError: (error: any) => {
       console.error('Erro ao criar administrador:', error)
-      
+
       if (error.response?.status === 409) {
         setErrors({ email: "Email já está em uso" })
       } else if (error.response?.status === 400 && error.response?.data?.fieldErrors) {
@@ -369,8 +370,8 @@ export default function AdministratorsPage() {
                     {searchTerm ? "Nenhum administrador encontrado" : "Nenhum administrador cadastrado"}
                   </h3>
                   <p className="text-muted-foreground text-center">
-                    {searchTerm 
-                      ? "Tente ajustar os termos de busca" 
+                    {searchTerm
+                      ? "Tente ajustar os termos de busca"
                       : "Comece cadastrando o primeiro administrador"
                     }
                   </p>

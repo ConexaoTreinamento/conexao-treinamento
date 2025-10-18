@@ -16,12 +16,15 @@ import { createTrainerAndUserMutation, findAllTrainersOptions, softDeleteTrainer
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { TrainerResponseDto } from "@/lib/api-client"
 import { apiClient } from "@/lib/client"
+import { useToast } from "@/hooks/use-toast"
+import { handleHttpError } from "@/lib/error-utils"
 
 // Interface for trainer data to match the modal
 
 export default function TrainersPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [userRole, setUserRole] = useState<string>("admin")
+  const { toast } = useToast()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<"create" | "edit">("create")
   const [editingTrainer, setEditingTrainer] = useState<TrainerResponseDto | null>(null)
@@ -32,9 +35,9 @@ export default function TrainersPage() {
     specialty: "",
   })
   const router = useRouter()
-  const { mutateAsync: deleteTrainer, isPending: isDeleting } = useMutation(softDeleteTrainerUserMutation())
-  const { mutateAsync: createTrainer, isPending: isCreating } = useMutation(createTrainerAndUserMutation())
-  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerAndUserMutation())
+  const { mutateAsync: deleteTrainer, isPending: isDeleting } = useMutation(softDeleteTrainerUserMutation({ client: apiClient }))
+  const { mutateAsync: createTrainer, isPending: isCreating } = useMutation(createTrainerAndUserMutation({ client: apiClient }))
+  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerAndUserMutation({ client: apiClient }))
 
   const queryClient = useQueryClient();
   useEffect(() => {
@@ -65,36 +68,45 @@ export default function TrainersPage() {
 
   // Handle modal submission
   const handleModalSubmit = async (formData: any) => {
-    if (modalMode === "create") {
-      // Create new trainer
-      await createTrainer({
-        body: formData,
-        client: apiClient,
+    try {
+      if (modalMode === "create") {
+        // Create new trainer
+        await createTrainer({
+          body: formData,
+          client: apiClient,
+        })
+      } else {
+        // Update existing trainer
+        await updateTrainer({
+          path: { id: String(editingTrainer?.id) },
+          body: formData,
+          client: apiClient,
+        })
+      }
+      await queryClient.invalidateQueries({
+          predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllTrainers'
       })
-    } else {
-      // Update existing trainer
-      await updateTrainer({
-        path: { id: String(editingTrainer?.id) },
-        body: formData,
-        client: apiClient,
-      })
+      setIsModalOpen(false)
+      setEditingTrainer(null)
+    } catch (error: any) {
+      const action = modalMode === "create" ? "criar treinador" : "atualizar treinador"
+      handleHttpError(error, action, `Não foi possível ${action}. Tente novamente.`)
     }
-    await queryClient.invalidateQueries({
-        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllTrainers'
-    })
-    setIsModalOpen(false)
-    setEditingTrainer(null)
   }
 
   // Handle trainer deletion
   const handleDeleteTrainer = async (trainerId: string) => {
     if (confirm("Tem certeza que deseja excluir este professor?")) {
-      await deleteTrainer({
-        path: { id: String(trainerId) }, client: apiClient
-      });
-      await queryClient.invalidateQueries({
-        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllTrainers'
-      })
+      try {
+        await deleteTrainer({
+          path: { id: String(trainerId) }, client: apiClient
+        });
+        await queryClient.invalidateQueries({
+          predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllTrainers'
+        })
+      } catch (error: any) {
+        handleHttpError(error, "excluir treinador", "Não foi possível excluir o treinador. Tente novamente.")
+      }
     }
   }
 

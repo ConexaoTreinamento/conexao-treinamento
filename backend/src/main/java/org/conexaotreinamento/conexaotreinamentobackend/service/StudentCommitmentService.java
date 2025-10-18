@@ -190,4 +190,27 @@ public class StudentCommitmentService {
                 .thenComparing(c -> c.getId().toString()))
             .collect(java.util.LinkedHashMap::new, (map, c) -> map.put(c.getSessionSeriesId(), c), Map::putAll);
     }
+
+    public void resetScheduleIfExceedsPlan(UUID studentId, int allowedMaxDays) {
+        Instant now = Instant.now();
+        Map<UUID, StudentCommitment> latestPerSeries = buildLatestPerSeries(studentId, now);
+        java.util.Set<Integer> activeWeekdays = new java.util.HashSet<>();
+
+        for (StudentCommitment commitment : latestPerSeries.values()) {
+            if (commitment.getCommitmentStatus() != CommitmentStatus.ATTENDING) {
+                continue;
+            }
+            trainerScheduleRepository.findById(commitment.getSessionSeriesId())
+                .map(TrainerSchedule::getWeekday)
+                .ifPresent(activeWeekdays::add);
+        }
+
+        if (activeWeekdays.size() <= allowedMaxDays) {
+            return;
+        }
+
+        latestPerSeries.values().stream()
+            .filter(commitment -> commitment.getCommitmentStatus() == CommitmentStatus.ATTENDING)
+            .forEach(commitment -> updateCommitment(studentId, commitment.getSessionSeriesId(), CommitmentStatus.NOT_ATTENDING));
+    }
 }

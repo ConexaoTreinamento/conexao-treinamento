@@ -16,9 +16,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updatePresenceMutation, getScheduleQueryKey, findAllExercisesOptions, updateRegisteredParticipantExerciseMutation, addRegisteredParticipantExerciseMutation, removeRegisteredParticipantExerciseMutation, updateSessionTrainerMutation, removeSessionParticipantMutation, addSessionParticipantMutation, cancelOrRestoreSessionMutation, createExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { useStudents } from "@/lib/hooks/student-queries"
-import type { ExerciseResponseDto, PageExerciseResponseDto, PageStudentResponseDto, SessionResponseDto, StudentCommitmentResponseDto, TrainerResponseDto, ScheduleResponseDto } from "@/lib/api-client"
+import type { ExerciseResponseDto, PageExerciseResponseDto, SessionResponseDto, StudentCommitmentResponseDto, TrainerResponseDto, ScheduleResponseDto } from "@/lib/api-client"
 import { useForm } from "react-hook-form"
+import { StudentPicker, type StudentSummary } from "@/components/student-picker"
 
 export default function ClassDetailPage() {
   return (
@@ -63,13 +63,6 @@ function ClassDetailPageContent() {
 
   // Students (for Add Student dialog) with pagination similar to Students page
   const [participantSearchTerm, setParticipantSearchTerm] = useState("")
-  const [availableStudentSearchTerm, setAvailableStudentSearchTerm] = useState("")
-  const [studentPage, setStudentPage] = useState(0)
-  const pageSize = 10
-  const studentsQuery = useStudents({ search: availableStudentSearchTerm || undefined, page: studentPage, pageSize })
-  const pageData = (studentsQuery.data as PageStudentResponseDto | undefined)
-  const allStudents: Array<{ id?: string; name?: string; surname?: string }> = pageData?.content ?? []
-  useEffect(()=> { setStudentPage(0) }, [availableStudentSearchTerm])
 
   // Exercises catalog (for exercise selection)
   const exercisesQuery = useQuery({ ...findAllExercisesOptions({ client: apiClient, query: { pageable: { page:0, size: 200 } } }) })
@@ -83,12 +76,6 @@ function ClassDetailPageContent() {
   const [editTrainer, setEditTrainer] = useState<string>("none")
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [isCreateExerciseOpen, setIsCreateExerciseOpen] = useState(false)
-
-  useEffect(() => {
-    if (addDialogOpen) return
-    setAvailableStudentSearchTerm("")
-    setStudentPage(0)
-  }, [addDialogOpen])
 
   // Exercise forms (react-hook-form)
   type RegisterExerciseForm = { exerciseId: string; sets?: string; reps?: string; weight?: string; notes?: string }
@@ -104,15 +91,15 @@ function ClassDetailPageContent() {
   }, [session])
 
   // Mutations
-  const mUpdateTrainer = useMutation(updateSessionTrainerMutation())
-  const mPresence = useMutation(updatePresenceMutation())
-  const mRemoveParticipant = useMutation(removeSessionParticipantMutation())
-  const mAddParticipant = useMutation(addSessionParticipantMutation())
-  const mAddExercise = useMutation(addRegisteredParticipantExerciseMutation())
-  const mUpdateExercise = useMutation(updateRegisteredParticipantExerciseMutation())
-  const mRemoveExercise = useMutation(removeRegisteredParticipantExerciseMutation())
-  const mCancelRestore = useMutation(cancelOrRestoreSessionMutation())
-  const mCreateExercise = useMutation(createExerciseMutation())
+  const mUpdateTrainer = useMutation(updateSessionTrainerMutation({ client: apiClient }))
+  const mPresence = useMutation(updatePresenceMutation({ client: apiClient }))
+  const mRemoveParticipant = useMutation(removeSessionParticipantMutation({ client: apiClient }))
+  const mAddParticipant = useMutation(addSessionParticipantMutation({ client: apiClient }))
+  const mAddExercise = useMutation(addRegisteredParticipantExerciseMutation({client: apiClient}))
+  const mUpdateExercise = useMutation(updateRegisteredParticipantExerciseMutation({client: apiClient}))
+  const mRemoveExercise = useMutation(removeRegisteredParticipantExerciseMutation({client: apiClient}))
+  const mCancelRestore = useMutation(cancelOrRestoreSessionMutation({ client: apiClient }))
+  const mCreateExercise = useMutation(createExerciseMutation({ client: apiClient }))
 
   // Invalidate this session and also the schedule listing for the month containing this session's date
   const invalidateScheduleForSessionMonth = () => {
@@ -184,21 +171,21 @@ function ClassDetailPageContent() {
     invalidate()
   }
 
-  const addStudent = async (studentId: string) => {
-    if (!session) return
+  const addStudent = async (student: StudentSummary) => {
+    if (!session || !student.id) return
+    const studentId = student.id
+    const studentName = `${student.name ?? ''} ${student.surname ?? ''}`.trim() || studentId
     // Optimistic add to cache
     qc.setQueryData<SessionResponseDto>(sessionOptions.queryKey, (old) => {
       if (!old) return old
       const exists = (old.students ?? []).some(p => p.studentId === studentId)
       if (exists) return old
-      const found = (pageData?.content ?? []).find(s => s.id === studentId)
-      const studentName = found ? `${found.name ?? ''} ${found.surname ?? ''}`.trim() : studentId
       const newEntry: StudentCommitmentResponseDto = { studentId, studentName, present: true, commitmentStatus: 'ATTENDING', participantExercises: [] }
       return { ...old, students: [...(old.students ?? []), newEntry] }
     })
-  await mAddParticipant.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId! }, body:{ studentId } })
+    await mAddParticipant.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId! }, body:{ studentId } })
     // Ensure presence true also persisted (if backend doesn't default);
-  try { await mPresence.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId!, studentId }, body:{ present: true } }) } catch {}
+    try { await mPresence.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId!, studentId }, body:{ present: true } }) } catch {}
     invalidate()
   }
 
@@ -308,7 +295,9 @@ function ClassDetailPageContent() {
   }))
   const filteredStudents = students.filter(s => ((s.studentName || s.studentId || '').toLowerCase()).includes(participantSearchTerm.toLowerCase()))
   const excludedIds = new Set((students||[]).map(p => p.studentId).filter(Boolean) as string[])
-  const availableStudents = (allStudents||[]).filter(s => !!s.id && !excludedIds.has(s.id!))
+  const handleStudentSelect = (student: StudentSummary) => {
+    void addStudent(student)
+  }
   const filteredExercises = (allExercises||[]).filter(e => (e.name || '').toLowerCase().includes(exerciseSearchTerm.toLowerCase()))
 
   return (
@@ -515,25 +504,11 @@ function ClassDetailPageContent() {
               <DialogTitle>Adicionar Aluno</DialogTitle>
               <DialogDescription>Selecione um aluno para adicionar à aula</DialogDescription>
             </DialogHeader>
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Input placeholder="Buscar aluno..." value={availableStudentSearchTerm} onChange={(e)=> setAvailableStudentSearchTerm(e.target.value)} />
-              </div>
-              <div className="max-h-60 overflow-y-auto space-y-2">
-                {(availableStudents||[]).filter(s=> (`${s.name||''} ${s.surname||''}`.trim().toLowerCase().includes(availableStudentSearchTerm.toLowerCase())) ).map(s => (
-                  <div key={s.id} className="flex items-center justify-between p-2 rounded border hover:bg-muted/50 cursor-pointer" onClick={() => s.id && addStudent(s.id)}>
-                    <span className="text-sm">{`${s.name||''} ${s.surname||''}`.trim()}</span>
-                    <Button size="sm" variant="outline">Adicionar</Button>
-                  </div>
-                ))}
-                {availableStudents.length===0 && <div className="text-center text-sm text-muted-foreground py-6">Nenhum aluno disponível.</div>}
-              </div>
-              <div className="flex items-center justify-between pt-2">
-                <Button size="sm" variant="outline" disabled={studentPage<=0 || studentsQuery.isFetching} onClick={()=> setStudentPage(p=> Math.max(0, p-1))}>Anterior</Button>
-                <span className="text-xs text-muted-foreground">Página {studentPage + 1} de {Math.max(1, (pageData?.totalPages ?? 1))}</span>
-                <Button size="sm" variant="outline" disabled={(studentPage+1)>= (pageData?.totalPages ?? 1) || studentsQuery.isFetching} onClick={()=> setStudentPage(p=> p+1)}>Próxima</Button>
-              </div>
-            </div>
+            <StudentPicker
+              excludedStudentIds={excludedIds}
+              onSelect={handleStudentSelect}
+              pageSize={10}
+            />
             <DialogFooter>
               <Button variant="outline" onClick={()=> setAddDialogOpen(false)}>Fechar</Button>
             </DialogFooter>

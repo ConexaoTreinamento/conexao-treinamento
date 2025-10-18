@@ -77,4 +77,9 @@ public class AdministratorController {
         administratorService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/{id}/restore")
+    public ResponseEntity<AdministratorResponseDTO> restoreAdministrator(@PathVariable UUID id) {
+        return ResponseEntity.ok(administratorService.restore(id));
+    }
 }

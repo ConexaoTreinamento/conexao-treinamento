@@ -6,14 +6,12 @@ import Layout from "@/components/layout"
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
 import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
-import {Badge} from "@/components/ui/badge"
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@/components/ui/dialog"
 import {Checkbox} from "@/components/ui/checkbox"
 import {Save, Loader2, Calendar as CalendarIcon, Clock, Settings2, Square, SquareCheck, ArrowLeft} from "lucide-react"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {useQueryClient, useMutation} from "@tanstack/react-query"
 import {apiClient} from "@/lib/client"
-import {getSchedulesByTrainerOptions, getSchedulesByTrainerQueryKey, createScheduleMutation, updateScheduleMutation, deleteScheduleMutation, getAvailableSessionSeriesQueryKey, getScheduleQueryKey} from "@/lib/api-client/@tanstack/react-query.gen"
+import {getSchedulesByTrainerOptions, getSchedulesByTrainerQueryKey, createScheduleMutation, deleteScheduleMutation, getAvailableSessionSeriesQueryKey, getScheduleQueryKey} from "@/lib/api-client/@tanstack/react-query.gen"
 import {useQuery} from "@tanstack/react-query"
 import {type TrainerScheduleResponseDto, type TrainerScheduleRequestDto} from "@/lib/api-client/types.gen"
 
@@ -41,6 +39,20 @@ const addMinutesHHmm = (hhmm: string, minutes: number): string => {
   return `${pad2(h2)}:${pad2(m2)}`
 }
 const cmpHHmm = (a:string,b:string) => a.localeCompare(b)
+const toMinutesFromHHmm = (hhmm: string) => {
+  if(!hhmm) return 0
+  const [h,m] = hhmm.split(":").map(Number)
+  const hours = Number.isFinite(h)? h: 0
+  const minutes = Number.isFinite(m)? m: 0
+  return hours*60 + minutes
+}
+const scheduleEndHHmm = (schedule: TrainerScheduleResponseDto, fallbackDuration = 60) => {
+  const start = toHHmm(schedule.startTime) || '00:00'
+  const duration = schedule.intervalDuration ?? fallbackDuration
+  return addMinutesHHmm(start, duration)
+}
+const scheduleEndMinutes = (schedule: TrainerScheduleResponseDto, fallbackDuration = 60) => toMinutesFromHHmm(scheduleEndHHmm(schedule, fallbackDuration))
+const displayHHmm = (value?: string) => toHHmm(value) || '--:--'
 
 interface WeekTimetableProps { schedules: TrainerScheduleResponseDto[] }
 
@@ -60,7 +72,7 @@ function WeekTimetable({schedules}: WeekTimetableProps){
     return h*60 + (m||0)
   }
   const starts = schedules.map(s=> toMinutes(s.startTime))
-  const ends = schedules.map(s=> toMinutes(s.endTime))
+  const ends = schedules.map(s=> scheduleEndMinutes(s))
   const minStart = Math.min(...starts)
   const maxEnd = Math.max(...ends)
   const startHour = isFinite(minStart) ? Math.floor(minStart/60) : 8
@@ -104,14 +116,14 @@ function WeekTimetable({schedules}: WeekTimetableProps){
                   {/* blocks */}
                   {daySchedules.map(s=>{
                     const start = toMinutes(s.startTime)
-                    const end = toMinutes(s.endTime)
+                    const end = scheduleEndMinutes(s)
                     const top = ((start/60)-startHour)*rowHeight
                     const height = ((end-start)/60)*rowHeight
                     return (
                       <div key={s.id} className="absolute mx-1 rounded-md shadow-sm border border-green-500 bg-green-500/15 hover:bg-green-500/25 cursor-default overflow-hidden"
                         style={{top, height, left: '2px', right: '2px'}}>
                         <div className="text-[10px] px-1 pt-0.5 font-semibold truncate text-green-800 dark:text-green-200">{s.seriesName}</div>
-                        <div className="text-[10px] px-1 pb-0.5 text-muted-foreground">{s.startTime?.slice(0,5)} - {s.endTime?.slice(0,5)}</div>
+                        <div className="text-[10px] px-1 pb-0.5 text-muted-foreground">{displayHHmm(s.startTime)} - {s.startTime ? scheduleEndHHmm(s) : '--:--'}</div>
                       </div>
                     )
                   })}
@@ -131,7 +143,11 @@ function MobileTimetable({schedules}: WeekTimetableProps){
   schedules.forEach(s=> { const wd=s.weekday??0; byDay[wd]=byDay[wd]?[...byDay[wd],s]:[s] })
   const order = Object.keys(byDay).map(Number).sort((a,b)=>a-b)
 
-  const formatRange = (s:TrainerScheduleResponseDto) => `${s.startTime?.slice(0,5)} - ${s.endTime?.slice(0,5)}`
+  const formatRange = (s:TrainerScheduleResponseDto) => {
+    const startLabel = displayHHmm(s.startTime)
+    const endLabel = s.startTime ? scheduleEndHHmm(s) : '--:--'
+    return `${startLabel} - ${endLabel}`
+  }
 
   return (
     <div className="space-y-3">
@@ -167,10 +183,9 @@ export default function TrainerSchedulePage(){
   const [saving, setSaving] = useState(false)
 
   const schedulesQueryOptions = getSchedulesByTrainerOptions({path:{trainerId}, client: apiClient})
-  const {data, isLoading:loadingList, error: listError, isFetching: fetchingList} = useQuery(schedulesQueryOptions)
+  const {data, isLoading:loadingList} = useQuery(schedulesQueryOptions)
 
   const createMutation = useMutation(createScheduleMutation({client: apiClient}))
-  const updateMutation = useMutation(updateScheduleMutation({client: apiClient}))
   const deleteMutation = useMutation(deleteScheduleMutation({client: apiClient}))
 
   // Initialize weekConfig from backend schedules when dialog opens
@@ -187,7 +202,8 @@ export default function TrainerSchedulePage(){
     const defaults: WeekConfigRow[] = Array.from({length:7}, (_,i)=>{
       const slots = (grouped[i]||[]).slice().sort((a,b)=> (a.startTime||'').localeCompare(b.startTime||''))
       const firstStart = toHHmm(slots[0]?.startTime) || '08:00'
-      const lastEnd = toHHmm(slots[slots.length-1]?.endTime) || '12:00'
+      const lastSchedule = slots[slots.length-1]
+      const lastEnd = lastSchedule ? scheduleEndHHmm(lastSchedule, lastSchedule.intervalDuration ?? 60) : '12:00'
       const existingActive = new Map<string,string>()
       const selectedStarts = new Set<string>()
       for(const s of slots){
@@ -196,9 +212,7 @@ export default function TrainerSchedulePage(){
       }
       const any = slots.length>0
       // Best-effort infer duration from first slot
-      const inferredDur = slots.length>0 && slots[0]?.startTime && slots[0]?.endTime
-        ? Math.max(15, (Number(slots[0].endTime?.slice(0,2))*60 + Number(slots[0].endTime?.slice(3,5))) - (Number(slots[0].startTime?.slice(0,2))*60 + Number(slots[0].startTime?.slice(3,5))))
-        : 60
+      const inferredDur = slots.length>0 ? Math.max(15, slots[0]?.intervalDuration ?? 60) : 60
       setClassDuration(prev=> prev || inferredDur)
       return {
         weekday: i,
@@ -300,12 +314,10 @@ export default function TrainerSchedulePage(){
         for(const start of desired){
           const isSelected = row.selectedStarts.has(start)
           if(!existingActive.has(start) && isSelected){
-            const end = addMinutesHHmm(start, classDuration)
             const payload: TrainerScheduleRequestDto = {
               trainerId,
               weekday: row.weekday,
               startTime: `${start}:00`,
-              endTime: `${end}:00`,
               intervalDuration: classDuration,
               seriesName: row.seriesName || 'Treino'
             }
