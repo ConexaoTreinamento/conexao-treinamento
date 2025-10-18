@@ -9,9 +9,10 @@ import { useRouter, useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Layout from "@/components/layout"
 import TrainerModal from "@/components/trainer-modal"
-import { findTrainerByIdOptions, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { findTrainerByIdOptions, updateTrainerAndUserMutation,resetPasswordMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+
 
 export default function TrainerProfilePage() {
   const router = useRouter()
@@ -27,6 +28,18 @@ export default function TrainerProfilePage() {
       client: apiClient,
     })
   })
+
+  const { mutateAsync: resetPassword, isPending: isResettingPassword } = useMutation({
+    ...resetPasswordMutation(),
+    onSuccess: () => {
+      console.log("Senha do usuário resetada com sucesso!");
+    },
+    onError: (error) => {
+      console.error("Erro ao resetar a senha:", error);
+    }
+  });
+
+
 
   const getStatusColor = (status: boolean) => {
     if (status) {

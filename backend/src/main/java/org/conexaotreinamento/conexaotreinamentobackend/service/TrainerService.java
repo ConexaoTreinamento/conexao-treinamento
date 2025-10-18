@@ -91,4 +91,13 @@ public class TrainerService {
         Optional<Trainer> trainer = trainerRepository.findById(trainerId);
         trainer.ifPresent(value -> userService.delete(value.getUserId()));
     }
+
+    @Transactional
+    public void resetPassword(UUID trainerId, String newPassword) {
+        Trainer trainer = trainerRepository.findById(trainerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trainer not found"));
+
+        UUID userId = trainer.getUserId();
+        userService.resetUserPassword(userId, newPassword);
+    }
 }

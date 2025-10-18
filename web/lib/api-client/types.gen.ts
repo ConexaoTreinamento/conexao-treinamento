@@ -258,8 +258,8 @@ export type Exercise = {
     createdAt?: string;
     updatedAt?: string;
     deletedAt?: string;
-    inactive?: boolean;
     active?: boolean;
+    inactive?: boolean;
 };
 
 export type ParticipantExercise = {
@@ -343,8 +343,8 @@ export type Student = {
     createdAt?: string;
     updatedAt?: string;
     deletedAt?: string;
-    inactive?: boolean;
     active?: boolean;
+    inactive?: boolean;
 };
 
 export type Trainer = {
@@ -559,44 +559,44 @@ export type Pageable = {
 };
 
 export type PageUserResponseDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
     first?: boolean;
     last?: boolean;
+    numberOfElements?: number;
     size?: number;
     content?: Array<UserResponseDto>;
     number?: number;
     sort?: SortObject;
-    numberOfElements?: number;
     pageable?: PageableObject;
     empty?: boolean;
 };
 
 export type PageableObject = {
-    paged?: boolean;
     offset?: number;
     sort?: SortObject;
-    pageNumber?: number;
+    paged?: boolean;
     pageSize?: number;
+    pageNumber?: number;
     unpaged?: boolean;
 };
 
 export type SortObject = {
-    sorted?: boolean;
     empty?: boolean;
     unsorted?: boolean;
+    sorted?: boolean;
 };
 
 export type PageStudentResponseDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
     first?: boolean;
     last?: boolean;
+    numberOfElements?: number;
     size?: number;
     content?: Array<StudentResponseDto>;
     number?: number;
     sort?: SortObject;
-    numberOfElements?: number;
     pageable?: PageableObject;
     empty?: boolean;
 };
@@ -606,15 +606,15 @@ export type ScheduleResponseDto = {
 };
 
 export type PageExerciseResponseDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
     first?: boolean;
     last?: boolean;
+    numberOfElements?: number;
     size?: number;
     content?: Array<ExerciseResponseDto>;
     number?: number;
     sort?: SortObject;
-    numberOfElements?: number;
     pageable?: PageableObject;
     empty?: boolean;
 };
@@ -646,15 +646,15 @@ export type TrainerSchedule = {
 };
 
 export type PageListAdministratorsDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
     first?: boolean;
     last?: boolean;
+    numberOfElements?: number;
     size?: number;
     content?: Array<ListAdministratorsDto>;
     number?: number;
     sort?: SortObject;
-    numberOfElements?: number;
     pageable?: PageableObject;
     empty?: boolean;
 };
@@ -1607,7 +1607,7 @@ export type ResetPasswordData = {
         id: string;
     };
     query?: never;
-    url: '/users/{id}/reset-password';
+    url: '/trainers/{id}/reset-password';
 };
 
 export type ResetPasswordResponses = {
