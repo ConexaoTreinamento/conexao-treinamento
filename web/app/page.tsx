@@ -18,7 +18,7 @@ export default function HomePage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const router = useRouter()
-  const { mutateAsync: login, isPending: isLoading } = useMutation(loginMutation());
+  const { mutateAsync: login, isPending: isLoading } = useMutation(loginMutation({client: apiClient}));
 
   useEffect(() => {
     const userRole = localStorage.getItem("userRole")
