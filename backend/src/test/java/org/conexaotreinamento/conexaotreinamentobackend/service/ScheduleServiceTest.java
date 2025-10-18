@@ -2,7 +2,6 @@ package org.conexaotreinamento.conexaotreinamentobackend.service;
 
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.SessionResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.*;
-import org.conexaotreinamento.conexaotreinamentobackend.enums.CommitmentStatus;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,13 +53,13 @@ class ScheduleServiceTest {
         trainer.setName("John Trainer");
     }
 
-    private TrainerSchedule buildSchedule(UUID id, UUID trainerId, String seriesName, LocalTime start, LocalTime end) {
+    private TrainerSchedule buildSchedule(UUID id, UUID trainerId, String seriesName, LocalTime start, int intervalMinutes) {
         TrainerSchedule s = new TrainerSchedule();
         s.setId(id != null ? id : UUID.randomUUID());
         s.setTrainerId(trainerId);
         s.setSeriesName(seriesName);
         s.setStartTime(start);
-        s.setEndTime(end);
+        s.setIntervalDuration(intervalMinutes);
         s.setEffectiveFromTimestamp(Instant.now().minus(Duration.ofDays(1)));
         return s;
     }
@@ -85,8 +84,9 @@ class ScheduleServiceTest {
         // Arrange
         LocalDate date = LocalDate.of(2025, 9, 26); // Friday
         LocalTime start = LocalTime.of(9, 0);
-        LocalTime end = LocalTime.of(10, 0);
-        TrainerSchedule schedule = buildSchedule(UUID.randomUUID(), trainerId, "Yoga Basics", start, end);
+        int intervalMinutes = 60;
+        LocalTime end = start.plusMinutes(intervalMinutes);
+        TrainerSchedule schedule = buildSchedule(UUID.randomUUID(), trainerId, "Yoga Basics", start, intervalMinutes);
 
         when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(anyInt(), any(Instant.class)))
                 .thenReturn(List.of(schedule));
@@ -120,8 +120,9 @@ class ScheduleServiceTest {
         // Arrange
         LocalDate date = LocalDate.of(2025, 9, 26);
         LocalTime start = LocalTime.of(9, 0);
-        LocalTime end = LocalTime.of(10, 0);
-        TrainerSchedule schedule = buildSchedule(UUID.randomUUID(), trainerId, "Yoga Basics", start, end);
+        int intervalMinutes = 60;
+        LocalTime end = start.plusMinutes(intervalMinutes);
+        TrainerSchedule schedule = buildSchedule(UUID.randomUUID(), trainerId, "Yoga Basics", start, intervalMinutes);
 
         when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(anyInt(), any(Instant.class)))
                 .thenReturn(List.of(schedule));
@@ -250,8 +251,8 @@ class ScheduleServiceTest {
     void getScheduledSessions_returnsSortedByStartTime() {
         // Arrange
         LocalDate date = LocalDate.of(2025, 9, 26);
-        TrainerSchedule s1 = buildSchedule(UUID.randomUUID(), trainerId, "Morning Flow", LocalTime.of(8, 0), LocalTime.of(9, 0));
-        TrainerSchedule s2 = buildSchedule(UUID.randomUUID(), trainerId, "Power Yoga", LocalTime.of(7, 0), LocalTime.of(8, 0));
+        TrainerSchedule s1 = buildSchedule(UUID.randomUUID(), trainerId, "Morning Flow", LocalTime.of(8, 0), 60);
+        TrainerSchedule s2 = buildSchedule(UUID.randomUUID(), trainerId, "Power Yoga", LocalTime.of(7, 0), 60);
 
         when(scheduledSessionRepository.findByStartTimeBetweenAndActiveTrue(any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(List.of());

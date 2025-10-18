@@ -19,7 +19,7 @@ export default function TrainerProfilePage() {
   const router = useRouter()
   const params = useParams()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerAndUserMutation())
+  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerAndUserMutation({ client: apiClient }));
   const { toast } = useToast()
 
   const queryClient = useQueryClient();

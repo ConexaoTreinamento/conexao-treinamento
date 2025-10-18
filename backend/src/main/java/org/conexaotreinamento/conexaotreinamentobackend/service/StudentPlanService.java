@@ -265,7 +265,7 @@ public class StudentPlanService {
         if (assigningUser != null) {
             dto.setAssignedByUserEmail(assigningUser.getEmail());
         }
-        
+
         // Set computed fields
         dto.setActive(assignment.isActive());
         dto.setExpired(assignment.isExpired());

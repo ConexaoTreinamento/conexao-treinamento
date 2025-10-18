@@ -28,7 +28,6 @@ export type TrainerScheduleRequestDto = {
     trainerId: string;
     weekday: number;
     startTime: string;
-    endTime: string;
     intervalDuration?: number;
     seriesName: string;
 };
@@ -38,7 +37,6 @@ export type TrainerScheduleResponseDto = {
     trainerId?: string;
     weekday?: number;
     startTime?: string;
-    endTime?: string;
     intervalDuration?: number;
     seriesName?: string;
     effectiveFromTimestamp?: string;
@@ -311,8 +309,8 @@ export type SessionParticipant = {
     active?: boolean;
     exercises?: Array<ParticipantExercise>;
     present?: boolean;
-    included?: boolean;
     excluded?: boolean;
+    included?: boolean;
 };
 
 export type SessionUpdateRequestDto = {
@@ -575,9 +573,9 @@ export type PageUserResponseDto = {
 export type PageableObject = {
     offset?: number;
     sort?: SortObject;
-    paged?: boolean;
     pageNumber?: number;
     pageSize?: number;
+    paged?: boolean;
     unpaged?: boolean;
 };
 
@@ -655,7 +653,6 @@ export type TrainerSchedule = {
     trainerId?: string;
     weekday?: number;
     startTime?: string;
-    endTime?: string;
     intervalDuration?: number;
     seriesName?: string;
     effectiveFromTimestamp?: string;

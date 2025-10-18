@@ -41,9 +41,6 @@ public class TrainerSchedule {
     @Column(name = "start_time", nullable = false)
     private LocalTime startTime;
     
-    @Column(name = "end_time", nullable = false)
-    private LocalTime endTime;
-    
     @Column(name = "interval_duration", nullable = false)
     private int intervalDuration = 60; // minutes
     
@@ -74,12 +71,6 @@ public class TrainerSchedule {
         this.updatedAt = Instant.now();
     }
     
-    public void restore() {
-        this.active = true;
-        this.deletedAt = null;
-        this.updatedAt = Instant.now();
-    }
-
     public void updateTimestamp() {
         this.updatedAt = Instant.now();
     }
@@ -93,5 +84,12 @@ public class TrainerSchedule {
     public void setDayOfWeek(DayOfWeek dayOfWeek) {
         // Convert from DayOfWeek enum to 0=Sunday format
         this.weekday = dayOfWeek == DayOfWeek.SUNDAY ? 0 : dayOfWeek.getValue();
+    }
+
+    @Transient
+    public LocalTime calculateEndTime() {
+        if (startTime == null) return null;
+        int duration = Math.max(0, intervalDuration);
+        return startTime.plusMinutes(duration);
     }
 }
