@@ -1,7 +1,9 @@
 package org.conexaotreinamento.conexaotreinamentobackend.service;
 
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateTrainerDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainersDTO;
@@ -16,9 +18,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -67,7 +68,7 @@ public class TrainerService {
 
         // Conditionally update password (optional)
         if (request.hasPassword()) {
-            userService.updateUserPassword(trainer.getUserId(), request.password());
+            userService.resetUserPassword(trainer.getUserId(), request.password());
         }
 
         // Update trainer fields
