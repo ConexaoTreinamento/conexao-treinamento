@@ -91,15 +91,15 @@ function ClassDetailPageContent() {
   }, [session])
 
   // Mutations
-  const mUpdateTrainer = useMutation(updateSessionTrainerMutation())
-  const mPresence = useMutation(updatePresenceMutation())
-  const mRemoveParticipant = useMutation(removeSessionParticipantMutation())
-  const mAddParticipant = useMutation(addSessionParticipantMutation())
-  const mAddExercise = useMutation(addRegisteredParticipantExerciseMutation())
-  const mUpdateExercise = useMutation(updateRegisteredParticipantExerciseMutation())
-  const mRemoveExercise = useMutation(removeRegisteredParticipantExerciseMutation())
-  const mCancelRestore = useMutation(cancelOrRestoreSessionMutation())
-  const mCreateExercise = useMutation(createExerciseMutation())
+  const mUpdateTrainer = useMutation(updateSessionTrainerMutation({ client: apiClient }))
+  const mPresence = useMutation(updatePresenceMutation({ client: apiClient }))
+  const mRemoveParticipant = useMutation(removeSessionParticipantMutation({ client: apiClient }))
+  const mAddParticipant = useMutation(addSessionParticipantMutation({ client: apiClient }))
+  const mAddExercise = useMutation(addRegisteredParticipantExerciseMutation({client: apiClient}))
+  const mUpdateExercise = useMutation(updateRegisteredParticipantExerciseMutation({client: apiClient}))
+  const mRemoveExercise = useMutation(removeRegisteredParticipantExerciseMutation({client: apiClient}))
+  const mCancelRestore = useMutation(cancelOrRestoreSessionMutation({ client: apiClient }))
+  const mCreateExercise = useMutation(createExerciseMutation({ client: apiClient }))
 
   // Invalidate this session and also the schedule listing for the month containing this session's date
   const invalidateScheduleForSessionMonth = () => {

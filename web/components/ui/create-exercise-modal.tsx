@@ -29,7 +29,7 @@ export default function CreateExerciseModal({ isOpen, onClose }: CreateExerciseM
 
     const queryClient= useQueryClient();
     const { mutateAsync: createExercise, isPending: isCreating } = useMutation(
-        createExerciseMutation()
+        createExerciseMutation({ client: apiClient })
     )
 
     const handleSubmit = async (e: React.FormEvent) => {

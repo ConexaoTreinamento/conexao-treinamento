@@ -38,14 +38,13 @@ class TrainerScheduleServiceTest {
         scheduleId = UUID.randomUUID();
     }
 
-    private TrainerSchedule newSchedule(UUID id, UUID trainerId, int weekday, String seriesName, String start, String end, int interval) {
+    private TrainerSchedule newSchedule(UUID id, UUID trainerId, int weekday, String seriesName, String start, int interval) {
         TrainerSchedule ts = new TrainerSchedule();
         ts.setId(id);
         ts.setTrainerId(trainerId);
         ts.setWeekday(weekday);
         ts.setSeriesName(seriesName);
         ts.setStartTime(LocalTime.parse(start));
-        ts.setEndTime(LocalTime.parse(end));
         ts.setIntervalDuration(interval);
         ts.setEffectiveFromTimestamp(Instant.now().minusSeconds(3600));
         ts.setActive(true);
@@ -55,8 +54,8 @@ class TrainerScheduleServiceTest {
     @Test
     void getAllActiveSchedules_returnsRepositoryResult() {
         // Arrange
-        TrainerSchedule a = newSchedule(UUID.randomUUID(), trainerId, 1, "Yoga", "09:00", "10:00", 60);
-        TrainerSchedule b = newSchedule(UUID.randomUUID(), trainerId, 2, "Pilates", "11:00", "12:00", 60);
+        TrainerSchedule a = newSchedule(UUID.randomUUID(), trainerId, 1, "Yoga", "09:00", 60);
+        TrainerSchedule b = newSchedule(UUID.randomUUID(), trainerId, 2, "Pilates", "11:00", 60);
         when(trainerScheduleRepository.findByActiveTrue()).thenReturn(List.of(a, b));
 
         // Act
@@ -70,7 +69,7 @@ class TrainerScheduleServiceTest {
     @Test
     void getSchedulesByTrainer_returnsRepositoryResult() {
         // Arrange
-        TrainerSchedule a = newSchedule(UUID.randomUUID(), trainerId, 1, "Yoga", "09:00", "10:00", 60);
+        TrainerSchedule a = newSchedule(UUID.randomUUID(), trainerId, 1, "Yoga", "09:00", 60);
         when(trainerScheduleRepository.findByTrainerIdAndActiveTrue(trainerId)).thenReturn(List.of(a));
 
         // Act
@@ -85,7 +84,7 @@ class TrainerScheduleServiceTest {
     @Test
     void getScheduleById_returnsOptional() {
         // Arrange
-        TrainerSchedule a = newSchedule(scheduleId, trainerId, 1, "Yoga", "09:00", "10:00", 60);
+        TrainerSchedule a = newSchedule(scheduleId, trainerId, 1, "Yoga", "09:00", 60);
         when(trainerScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(a));
 
         // Act
@@ -118,7 +117,6 @@ class TrainerScheduleServiceTest {
         input.setWeekday(5);
         input.setSeriesName("Strength");
         input.setStartTime(LocalTime.of(15, 0));
-        input.setEndTime(LocalTime.of(16, 0));
         input.setIntervalDuration(60);
 
         when(trainerScheduleRepository.save(any(TrainerSchedule.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -132,9 +130,44 @@ class TrainerScheduleServiceTest {
     }
 
     @Test
+    void createSchedule_ignoresExistingSoftDeletedState_andBuildsFreshEntity() {
+        // Arrange: payload that looks like a previously deleted schedule
+        TrainerSchedule payload = new TrainerSchedule();
+        payload.setId(scheduleId);
+        payload.setTrainerId(trainerId);
+        payload.setWeekday(2);
+        payload.setSeriesName("Spin Class");
+        payload.setStartTime(LocalTime.of(7, 0));
+        payload.setIntervalDuration(60);
+        payload.setActive(false);
+        payload.setDeletedAt(Instant.now().minusSeconds(600));
+
+        ArgumentCaptor<TrainerSchedule> captor = ArgumentCaptor.forClass(TrainerSchedule.class);
+        when(trainerScheduleRepository.save(any(TrainerSchedule.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        TrainerSchedule result = trainerScheduleService.createSchedule(payload);
+
+        // Assert: repository receives a fresh entity, not the payload reference
+        verify(trainerScheduleRepository).save(captor.capture());
+        TrainerSchedule persisted = captor.getValue();
+
+        assertNotSame(payload, persisted, "createSchedule should build a fresh entity instance");
+        assertNull(persisted.getId(), "New schedule should not reuse the previous identifier");
+        assertTrue(persisted.isActive(), "New schedule must start active");
+        assertNull(persisted.getDeletedAt(), "New schedule should not inherit deletedAt timestamp");
+        assertEquals(payload.getTrainerId(), persisted.getTrainerId());
+        assertEquals(payload.getWeekday(), persisted.getWeekday());
+        assertEquals(payload.getStartTime(), persisted.getStartTime());
+        assertEquals(payload.getIntervalDuration(), persisted.getIntervalDuration());
+        assertEquals(payload.getSeriesName(), persisted.getSeriesName());
+        assertNotNull(result.getEffectiveFromTimestamp(), "Fresh schedule should receive an effective timestamp");
+    }
+
+    @Test
     void updateSchedule_updatesFields_andSaves_whenFound() {
         // Arrange: existing schedule
-        TrainerSchedule existing = newSchedule(scheduleId, trainerId, 1, "Yoga", "09:00", "10:00", 60);
+        TrainerSchedule existing = newSchedule(scheduleId, trainerId, 1, "Yoga", "09:00", 60);
         when(trainerScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(existing));
         when(trainerScheduleRepository.save(any(TrainerSchedule.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -142,7 +175,6 @@ class TrainerScheduleServiceTest {
         TrainerSchedule updated = new TrainerSchedule();
         updated.setWeekday(2);
         updated.setStartTime(LocalTime.of(11, 0));
-        updated.setEndTime(LocalTime.of(12, 0));
         updated.setIntervalDuration(45);
         updated.setSeriesName("Pilates");
 
@@ -152,7 +184,7 @@ class TrainerScheduleServiceTest {
         // Assert
         assertEquals(2, result.getWeekday());
         assertEquals(LocalTime.of(11, 0), result.getStartTime());
-        assertEquals(LocalTime.of(12, 0), result.getEndTime());
+        assertEquals(LocalTime.of(11, 45), result.calculateEndTime());
         assertEquals(45, result.getIntervalDuration());
         assertEquals("Pilates", result.getSeriesName());
         verify(trainerScheduleRepository).save(existing);
@@ -175,7 +207,7 @@ class TrainerScheduleServiceTest {
     @Test
     void deleteSchedule_softDeletes_andSaves_whenFound() {
         // Arrange
-        TrainerSchedule existing = newSchedule(scheduleId, trainerId, 4, "Cardio", "13:00", "14:00", 60);
+        TrainerSchedule existing = newSchedule(scheduleId, trainerId, 4, "Cardio", "13:00", 60);
         when(trainerScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(existing));
 
         // Act
@@ -205,9 +237,9 @@ class TrainerScheduleServiceTest {
     void getScheduleAtTime_returnsLatestActiveSchedule_whenAvailable() {
         // Arrange
         Instant now = Instant.now();
-        TrainerSchedule older = newSchedule(UUID.randomUUID(), trainerId, 3, "Old", "07:00", "08:00", 60);
+        TrainerSchedule older = newSchedule(UUID.randomUUID(), trainerId, 3, "Old", "07:00", 60);
         older.setEffectiveFromTimestamp(now.minusSeconds(7200));
-        TrainerSchedule newer = newSchedule(UUID.randomUUID(), trainerId, 3, "New", "07:30", "08:30", 60);
+        TrainerSchedule newer = newSchedule(UUID.randomUUID(), trainerId, 3, "New", "07:30", 60);
         newer.setEffectiveFromTimestamp(now.minusSeconds(3600));
 
         when(trainerScheduleRepository.findByTrainerIdAndWeekdayAndEffectiveFromTimestampLessThanEqualOrderByEffectiveFromTimestampDesc(
@@ -240,7 +272,7 @@ class TrainerScheduleServiceTest {
     void getSchedulesForWeekdayAtTime_returnsRepositoryResult() {
         // Arrange
         Instant t = Instant.now();
-        TrainerSchedule a = newSchedule(UUID.randomUUID(), trainerId, 5, "A", "09:00", "10:00", 60);
+        TrainerSchedule a = newSchedule(UUID.randomUUID(), trainerId, 5, "A", "09:00", 60);
         when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(5, t)).thenReturn(List.of(a));
 
         // Act
