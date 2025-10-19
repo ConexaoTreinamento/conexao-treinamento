@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useEvaluations } from '@/lib/hooks/evaluation-queries'
 
 // Type definitions
 interface Evaluation {
@@ -131,6 +132,9 @@ export default function StudentProfilePage() {
       .sort((a, b) => new Date(b.classDate || 0).getTime() - new Date(a.classDate || 0).getTime())
     return items
   }, [exercisesScheduleQuery.data, studentId])
+
+  // Physical evaluations query
+  const { data: evaluations, isLoading: isLoadingEvaluations } = useEvaluations(studentId)
   const assignPlanMutation = useMutation(assignPlanToStudentMutation({ client: apiClient }))
   const [openAssignDialog, setOpenAssignDialog] = useState(false)
   const [assignPlanId, setAssignPlanId] = useState<string>("")
@@ -548,77 +552,96 @@ export default function StudentProfilePage() {
                   <CardDescription>Acompanhe a evolução das medidas corporais</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {studentMockData.evaluations.map((evaluation: Evaluation) => (
-                      <div
-                        key={evaluation.id}
-                        className="p-4 rounded-lg border bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors"
-                        onClick={() => router.push(`/students/${params.id}/evaluation/${evaluation.id}`)}
-                      >
-                        <div className="flex justify-between items-center mb-3">
-                          <span className="font-medium">{new Date(evaluation.date).toLocaleDateString("pt-BR")}</span>
-                          <Badge variant="outline">Avaliação {evaluation.id}</Badge>
-                        </div>
+                  {isLoadingEvaluations ? (
+                    <div className="text-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                      <p className="mt-2 text-sm text-muted-foreground">Carregando avaliações...</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {evaluations && evaluations.length > 0 ? (
+                        evaluations.map((evaluation) => (
+                          <div
+                            key={evaluation.id}
+                            className="p-4 rounded-lg border bg-muted/50 cursor-pointer hover:bg-muted/70 transition-colors"
+                            onClick={() => router.push(`/students/${params.id}/evaluation/${evaluation.id}`)}
+                          >
+                            <div className="flex justify-between items-center mb-3">
+                              <span className="font-medium">{new Date(evaluation.date).toLocaleDateString("pt-BR")}</span>
+                              <Badge variant="outline">
+                                {new Date(evaluation.createdAt).toLocaleDateString("pt-BR")}
+                              </Badge>
+                            </div>
 
-                        {/* Most relevant fields in a clean grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">Peso:</span>
-                            <p className="font-medium">{evaluation.weight}kg</p>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">IMC:</span>
-                            <p className="font-medium">{evaluation.bmi}</p>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Cintura:</span>
-                            <p className="font-medium">{evaluation.circumferences.waist}cm</p>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Quadril:</span>
-                            <p className="font-medium">{evaluation.circumferences.hip}cm</p>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Braço Dir.:</span>
-                            <p className="font-medium">{evaluation.circumferences.rightArmFlexed}cm</p>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Coxa Dir.:</span>
-                            <p className="font-medium">{evaluation.circumferences.rightThigh}cm</p>
-                          </div>
-                        </div>
+                            {/* Most relevant fields in a clean grid */}
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                              <div>
+                                <span className="text-muted-foreground">Peso:</span>
+                                <p className="font-medium">{evaluation.weight}kg</p>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">IMC:</span>
+                                <p className="font-medium">{evaluation.bmi}</p>
+                              </div>
+                              {evaluation.circumferences?.waist && (
+                                <div>
+                                  <span className="text-muted-foreground">Cintura:</span>
+                                  <p className="font-medium">{evaluation.circumferences.waist}cm</p>
+                                </div>
+                              )}
+                              {evaluation.circumferences?.hip && (
+                                <div>
+                                  <span className="text-muted-foreground">Quadril:</span>
+                                  <p className="font-medium">{evaluation.circumferences.hip}cm</p>
+                                </div>
+                              )}
+                              {evaluation.circumferences?.rightArmFlexed && (
+                                <div>
+                                  <span className="text-muted-foreground">Braço Dir.:</span>
+                                  <p className="font-medium">{evaluation.circumferences.rightArmFlexed}cm</p>
+                                </div>
+                              )}
+                              {evaluation.circumferences?.rightThigh && (
+                                <div>
+                                  <span className="text-muted-foreground">Coxa Dir.:</span>
+                                  <p className="font-medium">{evaluation.circumferences.rightThigh}cm</p>
+                                </div>
+                              )}
+                            </div>
 
-                        {/* Summary of key measurements */}
-                        <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
-                          <p>
-                            Dobras: Tríceps {evaluation.subcutaneousFolds.triceps}mm •
-                            Abdominal {evaluation.subcutaneousFolds.abdominal}mm •
-                            Coxa {evaluation.subcutaneousFolds.thigh}mm
-                          </p>
-                        </div>
+                            {/* Summary of key measurements */}
+                            {evaluation.subcutaneousFolds && (
+                              <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
+                                <p>
+                                  {evaluation.subcutaneousFolds.triceps && `Dobras: Tríceps ${evaluation.subcutaneousFolds.triceps}mm`}
+                                  {evaluation.subcutaneousFolds.abdominal && ` • Abdominal ${evaluation.subcutaneousFolds.abdominal}mm`}
+                                  {evaluation.subcutaneousFolds.thigh && ` • Coxa ${evaluation.subcutaneousFolds.thigh}mm`}
+                                </p>
+                              </div>
+                            )}
 
-                        {/* Click indicator */}
-                        <div className="flex justify-end mt-2">
-                          <span className="text-xs text-primary">Clique para ver detalhes →</span>
+                            {/* Click indicator */}
+                            <div className="flex justify-end mt-2">
+                              <span className="text-xs text-primary">Clique para ver detalhes →</span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8">
+                          <Activity className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-muted-foreground">Nenhuma avaliação encontrada</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-2"
+                            onClick={() => router.push(`/students/${params.id}/evaluation/new`)}
+                          >
+                            Criar primeira avaliação
+                          </Button>
                         </div>
-                      </div>
-                    ))}
-
-                    {studentMockData.evaluations.length === 0 && (
-                      <div className="text-center py-8">
-                        <Activity className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-muted-foreground">Nenhuma avaliação encontrada</p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mt-2"
-                          onClick={() => router.push(`/students/${params.id}/evaluation/new`)}
-                        >
-                          Criar primeira avaliação
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

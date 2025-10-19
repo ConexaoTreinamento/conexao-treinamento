@@ -3,288 +3,23 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, User, Activity, Edit, Calendar } from "lucide-react"
+import { ArrowLeft, User, Edit, Calendar } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
-import { useState, useEffect } from "react"
 import Layout from "@/components/layout"
-
-interface EvaluationData {
-  id: string
-  date: string
-  weight: number
-  height: number
-  bmi: number
-  circumferences: {
-    rightArmRelaxed: number
-    leftArmRelaxed: number
-    rightArmFlexed: number
-    leftArmFlexed: number
-    waist: number
-    abdomen: number
-    hip: number
-    rightThigh: number
-    leftThigh: number
-    rightCalf: number
-    leftCalf: number
-  }
-  subcutaneousFolds: {
-    triceps: number
-    thorax: number
-    subaxillary: number
-    subscapular: number
-    abdominal: number
-    suprailiac: number
-    thigh: number
-  }
-  diameters: {
-    umerus: number
-    femur: number
-  }
-}
+import { useEvaluation } from "@/lib/hooks/evaluation-queries"
+import { useStudent } from "@/lib/hooks/student-queries"
 
 export default function EvaluationDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const [evaluation, setEvaluation] = useState<EvaluationData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [studentName, setStudentName] = useState("Maria Silva")
+  const studentId = params.id as string
+  const evaluationId = params.evaluationId as string
 
-  // Mock students data - should match the data from student profile page
-  const mockStudents = [
-    {
-      id: 1,
-      name: "Maria Silva",
-      evaluations: [
-        {
-          id: "1",
-          date: "2024-07-15",
-          weight: 68.5,
-          height: 165,
-          bmi: 22.5,
-          circumferences: {
-            rightArmRelaxed: 28,
-            leftArmRelaxed: 27,
-            rightArmFlexed: 32,
-            leftArmFlexed: 31,
-            waist: 80,
-            abdomen: 90,
-            hip: 100,
-            rightThigh: 55,
-            leftThigh: 54,
-            rightCalf: 35,
-            leftCalf: 34,
-          },
-          subcutaneousFolds: {
-            triceps: 12,
-            thorax: 10,
-            subaxillary: 14,
-            subscapular: 16,
-            abdominal: 18,
-            suprailiac: 20,
-            thigh: 22,
-          },
-          diameters: {
-            umerus: 12,
-            femur: 14,
-          },
-        },
-        {
-          id: "2",
-          date: "2024-06-15",
-          weight: 70.0,
-          height: 165,
-          bmi: 23.0,
-          circumferences: {
-            rightArmRelaxed: 29,
-            leftArmRelaxed: 28,
-            rightArmFlexed: 33,
-            leftArmFlexed: 32,
-            waist: 82,
-            abdomen: 92,
-            hip: 102,
-            rightThigh: 56,
-            leftThigh: 55,
-            rightCalf: 36,
-            leftCalf: 35,
-          },
-          subcutaneousFolds: {
-            triceps: 13,
-            thorax: 11,
-            subaxillary: 15,
-            subscapular: 17,
-            abdominal: 19,
-            suprailiac: 21,
-            thigh: 23,
-          },
-          diameters: {
-            umerus: 13,
-            femur: 15,
-          },
-        },
-      ],
-    },
-    {
-      id: 2,
-      name: "João Santos",
-      evaluations: [
-        {
-          id: "3",
-          date: "2024-07-20",
-          weight: 75.2,
-          height: 178,
-          bmi: 24.1,
-          circumferences: {
-            rightArmRelaxed: 30,
-            leftArmRelaxed: 29,
-            rightArmFlexed: 34,
-            leftArmFlexed: 33,
-            waist: 84,
-            abdomen: 94,
-            hip: 104,
-            rightThigh: 57,
-            leftThigh: 56,
-            rightCalf: 37,
-            leftCalf: 36,
-          },
-          subcutaneousFolds: {
-            triceps: 14,
-            thorax: 12,
-            subaxillary: 16,
-            subscapular: 18,
-            abdominal: 20,
-            suprailiac: 22,
-            thigh: 24,
-          },
-          diameters: {
-            umerus: 14,
-            femur: 16,
-          },
-        },
-        {
-          id: "4",
-          date: "2024-06-20",
-          weight: 73.8,
-          height: 178,
-          bmi: 23.6,
-          circumferences: {
-            rightArmRelaxed: 31,
-            leftArmRelaxed: 30,
-            rightArmFlexed: 35,
-            leftArmFlexed: 34,
-            waist: 86,
-            abdomen: 96,
-            hip: 106,
-            rightThigh: 58,
-            leftThigh: 57,
-            rightCalf: 38,
-            leftCalf: 37,
-          },
-          subcutaneousFolds: {
-            triceps: 15,
-            thorax: 13,
-            subaxillary: 17,
-            subscapular: 19,
-            abdominal: 21,
-            suprailiac: 23,
-            thigh: 25,
-          },
-          diameters: {
-            umerus: 15,
-            femur: 17,
-          },
-        },
-      ],
-    },
-    {
-      id: 3,
-      name: "Ana Costa",
-      evaluations: [
-        {
-          id: "5",
-          date: "2024-06-15",
-          weight: 62.0,
-          height: 170,
-          bmi: 21.5,
-          circumferences: {
-            rightArmRelaxed: 27,
-            leftArmRelaxed: 26,
-            rightArmFlexed: 31,
-            leftArmFlexed: 30,
-            waist: 78,
-            abdomen: 88,
-            hip: 98,
-            rightThigh: 54,
-            leftThigh: 53,
-            rightCalf: 33,
-            leftCalf: 32,
-          },
-          subcutaneousFolds: {
-            triceps: 11,
-            thorax: 9,
-            subaxillary: 13,
-            subscapular: 15,
-            abdominal: 17,
-            suprailiac: 19,
-            thigh: 21,
-          },
-          diameters: {
-            umerus: 11,
-            femur: 13,
-          },
-        },
-        {
-          id: "6",
-          date: "2024-03-15",
-          weight: 63.2,
-          height: 170,
-          bmi: 21.9,
-          circumferences: {
-            rightArmRelaxed: 28,
-            leftArmRelaxed: 27,
-            rightArmFlexed: 32,
-            leftArmFlexed: 31,
-            waist: 80,
-            abdomen: 90,
-            hip: 100,
-            rightThigh: 55,
-            leftThigh: 54,
-            rightCalf: 34,
-            leftCalf: 33,
-          },
-          subcutaneousFolds: {
-            triceps: 12,
-            thorax: 10,
-            subaxillary: 14,
-            subscapular: 16,
-            abdominal: 18,
-            suprailiac: 20,
-            thigh: 22,
-          },
-          diameters: {
-            umerus: 12,
-            femur: 14,
-          },
-        },
-      ],
-    },
-  ]
+  // Get student and evaluation data
+  const { data: student, isLoading: isLoadingStudent } = useStudent({ path: { id: studentId } })
+  const { data: evaluation, isLoading: isLoadingEvaluation } = useEvaluation(studentId, evaluationId)
 
-  useEffect(() => {
-    const studentId = parseInt(params.id as string)
-    const evaluationId = params.evaluationId as string
-
-    // Find the student and evaluation
-    const student = mockStudents.find(s => s.id === studentId)
-    if (student) {
-      setStudentName(student.name)
-      const foundEvaluation = student.evaluations.find(e => e.id === evaluationId)
-      if (foundEvaluation) {
-        setEvaluation(foundEvaluation)
-      }
-    }
-
-    setLoading(false)
-  }, [params.id, params.evaluationId])
+  const loading = isLoadingStudent || isLoadingEvaluation
 
   if (loading) {
     return (
@@ -299,7 +34,7 @@ export default function EvaluationDetailPage() {
     )
   }
 
-  if (!evaluation) {
+  if (!evaluation || !student) {
     return (
       <Layout>
         <div className="text-center py-8">
@@ -329,7 +64,7 @@ export default function EvaluationDetailPage() {
             </Button>
             <div>
               <h1 className="text-xl font-bold">Avaliação Física</h1>
-              <p className="text-sm text-muted-foreground">{studentName}</p>
+              <p className="text-sm text-muted-foreground">{`${student.name} ${student.surname}`}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -337,7 +72,7 @@ export default function EvaluationDetailPage() {
               <Calendar className="w-3 h-3" />
               {new Date(evaluation.date).toLocaleDateString("pt-BR")}
             </Badge>
-            <Button size="sm" variant="outline" onClick={() => router.replace(`/students/${params.id}/evaluation/${evaluation.id}/edit`)}>
+            <Button size="sm" variant="outline" onClick={() => router.push(`/students/${studentId}/evaluation/${evaluationId}/edit`)}>
               <Edit className="w-4 h-4 mr-2" />
               Editar
             </Button>
@@ -376,6 +111,7 @@ export default function EvaluationDetailPage() {
         </Card>
 
         {/* Circunferências */}
+        {evaluation.circumferences && (
         <Card>
           <CardHeader>
             <CardTitle>Circunferências</CardTitle>
@@ -386,22 +122,30 @@ export default function EvaluationDetailPage() {
             <div>
               <h3 className="font-semibold mb-3">Braços</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {evaluation.circumferences.rightArmRelaxed && (
                 <div>
                   <p className="text-sm text-muted-foreground">Direito Relaxado</p>
                   <p className="font-medium">{evaluation.circumferences.rightArmRelaxed} cm</p>
                 </div>
+                )}
+                {evaluation.circumferences.leftArmRelaxed && (
                 <div>
                   <p className="text-sm text-muted-foreground">Esquerdo Relaxado</p>
                   <p className="font-medium">{evaluation.circumferences.leftArmRelaxed} cm</p>
                 </div>
+                )}
+                {evaluation.circumferences.rightArmFlexed && (
                 <div>
                   <p className="text-sm text-muted-foreground">Direito Flexionado</p>
                   <p className="font-medium">{evaluation.circumferences.rightArmFlexed} cm</p>
                 </div>
+                )}
+                {evaluation.circumferences.leftArmFlexed && (
                 <div>
                   <p className="text-sm text-muted-foreground">Esquerdo Flexionado</p>
                   <p className="font-medium">{evaluation.circumferences.leftArmFlexed} cm</p>
                 </div>
+                )}
               </div>
             </div>
 
@@ -409,18 +153,24 @@ export default function EvaluationDetailPage() {
             <div>
               <h3 className="font-semibold mb-3">Tronco</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {evaluation.circumferences.waist && (
                 <div>
                   <p className="text-sm text-muted-foreground">Cintura</p>
                   <p className="font-medium">{evaluation.circumferences.waist} cm</p>
                 </div>
+                )}
+                {evaluation.circumferences.abdomen && (
                 <div>
                   <p className="text-sm text-muted-foreground">Abdômen</p>
                   <p className="font-medium">{evaluation.circumferences.abdomen} cm</p>
                 </div>
+                )}
+                {evaluation.circumferences.hip && (
                 <div>
                   <p className="text-sm text-muted-foreground">Quadril</p>
                   <p className="font-medium">{evaluation.circumferences.hip} cm</p>
                 </div>
+                )}
               </div>
             </div>
 
@@ -428,28 +178,38 @@ export default function EvaluationDetailPage() {
             <div>
               <h3 className="font-semibold mb-3">Pernas</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {evaluation.circumferences.rightThigh && (
                 <div>
                   <p className="text-sm text-muted-foreground">Coxa Direita</p>
                   <p className="font-medium">{evaluation.circumferences.rightThigh} cm</p>
                 </div>
+                )}
+                {evaluation.circumferences.leftThigh && (
                 <div>
                   <p className="text-sm text-muted-foreground">Coxa Esquerda</p>
                   <p className="font-medium">{evaluation.circumferences.leftThigh} cm</p>
                 </div>
+                )}
+                {evaluation.circumferences.rightCalf && (
                 <div>
                   <p className="text-sm text-muted-foreground">Panturrilha Direita</p>
                   <p className="font-medium">{evaluation.circumferences.rightCalf} cm</p>
                 </div>
+                )}
+                {evaluation.circumferences.leftCalf && (
                 <div>
                   <p className="text-sm text-muted-foreground">Panturrilha Esquerda</p>
                   <p className="font-medium">{evaluation.circumferences.leftCalf} cm</p>
                 </div>
+                )}
               </div>
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Dobras Subcutâneas */}
+        {evaluation.subcutaneousFolds && (
         <Card>
           <CardHeader>
             <CardTitle>Dobras Subcutâneas</CardTitle>
@@ -457,39 +217,55 @@ export default function EvaluationDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+              {evaluation.subcutaneousFolds.triceps && (
               <div>
                 <p className="text-sm text-muted-foreground">Tríceps</p>
                 <p className="font-medium">{evaluation.subcutaneousFolds.triceps} mm</p>
               </div>
+              )}
+              {evaluation.subcutaneousFolds.thorax && (
               <div>
                 <p className="text-sm text-muted-foreground">Tórax</p>
                 <p className="font-medium">{evaluation.subcutaneousFolds.thorax} mm</p>
               </div>
+              )}
+              {evaluation.subcutaneousFolds.subaxillary && (
               <div>
                 <p className="text-sm text-muted-foreground">Subaxilar</p>
                 <p className="font-medium">{evaluation.subcutaneousFolds.subaxillary} mm</p>
               </div>
+              )}
+              {evaluation.subcutaneousFolds.subscapular && (
               <div>
                 <p className="text-sm text-muted-foreground">Subescapular</p>
                 <p className="font-medium">{evaluation.subcutaneousFolds.subscapular} mm</p>
               </div>
+              )}
+              {evaluation.subcutaneousFolds.abdominal && (
               <div>
                 <p className="text-sm text-muted-foreground">Abdominal</p>
                 <p className="font-medium">{evaluation.subcutaneousFolds.abdominal} mm</p>
               </div>
+              )}
+              {evaluation.subcutaneousFolds.suprailiac && (
               <div>
                 <p className="text-sm text-muted-foreground">Suprailíaca</p>
                 <p className="font-medium">{evaluation.subcutaneousFolds.suprailiac} mm</p>
               </div>
+              )}
+              {evaluation.subcutaneousFolds.thigh && (
               <div>
                 <p className="text-sm text-muted-foreground">Coxa</p>
                 <p className="font-medium">{evaluation.subcutaneousFolds.thigh} mm</p>
               </div>
+              )}
             </div>
           </CardContent>
         </Card>
+        )}
 
         {/* Diâmetros */}
+        {evaluation.diameters && (
         <Card>
           <CardHeader>
             <CardTitle>Diâmetros</CardTitle>
@@ -497,17 +273,22 @@ export default function EvaluationDetailPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md">
+              {evaluation.diameters.umerus && (
               <div>
                 <p className="text-sm text-muted-foreground">Cotovelo</p>
                 <p className="font-medium">{evaluation.diameters.umerus} cm</p>
               </div>
+              )}
+              {evaluation.diameters.femur && (
               <div>
                 <p className="text-sm text-muted-foreground">Joelho</p>
                 <p className="font-medium">{evaluation.diameters.femur} cm</p>
               </div>
+              )}
             </div>
           </CardContent>
         </Card>
+        )}
       </div>
     </Layout>
   )
