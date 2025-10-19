@@ -4,7 +4,7 @@ import { useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { ArrowLeft, Calendar, CheckCircle, Clock, Edit, MapPin, Trophy, Users, X, XCircle, Loader2, Trash2} from "lucide-react"
+import { ArrowLeft, Calendar, CheckCircle, Clock, Edit, MapPin, Trophy, Users, X, XCircle, Loader2, Trash2, AlertTriangle} from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useParams, useRouter } from "next/navigation"
 import Layout from "@/components/layout"
@@ -18,6 +18,16 @@ import {
   removeParticipantMutation as removeParticipantMutationFactory,
   deleteEventMutation as deleteEventMutationFactory,
 } from "@/lib/api-client/@tanstack/react-query.gen"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { apiClient } from "@/lib/client"
 import type { EventResponseDto, EventParticipantResponseDto } from "@/lib/api-client/types.gen"
 import type { EventFormData } from "@/components/event-modal"
@@ -28,6 +38,7 @@ export default function EventDetailPage() {
   const params = useParams()
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [participantSearchTerm, setParticipantSearchTerm] = useState("")
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   const queryClient = useQueryClient()
 
@@ -206,7 +217,6 @@ export default function EventDetailPage() {
     )
   }
 
-
   const participants: EventParticipantResponseDto[] = eventData.participants ?? []
   const participantDetails = participants.reduce<Record<string, StudentSummary>>((acc, participant) => {
     if (!participant.id) return acc
@@ -255,7 +265,7 @@ export default function EventDetailPage() {
           <Button
               variant="outline"
               size="icon"
-              onClick={handleDeleteEvent}
+              onClick={() => setIsDeleteDialogOpen(true)}
               disabled={deleteEventMutation.isPending}
               className="text-destructive hover:text-destructive"
           >
@@ -265,6 +275,43 @@ export default function EventDetailPage() {
                 <Trash2 className="w-4 h-4"/>
             )}
           </Button>
+
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-destructive" />
+                  Confirmar exclusão do evento
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Esta ação não pode ser desfeita. O evento será marcado como excluído
+                  e não aparecerá mais na lista de eventos ativos.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={deleteEventMutation.isPending}>
+                  Cancelar
+                </AlertDialogCancel>
+                <AlertDialogAction
+                    onClick={() => {
+                      handleDeleteEvent()
+                      setIsDeleteDialogOpen(false)
+                    }}
+                    disabled={deleteEventMutation.isPending}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {deleteEventMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Excluindo...
+                      </>
+                  ) : (
+                      "Excluir evento"
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
