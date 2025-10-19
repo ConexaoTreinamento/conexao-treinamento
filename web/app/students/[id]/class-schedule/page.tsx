@@ -18,6 +18,22 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 
 const weekdayMap: Record<number,string> = {0:"Domingo",1:"Segunda-feira",2:"Terça-feira",3:"Quarta-feira",4:"Quinta-feira",5:"Sexta-feira",6:"Sábado"}
 
+const toHHmm = (s?: string) => (s || '').slice(0,5) || ''
+const pad2 = (n:number) => (n<10? `0${n}`: `${n}`)
+const addMinutesHHmm = (hhmm: string, minutes: number): string => {
+  const [h,m] = hhmm.split(":").map(Number)
+  const total = h*60 + m + minutes
+  const h2 = Math.floor((total% (24*60) + (24*60)) % (24*60) / 60)
+  const m2 = ((total%60)+60)%60
+  return `${pad2(h2)}:${pad2(m2)}`
+}
+const deriveEndTime = (start?: string, intervalDuration?: number): string | undefined => {
+  const base = toHHmm(start)
+  if(!base) return undefined
+  const duration = intervalDuration ?? 60
+  return `${addMinutesHHmm(base, duration)}:00`
+}
+
 export default function ClassSchedulePage() {
   const router = useRouter()
   const params = useParams<{id:string}>()
@@ -108,17 +124,20 @@ export default function ClassSchedulePage() {
     const raw = (availableQuery.data || []) as (TrainerSchedule & LegacyTrainerSchedule)[]
     return raw
       .filter(s => !!s && !!s.id && !!s.active && typeof synonym.weekday(s) === 'number')
-      .map(s => ({
-        id: s.id!,
-        weekday: synonym.weekday(s)!,
-        startTime: s.startTime,
-        endTime: s.endTime,
-        seriesName: synonym.seriesName(s),
-        active: true,
-        intervalDuration: pickNumber(s, 'intervalDuration'),
-        capacity: pickNumber(s, 'capacity'),
-        enrolledCount: pickNumber(s, 'enrolledCount')
-      }))
+      .map(s => {
+        const intervalDuration = pickNumber(s, 'intervalDuration')
+        return {
+          id: s.id!,
+          weekday: synonym.weekday(s)!,
+          startTime: s.startTime,
+          endTime: deriveEndTime(s.startTime, intervalDuration),
+          seriesName: synonym.seriesName(s),
+          active: true,
+          intervalDuration,
+          capacity: pickNumber(s, 'capacity'),
+          enrolledCount: pickNumber(s, 'enrolledCount')
+        }
+      })
   }, [availableQuery.data])
 
   const weeklyByWeekday: WeekdayGroup[] = useMemo(()=> {

@@ -15,9 +15,15 @@ import java.util.UUID;
 public interface StudentPlanAssignmentRepository extends JpaRepository<StudentPlanAssignment, UUID> {
     
     // Find current active assignment for a student
-    @Query("SELECT spa FROM StudentPlanAssignment spa WHERE spa.studentId = :studentId " +
-           "AND CURRENT_DATE BETWEEN spa.startDate AND spa.endDate")
-    Optional<StudentPlanAssignment> findCurrentActiveAssignment(@Param("studentId") UUID studentId);
+              @Query(value = """
+                            SELECT * FROM student_plan_assignments spa
+                            WHERE spa.student_id = :studentId
+                                   AND spa.start_date <= CURRENT_DATE
+                                   AND spa.start_date + spa.duration_days > CURRENT_DATE
+                            ORDER BY spa.start_date DESC, spa.created_at DESC
+                            LIMIT 1
+                            """, nativeQuery = true)
+              Optional<StudentPlanAssignment> findCurrentActiveAssignment(@Param("studentId") UUID studentId);
     
     // Find all assignments for a student (history)
     @Query("SELECT spa FROM StudentPlanAssignment spa WHERE spa.studentId = :studentId " +
@@ -25,18 +31,31 @@ public interface StudentPlanAssignmentRepository extends JpaRepository<StudentPl
     List<StudentPlanAssignment> findByStudentIdOrderByStartDateDesc(@Param("studentId") UUID studentId);
     
     // Find assignments expiring soon
-    @Query("SELECT spa FROM StudentPlanAssignment spa WHERE spa.endDate BETWEEN CURRENT_DATE AND :futureDate " +
-           "ORDER BY spa.endDate ASC")
-    List<StudentPlanAssignment> findExpiringSoon(@Param("futureDate") LocalDate futureDate);
+              @Query(value = """
+                            SELECT * FROM student_plan_assignments spa
+                            WHERE spa.start_date + spa.duration_days - 1 >= CURRENT_DATE
+                                   AND spa.start_date + spa.duration_days - 1 <= :futureDate
+                            ORDER BY spa.start_date + spa.duration_days - 1 ASC
+                            """, nativeQuery = true)
+              List<StudentPlanAssignment> findExpiringSoon(@Param("futureDate") LocalDate futureDate);
     
     // Find all currently active assignments
-    @Query("SELECT spa FROM StudentPlanAssignment spa WHERE CURRENT_DATE BETWEEN spa.startDate AND spa.endDate")
-    List<StudentPlanAssignment> findAllCurrentlyActive();
+              @Query(value = """
+                            SELECT * FROM student_plan_assignments spa
+                            WHERE spa.start_date <= CURRENT_DATE
+                                   AND spa.start_date + spa.duration_days > CURRENT_DATE
+                            ORDER BY spa.start_date ASC
+                            """, nativeQuery = true)
+              List<StudentPlanAssignment> findAllCurrentlyActive();
     
     // Find overlapping assignments (for validation)
-    @Query("SELECT spa FROM StudentPlanAssignment spa WHERE spa.studentId = :studentId " +
-           "AND ((spa.startDate <= :endDate AND spa.endDate >= :startDate))")
-    List<StudentPlanAssignment> findOverlappingAssignments(@Param("studentId") UUID studentId,
-                                                          @Param("startDate") LocalDate startDate,
-                                                          @Param("endDate") LocalDate endDate);
+              @Query(value = """
+                            SELECT * FROM student_plan_assignments spa
+                            WHERE spa.student_id = :studentId
+                                   AND spa.start_date < :endExclusive
+                                   AND spa.start_date + spa.duration_days > :startDate
+                            """, nativeQuery = true)
+              List<StudentPlanAssignment> findOverlappingAssignments(@Param("studentId") UUID studentId,
+                                                                                                                                                                                                           @Param("startDate") LocalDate startDate,
+                                                                                                                                                                                                           @Param("endExclusive") LocalDate endExclusive);
 }

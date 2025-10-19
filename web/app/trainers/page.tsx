@@ -35,9 +35,9 @@ export default function TrainersPage() {
     specialty: "",
   })
   const router = useRouter()
-  const { mutateAsync: deleteTrainer, isPending: isDeleting } = useMutation(softDeleteTrainerUserMutation())
-  const { mutateAsync: createTrainer, isPending: isCreating } = useMutation(createTrainerAndUserMutation())
-  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerAndUserMutation())
+  const { mutateAsync: deleteTrainer, isPending: isDeleting } = useMutation(softDeleteTrainerUserMutation({ client: apiClient }))
+  const { mutateAsync: createTrainer, isPending: isCreating } = useMutation(createTrainerAndUserMutation({ client: apiClient }))
+  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerAndUserMutation({ client: apiClient }))
 
   const queryClient = useQueryClient();
   useEffect(() => {

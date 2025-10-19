@@ -75,7 +75,7 @@ export default function ExercisesPage() {
     })
   })
 
-  const { mutateAsync: restoreExercise, isPending: isRestoring } = useMutation(restoreExerciseMutation());
+  const { mutateAsync: restoreExercise, isPending: isRestoring } = useMutation(restoreExerciseMutation({ client: apiClient }));
 
   useEffect(() => {
     setTotalPages(exercises?.totalPages!)
