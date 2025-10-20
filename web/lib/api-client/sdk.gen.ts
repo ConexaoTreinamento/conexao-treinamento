@@ -954,7 +954,7 @@ export const findTrainerByUserId = <ThrowOnError extends boolean = false>(option
                 type: 'http'
             }
         ],
-        url: '/trainers/userId/{id}',
+        url: '/trainers/user-profile/{id}',
         ...options
     });
 };
@@ -1176,6 +1176,19 @@ export const getAvailableSessionSeries = <ThrowOnError extends boolean = false>(
             }
         ],
         url: '/commitments/available-sessions',
+        ...options
+    });
+};
+
+export const findAdministratorByUserId = <ThrowOnError extends boolean = false>(options: Options<FindAdministratorByUserIdData, ThrowOnError>) => {
+    return (options.client ?? _heyApiClient).get<FindAdministratorByUserIdResponses, unknown, ThrowOnError>({
+        security: [
+            {
+                scheme: 'bearer',
+                type: 'http'
+            }
+        ],
+        url: '/administrators/user-profile/{id}',
         ...options
     });
 };

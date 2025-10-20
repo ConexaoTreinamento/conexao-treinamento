@@ -567,6 +567,8 @@ export type PageUserResponseDto = {
     sort?: SortObject;
     numberOfElements?: number;
     pageable?: PageableObject;
+    first?: boolean;
+    last?: boolean;
     empty?: boolean;
 };
 
@@ -596,6 +598,8 @@ export type PageStudentResponseDto = {
     sort?: SortObject;
     numberOfElements?: number;
     pageable?: PageableObject;
+    first?: boolean;
+    last?: boolean;
     empty?: boolean;
 };
 
@@ -635,6 +639,8 @@ export type PageExerciseResponseDto = {
     sort?: SortObject;
     numberOfElements?: number;
     pageable?: PageableObject;
+    first?: boolean;
+    last?: boolean;
     empty?: boolean;
 };
 
@@ -674,6 +680,8 @@ export type PageListAdministratorsDto = {
     sort?: SortObject;
     numberOfElements?: number;
     pageable?: PageableObject;
+    first?: boolean;
+    last?: boolean;
     empty?: boolean;
 };
 
@@ -1768,7 +1776,7 @@ export type FindTrainerByUserIdData = {
         id: string;
     };
     query?: never;
-    url: '/trainers/userId/{id}';
+    url: '/trainers/user-profile/{id}';
 };
 
 export type FindTrainerByUserIdResponses = {
@@ -2084,6 +2092,24 @@ export type GetAvailableSessionSeriesResponses = {
 };
 
 export type GetAvailableSessionSeriesResponse = GetAvailableSessionSeriesResponses[keyof GetAvailableSessionSeriesResponses];
+
+export type FindAdministratorByUserIdData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/administrators/user-profile/{id}';
+};
+
+export type FindAdministratorByUserIdResponses = {
+    /**
+     * OK
+     */
+    200: ListAdministratorsDto;
+};
+
+export type FindAdministratorByUserIdResponse = FindAdministratorByUserIdResponses[keyof FindAdministratorByUserIdResponses];
 
 export type TestData = {
     body?: never;

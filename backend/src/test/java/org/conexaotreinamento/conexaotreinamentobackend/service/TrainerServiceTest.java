@@ -261,21 +261,20 @@ class TrainerServiceTest {
     void shouldUpdateTrainerSuccessfullyWithPassword() {
         // Given
         CreateTrainerDTO updateTrainerDTO = new CreateTrainerDTO(
-            "John Trainer",
-            "john@example.com",
-            "+1234567890",
-            "newpassword123",
-            "123 Main St",
-            LocalDate.of(1990, 1, 1),
-            Arrays.asList("Strength Training", "Cardio"),
-            CompensationType.HOURLY
-        );
-        
+                "John Trainer",
+                "john@example.com",
+                "+1234567890",
+                "newpassword123",
+                "123 Main St",
+                LocalDate.of(1990, 1, 1),
+                Arrays.asList("Strength Training", "Cardio"),
+                CompensationType.HOURLY);
+
         UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "john@example.com", Role.ROLE_TRAINER);
-        
+
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
         when(userService.updateUserEmail(userId, "john@example.com")).thenReturn(updatedUserResponse);
-        when(userService.updateUserPassword(userId, "newpassword123")).thenReturn(updatedUserResponse);
+        when(userService.resetUserPassword(userId, "newpassword123")).thenReturn(updatedUserResponse);
         when(trainerRepository.save(trainer)).thenReturn(trainer);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
@@ -291,7 +290,7 @@ class TrainerServiceTest {
 
         verify(trainerRepository).findById(trainerId);
         verify(userService).updateUserEmail(userId, "john@example.com");
-        verify(userService).updateUserPassword(userId, "newpassword123");
+        verify(userService).resetUserPassword(userId, "newpassword123");
         verify(trainerRepository).save(trainer);
         verify(userRepository).findById(userId);
     }
@@ -301,18 +300,18 @@ class TrainerServiceTest {
     void shouldUpdateTrainerSuccessfullyWithoutPassword() {
         // Given
         CreateTrainerDTO updateTrainerDTO = new CreateTrainerDTO(
-            "John Trainer Updated",
-            "john.updated@example.com",
-            "+1234567890",
-            null, // No password provided
-            "456 New St",
-            LocalDate.of(1990, 1, 1),
-            Arrays.asList("Strength Training", "Yoga"),
-            CompensationType.MONTHLY
-        );
-        
-        UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "john.updated@example.com", Role.ROLE_TRAINER);
-        
+                "John Trainer Updated",
+                "john.updated@example.com",
+                "+1234567890",
+                null, // No password provided
+                "456 New St",
+                LocalDate.of(1990, 1, 1),
+                Arrays.asList("Strength Training", "Yoga"),
+                CompensationType.MONTHLY);
+
+        UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "john.updated@example.com",
+                Role.ROLE_TRAINER);
+
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
         when(userService.updateUserEmail(userId, "john.updated@example.com")).thenReturn(updatedUserResponse);
         when(trainerRepository.save(trainer)).thenReturn(trainer);
@@ -330,7 +329,7 @@ class TrainerServiceTest {
 
         verify(trainerRepository).findById(trainerId);
         verify(userService).updateUserEmail(userId, "john.updated@example.com");
-        verify(userService, never()).updateUserPassword(any(), any());
+        verify(userService, never()).resetUserPassword(any(), any());
         verify(trainerRepository).save(trainer);
         verify(userRepository).findById(userId);
     }
@@ -399,21 +398,20 @@ class TrainerServiceTest {
     void shouldAllowUpdatingTrainerWithSameEmail() {
         // Given
         CreateTrainerDTO updateTrainerDTO = new CreateTrainerDTO(
-            "John Trainer",
-            "john@example.com",
-            "+1234567890",
-            "password123",
-            "123 Main St",
-            LocalDate.of(1990, 1, 1),
-            Arrays.asList("Strength Training", "Cardio"),
-            CompensationType.HOURLY
-        );
-        
+                "John Trainer",
+                "john@example.com",
+                "+1234567890",
+                "password123",
+                "123 Main St",
+                LocalDate.of(1990, 1, 1),
+                Arrays.asList("Strength Training", "Cardio"),
+                CompensationType.HOURLY);
+
         UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "john@example.com", Role.ROLE_TRAINER);
-        
+
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
         when(userService.updateUserEmail(userId, "john@example.com")).thenReturn(updatedUserResponse);
-        when(userService.updateUserPassword(userId, "password123")).thenReturn(updatedUserResponse);
+        when(userService.resetUserPassword(userId, "password123")).thenReturn(updatedUserResponse);
         when(trainerRepository.save(trainer)).thenReturn(trainer);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
@@ -426,7 +424,7 @@ class TrainerServiceTest {
 
         verify(trainerRepository).findById(trainerId);
         verify(userService).updateUserEmail(userId, "john@example.com");
-        verify(userService).updateUserPassword(userId, "password123");
+        verify(userService).resetUserPassword(userId, "password123");
         verify(trainerRepository).save(trainer);
         verify(userRepository).findById(userId);
     }

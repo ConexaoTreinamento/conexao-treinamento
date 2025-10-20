@@ -30,6 +30,13 @@ public interface AdministratorRepository extends JpaRepository<Administrator, UU
             "a.id, a.firstName, a.lastName, u.email, " +
             "CONCAT(a.firstName, ' ', a.lastName), (u.deletedAt IS NULL), u.createdAt) " +
             " FROM Administrator a INNER JOIN User u ON a.userId = u.id" +
+            " WHERE a.userId = :user_id AND u.deletedAt IS NULL")
+    Optional<ListAdministratorsDTO> findActiveAdministratorByUserId(UUID user_id);
+
+    @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListAdministratorsDTO(" +
+            "a.id, a.firstName, a.lastName, u.email, " +
+            "CONCAT(a.firstName, ' ', a.lastName), (u.deletedAt IS NULL), u.createdAt) " +
+            " FROM Administrator a INNER JOIN User u ON a.userId = u.id" +
             " WHERE (:includeInactive = true OR u.deletedAt IS NULL)")
     List<ListAdministratorsDTO> findAllAdministratorProfiles(Boolean includeInactive);
 

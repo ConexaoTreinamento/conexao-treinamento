@@ -54,6 +54,11 @@ public class AdministratorService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Administrator not found"));
     }
 
+    public ListAdministratorsDTO findByUserId(UUID id) {
+        return administratorRepository.findActiveAdministratorByUserId(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Administrator not found"));
+    }
+
     public List<ListAdministratorsDTO> findAll() {
         return administratorRepository.findAllAdministratorProfiles(true);
     }
@@ -94,10 +99,10 @@ public class AdministratorService {
 
         // Always update the associated user's email (mandatory)
         UserResponseDTO updatedUser = userService.updateUserEmail(administrator.getUserId(), request.email());
-
+        
         // Conditionally update password (optional)
         if (request.hasPassword()) {
-            userService.updateUserPassword(administrator.getUserId(), request.password());
+            userService.resetUserPassword(administrator.getUserId(), request.password());
         }
 
         // Update administrator fields
@@ -126,11 +131,6 @@ public class AdministratorService {
         // Update email if provided
         if (request.email() != null) {
             updatedUser = userService.updateUserEmail(administrator.getUserId(), request.email());
-        }
-
-        // Update password if provided
-        if (request.hasPassword()) {
-            updatedUser = userService.updateUserPassword(administrator.getUserId(), request.password());
         }
 
         // Update administrator fields

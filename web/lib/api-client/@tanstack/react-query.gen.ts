@@ -1739,6 +1739,23 @@ export const getAvailableSessionSeriesOptions = (options?: Options<GetAvailableS
     });
 };
 
+export const findAdministratorByUserIdQueryKey = (options: Options<FindAdministratorByUserIdData>) => createQueryKey('findAdministratorByUserId', options);
+
+export const findAdministratorByUserIdOptions = (options: Options<FindAdministratorByUserIdData>) => {
+    return queryOptions({
+        queryFn: async ({ queryKey, signal }) => {
+            const { data } = await findAdministratorByUserId({
+                ...options,
+                ...queryKey[0],
+                signal,
+                throwOnError: true
+            });
+            return data;
+        },
+        queryKey: findAdministratorByUserIdQueryKey(options)
+    });
+};
+
 export const testQueryKey = (options?: Options<TestData>) => createQueryKey('test', options);
 
 export const testOptions = (options?: Options<TestData>) => {

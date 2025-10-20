@@ -152,6 +152,10 @@ public class UserService {
         User user = userRepository.findByIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
+        if (!user.getRole().equals(Role.ROLE_TRAINER)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only trainers can have their password reset by this endpoint.");
+        }
+
         user.setPassword(passwordEncoder.encode(newPassword));
 
         User savedUser = userRepository.save(user);

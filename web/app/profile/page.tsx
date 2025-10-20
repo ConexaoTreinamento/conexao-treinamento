@@ -1,25 +1,31 @@
 "use client"
-
+//TODO: Revisar senha
+//TODO: Admin
 import { useState, useEffect } from "react"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { useParams } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, Mail, Phone, MapPin, Calendar, Save, Camera, Shield, Clock, Award } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Clock, Award } from 'lucide-react'
 import Layout from "@/components/layout"
 import { useMutation } from "@tanstack/react-query";
 import { changeOwnPasswordMutation } from "@/lib/api-client/@tanstack/react-query.gen";
 
 export default function ProfilePage() {
-  const { id } = useParams();
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+
+  const [token, setToken] = useState<string>("")
+  const [userId, setUserId] = useState<string>("")
   const [userRole, setUserRole] = useState<string>("")
   const [userName, setUserName] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
+  //const [isLoading, setIsLoading] = useState(false)
+  const [specialtiesInput, setSpecialtiesInput] = useState("")
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -48,31 +54,97 @@ export default function ProfilePage() {
     address: "",
     birthDate: "",
     joinDate: "",
-    bio: "",
     specialties: [] as string[],
     avatar: "/placeholder.svg?height=100&width=100"
   })
 
   useEffect(() => {
-    const role = localStorage.getItem("userRole")
-    const name = localStorage.getItem("userName")
-    setUserRole(role || "")
-    setUserName(name || "")
-    if (!id) return;
-    setIsLoading(true);
+    const uToken = localStorage.getItem("token") || "";
+    const uUserId = localStorage.getItem("userId") || "";
+    const role = localStorage.getItem("userRole") || "";
+    const name = localStorage.getItem("userName") || "";
 
-    // Busca dados do perfil no backend
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    if (role === "admin") {
+    setToken(uToken);
+    setUserId(uUserId);
+    setUserRole(role);
+    setUserName(name);
+  }, []);
+
+
+  // Admin integration
+  const { data: adminDataByUser, isLoading: isLoadingAdminId } = useQuery({
+    ...findAdministratorByUserIdOptions({
+      path: { id: userId },
+      client: apiClient,
+    }),
+    enabled: !!userId && !!token && userRole === "admin",
+  })
+
+  const adminId = adminDataByUser?.id
+
+  const updateAdminMutation = useMutation({
+    ...updateAdministratorAndUserMutation({
+      client: apiClient,
+    }),
+    onSuccess: () => {
+      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!" })
+      queryClient.invalidateQueries({ queryKey: ["findAdministratorByUserId"] })
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as alterações",
+        variant: "destructive",
+      })
+    },
+  })
+
+  // Trainer integration
+  const { data: trainerDataByUser, isLoading: isLoadingTrainerId } = useQuery({
+    ...findTrainerByUserIdOptions({
+      path: { id: userId },
+      client: apiClient,
+    }),
+    enabled: !!userId && !!token && userRole !== "admin",
+  })
+
+  const trainerId = trainerDataByUser?.id
+
+  const { data: trainerData, isLoading: isLoadingTrainer } = useQuery({
+    ...findTrainerByIdOptions({
+      path: { id: String(trainerId) },
+      client: apiClient,
+    }),
+    enabled: !!trainerId && userRole !== "admin",
+  })
+
+  const updateTrainerMutation = useMutation({
+    ...updateTrainerAndUserMutation({
+      client: apiClient,
+    }),
+    onSuccess: () => {
+      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!" })
+      queryClient.invalidateQueries({ queryKey: ["findTrainerById"] })
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as alterações",
+        variant: "destructive",
+      })
+    },
+  })
+
+  useEffect(() => {
+    if (userRole === "admin" && adminDataByUser) {
       setProfileData({
-        name: "Admin Principal",
-        email: "admin@gym.com",
-        phone: "(11) 99999-0000",
-        address: "Rua das Flores, 123 - São Paulo, SP",
-        birthDate: "1985-05-15",
-        joinDate: "2020-01-01",
-        bio: "Administrador principal da academia com mais de 10 anos de experiência em gestão fitness.",
-        specialties: ["Gestão", "Administração", "Planejamento"],
+        name: `${adminDataByUser.firstName ?? ""} ${adminDataByUser.lastName ?? ""}`.trim(),
+        email: adminDataByUser.email ?? "",
+        phone: "",
+        address: "",
+        birthDate: "",
+        joinDate: "",
+        specialties: [],
         avatar: "/placeholder.svg?height=100&width=100"
       })
     } else {
@@ -94,14 +166,17 @@ export default function ProfilePage() {
         })
         .finally(() => setIsLoading(false));
     }
-  }, [id]);
+  }, [userRole, trainerData, adminDataByUser])
+
+  useEffect(() => {
+    if (profileData.specialties) {
+      setSpecialtiesInput(profileData.specialties.join(", "))
+    }
+  }, [profileData.specialties])
 
   const handleInputChange = (field: string, value: string) => {
     if (field === "specialties") {
-      setProfileData(prev => ({
-        ...prev,
-        specialties: value.split(",").map(s => s.trim()).filter(s => s.length > 0)
-      }))
+      setSpecialtiesInput(value)
     } else {
       setProfileData(prev => ({ ...prev, [field]: value }))
     }
@@ -137,19 +212,89 @@ export default function ProfilePage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(profileData),
     });
-    setIsLoading(false);
+
+  };
+
+  const handleSpecialtiesBlur = () => {
+    setProfileData(prev => ({
+      ...prev,
+      specialties: specialtiesInput
+        .split(",")
+        .map(s => s.trim())
+        .filter(s => s.length > 0)
+    }))
   }
 
-  const stats = userRole === "admin" ? [
-    { label: "Alunos", value: "142", icon: User },
-    { label: "Professores", value: "8", icon: Award },
-    { label: "Anos na Academia", value: "4", icon: Calendar },
-    { label: "Eventos Organizados", value: "25", icon: Shield }
-  ] : [
-    { label: "Alunos Ativos", value: "35", icon: User },
-    { label: "Aulas por Semana", value: "12", icon: Calendar },
-    { label: "Horas Trabalhadas no mês", value: "120", icon: Clock },
-  ]
+  const handleSave = () => {
+    if (userRole === "admin") {
+      if (!adminId) return
+      // Para atualizar admin, precisa de firstName, lastName, email, password
+      // Como não temos password aqui, pode ser enviado vazio ou não enviado
+      const [firstName = "", ...rest] = (profileData.name ?? "").split(" ")
+      const lastName = rest.join(" ")
+      updateAdminMutation.mutate({
+        path: { id: String(adminId) },
+        body: {
+          firstName,
+          lastName,
+          email: profileData.email,
+          password: ""
+        },
+      })
+      return
+    }
+    if (!trainerId) return
+    updateTrainerMutation.mutate({
+      path: { id: String(trainerId) },
+      body: { ...profileData },
+    })
+  }
+
+  const handleChangePassword = () => {
+    if (userRole === "admin") {
+      if (!adminId) return
+      if (newPassword !== confirmPassword) {
+        toast({
+          title: "Erro",
+          description: "As senhas não coincidem!",
+          variant: "destructive"
+        })
+        return
+      }
+      const [firstName = "", ...rest] = (profileData.name ?? "").split(" ")
+      const lastName = rest.join(" ")
+      updateAdminMutation.mutate({
+        path: { id: String(adminId) },
+        body: {
+          firstName,
+          lastName,
+          email: profileData.email,
+          password: newPassword
+        },
+      })
+      setNewPassword("")
+      setConfirmPassword("")
+      return
+    }
+    if (!trainerId) return
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Erro",
+        description: "As senhas não coincidem!",
+        variant: "destructive"
+      })
+      return
+    }
+    updateTrainerMutation.mutate({
+      path: { id: String(trainerId) },
+      body: { ...profileData, password: newPassword },
+    })
+    setNewPassword("")
+    setConfirmPassword("")
+  }
+
+  const isSaving = (updateAdminMutation.isPending || updateTrainerMutation.isPending)
+  const isLoading = isSaving || isChangingPassword || isLoadingAdminId || isLoadingTrainerId || isLoadingTrainer
 
   return (
     <Layout>
@@ -192,18 +337,22 @@ export default function ProfilePage() {
                   <Mail className="w-4 h-4 text-muted-foreground" />
                   <span>{profileData.email}</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="w-4 h-4 text-muted-foreground" />
-                  <span>{profileData.phone}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="w-4 h-4 text-muted-foreground" />
-                  <span>{profileData.address}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span>Desde {profileData.joinDate ? new Date(profileData.joinDate).toLocaleDateString('pt-BR') : ""}</span>
-                </div>
+                {userRole !== "admin" && (
+                  <>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="w-4 h-4 text-muted-foreground" />
+                      <span>{profileData.phone}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <MapPin className="w-4 h-4 text-muted-foreground" />
+                      <span>{profileData.address}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <Calendar className="w-4 h-4 text-muted-foreground" />
+                      <span>Desde {profileData.joinDate ? new Date(profileData.joinDate).toLocaleDateString('pt-BR') : ""}</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               {profileData.specialties.length > 0 && (
@@ -223,28 +372,11 @@ export default function ProfilePage() {
 
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {stats.map((stat, index) => (
-                <Card key={index}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
-                        <p className="text-xl font-bold">{stat.value}</p>
-                      </div>
-                      <stat.icon className="w-6 h-6 text-green-600" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
             {/* Profile Form */}
             <Tabs defaultValue="personal" className="space-y-4">
               <TabsList>
                 <TabsTrigger value="personal">Informações</TabsTrigger>
-                <TabsTrigger value="professional">Profissional</TabsTrigger>
+                {userRole !== "admin" && <TabsTrigger value="professional">Profissional</TabsTrigger>}
                 <TabsTrigger value="security">Segurança</TabsTrigger>
               </TabsList>
 
@@ -278,90 +410,87 @@ export default function ProfilePage() {
                           onChange={(e) => handleInputChange("email", e.target.value)}
                         />
                       </div>
+                      {userRole !== "admin" && <>
+                        <div className="space-y-2">
+                          <Label htmlFor="phone">Telefone</Label>
+                          <Input
+                            id="phone"
+                            value={profileData.phone}
+                            onChange={(e) => handleInputChange("phone", e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="birthDate">Data de Nascimento</Label>
+                          <Input
+                            id="birthDate"
+                            type="date"
+                            value={profileData.birthDate}
+                            onChange={(e) => handleInputChange("birthDate", e.target.value)}
+                          />
+                        </div>
+                      </>}
+                    </div>
+                    {userRole !== "admin" && (
                       <div className="space-y-2">
-                        <Label htmlFor="phone">Telefone</Label>
+                        <Label htmlFor="address">Endereço</Label>
                         <Input
-                          id="phone"
-                          value={profileData.phone}
-                          onChange={(e) => handleInputChange("phone", e.target.value)}
+                          id="address"
+                          value={profileData.address}
+                          onChange={(e) => handleInputChange("address", e.target.value)}
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="birthDate">Data de Nascimento</Label>
-                        <Input
-                          id="birthDate"
-                          type="date"
-                          value={profileData.birthDate}
-                          onChange={(e) => handleInputChange("birthDate", e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Endereço</Label>
-                      <Input
-                        id="address"
-                        value={profileData.address}
-                        onChange={(e) => handleInputChange("address", e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="bio">Biografia</Label>
-                      <Textarea
-                        id="bio"
-                        value={profileData.bio}
-                        onChange={(e) => handleInputChange("bio", e.target.value)}
-                        placeholder="Conte um pouco sobre você..."
-                        rows={4}
-                      />
-                    </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
 
-              <TabsContent value="professional">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Award className="w-5 h-5" />
-                      Profissional
-                    </CardTitle>
-                    <CardDescription>
-                      Gerencie suas informações profissionais
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="joinDate">Data de Contratação</Label>
-                        <Input
-                          id="joinDate"
-                          type="date"
-                          value={profileData.joinDate}
-                          onChange={(e) => handleInputChange("joinDate", e.target.value)}
-                          disabled
-                        />
+              {userRole !== "admin" && (
+                <TabsContent value="professional">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Award className="w-5 h-5" />
+                        Profissional
+                      </CardTitle>
+                      <CardDescription>
+                        Gerencie suas informações profissionais
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="joinDate">Data de Contratação</Label>
+                          <Input
+                            id="joinDate"
+                            type="date"
+                            value={profileData.joinDate}
+                            onChange={(e) => handleInputChange("joinDate", e.target.value)}
+                            disabled
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="role">Função</Label>
+                          <Input
+                            id="role"
+                            value={userRole === "admin" ? "Administrador" : "Professor"}
+                            disabled
+                          />
+                        </div>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="role">Função</Label>
+                        <Label htmlFor="specialties">Especialidades</Label>
                         <Input
-                          id="role"
-                          value={userRole === "admin" ? "Administrador" : "Professor"}
-                          disabled
+                          id="specialties"
+                          value={specialtiesInput}
+                          onChange={(e) => handleInputChange("specialties", e.target.value)}
+                          onBlur={handleSpecialtiesBlur}
+                          placeholder="Musculação, Pilates, Yoga..."
                         />
                       </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="specialties">Especialidades</Label>
-                      <Input
-                        id="specialties"
-                        value={profileData.specialties.join(', ')}
-                        onChange={(e) => handleInputChange("specialties", e.target.value)}
-                        placeholder="Musculação, Pilates, Yoga..."
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              )}
 
               <TabsContent value="security">
                 <Card>
@@ -380,6 +509,8 @@ export default function ProfilePage() {
                       <Input
                         id="currentPassword"
                         type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
                         placeholder="Digite sua senha atual"
                         value={currentPassword}
                         onChange={e => setCurrentPassword(e.target.value)}
@@ -402,6 +533,8 @@ export default function ProfilePage() {
                       <Input
                         id="confirmPassword"
                         type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Confirme sua nova senha"
                         value={confirmPassword}
                         onChange={e => setConfirmPassword(e.target.value)}
@@ -427,6 +560,7 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+      <Toaster />
     </Layout>
   )
 }
