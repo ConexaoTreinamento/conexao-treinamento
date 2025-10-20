@@ -229,6 +229,12 @@ export type UserResponseDto = {
     role?: 'ROLE_ADMIN' | 'ROLE_TRAINER' | 'ROLE_STUDENT';
 };
 
+export type ChangePasswordRequestDto = {
+    oldPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+};
+
 export type ListTrainersDto = {
     id?: string;
     name?: string;
@@ -303,8 +309,8 @@ export type SessionParticipant = {
     active?: boolean;
     exercises?: Array<ParticipantExercise>;
     present?: boolean;
-    excluded?: boolean;
     included?: boolean;
+    excluded?: boolean;
 };
 
 export type SessionUpdateRequestDto = {
@@ -509,6 +515,10 @@ export type PatchUserRoleRequestDto = {
     role?: 'ROLE_ADMIN' | 'ROLE_TRAINER' | 'ROLE_STUDENT';
 };
 
+export type ResetTrainerPasswordDto = {
+    newPassword: string;
+};
+
 export type ParticipantExerciseUpdateRequestDto = {
     setsCompleted?: number;
     repsCompleted?: number;
@@ -552,20 +562,20 @@ export type PageUserResponseDto = {
     size?: number;
     content?: Array<UserResponseDto>;
     number?: number;
+    sort?: SortObject;
+    numberOfElements?: number;
+    pageable?: PageableObject;
     first?: boolean;
     last?: boolean;
-    numberOfElements?: number;
-    sort?: SortObject;
-    pageable?: PageableObject;
     empty?: boolean;
 };
 
 export type PageableObject = {
     offset?: number;
     sort?: SortObject;
+    paged?: boolean;
     pageNumber?: number;
     pageSize?: number;
-    paged?: boolean;
     unpaged?: boolean;
 };
 
@@ -581,11 +591,11 @@ export type PageStudentResponseDto = {
     size?: number;
     content?: Array<StudentResponseDto>;
     number?: number;
+    sort?: SortObject;
+    numberOfElements?: number;
+    pageable?: PageableObject;
     first?: boolean;
     last?: boolean;
-    numberOfElements?: number;
-    sort?: SortObject;
-    pageable?: PageableObject;
     empty?: boolean;
 };
 
@@ -620,11 +630,11 @@ export type PageExerciseResponseDto = {
     size?: number;
     content?: Array<ExerciseResponseDto>;
     number?: number;
+    sort?: SortObject;
+    numberOfElements?: number;
+    pageable?: PageableObject;
     first?: boolean;
     last?: boolean;
-    numberOfElements?: number;
-    sort?: SortObject;
-    pageable?: PageableObject;
     empty?: boolean;
 };
 
@@ -659,11 +669,11 @@ export type PageListAdministratorsDto = {
     size?: number;
     content?: Array<ListAdministratorsDto>;
     number?: number;
+    sort?: SortObject;
+    numberOfElements?: number;
+    pageable?: PageableObject;
     first?: boolean;
     last?: boolean;
-    numberOfElements?: number;
-    sort?: SortObject;
-    pageable?: PageableObject;
     empty?: boolean;
 };
 
@@ -1066,6 +1076,20 @@ export type CreateUserResponses = {
 };
 
 export type CreateUserResponse = CreateUserResponses[keyof CreateUserResponses];
+
+export type ChangeOwnPasswordData = {
+    body: ChangePasswordRequestDto;
+    path?: never;
+    query?: never;
+    url: '/users/me/change-password';
+};
+
+export type ChangeOwnPasswordResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
 
 export type FindAllTrainersData = {
     body?: never;
@@ -1595,6 +1619,22 @@ export type PatchResponses = {
 
 export type PatchResponse = PatchResponses[keyof PatchResponses];
 
+export type ResetPasswordData = {
+    body: ResetTrainerPasswordDto;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/users/{id}/reset-password';
+};
+
+export type ResetPasswordResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
 export type RestoreStudentData = {
     body?: never;
     path: {
@@ -1728,7 +1768,7 @@ export type FindTrainerByUserIdData = {
         id: string;
     };
     query?: never;
-    url: '/trainers/userId/{id}';
+    url: '/trainers/user-profile/{id}';
 };
 
 export type FindTrainerByUserIdResponses = {
@@ -2044,6 +2084,24 @@ export type GetAvailableSessionSeriesResponses = {
 };
 
 export type GetAvailableSessionSeriesResponse = GetAvailableSessionSeriesResponses[keyof GetAvailableSessionSeriesResponses];
+
+export type FindAdministratorByUserIdData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/administrators/user-profile/{id}';
+};
+
+export type FindAdministratorByUserIdResponses = {
+    /**
+     * OK
+     */
+    200: ListAdministratorsDto;
+};
+
+export type FindAdministratorByUserIdResponse = FindAdministratorByUserIdResponses[keyof FindAdministratorByUserIdResponses];
 
 export type TestData = {
     body?: never;
