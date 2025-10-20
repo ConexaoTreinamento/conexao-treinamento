@@ -68,7 +68,7 @@ public class TrainerService {
 
         // Conditionally update password (optional)
         if (request.hasPassword()) {
-            userService.resetUserPassword(trainer.getUserId(), request.password());
+            userService.updateUserPassword(trainer.getUserId(), request.password());
         }
 
         // Update trainer fields
