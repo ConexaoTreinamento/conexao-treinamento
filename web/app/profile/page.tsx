@@ -12,7 +12,10 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Clock, Award } from 'lucide-react'
 import Layout from "@/components/layout"
-import { useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast"
+import { Toaster } from "@/components/ui/toaster"
+import { findTrainerByUserIdOptions, findTrainerByIdOptions, updateTrainerAndUserMutation, findAdministratorByUserIdOptions, updateAdministratorAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { apiClient } from "@/lib/client"
 import { changeOwnPasswordMutation } from "@/lib/api-client/@tanstack/react-query.gen";
 
 export default function ProfilePage() {
@@ -23,7 +26,6 @@ export default function ProfilePage() {
   const [userId, setUserId] = useState<string>("")
   const [userRole, setUserRole] = useState<string>("")
   const [userName, setUserName] = useState<string>("")
-  const [isLoading, setIsLoading] = useState(false)
   //const [isLoading, setIsLoading] = useState(false)
   const [specialtiesInput, setSpecialtiesInput] = useState("")
   const [currentPassword, setCurrentPassword] = useState("");
@@ -147,24 +149,17 @@ export default function ProfilePage() {
         specialties: [],
         avatar: "/placeholder.svg?height=100&width=100"
       })
-    } else {
-      fetch(`${apiUrl}/trainers/${id}`)
-        .then(res => res.json())
-        .then(data => setProfileData({
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          address: data.address,
-          birthDate: data.birthDate,
-          joinDate: data.createdAt,
-          bio: data.bio || "",
-          specialties: Array.isArray(data.specialties) ? data.specialties : [],
-          avatar: "/placeholder.svg?height=100&width=100"
-        }))
-        .catch(() => {
-          // Trate erro
-        })
-        .finally(() => setIsLoading(false));
+    } else if (trainerData) {
+      setProfileData({
+        name: trainerData.name ?? "",
+        email: trainerData.email ?? "",
+        phone: trainerData.phone ?? "",
+        address: trainerData.address ?? "",
+        birthDate: trainerData.birthDate ?? "",
+        joinDate: trainerData.joinDate ?? "",
+        specialties: trainerData.specialties ?? [],
+        avatar: "/placeholder.svg?height=100&width=100"
+      })
     }
   }, [userRole, trainerData, adminDataByUser])
 
@@ -200,17 +195,6 @@ export default function ProfilePage() {
       headers: {
         Authorization: `Bearer ${token}`
       }
-    });
-
-  };
-
-  const handleSave = async () => {
-    setIsLoading(true);
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-    await fetch(`${apiUrl}/trainers/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(profileData),
     });
 
   };
@@ -355,7 +339,7 @@ export default function ProfilePage() {
                 )}
               </div>
 
-              {profileData.specialties.length > 0 && (
+              {userRole !== "admin" && profileData.specialties.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-sm font-medium">Especialidades:</p>
                   <div className="flex flex-wrap gap-1">
@@ -512,21 +496,19 @@ export default function ProfilePage() {
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                         placeholder="Digite sua senha atual"
-                        value={currentPassword}
-                        onChange={e => setCurrentPassword(e.target.value)}
                         disabled={isChangingPassword}
                       />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="newPassword">Nova Senha</Label>
-                      <Input
-                        id="newPassword"
-                        type="password"
-                        placeholder="Digite sua nova senha"
-                        value={newPassword}
-                        onChange={e => setNewPassword(e.target.value)}
-                        disabled={isChangingPassword}
-                      />
+                        <Input
+                          id="newPassword"
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Digite sua nova senha"
+                          disabled={isLoading}
+                        />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
@@ -536,9 +518,7 @@ export default function ProfilePage() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Confirme sua nova senha"
-                        value={confirmPassword}
-                        onChange={e => setConfirmPassword(e.target.value)}
-                        disabled={isChangingPassword}
+                        disabled={isLoading}
                       />
                     </div>
                     {securityMessage.text && (
@@ -549,9 +529,9 @@ export default function ProfilePage() {
                     <Button
                       variant="outline"
                       onClick={handlePasswordSubmit}
-                      disabled={isChangingPassword}
+                      disabled={isLoading}
                     >
-                      {isChangingPassword ? "Alterando..." : "Alterar Senha"}
+                      {isLoading ? "Alterando..." : "Alterar Senha"}
                     </Button>
                   </CardContent>
                 </Card>
