@@ -58,6 +58,7 @@ public interface ScheduledSessionRepository extends JpaRepository<ScheduledSessi
                AND sp.participation_type = 'INCLUDED'
                AND sp.active = true
                AND sp.deleted_at IS NULL
+               AND sp.is_present = true
        ),
        materialized_events AS (
            -- Only events that have at least one participant and have already ended
@@ -74,6 +75,7 @@ public interface ScheduledSessionRepository extends JpaRepository<ScheduledSessi
                AND e.deleted_at IS NULL
                AND e.start_time IS NOT NULL
                AND e.end_time IS NOT NULL
+               AND COALESCE(ep.present, false) = true
        ),
        combined_activities AS (
            SELECT * FROM materialized_sessions
@@ -90,6 +92,7 @@ public interface ScheduledSessionRepository extends JpaRepository<ScheduledSessi
            WHERE sp.participation_type = 'INCLUDED'
                AND sp.active = true
                AND sp.deleted_at IS NULL
+               AND sp.is_present = true
            
            UNION
            
@@ -99,6 +102,7 @@ public interface ScheduledSessionRepository extends JpaRepository<ScheduledSessi
                ep.student_id
            FROM materialized_events me
            INNER JOIN event_participants ep ON me.id = ep.event_id
+           WHERE COALESCE(ep.present, false) = true
        ),
        aggregated_activities AS (
            SELECT 
