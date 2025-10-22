@@ -66,6 +66,17 @@ function SchedulePageContent() {
     setUserRole(role)
   }, [])
 
+  const invalidateReportsQueries = () => {
+    qc.invalidateQueries({
+      predicate: (query) => {
+        const key = query.queryKey
+        if (!Array.isArray(key) || key.length === 0) return false
+        const root = key[0]
+        return typeof root === "object" && root !== null && (root as { _id?: string })._id === "getReports"
+      }
+    })
+  }
+
   // State now derived from search params, no sync needed
 
   // Helper to push month/day into URL without scroll jump
@@ -200,6 +211,7 @@ function SchedulePageContent() {
       const recentEnd = formatLocalDate(today)
       const recentStart = formatLocalDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7))
       await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: recentStart, endDate: recentEnd } }) })
+      invalidateReportsQueries()
       setIsNewClassOpen(false)
     } catch {
       // No local fallback: rely only on backend state
