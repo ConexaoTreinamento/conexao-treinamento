@@ -99,20 +99,34 @@ public interface ScheduledSessionRepository extends JpaRepository<ScheduledSessi
                ep.student_id
            FROM materialized_events me
            INNER JOIN event_participants ep ON me.id = ep.event_id
+       ),
+       aggregated_activities AS (
+           SELECT 
+               trainer_id,
+               SUM(EXTRACT(EPOCH FROM (end_time - start_time)) / 3600.0) AS total_hours,
+               COUNT(*) AS activity_count
+           FROM combined_activities
+           GROUP BY trainer_id
+       ),
+       aggregated_participants AS (
+           SELECT
+               trainer_id,
+               COUNT(DISTINCT student_id) AS unique_students
+           FROM activity_participants
+           GROUP BY trainer_id
        )
        SELECT 
            t.id,
            t.name,
-           COALESCE(ROUND(CAST(SUM(EXTRACT(EPOCH FROM (ca.end_time - ca.start_time)) / 3600.0) AS numeric), 2), 0.0) as hours_worked,
-           COALESCE(CAST(COUNT(DISTINCT ca.id) AS integer), 0) as total_activities,
-           COALESCE(CAST(COUNT(DISTINCT ap.student_id) AS integer), 0) as unique_students,
+           COALESCE(ROUND(CAST(aa.total_hours AS numeric), 2), 0.0) as hours_worked,
+           COALESCE(CAST(aa.activity_count AS integer), 0) as total_activities,
+           COALESCE(CAST(ap.unique_students AS integer), 0) as unique_students,
            t.compensation_type,
            t.specialties
        FROM trainers t
-       LEFT JOIN combined_activities ca ON t.id = ca.trainer_id
-       LEFT JOIN activity_participants ap ON t.id = ap.trainer_id
+       LEFT JOIN aggregated_activities aa ON t.id = aa.trainer_id
+       LEFT JOIN aggregated_participants ap ON t.id = ap.trainer_id
        WHERE (:trainerId IS NULL OR t.id = CAST(:trainerId AS uuid))
-       GROUP BY t.id, t.name, t.compensation_type, t.specialties
        ORDER BY t.name
        """, nativeQuery = true)
    List<Object[]> findTrainerReportsRaw(
