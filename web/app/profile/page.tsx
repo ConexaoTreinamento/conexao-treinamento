@@ -14,7 +14,7 @@ import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Clock, Award } from 
 import Layout from "@/components/layout"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
-import { findTrainerByUserIdOptions, findTrainerByIdOptions, updateTrainerAndUserMutation, findAdministratorByUserIdOptions, updateAdministratorAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { findTrainerByUserIdOptions, findTrainerByIdOptions, updateTrainerAndUserMutation, findAdministratorByUserIdOptions, patchAdministratorMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { changeOwnPasswordMutation } from "@/lib/api-client/@tanstack/react-query.gen";
 
@@ -85,7 +85,7 @@ export default function ProfilePage() {
   const adminId = adminDataByUser?.id
 
   const updateAdminMutation = useMutation({
-    ...updateAdministratorAndUserMutation({
+    ...patchAdministratorMutation({
       client: apiClient,
     }),
     onSuccess: () => {
@@ -222,7 +222,6 @@ export default function ProfilePage() {
           firstName,
           lastName,
           email: profileData.email,
-          password: ""
         },
       })
       return
@@ -253,7 +252,6 @@ export default function ProfilePage() {
           firstName,
           lastName,
           email: profileData.email,
-          password: newPassword
         },
       })
       setNewPassword("")

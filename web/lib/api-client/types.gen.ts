@@ -46,6 +46,57 @@ export type TrainerScheduleResponseDto = {
     weekdayName?: string;
 };
 
+export type CircumferencesDto = {
+    rightArmRelaxed?: number;
+    leftArmRelaxed?: number;
+    rightArmFlexed?: number;
+    leftArmFlexed?: number;
+    waist?: number;
+    abdomen?: number;
+    hip?: number;
+    rightThigh?: number;
+    leftThigh?: number;
+    rightCalf?: number;
+    leftCalf?: number;
+};
+
+export type DiametersDto = {
+    umerus?: number;
+    femur?: number;
+};
+
+export type PhysicalEvaluationRequestDto = {
+    weight: number;
+    height: number;
+    circumferences?: CircumferencesDto;
+    subcutaneousFolds?: SubcutaneousFoldsDto;
+    diameters?: DiametersDto;
+};
+
+export type SubcutaneousFoldsDto = {
+    triceps?: number;
+    thorax?: number;
+    subaxillary?: number;
+    subscapular?: number;
+    abdominal?: number;
+    suprailiac?: number;
+    thigh?: number;
+};
+
+export type PhysicalEvaluationResponseDto = {
+    id?: string;
+    studentId?: string;
+    date?: string;
+    weight?: number;
+    height?: number;
+    bmi?: number;
+    circumferences?: CircumferencesDto;
+    subcutaneousFolds?: SubcutaneousFoldsDto;
+    diameters?: DiametersDto;
+    createdAt?: string;
+    updatedAt?: string;
+};
+
 export type AnamnesisRequestDto = {
     medication?: string;
     isDoctorAwareOfPhysicalActivity?: boolean;
@@ -547,7 +598,6 @@ export type PatchAdministratorRequestDto = {
     firstName?: string;
     lastName?: string;
     email?: string;
-    password?: string;
 };
 
 export type Pageable = {
@@ -557,25 +607,25 @@ export type Pageable = {
 };
 
 export type PageUserResponseDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
+    first?: boolean;
+    last?: boolean;
     size?: number;
     content?: Array<UserResponseDto>;
     number?: number;
     sort?: SortObject;
     numberOfElements?: number;
     pageable?: PageableObject;
-    first?: boolean;
-    last?: boolean;
     empty?: boolean;
 };
 
 export type PageableObject = {
     offset?: number;
     sort?: SortObject;
-    paged?: boolean;
     pageNumber?: number;
     pageSize?: number;
+    paged?: boolean;
     unpaged?: boolean;
 };
 
@@ -586,16 +636,16 @@ export type SortObject = {
 };
 
 export type PageStudentResponseDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
+    first?: boolean;
+    last?: boolean;
     size?: number;
     content?: Array<StudentResponseDto>;
     number?: number;
     sort?: SortObject;
     numberOfElements?: number;
     pageable?: PageableObject;
-    first?: boolean;
-    last?: boolean;
     empty?: boolean;
 };
 
@@ -625,16 +675,16 @@ export type TrainerReportDto = {
 };
 
 export type PageExerciseResponseDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
+    first?: boolean;
+    last?: boolean;
     size?: number;
     content?: Array<ExerciseResponseDto>;
     number?: number;
     sort?: SortObject;
     numberOfElements?: number;
     pageable?: PageableObject;
-    first?: boolean;
-    last?: boolean;
     empty?: boolean;
 };
 
@@ -664,16 +714,16 @@ export type TrainerSchedule = {
 };
 
 export type PageListAdministratorsDto = {
-    totalElements?: number;
     totalPages?: number;
+    totalElements?: number;
+    first?: boolean;
+    last?: boolean;
     size?: number;
     content?: Array<ListAdministratorsDto>;
     number?: number;
     sort?: SortObject;
     numberOfElements?: number;
     pageable?: PageableObject;
-    first?: boolean;
-    last?: boolean;
     empty?: boolean;
 };
 
@@ -780,6 +830,58 @@ export type UpdateScheduleResponses = {
 };
 
 export type UpdateScheduleResponse = UpdateScheduleResponses[keyof UpdateScheduleResponses];
+
+export type DeleteEvaluationData = {
+    body?: never;
+    path: {
+        evaluationId: string;
+    };
+    query?: never;
+    url: '/students/{studentId}/evaluations/{evaluationId}';
+};
+
+export type DeleteEvaluationResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetEvaluationData = {
+    body?: never;
+    path: {
+        evaluationId: string;
+    };
+    query?: never;
+    url: '/students/{studentId}/evaluations/{evaluationId}';
+};
+
+export type GetEvaluationResponses = {
+    /**
+     * OK
+     */
+    200: PhysicalEvaluationResponseDto;
+};
+
+export type GetEvaluationResponse = GetEvaluationResponses[keyof GetEvaluationResponses];
+
+export type UpdateEvaluationData = {
+    body: PhysicalEvaluationRequestDto;
+    path: {
+        evaluationId: string;
+    };
+    query?: never;
+    url: '/students/{studentId}/evaluations/{evaluationId}';
+};
+
+export type UpdateEvaluationResponses = {
+    /**
+     * OK
+     */
+    200: PhysicalEvaluationResponseDto;
+};
+
+export type UpdateEvaluationResponse = UpdateEvaluationResponses[keyof UpdateEvaluationResponses];
 
 export type DeleteStudentData = {
     body?: never;
@@ -1196,6 +1298,42 @@ export type CreateStudentResponses = {
 };
 
 export type CreateStudentResponse = CreateStudentResponses[keyof CreateStudentResponses];
+
+export type GetAllEvaluationsData = {
+    body?: never;
+    path: {
+        studentId: string;
+    };
+    query?: never;
+    url: '/students/{studentId}/evaluations';
+};
+
+export type GetAllEvaluationsResponses = {
+    /**
+     * OK
+     */
+    200: Array<PhysicalEvaluationResponseDto>;
+};
+
+export type GetAllEvaluationsResponse = GetAllEvaluationsResponses[keyof GetAllEvaluationsResponses];
+
+export type CreateEvaluationData = {
+    body: PhysicalEvaluationRequestDto;
+    path: {
+        studentId: string;
+    };
+    query?: never;
+    url: '/students/{studentId}/evaluations';
+};
+
+export type CreateEvaluationResponses = {
+    /**
+     * OK
+     */
+    200: PhysicalEvaluationResponseDto;
+};
+
+export type CreateEvaluationResponse = CreateEvaluationResponses[keyof CreateEvaluationResponses];
 
 export type GetSessionData = {
     body?: never;
