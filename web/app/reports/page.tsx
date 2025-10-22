@@ -379,66 +379,126 @@ export default function ReportsPage() {
             <CardDescription>Detalhamento de horas trabalhadas e aulas ministradas por professor</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3">Professor</th>
-                    <th className="text-left p-3">Horas Trabalhadas</th>
-                    <th className="text-left p-3">Aulas Ministradas</th>
-                    <th className="text-left p-3">Alunos</th>
-                    <th className="text-left p-3">Regime</th>
-                    <th className="text-left p-3">Especialidades</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {isLoading ? (
-                    <tr>
-                      <td colSpan={6} className="p-6 text-center text-muted-foreground">
-                        <Loader2 className="w-5 h-5 animate-spin mx-auto" />
-                      </td>
-                    </tr>
-                  ) : filteredReports.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="p-6 text-center text-muted-foreground">
-                        Nenhum dado disponível para os filtros selecionados.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredReports.map((trainer) => {
-                      const name = trainer?.name ?? "Professor"
-                      const initials = name
-                        .replace("Prof.", "")
-                        .split(" ")
-                        .filter(Boolean)
-                        .map((n) => n[0])
-                        .join("")
-                        .toUpperCase()
+            {isLoading ? (
+              <div className="flex justify-center py-6">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : filteredReports.length === 0 ? (
+              <p className="p-6 text-center text-sm text-muted-foreground">
+                Nenhum dado disponível para os filtros selecionados.
+              </p>
+            ) : (
+              <>
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-3">Professor</th>
+                        <th className="text-left p-3">Horas Trabalhadas</th>
+                        <th className="text-left p-3">Aulas Ministradas</th>
+                        <th className="text-left p-3">Alunos</th>
+                        <th className="text-left p-3">Regime</th>
+                        <th className="text-left p-3">Especialidades</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredReports.map((trainer) => {
+                        const name = trainer?.name ?? "Professor"
+                        const initials = name
+                          .replace("Prof.", "")
+                          .split(" ")
+                          .filter(Boolean)
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()
 
-                      return (
-                        <tr key={trainer?.id ?? name} className="border-b hover:bg-muted/50">
-                          <td className="p-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-                                <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
-                                  {initials || "?"}
-                                </span>
+                        return (
+                          <tr key={trainer?.id ?? name} className="border-b hover:bg-muted/50">
+                            <td className="p-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                                  <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
+                                    {initials || "?"}
+                                  </span>
+                                </div>
+                                <span className="font-medium">{name}</span>
                               </div>
-                              <span className="font-medium">{name}</span>
-                            </div>
-                          </td>
-                          <td className="p-3 font-medium">{formatNumber(trainer?.hoursWorked ?? 0, 1)}h</td>
-                          <td className="p-3 font-medium">{formatNumber(trainer?.classesGiven ?? 0)}</td>
-                          <td className="p-3 font-medium">{formatNumber(trainer?.studentsManaged ?? 0)}</td>
-                          <td className="p-3">
-                            <Badge className="bg-muted text-xs font-medium">
+                            </td>
+                            <td className="p-3 font-medium">{formatNumber(trainer?.hoursWorked ?? 0, 1)}h</td>
+                            <td className="p-3 font-medium">{formatNumber(trainer?.classesGiven ?? 0)}</td>
+                            <td className="p-3 font-medium">{formatNumber(trainer?.studentsManaged ?? 0)}</td>
+                            <td className="p-3">
+                              <Badge className="bg-muted text-xs font-medium">
+                                {formatCompensation(trainer?.compensation)}
+                              </Badge>
+                            </td>
+                            <td className="p-3">
+                              <div className="flex flex-wrap gap-1">
+                                {(trainer?.specialties ?? []).map((specialty, idx) => (
+                                  <Badge key={`${trainer?.id ?? name}-${idx}`} variant="outline" className="text-xs">
+                                    {specialty}
+                                  </Badge>
+                                ))}
+                                {(trainer?.specialties?.length ?? 0) === 0 && (
+                                  <span className="text-xs text-muted-foreground">—</span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="grid gap-4 sm:hidden">
+                  {filteredReports.map((trainer) => {
+                    const name = trainer?.name ?? "Professor"
+                    const initials = name
+                      .replace("Prof.", "")
+                      .split(" ")
+                      .filter(Boolean)
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase()
+
+                    return (
+                      <div
+                        key={trainer?.id ?? name}
+                        className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 space-y-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                            <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
+                              {initials || "?"}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-semibold leading-tight">{name}</p>
+                            <p className="text-xs text-muted-foreground">
                               {formatCompensation(trainer?.compensation)}
-                            </Badge>
-                          </td>
-                          <td className="p-3">
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="space-y-1">
+                            <p className="text-muted-foreground">Horas</p>
+                            <p className="font-semibold">{formatNumber(trainer?.hoursWorked ?? 0, 1)}h</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-muted-foreground">Aulas</p>
+                            <p className="font-semibold">{formatNumber(trainer?.classesGiven ?? 0)}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-muted-foreground">Alunos</p>
+                            <p className="font-semibold">{formatNumber(trainer?.studentsManaged ?? 0)}</p>
+                          </div>
+                          <div className="space-y-1 col-span-2">
+                            <p className="text-muted-foreground">Especialidades</p>
                             <div className="flex flex-wrap gap-1">
                               {(trainer?.specialties ?? []).map((specialty, idx) => (
-                                <Badge key={`${trainer?.id ?? name}-${idx}`} variant="outline" className="text-xs">
+                                <Badge key={`${trainer?.id ?? name}-mobile-${idx}`} variant="outline" className="text-xs">
                                   {specialty}
                                 </Badge>
                               ))}
@@ -446,14 +506,14 @@ export default function ReportsPage() {
                                 <span className="text-xs text-muted-foreground">—</span>
                               )}
                             </div>
-                          </td>
-                        </tr>
-                      )
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -481,13 +541,16 @@ export default function ReportsPage() {
                     ? percentage.toFixed(1).replace(/\.0$/, "")
                     : "0"
                   return (
-                    <div key={`${profile?.ageRange ?? index}`} className="flex items-center justify-between">
+                    <div
+                      key={`${profile?.ageRange ?? index}`}
+                      className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                    >
                       <div className="flex items-center gap-3">
                         <div className="w-4 h-4 bg-green-600 rounded" />
                         <span className="font-medium">{profile?.ageRange ?? "Faixa etária"}</span>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-32 bg-muted rounded-full h-2">
+                      <div className="flex items-center gap-3 sm:min-w-[220px]">
+                        <div className="w-full sm:w-32 bg-muted rounded-full h-2">
                           <div
                             className="bg-green-600 h-2 rounded-full"
                             style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
