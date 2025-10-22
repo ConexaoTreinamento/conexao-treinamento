@@ -50,6 +50,10 @@ export default function EventDetailPage() {
         predicate: (query) =>
           Array.isArray(query.queryKey) && query.queryKey[0]?._id === "findAllEvents",
       }),
+      queryClient.invalidateQueries({
+        predicate: (query) =>
+          Array.isArray(query.queryKey) && query.queryKey[0]?._id === "getReports",
+      }),
     ])
   }, [eventId, queryClient])
 
