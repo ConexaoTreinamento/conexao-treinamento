@@ -145,7 +145,7 @@ function SchedulePageContent() {
   }, [trainersQuery.data])
 
   // Create one-off session (backend)
-  const mCreateOneOff = useMutation(createOneOffSessionMutation())
+  const mCreateOneOff = useMutation(createOneOffSessionMutation({ client: apiClient }))
 
   // Build all days for selected month
   const monthDays = useMemo(()=> {

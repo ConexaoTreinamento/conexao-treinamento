@@ -21,6 +21,7 @@ import Layout from "@/components/layout"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { findAllAdministratorsOptions, createAdministratorAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { ListAdministratorsDto, CreateAdministratorAndUserData } from "@/lib/api-client/types.gen"
+import { apiClient } from "@/lib/client";
 
 interface FormData {
   firstName: string;
@@ -68,13 +69,13 @@ export default function AdministratorsPage() {
 
   // Usando React Query para buscar administradores
   const { data: administrators = [], isLoading } = useQuery({
-    ...findAllAdministratorsOptions({}),
+    ...findAllAdministratorsOptions({client: apiClient}),
     enabled: userRole === "admin"
   })
 
   // Mutation para criar administrador
   const createAdministrator = useMutation({
-    ...createAdministratorAndUserMutation({}),
+    ...createAdministratorAndUserMutation({client: apiClient}),
     onSuccess: () => {
       setShowSuccess(true)
       resetForm()
@@ -378,7 +379,10 @@ export default function AdministratorsPage() {
               </Card>
             ) : (
               filteredAdministrators.map((admin) => (
-                <Card key={admin.id} className="hover:shadow-md transition-shadow">
+                <Card key={admin.id} 
+                  className="hover:shadow-md transition-shadow cursor-pointer" 
+                  onClick={() => router.push(`/administrators/${admin.id}`)}
+                > 
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">

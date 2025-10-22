@@ -31,7 +31,7 @@ export default function EditExerciseModal({ isOpen, onClose, exercise }: EditExe
     const queryClient = useQueryClient();
 
     const { mutateAsync: editExercise, isPending: isEditing } = useMutation(
-        patchExerciseMutation()
+        patchExerciseMutation({ client: apiClient })
     )
     // Preenche os dados iniciais quando abrir o modal
     useEffect(() => {

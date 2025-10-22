@@ -18,7 +18,7 @@ export default function HomePage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const router = useRouter()
-  const { mutateAsync: login, isPending: isLoading } = useMutation(loginMutation());
+  const { mutateAsync: login, isPending: isLoading } = useMutation(loginMutation({client: apiClient}));
 
   useEffect(() => {
     const userRole = localStorage.getItem("userRole")
@@ -37,6 +37,7 @@ export default function HomePage() {
     if (payload.role && result.token) {
       localStorage.setItem("userRole", getRoleName(payload.role))
       localStorage.setItem("token", result.token)
+      localStorage.setItem("userId", payload.userId)
       router.push("/schedule")
     }
   }

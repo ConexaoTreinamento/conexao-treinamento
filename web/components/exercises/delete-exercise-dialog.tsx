@@ -28,7 +28,7 @@ export function DeleteExerciseDialog({
   const queryClient = useQueryClient()
 
   const { mutateAsync: deleteExercise, isPending: isDeleting } = useMutation(
-    deleteExerciseMutation()
+    deleteExerciseMutation({ client: apiClient })
   )
   const handleConfirm = async () => {
     try {

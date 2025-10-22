@@ -19,7 +19,7 @@ export default function TrainerProfilePage() {
   const router = useRouter()
   const params = useParams()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerAndUserMutation())
+  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerAndUserMutation({ client: apiClient }));
   const { toast } = useToast()
 
   const queryClient = useQueryClient();
@@ -150,7 +150,9 @@ export default function TrainerProfilePage() {
               <div className="space-y-2">
                 <CardTitle className="text-lg">{trainerData.name}</CardTitle>
                 <div className="flex flex-wrap justify-center gap-2">
-                  <Badge className={getStatusColor(trainerData.active!)}>{trainerData.active!}</Badge>
+                  <Badge className={getStatusColor(trainerData.active!)}>
+                    {trainerData.active ? "Ativo" : "Inativo"}
+                  </Badge>
                   <Badge className={getCompensationColor(trainerData.compensationType!)}>{trainerData.compensationType === "MONTHLY" ? "Mensalist" : "Horista"}</Badge>
                 </div>
               </div>

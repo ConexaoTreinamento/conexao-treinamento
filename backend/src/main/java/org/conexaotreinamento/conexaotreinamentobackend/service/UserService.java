@@ -3,10 +3,12 @@ package org.conexaotreinamento.conexaotreinamentobackend.service;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.ChangePasswordRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchUserRoleRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
+import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -105,7 +107,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponseDTO updateUserPassword(UUID userId, String newPassword) {
+    public UserResponseDTO resetUserPassword(UUID userId, String newPassword) {
         if (newPassword == null || newPassword.trim().isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
         }
@@ -113,9 +115,31 @@ public class UserService {
         User user = userRepository.findByIdAndDeletedAtIsNull(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
+        if (!user.getRole().equals(Role.ROLE_TRAINER)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only trainers can have their password reset by this endpoint.");
+        }
+
         user.setPassword(passwordEncoder.encode(newPassword));
 
         User savedUser = userRepository.save(user);
         return UserResponseDTO.fromEntity(savedUser);
+    }
+
+    @Transactional
+    public UserResponseDTO changeOwnPassword(UUID currentUserId, ChangePasswordRequestDTO request) {
+        if (!request.newPassword().equals(request.confirmPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The new password and confirm password do not match.");
+        }
+
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
+
+        if (!passwordEncoder.matches(request.oldPassword(), user.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The old password is incorrect.");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.newPassword()));
+
+        return UserResponseDTO.fromEntity(user);
     }
 }
