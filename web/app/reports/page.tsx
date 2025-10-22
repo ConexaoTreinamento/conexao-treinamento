@@ -10,6 +10,7 @@ import { Users, Clock, Calendar, Search, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import { useQuery } from "@tanstack/react-query"
+import { Controller, useForm } from "react-hook-form"
 import { apiClient } from "@/lib/client"
 import { getReportsOptions, getTrainersForLookupOptions } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { AgeDistributionDto, TrainerLookupDto, TrainerReportDto } from "@/lib/api-client/types.gen"
@@ -19,6 +20,13 @@ type PeriodKey = "week" | "month" | "quarter" | "year" | "custom"
 type CustomRange = {
   start: string
   end: string
+}
+
+type ReportsFiltersForm = {
+  searchTerm: string
+  trainerId: string
+  period: PeriodKey
+  customRange: CustomRange
 }
 
 const formatDateInput = (date: Date) => {
@@ -101,11 +109,21 @@ const formatNumber = (value: number, maximumFractionDigits = 0) =>
   new Intl.NumberFormat("pt-BR", { maximumFractionDigits }).format(value)
 
 export default function ReportsPage() {
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>("month")
-  const [customRange, setCustomRange] = useState<CustomRange>({ start: "", end: "" })
-  const [selectedTrainer, setSelectedTrainer] = useState<string>("all")
-  const [searchTerm, setSearchTerm] = useState("")
   const [userRole, setUserRole] = useState<string>("")
+  const { control, watch, setValue, getValues } = useForm<ReportsFiltersForm>({
+    mode: "onChange",
+    defaultValues: {
+      searchTerm: "",
+      trainerId: "all",
+      period: "month",
+      customRange: { start: "", end: "" },
+    },
+  })
+
+  const selectedPeriod = (watch("period") ?? "month") as PeriodKey
+  const watchedCustomRange = watch("customRange") ?? { start: "", end: "" }
+  const selectedTrainer = watch("trainerId") ?? "all"
+  const searchTerm = watch("searchTerm") ?? ""
   const router = useRouter()
 
   useEffect(() => {
@@ -117,48 +135,62 @@ export default function ReportsPage() {
     }
   }, [router])
 
-  const periodRange = useMemo(() => computePeriodRange(selectedPeriod, customRange), [selectedPeriod, customRange])
+  const customRangeStart = watchedCustomRange.start
+  const customRangeEnd = watchedCustomRange.end
+
+  const periodRange = useMemo(
+    () => computePeriodRange(selectedPeriod, watchedCustomRange),
+    [selectedPeriod, customRangeStart, customRangeEnd]
+  )
 
   const customRangeError = useMemo(() => {
-    if (selectedPeriod !== "custom" || !customRange.start || !customRange.end) {
+    if (selectedPeriod !== "custom" || !customRangeStart || !customRangeEnd) {
       return false
     }
 
-    const startDate = createDateFromInput(customRange.start)
-    const endDate = createDateFromInput(customRange.end)
+    const startDate = createDateFromInput(customRangeStart)
+    const endDate = createDateFromInput(customRangeEnd)
 
     if (!startDate || !endDate) return false
 
     return startDate > endDate
-  }, [customRange.end, customRange.start, selectedPeriod])
+  }, [customRangeEnd, customRangeStart, selectedPeriod])
 
-  const handlePeriodChange = (value: string) => {
+  const handlePeriodSelect = (value: string, onChange: (value: PeriodKey) => void) => {
     const period = value as PeriodKey
-    setSelectedPeriod(period)
+    onChange(period)
 
     if (period === "custom") {
-      setCustomRange((previous) => {
-        if (previous.start && previous.end) {
-          return previous
-        }
+      const currentRange = getValues("customRange")
+      if (currentRange?.start && currentRange?.end) {
+        return
+      }
 
-        const now = new Date()
-        const start = new Date(now)
-        start.setDate(now.getDate() - 6)
+      const now = new Date()
+      const start = new Date(now)
+      start.setDate(now.getDate() - 6)
 
-        return {
+      setValue(
+        "customRange",
+        {
           start: formatDateInput(start),
           end: formatDateInput(now),
-        }
-      })
+        },
+        { shouldDirty: true, shouldValidate: true }
+      )
     }
   }
 
   const handleCustomRangeChange = (key: keyof CustomRange, value: string) => {
-    setCustomRange((previous) => ({
-      ...previous,
-      [key]: value,
-    }))
+    const currentRange = getValues("customRange") ?? { start: "", end: "" }
+    setValue(
+      "customRange",
+      {
+        ...currentRange,
+        [key]: value,
+      },
+      { shouldDirty: true, shouldValidate: true }
+    )
   }
 
   const reportsQuery = useQuery({
@@ -194,9 +226,9 @@ export default function ReportsPage() {
       trainerOptions.length > 0 &&
       !trainerOptions.some((trainer) => trainer.id === selectedTrainer)
     ) {
-      setSelectedTrainer("all")
+      setValue("trainerId", "all")
     }
-  }, [trainerOptions, selectedTrainer])
+  }, [selectedTrainer, setValue, trainerOptions])
 
   const trainerReports = useMemo<TrainerReportDto[]>(
     () => (reportsQuery.data?.trainerReports ?? []) as TrainerReportDto[],
@@ -246,42 +278,66 @@ export default function ReportsPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Buscar professor..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+          <Controller
+            control={control}
+            name="searchTerm"
+            render={({ field }) => (
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder="Buscar professor..."
+                  className="pl-10"
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                  ref={field.ref}
+                />
+              </div>
+            )}
+          />
 
-          <Select value={selectedTrainer} onValueChange={setSelectedTrainer}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Todos os professores" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os professores</SelectItem>
-              {trainerOptions.map((trainer) => (
-                <SelectItem key={trainer.id} value={trainer.id}>
-                  {trainer.name ?? "Nome não informado"}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Controller
+            control={control}
+            name="trainerId"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Todos os professores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os professores</SelectItem>
+                  {trainerOptions.map((trainer) => (
+                    <SelectItem key={trainer.id} value={trainer.id}>
+                      {trainer.name ?? "Nome não informado"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
 
-          <Select value={selectedPeriod} onValueChange={handlePeriodChange}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Período" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="week">Esta Semana</SelectItem>
-              <SelectItem value="month">Este Mês</SelectItem>
-              <SelectItem value="quarter">Este Trimestre</SelectItem>
-              <SelectItem value="year">Este Ano</SelectItem>
-              <SelectItem value="custom">Intervalo Personalizado</SelectItem>
-            </SelectContent>
-          </Select>
+          <Controller
+            control={control}
+            name="period"
+            render={({ field }) => (
+              <Select
+                value={field.value}
+                onValueChange={(value) => handlePeriodSelect(value, field.onChange)}
+              >
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="week">Esta Semana</SelectItem>
+                  <SelectItem value="month">Este Mês</SelectItem>
+                  <SelectItem value="quarter">Este Trimestre</SelectItem>
+                  <SelectItem value="year">Este Ano</SelectItem>
+                  <SelectItem value="custom">Intervalo Personalizado</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
 
         {selectedPeriod === "custom" && (
@@ -291,8 +347,8 @@ export default function ReportsPage() {
               <Input
                 id="reports-custom-start"
                 type="date"
-                value={customRange.start}
-                max={customRange.end || undefined}
+                value={customRangeStart}
+                max={customRangeEnd || undefined}
                 onChange={(event) => handleCustomRangeChange("start", event.target.value)}
               />
             </div>
@@ -301,12 +357,12 @@ export default function ReportsPage() {
               <Input
                 id="reports-custom-end"
                 type="date"
-                value={customRange.end}
-                min={customRange.start || undefined}
+                value={customRangeEnd}
+                min={customRangeStart || undefined}
                 onChange={(event) => handleCustomRangeChange("end", event.target.value)}
               />
             </div>
-            {(!customRange.start || !customRange.end || customRangeError) && (
+            {(!customRangeStart || !customRangeEnd || customRangeError) && (
               <p
                 className={`text-sm sm:col-span-2 ${customRangeError ? "text-destructive" : "text-muted-foreground"}`}
               >
