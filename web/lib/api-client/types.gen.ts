@@ -360,8 +360,8 @@ export type SessionParticipant = {
     active?: boolean;
     exercises?: Array<ParticipantExercise>;
     present?: boolean;
-    included?: boolean;
     excluded?: boolean;
+    included?: boolean;
 };
 
 export type SessionUpdateRequestDto = {
