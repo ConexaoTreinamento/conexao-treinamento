@@ -4,18 +4,63 @@ import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Users, Clock, Calendar, Search, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import { useQuery } from "@tanstack/react-query"
+import { Controller, useForm } from "react-hook-form"
 import { apiClient } from "@/lib/client"
 import { getReportsOptions, getTrainersForLookupOptions } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { AgeDistributionDto, TrainerLookupDto, TrainerReportDto } from "@/lib/api-client/types.gen"
 
-type PeriodKey = "week" | "month" | "quarter" | "year"
+type PeriodKey = "week" | "month" | "quarter" | "year" | "custom"
 
-const computePeriodRange = (period: PeriodKey) => {
+type CustomRange = {
+  start: string
+  end: string
+}
+
+type ReportsFiltersForm = {
+  searchTerm: string
+  trainerId: string
+  period: PeriodKey
+  customRange: CustomRange
+}
+
+const formatDateInput = (date: Date) => {
+  const year = date.getFullYear()
+  const month = `${date.getMonth() + 1}`.padStart(2, "0")
+  const day = `${date.getDate()}`.padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
+const createDateFromInput = (value: string, endOfDay = false) => {
+  if (!value) return null
+  const [year, month, day] = value.split("-").map(Number)
+  if (!year || !month || !day) return null
+  if (endOfDay) {
+    return new Date(year, month - 1, day, 23, 59, 59, 999)
+  }
+  return new Date(year, month - 1, day, 0, 0, 0, 0)
+}
+
+const computePeriodRange = (period: PeriodKey, customRange?: CustomRange) => {
+  if (period === "custom") {
+    const startDate = customRange?.start ? createDateFromInput(customRange.start, false) : null
+    const endDate = customRange?.end ? createDateFromInput(customRange.end, true) : null
+
+    if (!startDate || !endDate || startDate > endDate) {
+      return { start: "", end: "" }
+    }
+
+    return {
+      start: startDate.toISOString(),
+      end: endDate.toISOString(),
+    }
+  }
+
   const now = new Date()
   const start = new Date(now)
   const end = new Date(now)
@@ -64,10 +109,21 @@ const formatNumber = (value: number, maximumFractionDigits = 0) =>
   new Intl.NumberFormat("pt-BR", { maximumFractionDigits }).format(value)
 
 export default function ReportsPage() {
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>("month")
-  const [selectedTrainer, setSelectedTrainer] = useState<string>("all")
-  const [searchTerm, setSearchTerm] = useState("")
   const [userRole, setUserRole] = useState<string>("")
+  const { control, watch, setValue, getValues } = useForm<ReportsFiltersForm>({
+    mode: "onChange",
+    defaultValues: {
+      searchTerm: "",
+      trainerId: "all",
+      period: "month",
+      customRange: { start: "", end: "" },
+    },
+  })
+
+  const selectedPeriod = (watch("period") ?? "month") as PeriodKey
+  const watchedCustomRange = watch("customRange") ?? { start: "", end: "" }
+  const selectedTrainer = watch("trainerId") ?? "all"
+  const searchTerm = watch("searchTerm") ?? ""
   const router = useRouter()
 
   useEffect(() => {
@@ -79,7 +135,63 @@ export default function ReportsPage() {
     }
   }, [router])
 
-  const periodRange = useMemo(() => computePeriodRange(selectedPeriod), [selectedPeriod])
+  const customRangeStart = watchedCustomRange.start
+  const customRangeEnd = watchedCustomRange.end
+
+  const periodRange = useMemo(
+    () => computePeriodRange(selectedPeriod, watchedCustomRange),
+    [selectedPeriod, customRangeStart, customRangeEnd]
+  )
+
+  const customRangeError = useMemo(() => {
+    if (selectedPeriod !== "custom" || !customRangeStart || !customRangeEnd) {
+      return false
+    }
+
+    const startDate = createDateFromInput(customRangeStart)
+    const endDate = createDateFromInput(customRangeEnd)
+
+    if (!startDate || !endDate) return false
+
+    return startDate > endDate
+  }, [customRangeEnd, customRangeStart, selectedPeriod])
+
+  const handlePeriodSelect = (value: string, onChange: (value: PeriodKey) => void) => {
+    const period = value as PeriodKey
+    onChange(period)
+
+    if (period === "custom") {
+      const currentRange = getValues("customRange")
+      if (currentRange?.start && currentRange?.end) {
+        return
+      }
+
+      const now = new Date()
+      const start = new Date(now)
+      start.setDate(now.getDate() - 6)
+
+      setValue(
+        "customRange",
+        {
+          start: formatDateInput(start),
+          end: formatDateInput(now),
+        },
+        { shouldDirty: true, shouldValidate: true }
+      )
+    }
+  }
+
+  const handleCustomRangeChange = (key: keyof CustomRange, value: string) => {
+    const currentRange = getValues("customRange") ?? { start: "", end: "" }
+    setValue(
+      "customRange",
+      {
+        ...currentRange,
+        [key]: value,
+      },
+      { shouldDirty: true, shouldValidate: true }
+    )
+  }
 
   const reportsQuery = useQuery({
     ...getReportsOptions({
@@ -114,9 +226,9 @@ export default function ReportsPage() {
       trainerOptions.length > 0 &&
       !trainerOptions.some((trainer) => trainer.id === selectedTrainer)
     ) {
-      setSelectedTrainer("all")
+      setValue("trainerId", "all")
     }
-  }, [trainerOptions, selectedTrainer])
+  }, [selectedTrainer, setValue, trainerOptions])
 
   const trainerReports = useMemo<TrainerReportDto[]>(
     () => (reportsQuery.data?.trainerReports ?? []) as TrainerReportDto[],
@@ -166,42 +278,101 @@ export default function ReportsPage() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Buscar professor..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+          <Controller
+            control={control}
+            name="searchTerm"
+            render={({ field }) => (
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder="Buscar professor..."
+                  className="pl-10"
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                  ref={field.ref}
+                />
+              </div>
+            )}
+          />
 
-          <Select value={selectedTrainer} onValueChange={setSelectedTrainer}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Todos os professores" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os professores</SelectItem>
-              {trainerOptions.map((trainer) => (
-                <SelectItem key={trainer.id} value={trainer.id}>
-                  {trainer.name ?? "Nome não informado"}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Controller
+            control={control}
+            name="trainerId"
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Todos os professores" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os professores</SelectItem>
+                  {trainerOptions.map((trainer) => (
+                    <SelectItem key={trainer.id} value={trainer.id}>
+                      {trainer.name ?? "Nome não informado"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
 
-          <Select value={selectedPeriod} onValueChange={(value) => setSelectedPeriod(value as PeriodKey)}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Período" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="week">Esta Semana</SelectItem>
-              <SelectItem value="month">Este Mês</SelectItem>
-              <SelectItem value="quarter">Este Trimestre</SelectItem>
-              <SelectItem value="year">Este Ano</SelectItem>
-            </SelectContent>
-          </Select>
+          <Controller
+            control={control}
+            name="period"
+            render={({ field }) => (
+              <Select
+                value={field.value}
+                onValueChange={(value) => handlePeriodSelect(value, field.onChange)}
+              >
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="week">Esta Semana</SelectItem>
+                  <SelectItem value="month">Este Mês</SelectItem>
+                  <SelectItem value="quarter">Este Trimestre</SelectItem>
+                  <SelectItem value="year">Este Ano</SelectItem>
+                  <SelectItem value="custom">Intervalo Personalizado</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          />
         </div>
+
+        {selectedPeriod === "custom" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="reports-custom-start">Data inicial</Label>
+              <Input
+                id="reports-custom-start"
+                type="date"
+                value={customRangeStart}
+                max={customRangeEnd || undefined}
+                onChange={(event) => handleCustomRangeChange("start", event.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="reports-custom-end">Data final</Label>
+              <Input
+                id="reports-custom-end"
+                type="date"
+                value={customRangeEnd}
+                min={customRangeStart || undefined}
+                onChange={(event) => handleCustomRangeChange("end", event.target.value)}
+              />
+            </div>
+            {(!customRangeStart || !customRangeEnd || customRangeError) && (
+              <p
+                className={`text-sm sm:col-span-2 ${customRangeError ? "text-destructive" : "text-muted-foreground"}`}
+              >
+                {customRangeError
+                  ? "A data inicial não pode ser maior que a data final."
+                  : "Selecione a data inicial e final para aplicar o filtro."}
+              </p>
+            )}
+          </div>
+        )}
 
         {isError && (
           <Card className="border-destructive">
@@ -264,66 +435,126 @@ export default function ReportsPage() {
             <CardDescription>Detalhamento de horas trabalhadas e aulas ministradas por professor</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3">Professor</th>
-                    <th className="text-left p-3">Horas Trabalhadas</th>
-                    <th className="text-left p-3">Aulas Ministradas</th>
-                    <th className="text-left p-3">Alunos</th>
-                    <th className="text-left p-3">Regime</th>
-                    <th className="text-left p-3">Especialidades</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {isLoading ? (
-                    <tr>
-                      <td colSpan={6} className="p-6 text-center text-muted-foreground">
-                        <Loader2 className="w-5 h-5 animate-spin mx-auto" />
-                      </td>
-                    </tr>
-                  ) : filteredReports.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="p-6 text-center text-muted-foreground">
-                        Nenhum dado disponível para os filtros selecionados.
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredReports.map((trainer) => {
-                      const name = trainer?.name ?? "Professor"
-                      const initials = name
-                        .replace("Prof.", "")
-                        .split(" ")
-                        .filter(Boolean)
-                        .map((n) => n[0])
-                        .join("")
-                        .toUpperCase()
+            {isLoading ? (
+              <div className="flex justify-center py-6">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : filteredReports.length === 0 ? (
+              <p className="p-6 text-center text-sm text-muted-foreground">
+                Nenhum dado disponível para os filtros selecionados.
+              </p>
+            ) : (
+              <>
+                <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-3">Professor</th>
+                        <th className="text-left p-3">Horas Trabalhadas</th>
+                        <th className="text-left p-3">Aulas Ministradas</th>
+                        <th className="text-left p-3">Alunos</th>
+                        <th className="text-left p-3">Regime</th>
+                        <th className="text-left p-3">Especialidades</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredReports.map((trainer) => {
+                        const name = trainer?.name ?? "Professor"
+                        const initials = name
+                          .replace("Prof.", "")
+                          .split(" ")
+                          .filter(Boolean)
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()
 
-                      return (
-                        <tr key={trainer?.id ?? name} className="border-b hover:bg-muted/50">
-                          <td className="p-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-                                <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
-                                  {initials || "?"}
-                                </span>
+                        return (
+                          <tr key={trainer?.id ?? name} className="border-b hover:bg-muted/50">
+                            <td className="p-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                                  <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
+                                    {initials || "?"}
+                                  </span>
+                                </div>
+                                <span className="font-medium">{name}</span>
                               </div>
-                              <span className="font-medium">{name}</span>
-                            </div>
-                          </td>
-                          <td className="p-3 font-medium">{formatNumber(trainer?.hoursWorked ?? 0, 1)}h</td>
-                          <td className="p-3 font-medium">{formatNumber(trainer?.classesGiven ?? 0)}</td>
-                          <td className="p-3 font-medium">{formatNumber(trainer?.studentsManaged ?? 0)}</td>
-                          <td className="p-3">
-                            <Badge className="bg-muted text-xs font-medium">
+                            </td>
+                            <td className="p-3 font-medium">{formatNumber(trainer?.hoursWorked ?? 0, 1)}h</td>
+                            <td className="p-3 font-medium">{formatNumber(trainer?.classesGiven ?? 0)}</td>
+                            <td className="p-3 font-medium">{formatNumber(trainer?.studentsManaged ?? 0)}</td>
+                            <td className="p-3">
+                              <Badge className="bg-muted text-xs font-medium">
+                                {formatCompensation(trainer?.compensation)}
+                              </Badge>
+                            </td>
+                            <td className="p-3">
+                              <div className="flex flex-wrap gap-1">
+                                {(trainer?.specialties ?? []).map((specialty, idx) => (
+                                  <Badge key={`${trainer?.id ?? name}-${idx}`} variant="outline" className="text-xs">
+                                    {specialty}
+                                  </Badge>
+                                ))}
+                                {(trainer?.specialties?.length ?? 0) === 0 && (
+                                  <span className="text-xs text-muted-foreground">—</span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="grid gap-4 sm:hidden">
+                  {filteredReports.map((trainer) => {
+                    const name = trainer?.name ?? "Professor"
+                    const initials = name
+                      .replace("Prof.", "")
+                      .split(" ")
+                      .filter(Boolean)
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase()
+
+                    return (
+                      <div
+                        key={trainer?.id ?? name}
+                        className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 space-y-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                            <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
+                              {initials || "?"}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-semibold leading-tight">{name}</p>
+                            <p className="text-xs text-muted-foreground">
                               {formatCompensation(trainer?.compensation)}
-                            </Badge>
-                          </td>
-                          <td className="p-3">
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="space-y-1">
+                            <p className="text-muted-foreground">Horas</p>
+                            <p className="font-semibold">{formatNumber(trainer?.hoursWorked ?? 0, 1)}h</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-muted-foreground">Aulas</p>
+                            <p className="font-semibold">{formatNumber(trainer?.classesGiven ?? 0)}</p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-muted-foreground">Alunos</p>
+                            <p className="font-semibold">{formatNumber(trainer?.studentsManaged ?? 0)}</p>
+                          </div>
+                          <div className="space-y-1 col-span-2">
+                            <p className="text-muted-foreground">Especialidades</p>
                             <div className="flex flex-wrap gap-1">
                               {(trainer?.specialties ?? []).map((specialty, idx) => (
-                                <Badge key={`${trainer?.id ?? name}-${idx}`} variant="outline" className="text-xs">
+                                <Badge key={`${trainer?.id ?? name}-mobile-${idx}`} variant="outline" className="text-xs">
                                   {specialty}
                                 </Badge>
                               ))}
@@ -331,14 +562,14 @@ export default function ReportsPage() {
                                 <span className="text-xs text-muted-foreground">—</span>
                               )}
                             </div>
-                          </td>
-                        </tr>
-                      )
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -366,13 +597,16 @@ export default function ReportsPage() {
                     ? percentage.toFixed(1).replace(/\.0$/, "")
                     : "0"
                   return (
-                    <div key={`${profile?.ageRange ?? index}`} className="flex items-center justify-between">
+                    <div
+                      key={`${profile?.ageRange ?? index}`}
+                      className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+                    >
                       <div className="flex items-center gap-3">
                         <div className="w-4 h-4 bg-green-600 rounded" />
                         <span className="font-medium">{profile?.ageRange ?? "Faixa etária"}</span>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-32 bg-muted rounded-full h-2">
+                      <div className="flex items-center gap-3 sm:min-w-[220px]">
+                        <div className="w-full sm:w-32 bg-muted rounded-full h-2">
                           <div
                             className="bg-green-600 h-2 rounded-full"
                             style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}

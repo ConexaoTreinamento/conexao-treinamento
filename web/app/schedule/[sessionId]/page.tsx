@@ -44,6 +44,17 @@ function ClassDetailPageContent() {
     try { return rawSessionId?.includes('%') ? decodeURIComponent(rawSessionId) : rawSessionId } catch { return rawSessionId }
   }, [rawSessionId])
 
+  const invalidateReportsQueries = () => {
+    qc.invalidateQueries({
+      predicate: (query) => {
+        const key = query.queryKey
+        if (!Array.isArray(key) || key.length === 0) return false
+        const root = key[0]
+        return typeof root === "object" && root !== null && (root as { _id?: string })._id === "getReports"
+      }
+    })
+  }
+
   // Query session (with hint for trainer if provided)
   const hintedDate = searchParams.get('date') || undefined
   const hintedTrainer = searchParams.get('trainer') || undefined
@@ -144,6 +155,7 @@ function ClassDetailPageContent() {
       })
     }
     invalidateScheduleForSessionMonth()
+    invalidateReportsQueries()
   }
 
   const togglePresence = async (sid: string) => {

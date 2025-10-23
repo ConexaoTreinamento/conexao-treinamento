@@ -182,6 +182,17 @@ export default function TrainerSchedulePage(){
   const [classDuration, setClassDuration] = useState<number>(60)
   const [saving, setSaving] = useState(false)
 
+  const invalidateReportsQueries = () => {
+    qc.invalidateQueries({
+      predicate: (query) => {
+        const key = query.queryKey
+        if (!Array.isArray(key) || key.length === 0) return false
+        const root = key[0]
+        return typeof root === "object" && root !== null && (root as { _id?: string })._id === "getReports"
+      }
+    })
+  }
+
   const schedulesQueryOptions = getSchedulesByTrainerOptions({path:{trainerId}, client: apiClient})
   const {data, isLoading:loadingList} = useQuery(schedulesQueryOptions)
 
@@ -341,6 +352,7 @@ export default function TrainerSchedulePage(){
   const anchor = new Date()
   const recentStart = formatLocalDate(new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate()-7))
   await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: recentStart, endDate: recentEnd } }) })
+      invalidateReportsQueries()
       setBulkOpen(false)
     } finally {
       setSaving(false)

@@ -36,9 +36,14 @@ export default function EventsPage() {
   const createEvent = useMutation({
     ...createEventMutation({ client: apiClient }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0]?._id === "findAllEvents",
-      })
+      await Promise.all([
+        queryClient.invalidateQueries({
+          predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0]?._id === "findAllEvents",
+        }),
+        queryClient.invalidateQueries({
+          predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0]?._id === "getReports",
+        }),
+      ])
     },
   })
 
