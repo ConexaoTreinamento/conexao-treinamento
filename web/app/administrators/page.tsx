@@ -181,7 +181,8 @@ export default function AdministratorsPage() {
     if (!validateForm()) return;
 
     createAdministrator.mutate({
-      body: formData
+      body: formData,
+      client: apiClient,
     })
 
     setIsSubmitting(false)
