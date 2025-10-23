@@ -631,8 +631,8 @@ export type PageableObject = {
 
 export type SortObject = {
     empty?: boolean;
-    sorted?: boolean;
     unsorted?: boolean;
+    sorted?: boolean;
 };
 
 export type PageStudentResponseDto = {
@@ -1763,7 +1763,7 @@ export type ResetPasswordData = {
         id: string;
     };
     query?: never;
-    url: '/users/{id}/reset-password';
+    url: '/trainers/{id}/reset-password';
 };
 
 export type ResetPasswordResponses = {

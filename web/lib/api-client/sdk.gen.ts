@@ -915,7 +915,7 @@ export const resetPassword = <ThrowOnError extends boolean = false>(options: Opt
                 type: 'http'
             }
         ],
-        url: '/users/{id}/reset-password',
+        url: '/trainers/{id}/reset-password',
         ...options,
         headers: {
             'Content-Type': 'application/json',

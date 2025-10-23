@@ -142,4 +142,24 @@ public class UserService {
 
         return UserResponseDTO.fromEntity(user);
     }
+
+    @Transactional
+    public UserResponseDTO updateUserPassword(UUID userId, String newPassword) {
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
+        }
+
+        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        if (!user.getRole().equals(Role.ROLE_TRAINER)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only trainers can have their password reset by this endpoint.");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+
+        User savedUser = userRepository.save(user);
+        return UserResponseDTO.fromEntity(savedUser);
+    }
+
 }
