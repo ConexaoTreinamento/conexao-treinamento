@@ -1,7 +1,9 @@
 package org.conexaotreinamento.conexaotreinamentobackend.service;
 
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateTrainerDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainersDTO;
@@ -16,9 +18,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -90,5 +91,14 @@ public class TrainerService {
     public void delete(UUID trainerId) {
         Optional<Trainer> trainer = trainerRepository.findById(trainerId);
         trainer.ifPresent(value -> userService.delete(value.getUserId()));
+    }
+
+    @Transactional
+    public void resetPassword(UUID trainerId, String newPassword) {
+        Trainer trainer = trainerRepository.findById(trainerId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trainer not found"));
+
+        UUID userId = trainer.getUserId();
+        userService.resetUserPassword(userId, newPassword);
     }
 }

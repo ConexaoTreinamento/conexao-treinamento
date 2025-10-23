@@ -74,13 +74,4 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{id}/reset-password")
-    public ResponseEntity<Void> resetPassword(
-            @PathVariable UUID id,
-            @RequestBody @Valid ResetTrainerPasswordDTO request
-    ) {
-        userService.resetUserPassword(id, request.newPassword());
-        return ResponseEntity.noContent().build();
-    }
-
 }
