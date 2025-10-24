@@ -4,8 +4,6 @@ import { useState, useEffect, useId, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Dialog,
@@ -15,10 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
-import { X, User, Plus, Trash2 } from "lucide-react"
-import { CreateTrainerDto, TrainerResponseDto } from "@/lib/api-client"
-import { useFieldArray, useForm, Controller } from "react-hook-form"
+import { useForm, Controller } from "react-hook-form"
 import { IMaskInput } from "react-imask"
 import SelectMultiple, { MultiValue } from "react-select"
 
@@ -30,7 +25,6 @@ export interface TrainerFormData {
   birthDate?: string
   specialties: string[]
   compensationType?: string
-  // status?: string
   password?: string
 }
 
@@ -87,39 +81,29 @@ export default function TrainerForm({
 }: TrainerFormProps) {
   const id = useId()
 
-  const normalizedInitialData: Partial<TrainerFormData> = {
-    ...initialData,
-  
-  }
-
   const { control, register, handleSubmit, setValue, reset, formState: { errors } }= useForm<TrainerFormData> ({
     defaultValues: {
-      ...initialData,
-      // status: initialData.status ?? "Ativo",
-      name: "",
-      birthDate: "",
-      email: "",
-      phone: "",
-      address: "",
-      password: "",
-      specialties: initialData?.specialties ?? [],
-      compensationType: ""
+      ...initialData
     }
   })
 
-  const initialezedRef = useRef(false)
   useEffect(() => {
-    if (initialezedRef.current) return
-    const hasData = initialData && Object.keys(initialData).length > 0 
-    if (!hasData) return
-    const payload = {
-      ...initialData,
-      // status: initialData?.status ?? "Ativo",
-      specialties: initialData?.specialties ?? []
-    }
-    reset(payload)
-    initialezedRef.current = true
-  }, [initialData, reset, open])
+     if (!open) return
+    reset(
+      initialData && Object.keys(initialData).length > 0
+        ? initialData
+        : {
+            name: "",
+            birthDate: "",
+            email: "",
+            phone: "",
+            address: "",
+            password: "",
+            specialties: [],
+            compensationType: ""
+          }
+    )
+  }, [open]) //initialData, reset
 
   const onFormSubmit = (data: TrainerFormData) => {
     onSubmit(data)
@@ -127,8 +111,8 @@ export default function TrainerForm({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={onClose} >
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto" >
         <DialogHeader>
           <DialogTitle>
             {mode === "create" ? "Cadastrar Novo Professor" : "Editar Professor"}  
@@ -190,7 +174,7 @@ export default function TrainerForm({
                 {...register("phone", { required: true })}
                 mask="00 00000 0000"
                 onAccept={(value: string) => setValue("phone", value, { shouldValidate: true })}
-                placeholder="(51) 12345 6789"
+                placeholder={mode === "create" ? "(51) 12345 6789" : "Deixe vazio para manter o telefone atual"}//"(51) 12345 6789"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
               />
               {errors.phone && <p className="text-xs text-red-600">Campo obrigatório</p>}
@@ -303,4 +287,3 @@ export default function TrainerForm({
     </Dialog>
   )
 }
-
