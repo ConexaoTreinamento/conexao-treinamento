@@ -81,7 +81,7 @@ export default function PlansPage(){
   const form = useForm<PlanForm>({resolver: zodResolver(planSchema), defaultValues:{name:'', maxDays:3, durationDays:30}})
 
   const submit = (v:PlanForm)=>{
-    createPlan.mutate({body:{name: v.name, maxDays: v.maxDays, durationDays: v.durationDays}})
+    createPlan.mutate({body:{name: v.name, maxDays: v.maxDays, durationDays: v.durationDays}, client: apiClient})
   }
 
   return (

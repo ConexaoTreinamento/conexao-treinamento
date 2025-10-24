@@ -33,7 +33,7 @@ export default function TrainerProfilePage() {
   })
 
   const { mutateAsync: resetPassword, isPending: isResettingPassword } = useMutation({
-    ...resetPasswordMutation(),
+    ...resetPasswordMutation({ client: apiClient }),
     onSuccess: () => {
       console.log("Senha do usuário resetada com sucesso!");
     },

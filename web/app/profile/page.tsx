@@ -34,7 +34,7 @@ export default function ProfilePage() {
   const [securityMessage, setSecurityMessage] = useState({ type: "", text: "" });
 
   const { mutate: changePassword, isPending: isChangingPassword } = useMutation({
-    ...changeOwnPasswordMutation(),
+    ...changeOwnPasswordMutation({ client: apiClient }),
 
     onSuccess: () => {
       setSecurityMessage({ type: "success", text: "Senha alterada com sucesso!" });
