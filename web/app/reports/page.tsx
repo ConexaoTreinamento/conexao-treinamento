@@ -14,6 +14,7 @@ import { Controller, useForm } from "react-hook-form"
 import { apiClient } from "@/lib/client"
 import { getReportsOptions, getTrainersForLookupOptions } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { AgeDistributionDto, TrainerLookupDto, TrainerReportDto } from "@/lib/api-client/types.gen"
+import { TrainerSelect } from "@/components/trainer-select"
 
 type PeriodKey = "week" | "month" | "quarter" | "year" | "custom"
 
@@ -301,19 +302,15 @@ export default function ReportsPage() {
             control={control}
             name="trainerId"
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Todos os professores" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os professores</SelectItem>
-                  {trainerOptions.map((trainer) => (
-                    <SelectItem key={trainer.id} value={trainer.id}>
-                      {trainer.name ?? "Nome não informado"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <TrainerSelect
+                value={field.value}
+                onValueChange={(value) => field.onChange(value)}
+                trainers={trainerOptions}
+                isLoading={trainersQuery.isLoading}
+                disabled={trainersQuery.isError}
+                className="w-full sm:w-48"
+                placeholder="Filtrar por professor"
+              />
             )}
           />
 

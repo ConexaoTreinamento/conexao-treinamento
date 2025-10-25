@@ -5,13 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 import { ArrowLeft, Save, Calendar, Clock, User, Loader2 } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
+import { TrainerSelect } from "@/components/trainer-select"
 import {apiClient} from "@/lib/client"
-import {getAvailableSessionSeriesOptions, getStudentCommitmentsOptions, bulkUpdateCommitmentsMutation, getCurrentStudentPlanOptions, getSessionSeriesCommitmentsOptions, getCommitmentHistoryOptions, getCurrentActiveCommitmentsOptions, updateCommitmentMutation, getStudentCommitmentsQueryKey, getCurrentActiveCommitmentsQueryKey, getScheduleQueryKey} from "@/lib/api-client/@tanstack/react-query.gen"
+import {getAvailableSessionSeriesOptions, getStudentCommitmentsOptions, bulkUpdateCommitmentsMutation, getCurrentStudentPlanOptions, getSessionSeriesCommitmentsOptions, getCommitmentHistoryOptions, getCurrentActiveCommitmentsOptions, updateCommitmentMutation, getStudentCommitmentsQueryKey, getCurrentActiveCommitmentsQueryKey, getScheduleQueryKey, getTrainersForLookupOptions} from "@/lib/api-client/@tanstack/react-query.gen"
 import {useQueryClient, useMutation, useQuery} from "@tanstack/react-query"
 import { TrainerSchedule, CommitmentDetailResponseDto } from "@/lib/api-client"
+import type { TrainerLookupDto } from "@/lib/api-client/types.gen"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { History, Users, AlertTriangle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -44,6 +47,7 @@ export default function ClassSchedulePage() {
   const [openParticipantsFor, setOpenParticipantsFor] = useState<string | null>(null)
   const [openHistoryFor, setOpenHistoryFor] = useState<string | null>(null)
   const [participantsFilter, setParticipantsFilter] = useState<'ALL'|'ATTENDING'>('ALL')
+  const [trainerFilter, setTrainerFilter] = useState<string>("all")
 
   // Queries
   const availableQuery = useQuery(getAvailableSessionSeriesOptions({client: apiClient}))
@@ -54,6 +58,7 @@ export default function ClassSchedulePage() {
   const mutation = useMutation(bulkUpdateCommitmentsMutation({client: apiClient}))
   const singleMutation = useMutation(updateCommitmentMutation({client: apiClient}))
   const activeCommitmentsQuery = useQuery(getCurrentActiveCommitmentsOptions(studentIdQueryOptions))
+  const trainersQuery = useQuery(getTrainersForLookupOptions({ client: apiClient }))
   const participantsQuery = useQuery({
     ...getSessionSeriesCommitmentsOptions({
       path: { sessionSeriesId: openParticipantsFor || "placeholder" },
@@ -106,9 +111,37 @@ export default function ClassSchedulePage() {
     intervalDuration?: number
     capacity?: number
     enrolledCount?: number
+    trainerId?: string
+    trainerName?: string
   }
 
   interface WeekdayGroup { weekday: number; day: string; classes: NormalizedSeries[] }
+
+  const trainerOptions = useMemo(
+    () =>
+      (trainersQuery.data ?? []).filter(
+        (trainer): trainer is TrainerLookupDto & { id: string } => Boolean(trainer?.id)
+      ),
+    [trainersQuery.data]
+  )
+
+  const trainerNameById = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const trainer of trainerOptions) {
+      map.set(trainer.id, trainer.name ?? "Nome não informado")
+    }
+    return map
+  }, [trainerOptions])
+
+  useEffect(() => {
+    if (
+      trainerFilter !== "all" &&
+      trainerOptions.length > 0 &&
+      !trainerOptions.some((trainer) => trainer.id === trainerFilter)
+    ) {
+      setTrainerFilter("all")
+    }
+  }, [trainerFilter, trainerOptions])
 
   const normalizedSeries: NormalizedSeries[] = useMemo(()=> {
     interface LegacyTrainerSchedule { dayOfWeek?: number; name?: string }
@@ -116,6 +149,11 @@ export default function ClassSchedulePage() {
       weekday: (s: TrainerSchedule & LegacyTrainerSchedule) => s.weekday ?? s.dayOfWeek,
       seriesName: (s: TrainerSchedule & LegacyTrainerSchedule) => s.seriesName ?? s.name ?? 'Série'
     }
+    const pickString = <K extends string>(s: unknown, key: K): string | undefined => (
+      typeof s === 'object' && s !== null && key in (s as Record<string, unknown>) && typeof (s as Record<string, unknown>)[key] === 'string'
+        ? (s as Record<string, string>)[key]
+        : undefined
+    )
     const pickNumber = <K extends string>(s: unknown, key: K): number | undefined => (
       typeof s === 'object' && s !== null && key in (s as Record<string, unknown>) && typeof (s as Record<string, unknown>)[key] === 'number'
         ? (s as Record<string, number>)[key]
@@ -126,6 +164,8 @@ export default function ClassSchedulePage() {
       .filter(s => !!s && !!s.id && !!s.active && typeof synonym.weekday(s) === 'number')
       .map(s => {
         const intervalDuration = pickNumber(s, 'intervalDuration')
+        const trainerId = pickString(s, 'trainerId')
+        const trainerName = pickString(s as unknown, 'trainerName') ?? (trainerId ? trainerNameById.get(trainerId) : undefined)
         return {
           id: s.id!,
           weekday: synonym.weekday(s)!,
@@ -135,14 +175,21 @@ export default function ClassSchedulePage() {
           active: true,
           intervalDuration,
           capacity: pickNumber(s, 'capacity'),
-          enrolledCount: pickNumber(s, 'enrolledCount')
+          enrolledCount: pickNumber(s, 'enrolledCount'),
+          trainerId,
+          trainerName
         }
       })
-  }, [availableQuery.data])
+  }, [availableQuery.data, trainerNameById])
+
+  const filteredSeries = useMemo(() => {
+    if (trainerFilter === "all") return normalizedSeries
+    return normalizedSeries.filter(series => series.trainerId === trainerFilter)
+  }, [normalizedSeries, trainerFilter])
 
   const weeklyByWeekday: WeekdayGroup[] = useMemo(()=> {
     const grouped: Record<number, NormalizedSeries[]> = {}
-    for (const s of normalizedSeries) {
+    for (const s of filteredSeries) {
       if (!grouped[s.weekday]) grouped[s.weekday] = []
       grouped[s.weekday].push(s)
     }
@@ -154,7 +201,7 @@ export default function ClassSchedulePage() {
         day: weekdayMap[weekday],
         classes: grouped[weekday].slice().sort((x,y)=> (x.startTime||'').localeCompare(y.startTime||''))
       }))
-  }, [normalizedSeries])
+  }, [filteredSeries])
 
   const seriesById = useMemo(()=> {
     const m = new Map<string, NormalizedSeries>()
@@ -252,7 +299,7 @@ export default function ClassSchedulePage() {
 
   const toggleDay = (weekday: number) => {
     setInitializedSelection(true)
-    const ids = normalizedSeries.filter(s => s.weekday === weekday).map(s => s.id)
+    const ids = filteredSeries.filter(s => s.weekday === weekday).map(s => s.id)
     const anySelected = ids.some(id => selectedSeries.includes(id))
     if(anySelected){
       setSelectedSeries(prev=> prev.filter(id=> !ids.includes(id)))
@@ -337,6 +384,20 @@ export default function ClassSchedulePage() {
             </div>
           </CardContent>
         </Card>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-start">
+          <div className="w-full sm:w-72 space-y-1">
+            <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Instrutor</Label>
+            <TrainerSelect
+              value={trainerFilter}
+              onValueChange={(value) => setTrainerFilter(value)}
+              trainers={trainerOptions}
+              isLoading={trainersQuery.isLoading}
+              disabled={trainersQuery.isError}
+              placeholder="Selecione ou busque"
+              className="w-full"
+            />
+          </div>
+        </div>
         {availableQuery.isLoading && <div className="space-y-2">{[...Array(3)].map((_,i)=><Card key={i} className="animate-pulse"><CardContent className="h-16"/></Card>)}</div>}
         <div className="space-y-3">
           {weeklyByWeekday.map(day=> {
@@ -363,6 +424,7 @@ export default function ClassSchedulePage() {
                     const max =  cls.capacity ?? 0
                     const current = cls.enrolledCount ?? 0
                     const conflict = isSelected && hasConflict(cls)
+                    const trainerLabel = cls.trainerName ?? (cls.trainerId ? trainerNameById.get(cls.trainerId) : undefined) ?? 'Instrutor não definido'
                     return (
                       <div key={cls.id} className={`p-3 rounded border transition-colors space-y-2 ${isSelected? 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800':'hover:bg-muted/50'}`}>
                         <div className="flex items-start gap-3">
@@ -403,6 +465,7 @@ export default function ClassSchedulePage() {
                             </div>
                             <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                               <div className="flex items-center gap-1"><Clock className="w-3 h-3"/><span>{cls.startTime?.slice(0,5)} - {cls.endTime?.slice(0,5)}</span></div>
+                              <div className="flex items-center gap-1"><User className="w-3 h-3"/><span className="truncate max-w-[14rem]" title={trainerLabel}>{trainerLabel}</span></div>
                             </div>
                           </div>
                           <div className="flex flex-col gap-1">
@@ -426,6 +489,13 @@ export default function ClassSchedulePage() {
               </Card>
             )
           })}
+          {weeklyByWeekday.length === 0 && !availableQuery.isLoading && (
+            <Card>
+              <CardContent className="p-6 text-sm text-muted-foreground">
+                Nenhuma série disponível para este filtro.
+              </CardContent>
+            </Card>
+          )}
         </div>
         <div className="flex flex-col gap-3 pt-6 border-t mt-6">
           <div className="flex flex-wrap gap-4 text-xs">
