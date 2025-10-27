@@ -50,6 +50,13 @@ jobs:
           chmod +x ./mvnw
           ./mvnw verify -Dspring.profiles.active=test
 
+      - name: Run Mutation Tests (PITest)
+        working-directory: ./backend
+        run: |
+          ./mvnw org.pitest:pitest-maven:mutationCoverage \
+            -DwithHistory \
+            -DmutationThreshold=50
+
   docker-build-scan:
     name: Docker Build
     runs-on: ubuntu-22.04
