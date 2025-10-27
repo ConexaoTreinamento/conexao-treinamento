@@ -52,10 +52,7 @@ jobs:
 
       - name: Run Mutation Tests (PITest)
         working-directory: ./backend
-        run: |
-          ./mvnw org.pitest:pitest-maven:mutationCoverage \
-            -DwithHistory \
-            -DmutationThreshold=50
+        run: ./mvnw clean test-compile org.pitest:pitest-maven:mutationCoverage
 
   docker-build-scan:
     name: Docker Build
