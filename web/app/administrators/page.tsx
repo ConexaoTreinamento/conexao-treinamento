@@ -15,7 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Mail, Plus, Search, Shield, AlertCircle, CheckCircle } from "lucide-react"
+import { Mail, Plus, Search, Shield, AlertCircle, CheckCircle, Eye, EyeOff } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
@@ -44,6 +44,7 @@ export default function AdministratorsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   // Form state
   const [formData, setFormData] = useState<FormData>({
@@ -303,15 +304,30 @@ export default function AdministratorsPage() {
                   <Label htmlFor="password" className="text-sm font-medium">
                     Senha <span className="text-red-500">*</span>
                   </Label>
+                  <div className="relative">
                   <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => handleFieldChange('password', e.target.value)}
-                    onBlur={() => handleFieldBlur('password')}
-                    className={errors.password ? "border-red-500" : ""}
-                    placeholder="Digite a senha"
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={(e) => handleFieldChange("password", e.target.value)}
+                  onBlur={() => handleFieldBlur("password")}
+                  className={errors.password ? "border-red-500 pr-10" : "pr-10"}
+                  placeholder="Digite a senha"
                   />
+                  <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                  onClick={() => setShowPassword(!showPassword)}
+                  >
+                  {showPassword ? (
+                <EyeOff className="h-4 w-4" />
+                ) : (
+                <Eye className="h-4 w-4" />
+                )}
+            </Button>
+            </div>
                   {errors.password && (
                     <p className="text-sm text-red-600">{errors.password}</p>
                   )}
