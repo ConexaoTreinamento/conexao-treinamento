@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { X } from "lucide-react"
+import { X, Eye, EyeOff } from "lucide-react"
 import { CreateTrainerDto, TrainerResponseDto } from "@/lib/api-client"
 
 interface TrainerFormData {
@@ -45,6 +45,7 @@ export default function TrainerModal({
   onClose,
   onSubmit,
 }: TrainerModalProps) {
+  const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState<CreateTrainerDto>({
     name: "",
     email: "",
@@ -297,13 +298,28 @@ export default function TrainerModal({
               <Label htmlFor="trainerPassword">
                 {mode === "create" ? "Senha *" : "Nova Senha"}
               </Label>
-              <Input
-                id="trainerPassword"
-                type="password"
-                value={formData.password || ""}
-                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                placeholder={mode === "create" ? "Digite a senha" : "Deixe vazio para manter a senha atual"}
-              />
+              <div className="relative">
+  <Input
+    id="trainerPassword"
+    type={showPassword ? "text" : "password"}
+    value={formData.password || ""}
+    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+    placeholder={mode === "create" ? "Digite a senha" : "Deixe vazio para manter a senha atual"}
+  />
+  <Button
+    type="button"
+    variant="ghost"
+    size="icon"
+    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+    onClick={() => setShowPassword(!showPassword)}
+  >
+    {showPassword ? (
+      <EyeOff className="h-4 w-4" />
+    ) : (
+      <Eye className="h-4 w-4" />
+    )}
+  </Button>
+</div>
             </div>
           </div>
         </div>
