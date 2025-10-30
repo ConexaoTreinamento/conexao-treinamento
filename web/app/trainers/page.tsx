@@ -75,6 +75,7 @@ export default function TrainersPage() {
           body: formData,
           client: apiClient,
         })
+        toast({ title: "Professor criado", description: "Professor cadastrado com sucesso.", variant: 'success', duration: 3000 })
       } else {
         // Update existing trainer
         await updateTrainer({
@@ -82,6 +83,7 @@ export default function TrainersPage() {
           body: formData,
           client: apiClient,
         })
+        toast({ title: "Professor atualizado", description: "As alterações foram salvas.", variant: 'success', duration: 3000 })
       }
       await queryClient.invalidateQueries({
           predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllTrainers'
@@ -101,6 +103,7 @@ export default function TrainersPage() {
         await deleteTrainer({
           path: { id: String(trainerId) }, client: apiClient
         });
+        toast({ title: "Professor excluído", description: "O professor foi marcado como inativo.", variant: 'destructive', duration: 3000 })
         await queryClient.invalidateQueries({
           predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllTrainers'
         })

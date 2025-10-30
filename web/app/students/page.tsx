@@ -558,7 +558,7 @@ function StudentsPageContent() {
         }
       }
 
-      toast({ title: "Aluno criado", description: assignedPlan ? "Aluno e plano atribuídos." : "Aluno cadastrado com sucesso.", duration: 3000 })      
+      toast({ title: "Aluno criado", description: assignedPlan ? "Aluno e plano atribuídos." : "Aluno cadastrado com sucesso.", variant: 'success', duration: 3000 })      
       setIsCreateOpen(false)
     } catch (e: any) {
       handleHttpError(e, "criar aluno", "Não foi possível criar o aluno. Tente novamente.")
