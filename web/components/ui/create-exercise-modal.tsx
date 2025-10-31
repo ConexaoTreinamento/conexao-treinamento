@@ -49,7 +49,7 @@ export default function CreateExerciseModal({ isOpen, onClose }: CreateExerciseM
             await queryClient.invalidateQueries({
                 predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllExercises'
             })
-        } catch (error: any) {
+        } catch (error: unknown) {
             handleHttpError(error, "criar exercício", "Ocorreu um erro ao criar o exercício. Tente novamente.");
         }
     };

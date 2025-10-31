@@ -1,0 +1,10 @@
+# Generated API client files
+lib/api-client/@tanstack/react-query.gen.ts
+lib/api-client/client.gen.ts
+lib/api-client/sdk.gen.ts
+lib/api-client/types.gen.ts
+lib/api-client/core/**
+lib/api-client/client/types.ts
+lib/api-client/client/client.ts
+lib/api-client/client/utils.ts
+

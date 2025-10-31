@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updatePresenceMutation, getScheduleQueryKey, findAllExercisesOptions, updateRegisteredParticipantExerciseMutation, addRegisteredParticipantExerciseMutation, removeRegisteredParticipantExerciseMutation, updateSessionTrainerMutation, removeSessionParticipantMutation, addSessionParticipantMutation, cancelOrRestoreSessionMutation, createExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import type { ExerciseResponseDto, PageExerciseResponseDto, SessionResponseDto, StudentCommitmentResponseDto, TrainerResponseDto, ScheduleResponseDto } from "@/lib/api-client"
+import type { ExerciseResponseDto, PageExerciseResponseDto, SessionResponseDto, StudentCommitmentResponseDto } from "@/lib/api-client"
 import { useForm } from "react-hook-form"
 import { StudentPicker, type StudentSummary } from "@/components/student-picker"
 
@@ -137,7 +137,7 @@ function ClassDetailPageContent() {
     // Fallback: broadly invalidate all schedule queries regardless of date ranges to avoid key mismatches due to timezone/date formatting differences
     qc.invalidateQueries({
       predicate: (q) => {
-        const k0 = (q.queryKey as any)?.[0]
+        const k0 = (q.queryKey as unknown[])?.[0] as { _id?: string } | undefined
         return k0 && typeof k0 === 'object' && k0._id === 'getSchedule'
       }
     })
@@ -149,7 +149,7 @@ function ClassDetailPageContent() {
     if (sessionId) {
       qc.invalidateQueries({
         predicate: (q) => {
-          const k0 = (q.queryKey as any)?.[0]
+          const k0 = (q.queryKey as unknown[])?.[0] as { _id?: string; path?: { sessionId?: string } } | undefined
           return k0 && typeof k0 === 'object' && k0._id === 'getSession' && k0.path?.sessionId === sessionId
         }
       })
@@ -215,7 +215,7 @@ function ClassDetailPageContent() {
   const addToExercisesCaches = (ex: ExerciseResponseDto) => {
     const entries = qc.getQueriesData<import("@/lib/api-client").PageExerciseResponseDto>({
       predicate: (q) => {
-        const k0 = (q.queryKey as any)?.[0]
+        const k0 = (q.queryKey as unknown[])?.[0] as { _id?: string } | undefined
         return k0 && typeof k0 === 'object' && k0._id === 'findAllExercises'
       }
     })
@@ -482,7 +482,7 @@ function ClassDetailPageContent() {
                           {[...((student.participantExercises||[]))].sort((a,b)=> (a.exerciseName||'').localeCompare(b.exerciseName||'')).map((ex) => (
                             <div key={ex.id} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm gap-2">
                               <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <Checkbox checked={!!ex.done} onCheckedChange={(v)=> ex.id && student.studentId && toggleExerciseDone(student.studentId, ex.id, !!ex.done)} aria-label="Marcar como concluído" />
+                                <Checkbox checked={!!ex.done} onCheckedChange={()=> ex.id && student.studentId && toggleExerciseDone(student.studentId, ex.id, !!ex.done)} aria-label="Marcar como concluído" />
                                 <span className={`flex-1 min-w-0 truncate ${ex.done? 'line-through opacity-70':''}`}>
                                   {ex.exerciseName || ex.exerciseId} {ex.setsCompleted!=null && `- ${ex.setsCompleted}x${ex.repsCompleted ?? ''}`} {ex.weightCompleted!=null && `- ${ex.weightCompleted}kg`}
                                 </span>
@@ -632,8 +632,8 @@ function ClassDetailPageContent() {
                   <SelectContent>
                     <SelectItem value="none">(Sem instrutor)</SelectItem>
                     {(trainersQuery.data||[])
-                      .filter((t:any)=> !!t?.id)
-                      .map((t:any)=> <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                      .filter((t: { id?: string }) => !!t?.id)
+                      .map((t: { id: string; name?: string }) => <SelectItem key={t.id} value={t.id}>{t.name || ''}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

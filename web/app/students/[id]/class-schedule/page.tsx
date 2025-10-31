@@ -11,7 +11,7 @@ import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
 import { TrainerSelect } from "@/components/trainer-select"
 import {apiClient} from "@/lib/client"
-import {getAvailableSessionSeriesOptions, getStudentCommitmentsOptions, bulkUpdateCommitmentsMutation, getCurrentStudentPlanOptions, getSessionSeriesCommitmentsOptions, getCommitmentHistoryOptions, getCurrentActiveCommitmentsOptions, updateCommitmentMutation, getStudentCommitmentsQueryKey, getCurrentActiveCommitmentsQueryKey, getScheduleQueryKey, getTrainersForLookupOptions} from "@/lib/api-client/@tanstack/react-query.gen"
+import {getAvailableSessionSeriesOptions, bulkUpdateCommitmentsMutation, getCurrentStudentPlanOptions, getSessionSeriesCommitmentsOptions, getCommitmentHistoryOptions, getCurrentActiveCommitmentsOptions, updateCommitmentMutation, getStudentCommitmentsQueryKey, getCurrentActiveCommitmentsQueryKey, getScheduleQueryKey, getTrainersForLookupOptions} from "@/lib/api-client/@tanstack/react-query.gen"
 import {useQueryClient, useMutation, useQuery} from "@tanstack/react-query"
 import { TrainerSchedule, CommitmentDetailResponseDto } from "@/lib/api-client"
 import type { TrainerLookupDto } from "@/lib/api-client/types.gen"
@@ -53,7 +53,6 @@ export default function ClassSchedulePage() {
   const availableQuery = useQuery(getAvailableSessionSeriesOptions({client: apiClient}))
   const studentIdQueryOptions = { path: { studentId }, client: apiClient }
 
-  const commitmentsQuery = useQuery(getStudentCommitmentsOptions(studentIdQueryOptions))
   const planQuery = useQuery(getCurrentStudentPlanOptions(studentIdQueryOptions))
   const mutation = useMutation(bulkUpdateCommitmentsMutation({client: apiClient}))
   const singleMutation = useMutation(updateCommitmentMutation({client: apiClient}))
@@ -267,6 +266,7 @@ export default function ClassSchedulePage() {
     return false
   }, [selectedSeries, seriesById])
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleQuickToggle = async (seriesId: string, currentlySelected: boolean) => {
     const target = seriesById.get(seriesId)
     if(!target) return
@@ -289,7 +289,7 @@ export default function ClassSchedulePage() {
     const recentStart = fmt(new Date(todayLocal.getFullYear(), todayLocal.getMonth(), todayLocal.getDate()-7))
     await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: recentStart, endDate: recentEnd } }) })
       setSelectedSeries(prev=> currentlySelected? prev.filter(i=> i!==seriesId): [...prev, seriesId])
-    } catch(e){/* ignore */}
+    } catch{/* ignore */}
   }
 
   const toggleSeries = (seriesId: string) => {
@@ -341,7 +341,7 @@ export default function ClassSchedulePage() {
     const recentStart = fmt(new Date(todayLocal.getFullYear(), todayLocal.getMonth(), todayLocal.getDate()-7))
     await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: recentStart, endDate: recentEnd } }) })
       router.back()
-    } catch(e){/* no-op */}
+    } catch{/* no-op */}
   }
 
   // Friendly Portuguese labels for commitment status

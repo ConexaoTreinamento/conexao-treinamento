@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Clock, Award, Eye, EyeOff } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Award, Eye, EyeOff } from 'lucide-react'
 import Layout from "@/components/layout"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
@@ -25,7 +25,6 @@ export default function ProfilePage() {
   const [token, setToken] = useState<string>("")
   const [userId, setUserId] = useState<string>("")
   const [userRole, setUserRole] = useState<string>("")
-  const [userName, setUserName] = useState<string>("")
   //const [isLoading, setIsLoading] = useState(false)
   const [specialtiesInput, setSpecialtiesInput] = useState("")
   const [currentPassword, setCurrentPassword] = useState("");
@@ -67,12 +66,10 @@ export default function ProfilePage() {
     const uToken = localStorage.getItem("token") || "";
     const uUserId = localStorage.getItem("userId") || "";
     const role = localStorage.getItem("userRole") || "";
-    const name = localStorage.getItem("userName") || "";
 
     setToken(uToken);
     setUserId(uUserId);
     setUserRole(role);
-    setUserName(name);
   }, []);
 
 
@@ -236,6 +233,7 @@ export default function ProfilePage() {
     })
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleChangePassword = () => {
     if (userRole === "admin") {
       if (!adminId) return

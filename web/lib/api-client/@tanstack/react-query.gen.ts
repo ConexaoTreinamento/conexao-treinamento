@@ -449,10 +449,10 @@ export const getAllUsersSimpleInfiniteQueryKey = (options: Options<GetAllUsersSi
 
 export const getAllUsersSimpleInfiniteOptions = (options: Options<GetAllUsersSimpleData>) => {
     return infiniteQueryOptions<GetAllUsersSimpleResponse, DefaultError, InfiniteData<GetAllUsersSimpleResponse>, QueryKey<Options<GetAllUsersSimpleData>>, number | Pick<QueryKey<Options<GetAllUsersSimpleData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
-    // @ts-ignore
+    // @ts-expect-error - Generated code may have type mismatches
     {
         queryFn: async ({ pageParam, queryKey, signal }) => {
-            // @ts-ignore
+            // @ts-expect-error - Generated code may have type mismatches
             const page: Pick<QueryKey<Options<GetAllUsersSimpleData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
                 query: {
                     'pageable.page': pageParam
@@ -650,10 +650,10 @@ export const findAllStudentsInfiniteQueryKey = (options: Options<FindAllStudents
 
 export const findAllStudentsInfiniteOptions = (options: Options<FindAllStudentsData>) => {
     return infiniteQueryOptions<FindAllStudentsResponse, DefaultError, InfiniteData<FindAllStudentsResponse>, QueryKey<Options<FindAllStudentsData>>, number | Pick<QueryKey<Options<FindAllStudentsData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
-    // @ts-ignore
+    // @ts-expect-error - Generated code may have type mismatches
     {
         queryFn: async ({ pageParam, queryKey, signal }) => {
-            // @ts-ignore
+            // @ts-expect-error - Generated code may have type mismatches
             const page: Pick<QueryKey<Options<FindAllStudentsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
                 query: {
                     'pageable.page': pageParam
@@ -1085,10 +1085,10 @@ export const findAllExercisesInfiniteQueryKey = (options: Options<FindAllExercis
 
 export const findAllExercisesInfiniteOptions = (options: Options<FindAllExercisesData>) => {
     return infiniteQueryOptions<FindAllExercisesResponse, DefaultError, InfiniteData<FindAllExercisesResponse>, QueryKey<Options<FindAllExercisesData>>, number | Pick<QueryKey<Options<FindAllExercisesData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
-    // @ts-ignore
+    // @ts-expect-error - Generated code may have type mismatches
     {
         queryFn: async ({ pageParam, queryKey, signal }) => {
-            // @ts-ignore
+            // @ts-expect-error - Generated code may have type mismatches
             const page: Pick<QueryKey<Options<FindAllExercisesData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
                 query: {
                     'pageable.page': pageParam
@@ -1887,10 +1887,10 @@ export const findAllPaginatedInfiniteQueryKey = (options: Options<FindAllPaginat
 
 export const findAllPaginatedInfiniteOptions = (options: Options<FindAllPaginatedData>) => {
     return infiniteQueryOptions<FindAllPaginatedResponse, DefaultError, InfiniteData<FindAllPaginatedResponse>, QueryKey<Options<FindAllPaginatedData>>, number | Pick<QueryKey<Options<FindAllPaginatedData>>[0], 'body' | 'headers' | 'path' | 'query'>>(
-    // @ts-ignore
+    // @ts-expect-error - Generated code may have type mismatches
     {
         queryFn: async ({ pageParam, queryKey, signal }) => {
-            // @ts-ignore
+            // @ts-expect-error - Generated code may have type mismatches
             const page: Pick<QueryKey<Options<FindAllPaginatedData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
                 query: {
                     'pageable.page': pageParam
