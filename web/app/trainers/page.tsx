@@ -40,6 +40,15 @@ export default function TrainersPage() {
   const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerAndUserMutation({ client: apiClient }))
 
   const queryClient = useQueryClient();
+
+  const invalidateTrainersQueries = () => queryClient.invalidateQueries({
+    predicate: (query) => {
+      const root = (query.queryKey as any)?.[0]
+      if (!root || typeof root !== "object") return false
+      const id = root._id
+      return id === "findAllTrainers" || id === "getTrainersForLookup"
+    }
+  })
   useEffect(() => {
     const role = localStorage.getItem("userRole") || "admin"
     setUserRole(role)
@@ -85,9 +94,7 @@ export default function TrainersPage() {
         })
         toast({ title: "Professor atualizado", description: "As alterações foram salvas.", variant: 'success', duration: 3000 })
       }
-      await queryClient.invalidateQueries({
-          predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllTrainers'
-      })
+      await invalidateTrainersQueries()
       setIsModalOpen(false)
       setEditingTrainer(null)
     } catch (error: any) {
@@ -104,9 +111,7 @@ export default function TrainersPage() {
           path: { id: String(trainerId) }, client: apiClient
         });
         toast({ title: "Professor excluído", description: "O professor foi marcado como inativo.", variant: 'destructive', duration: 3000 })
-        await queryClient.invalidateQueries({
-          predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllTrainers'
-        })
+        await invalidateTrainersQueries()
       } catch (error: any) {
         handleHttpError(error, "excluir treinador", "Não foi possível excluir o treinador. Tente novamente.")
       }
