@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense, useState, useEffect, useMemo } from "react"
+import { Suspense, useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -60,11 +60,46 @@ function SchedulePageContent() {
   type OneOffClassData = { name: string; trainerId: string; trainerName?: string; startTime: string; endTime: string }
   const [modalInitialData, setModalInitialData] = useState<Partial<OneOffClassData>>({ name: "", trainerId: "", startTime: "", endTime: "" })
   const router = useRouter()
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const role = localStorage.getItem("userRole") || "professor"
     setUserRole(role)
   }, [])
+
+  // Helper: format Date to LocalDate (yyyy-MM-dd) for backend LocalDate params
+  const formatLocalDate = (d: Date) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+
+  // Scroll to selected date when it's rendered
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    // Wait for DOM to be ready
+    requestAnimationFrame(() => {
+      const dateIso = formatLocalDate(selectedDate)
+      const targetButton = container.querySelector(`button[data-day-date="${dateIso}"]`) as HTMLElement
+      
+      if (targetButton) {
+        // Calculate center position
+        const buttonLeft = targetButton.offsetLeft
+        const buttonWidth = targetButton.offsetWidth
+        const containerWidth = container.clientWidth
+        const scrollLeft = buttonLeft - (containerWidth / 2) + (buttonWidth / 2)
+        
+        // Clamp to valid range
+        const maxScroll = container.scrollWidth - containerWidth
+        const finalScroll = Math.max(0, Math.min(scrollLeft, maxScroll))
+        
+        container.scrollTo({ left: finalScroll, behavior: 'smooth' })
+      }
+    })
+  }, [selectedDate, currentMonth])
 
   const invalidateReportsQueries = () => {
     qc.invalidateQueries({
@@ -91,14 +126,6 @@ function SchedulePageContent() {
     const qs = sp.toString()
     const url = qs ? `${pathname}?${qs}` : pathname
     router.replace(url, { scroll: false })
-  }
-
-  // Helper: format Date to LocalDate (yyyy-MM-dd) for backend LocalDate params
-  const formatLocalDate = (d: Date) => {
-    const y = d.getFullYear()
-    const m = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    return `${y}-${m}-${day}`
   }
 
   // ===== Backend Integration =====
@@ -378,6 +405,7 @@ function SchedulePageContent() {
         <div className="w-full">
           <div className="mx-auto w-full md:max-w-[75vw]">
             <div
+              ref={scrollContainerRef}
               className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin"
               style={{scrollbarWidth:'thin'}}
               onKeyDown={(e)=>{
@@ -411,6 +439,7 @@ function SchedulePageContent() {
                   aria-pressed={isSelected(date)}
                   aria-label={`Selecionar ${fullLabel}${hasSessions ? `; ${stats.total} aula${stats.total>1?'s':''}` : ''}`}
                   data-day-pill="1"
+                  data-day-date={key}
                   tabIndex={0}
                 >
                   <span className="text-[10px] font-medium leading-none uppercase tracking-wide">{formatDayName(date)}</span>
