@@ -210,7 +210,7 @@ export default function EditStudentPage() {
       } as StudentRequestDto
 
       await updateStudent({ path: { id }, body: requestBody, client: apiClient })
-    } catch (e: any) {
+    } catch (e: unknown) {
       handleHttpError(e, "atualizar aluno", "Não foi possível salvar as alterações. Tente novamente.")
     }
   }

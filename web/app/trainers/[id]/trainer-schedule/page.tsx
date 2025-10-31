@@ -1,6 +1,6 @@
 "use client"
 
-import {useState, useMemo, useEffect} from "react"
+import {useState, useMemo, useEffect, useCallback} from "react"
 import {useParams, useRouter} from "next/navigation"
 import Layout from "@/components/layout"
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
@@ -194,8 +194,8 @@ export default function TrainerSchedulePage(){
   }
 
   const invalidateTrainersQueries = () => qc.invalidateQueries({
-    predicate: (query) => {
-      const root = (query.queryKey as any)?.[0]
+      predicate: (query) => {
+        const root = (query.queryKey as unknown[])?.[0] as { _id?: string } | undefined
       if (!root || typeof root !== "object") return false
       const id = root._id
       return id === "findAllTrainers" || id === "getTrainersForLookup"
@@ -257,7 +257,7 @@ export default function TrainerSchedulePage(){
       for(const s of slots){ if(!sel.has(s)){ sel.add(s); changed = true } }
       return changed ? {...r, selectedStarts: sel} : r
     }))
-  }, [classDuration])
+  }, [classDuration, genSlots])
 
   const toggleEnabled = (weekday:number) => setWeekConfig(prev=> prev.map(r=> {
     if(r.weekday!==weekday) return r
@@ -291,7 +291,7 @@ export default function TrainerSchedulePage(){
   }))
 
   // Generate slots for UI preview
-  const genSlots = (row: WeekConfigRow): string[] => {
+  const genSlots = useCallback((row: WeekConfigRow): string[] => {
     if(!row.enabled) return []
     const out: string[] = []
     let cur = row.shiftStart
@@ -300,7 +300,7 @@ export default function TrainerSchedulePage(){
       cur = addMinutesHHmm(cur, classDuration)
     }
     return out
-  }
+  }, [classDuration])
   const toggleSlot = (weekday:number, start:string) => setWeekConfig(prev=> prev.map(r=> {
     if(r.weekday!==weekday) return r
     const sel = new Set(r.selectedStarts)
@@ -488,4 +488,3 @@ export default function TrainerSchedulePage(){
     </Layout>
   )
 }
-0

@@ -59,7 +59,7 @@ export default function EditExerciseModal({ isOpen, onClose, exercise }: EditExe
                 predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllExercises'
             })
             onClose();
-        } catch (error: any) {
+        } catch (error: unknown) {
             handleHttpError(error, "deletar exercício", "Erro ao deletar exercício. Tente novamente.")
         }
     };

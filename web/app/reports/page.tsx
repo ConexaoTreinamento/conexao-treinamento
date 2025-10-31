@@ -122,7 +122,7 @@ export default function ReportsPage() {
   })
 
   const selectedPeriod = (watch("period") ?? "month") as PeriodKey
-  const watchedCustomRange = watch("customRange") ?? { start: "", end: "" }
+  const watchedCustomRange = useMemo(() => watch("customRange") ?? { start: "", end: "" }, [watch])
   const selectedTrainer = watch("trainerId") ?? "all"
   const searchTerm = watch("searchTerm") ?? ""
   const router = useRouter()
@@ -136,26 +136,23 @@ export default function ReportsPage() {
     }
   }, [router])
 
-  const customRangeStart = watchedCustomRange.start
-  const customRangeEnd = watchedCustomRange.end
-
   const periodRange = useMemo(
     () => computePeriodRange(selectedPeriod, watchedCustomRange),
-    [selectedPeriod, customRangeStart, customRangeEnd]
+    [selectedPeriod, watchedCustomRange]
   )
 
   const customRangeError = useMemo(() => {
-    if (selectedPeriod !== "custom" || !customRangeStart || !customRangeEnd) {
+    if (selectedPeriod !== "custom" || !watchedCustomRange.start || !watchedCustomRange.end) {
       return false
     }
 
-    const startDate = createDateFromInput(customRangeStart)
-    const endDate = createDateFromInput(customRangeEnd)
+    const startDate = createDateFromInput(watchedCustomRange.start)
+    const endDate = createDateFromInput(watchedCustomRange.end)
 
     if (!startDate || !endDate) return false
 
     return startDate > endDate
-  }, [customRangeEnd, customRangeStart, selectedPeriod])
+  }, [watchedCustomRange.end, watchedCustomRange.start, selectedPeriod])
 
   const handlePeriodSelect = (value: string, onChange: (value: PeriodKey) => void) => {
     const period = value as PeriodKey

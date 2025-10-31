@@ -10,13 +10,12 @@ import {Button} from '@/components/ui/button'
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from '@/components/ui/dialog'
 import {Input} from '@/components/ui/input'
 import {Badge} from '@/components/ui/badge'
-import {Plus, Loader2, RefreshCcw, Save, Pencil, Trash2, X} from 'lucide-react'
+import {Plus, Loader2, Save, Trash2} from 'lucide-react'
 import ConfirmDeleteButton from '@/components/confirm-delete-button'
 import {useForm} from 'react-hook-form'
 import {z} from 'zod'
 import {zodResolver} from '@hookform/resolvers/zod'
 import {useToast} from '@/hooks/use-toast'
-import { StudentPlanResponseDto } from '@/lib/api-client'
 
 const planSchema = z.object({
   name: z.string().min(2,'Nome obrigatório'),
@@ -55,7 +54,7 @@ export default function PlansPage(){
       }
       return {prev}
     },
-    onError: (_err: Error, context: any) => {
+    onError: (_err: Error, context: { prev?: unknown[] }) => {
       if(context?.prev) qc.setQueryData(plansQueryOptions.queryKey, context.prev)
       toast({title:'Erro ao excluir plano', variant:'destructive'})
     },
@@ -65,7 +64,7 @@ export default function PlansPage(){
 
   // Normalize plans: support both API field naming variants (planId/planName or id/name)
   const plans = useMemo(()=> {
-    const list = (data||[]) as any[]
+    const list = (data||[]) as Array<{ planId?: string; id?: string; planName?: string; name?: string; planMaxDays?: number; maxDays?: number; planDurationDays?: number; durationDays?: number }>
     const normalized = list.map(p => ({
       _raw: p,
       id: p.planId ?? p.id,
@@ -126,7 +125,7 @@ export default function PlansPage(){
         {error && <Card><CardContent className="p-6 text-sm text-red-600">Erro ao carregar planos.</CardContent></Card>}
         {isLoading && <div className="space-y-2">{[...Array(3)].map((_,i)=><Card key={i} className="animate-pulse"><CardContent className="h-16"/></Card>)}</div>}
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {plans.map(({_raw: p, id, name, maxDays, durationDays})=> {
+          {plans.map(({id, name, maxDays, durationDays})=> {
             return (
               <Card key={id} className={'border-l-4 border-l-green-600'}>
                 <CardHeader className="pb-2">

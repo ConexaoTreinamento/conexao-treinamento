@@ -24,7 +24,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useEvaluations } from '@/lib/hooks/evaluation-queries'
 
-// Type definitions
+// Type definitions - not used but kept for future reference
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Evaluation {
   id: string
   date: string
@@ -177,8 +178,9 @@ export default function StudentProfilePage() {
         qc.invalidateQueries({ queryKey: getStudentPlanHistoryQueryKey(currentPlanOptions) }),
         qc.invalidateQueries({ queryKey: getStudentCommitmentsQueryKey(currentPlanOptions) }),
       ])
-    } catch (e:any) {
-      toast({ title: 'Erro ao atribuir plano', description: e?.message || 'Tente novamente', variant: 'destructive' })
+    } catch (e: unknown) {
+      const errorMessage = (e instanceof Error && e.message) || (typeof e === 'object' && e !== null && 'message' in e && typeof e.message === 'string' ? e.message : null) || 'Tente novamente'
+      toast({ title: 'Erro ao atribuir plano', description: errorMessage, variant: 'destructive' })
     }
   }
 

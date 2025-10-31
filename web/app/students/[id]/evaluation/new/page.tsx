@@ -18,7 +18,7 @@ export default function StudentEvaluationPage() {
   // Create evaluation mutation
   const createEvaluation = useCreateEvaluation()
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: Record<string, unknown>) => {
     try {
       // Convert string values to numbers and prepare the request
       const requestData = {
