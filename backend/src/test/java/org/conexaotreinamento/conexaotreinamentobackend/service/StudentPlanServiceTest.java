@@ -147,6 +147,43 @@ class StudentPlanServiceTest {
     }
 
     @Test
+    void restorePlan_success_activatesInactivePlan() {
+        // Arrange
+        StudentPlan inactive = newPlan(planId, "Silver", 2, 14, false);
+        when(studentPlanRepository.findById(planId)).thenReturn(Optional.of(inactive));
+        when(studentPlanRepository.save(any(StudentPlan.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // Act
+        StudentPlanResponseDTO dto = studentPlanService.restorePlan(planId);
+
+        // Assert
+        assertTrue(dto.getActive());
+        verify(studentPlanRepository).save(inactive);
+    }
+
+    @Test
+    void restorePlan_notFound_throws404() {
+        // Arrange
+        when(studentPlanRepository.findById(planId)).thenReturn(Optional.empty());
+
+        // Act + Assert
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.restorePlan(planId));
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+
+    @Test
+    void restorePlan_alreadyActive_conflict() {
+        // Arrange
+        StudentPlan active = newPlan(planId, "Gold", 3, 30, true);
+        when(studentPlanRepository.findById(planId)).thenReturn(Optional.of(active));
+
+        // Act + Assert
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.restorePlan(planId));
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        verify(studentPlanRepository, never()).save(any());
+    }
+
+    @Test
     void getAllActivePlans_returnsMappedList() {
         // Arrange
         StudentPlan p1 = newPlan(UUID.randomUUID(), "A", 2, 14, true);
