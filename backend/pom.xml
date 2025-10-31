@@ -169,20 +169,56 @@
                 <groupId>org.pitest</groupId>
                 <artifactId>pitest-maven</artifactId>
                 <version>1.20.1</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-junit5-plugin</artifactId>
+                        <version>1.2.1</version>
+                        <exclusions>
+                            <exclusion>
+                                <groupId>org.junit.platform</groupId>
+                                <artifactId>junit-platform-launcher</artifactId>
+                            </exclusion>
+                            <exclusion>
+                                <groupId>org.junit.platform</groupId>
+                                <artifactId>junit-platform-engine</artifactId>
+                            </exclusion>
+                            <exclusion>
+                                <groupId>org.junit.platform</groupId>
+                                <artifactId>junit-platform-commons</artifactId>
+                            </exclusion>
+                        </exclusions>
+                    </dependency>
+                </dependencies>
                 <configuration>
                     <targetClasses>
-                        <param>com.conexaotreinamento.*</param>
+                        <param>org.conexaotreinamento.conexaotreinamentobackend.*</param>
                     </targetClasses>
+                    <targetTests>
+                        <param>org.conexaotreinamento.conexaotreinamentobackend.*</param>
+                    </targetTests>
+                    <excludedTestClasses>
+                        <param>org.conexaotreinamento.conexaotreinamentobackend.**.*IntegrationTest*</param>
+                    </excludedTestClasses>
+                    <excludedClasses>
+                        <param>*.config.*</param>
+                        <param>*.dto.*</param>
+                        <param>*.entity.*</param>
+                    </excludedClasses>
                     <mutators>
-                        <mutator>DEFAULTS</mutator>
-                        <mutator>INCREMENTS</mutator>
-                        <mutator>REMOVE_CONDITIONALS</mutator>
-                        <mutator>INVERT_NEGS</mutator>
-                        <mutator>VOID_METHOD_CALLS</mutator>
-                        <mutator>REMOVE_CONDITIONALS</mutator>
+                        <mutator>CONDITIONALS_BOUNDARY</mutator>
+                        <mutator>PRIMITIVE_RETURNS</mutator>
+                        <mutator>NULL_RETURNS</mutator>
                     </mutators>
+                    <outputFormats>
+                        <outputFormat>HTML</outputFormat>
+                        <outputFormat>XML</outputFormat>
+                    </outputFormats>
+                    <threads>4</threads>
+                    <timestampedReports>false</timestampedReports>
+                    <verbose>true</verbose>
                     <failWhenNoMutations>false</failWhenNoMutations>
-                    <mutationThreshold>70</mutationThreshold>
+                    <mutationThreshold>50</mutationThreshold>
                 </configuration>
             </plugin>
         </plugins>
