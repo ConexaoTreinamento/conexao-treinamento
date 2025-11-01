@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, Save, Calculator, User } from "lucide-react"
-import { useRouter } from "next/navigation"
 
 export interface EvaluationFormValues {
   id?: string
@@ -59,7 +58,6 @@ export default function EvaluationForm({
   onSubmit,
   onCancel
 }: EvaluationFormProps) {
-  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
   const [evaluationData, setEvaluationData] = useState<EvaluationFormValues>({
@@ -185,7 +183,7 @@ export default function EvaluationForm({
   }
 
   return (
-    <div className="space-y-4">
+  <div className="space-y-4" data-student-id={studentId}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">

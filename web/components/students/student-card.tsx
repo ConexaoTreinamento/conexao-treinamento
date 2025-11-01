@@ -1,6 +1,5 @@
 import {useMemo, type MouseEvent} from "react"
 import {Card, CardContent} from "@/components/ui/card"
-import {Badge} from "@/components/ui/badge"
 import {Activity, Calendar, Mail, Phone, RotateCcw, Trash2} from "lucide-react"
 import {Button} from "@/components/ui/button"
 import ConfirmDeleteButton from "@/components/confirm-delete-button"

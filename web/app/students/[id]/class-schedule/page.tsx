@@ -24,7 +24,6 @@ import {
   getCurrentStudentPlanOptions,
   getScheduleQueryKey,
   getSessionSeriesCommitmentsOptions,
-  getStudentCommitmentsOptions,
   getStudentCommitmentsQueryKey,
   getTrainersForLookupOptions,
 } from "@/lib/api-client/@tanstack/react-query.gen"
@@ -62,6 +61,12 @@ const deriveEndTime = (start?: string, intervalDuration?: number) => {
   }
   const duration = intervalDuration ?? 60
   return `${addMinutesHHmm(base, duration)}:00`
+}
+
+const hasTimeWindow = (
+  series?: NormalizedSeries | null
+): series is NormalizedSeries & { startTime: string; endTime: string } => {
+  return Boolean(series?.startTime && series?.endTime)
 }
 
 type ParticipantFilter = "ALL" | "ATTENDING"
@@ -323,7 +328,7 @@ export default function ClassSchedulePage() {
   }, [openParticipantsFor, openHistoryFor, participantsQuery, historyQuery, activeCommitmentsQuery])
 
   const hasConflict = (series: NormalizedSeries) => {
-    if (!series.startTime || !series.endTime) {
+    if (!hasTimeWindow(series)) {
       return false
     }
     return selectedSeries.some((id) => {
@@ -331,7 +336,7 @@ export default function ClassSchedulePage() {
         return false
       }
       const other = seriesById.get(id)
-      if (!other || other.weekday !== series.weekday || !other.startTime || !other.endTime) {
+      if (!hasTimeWindow(other) || other.weekday !== series.weekday) {
         return false
       }
       return other.startTime < series.endTime && series.startTime < other.endTime
@@ -341,7 +346,7 @@ export default function ClassSchedulePage() {
   const anyConflict = useMemo(() => {
     for (const id of selectedSeries) {
       const series = seriesById.get(id)
-      if (!series?.startTime || !series.endTime) {
+      if (!hasTimeWindow(series)) {
         continue
       }
       for (const otherId of selectedSeries) {
@@ -349,7 +354,7 @@ export default function ClassSchedulePage() {
           continue
         }
         const other = seriesById.get(otherId)
-        if (!other || other.weekday !== series.weekday || !other.startTime || !other.endTime) {
+        if (!hasTimeWindow(other) || other.weekday !== series.weekday) {
           continue
         }
         if (other.startTime < series.endTime && series.startTime < other.endTime) {
