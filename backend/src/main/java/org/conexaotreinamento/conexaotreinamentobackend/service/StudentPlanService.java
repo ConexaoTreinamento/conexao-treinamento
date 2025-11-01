@@ -58,19 +58,24 @@ public class StudentPlanService {
         StudentPlan plan = studentPlanRepository.findByIdAndActiveTrue(planId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
                 "Plan not found or inactive"));
-        
-        // Check if plan is currently assigned to any students
-        boolean hasActiveAssignments = assignmentRepository.findAllCurrentlyActive()
-            .stream()
-            .anyMatch(assignment -> assignment.getPlanId().equals(planId));
-        
-        if (hasActiveAssignments) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, 
-                "Cannot delete plan that is currently assigned to students");
-        }
-        
+
         plan.softDelete();
         studentPlanRepository.save(plan);
+    }
+
+    @Transactional
+    public StudentPlanResponseDTO restorePlan(UUID planId) {
+        // Look up the plan regardless of active status
+        StudentPlan plan = studentPlanRepository.findById(planId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Plan not found"));
+
+        if (plan.isActive()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Plan is already active");
+        }
+
+        plan.restore();
+        StudentPlan saved = studentPlanRepository.save(plan);
+        return mapToResponseDTO(saved);
     }
     
     @Transactional(readOnly = true)
@@ -79,6 +84,24 @@ public class StudentPlanService {
             .stream()
             .map(this::mapToResponseDTO)
             .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<StudentPlanResponseDTO> getPlansByStatus(String status) {
+        String normalized = status == null ? "active" : status.trim().toLowerCase();
+        List<StudentPlan> plans;
+        switch (normalized) {
+            case "all":
+                plans = studentPlanRepository.findAllByOrderByNameAsc();
+                break;
+            case "inactive":
+                plans = studentPlanRepository.findByActiveFalseOrderByNameAsc();
+                break;
+            case "active":
+            default:
+                plans = studentPlanRepository.findByActiveTrueOrderByNameAsc();
+        }
+        return plans.stream().map(this::mapToResponseDTO).toList();
     }
     
     @Transactional(readOnly = true)

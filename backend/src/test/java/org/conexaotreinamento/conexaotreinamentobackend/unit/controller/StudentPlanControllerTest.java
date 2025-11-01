@@ -92,7 +92,7 @@ class StudentPlanControllerTest {
     @Test
     void getAllPlans_returnsOk_listOfPlans() throws Exception {
         // Arrange
-        when(studentPlanService.getAllActivePlans()).thenReturn(List.of(
+        when(studentPlanService.getPlansByStatus("active")).thenReturn(List.of(
                 planDto(UUID.randomUUID(), "Gold", 3, 30, true),
                 planDto(UUID.randomUUID(), "Silver", 2, 14, true)
         ));
@@ -147,6 +147,21 @@ class StudentPlanControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(studentPlanService).deletePlan(planId);
+    }
+
+    @Test
+    void restorePlan_returnsOk_andInvokesService() throws Exception {
+        // Arrange
+        StudentPlanResponseDTO restored = planDto(planId, "Silver", 2, 14, true);
+        when(studentPlanService.restorePlan(planId)).thenReturn(restored);
+
+        // Act + Assert
+        mockMvc.perform(post("/plans/{planId}/restore", planId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(planId.toString()))
+                .andExpect(jsonPath("$.active").value(true));
+
+        verify(studentPlanService).restorePlan(planId);
     }
 
     @Test

@@ -22,6 +22,11 @@ public interface StudentPlanRepository extends JpaRepository<StudentPlan, UUID> 
     boolean existsByNameAndActiveTrue(String name);
     
     Optional<StudentPlan> findByIdAndActiveTrue(UUID id);
+    Optional<StudentPlan> findByIdAndActiveFalse(UUID id);
     
     List<StudentPlan> findByActiveTrueOrderByNameAsc();
+
+    List<StudentPlan> findByActiveFalseOrderByNameAsc();
+
+    List<StudentPlan> findAllByOrderByNameAsc();
 }

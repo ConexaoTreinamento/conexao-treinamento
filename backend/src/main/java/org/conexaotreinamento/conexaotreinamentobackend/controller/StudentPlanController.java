@@ -30,8 +30,9 @@ public class StudentPlanController {
 
     // Plan management endpoints
     @GetMapping
-    public ResponseEntity<List<StudentPlanResponseDTO>> getAllPlans() {
-        List<StudentPlanResponseDTO> plans = studentPlanService.getAllActivePlans();
+    public ResponseEntity<List<StudentPlanResponseDTO>> getAllPlans(
+            @RequestParam(name = "status", defaultValue = "active") String status) {
+        List<StudentPlanResponseDTO> plans = studentPlanService.getPlansByStatus(status);
         return ResponseEntity.ok(plans);
     }
     
@@ -51,6 +52,12 @@ public class StudentPlanController {
     public ResponseEntity<Void> deletePlan(@PathVariable UUID planId) {
         studentPlanService.deletePlan(planId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{planId}/restore")
+    public ResponseEntity<StudentPlanResponseDTO> restorePlan(@PathVariable UUID planId) {
+        StudentPlanResponseDTO restored = studentPlanService.restorePlan(planId);
+        return ResponseEntity.ok(restored);
     }
     
     // Student plan assignment endpoints
