@@ -1,294 +1,186 @@
 "use client"
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, User, Edit, Calendar } from "lucide-react"
-import { useRouter, useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import Layout from "@/components/layout"
+import { EvaluationDetailHeader } from "@/components/students/evaluations/evaluation-detail-header"
+import { EvaluationLoading } from "@/components/students/evaluations/evaluation-loading"
+import { EvaluationMeasurementsCard } from "@/components/students/evaluations/evaluation-measurements-card"
+import { EvaluationNotFound } from "@/components/students/evaluations/evaluation-not-found"
+import { EvaluationSummaryCard } from "@/components/students/evaluations/evaluation-summary-card"
 import { useEvaluation } from "@/lib/hooks/evaluation-queries"
 import { useStudent } from "@/lib/hooks/student-queries"
+
+const ensureParam = (value: unknown): string => {
+  if (typeof value === "string") {
+    return value
+  }
+  if (Array.isArray(value) && value.length > 0 && typeof value[0] === "string") {
+    return value[0]
+  }
+  return ""
+}
+
+const getBmiStatus = (bmi: number | null | undefined) => {
+  if (bmi === null || bmi === undefined) {
+    return undefined
+  }
+  if (bmi < 18.5) {
+    return { label: "Abaixo do peso", className: "bg-blue-500" }
+  }
+  if (bmi < 25) {
+    return { label: "Peso normal", className: "bg-green-500" }
+  }
+  if (bmi < 30) {
+    return { label: "Sobrepeso", className: "bg-yellow-500" }
+  }
+  return { label: "Obesidade", className: "bg-red-500" }
+}
 
 export default function EvaluationDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const studentId = params.id as string
-  const evaluationId = params.evaluationId as string
 
-  // Get student and evaluation data
-  const { data: student, isLoading: isLoadingStudent } = useStudent({ path: { id: studentId } })
-  const { data: evaluation, isLoading: isLoadingEvaluation } = useEvaluation(studentId, evaluationId)
+  const studentId = ensureParam(params.id)
+  const evaluationId = ensureParam(params.evaluationId)
 
-  const loading = isLoadingStudent || isLoadingEvaluation
+  const {
+    data: student,
+    isLoading: isStudentLoading,
+    error: studentError,
+  } = useStudent(
+    { path: { id: studentId } },
+    { enabled: studentId.length > 0 }
+  )
 
-  if (loading) {
+  const {
+    data: evaluation,
+    isLoading: isEvaluationLoading,
+    error: evaluationError,
+  } = useEvaluation(studentId, evaluationId, {
+    enabled: studentId.length > 0 && evaluationId.length > 0,
+  })
+
+  if (isStudentLoading || isEvaluationLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-2 text-sm text-muted-foreground">Carregando avaliação...</p>
-          </div>
+        <EvaluationLoading message="Carregando avaliação..." />
+      </Layout>
+    )
+  }
+
+  if (studentError || evaluationError) {
+    const message =
+      studentError?.message ??
+      evaluationError?.message ??
+      "Não foi possível carregar a avaliação."
+
+    return (
+      <Layout>
+        <div className="flex h-64 items-center justify-center">
+          <p className="text-sm text-muted-foreground">{message}</p>
         </div>
       </Layout>
     )
   }
 
-  if (!evaluation || !student) {
+  if (!student || !evaluation) {
     return (
       <Layout>
-        <div className="text-center py-8">
-          <p>Avaliação não encontrada</p>
-        </div>
+        <EvaluationNotFound />
       </Layout>
     )
   }
 
-  const getBMIStatus = (bmi: number) => {
-    if (bmi < 18.5) return { text: "Abaixo do peso", color: "bg-blue-500" }
-    if (bmi < 25) return { text: "Peso normal", color: "bg-green-500" }
-    if (bmi < 30) return { text: "Sobrepeso", color: "bg-yellow-500" }
-    return { text: "Obesidade", color: "bg-red-500" }
-  }
-
-  const bmiStatus = getBMIStatus(evaluation.bmi)
+  const studentName = `${student.name} ${student.surname}`.trim()
+  const bmiStatus = getBmiStatus(evaluation.bmi)
 
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.back()}>
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold">Avaliação Física</h1>
-              <p className="text-sm text-muted-foreground">{`${student.name} ${student.surname}`}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              {new Date(evaluation.date).toLocaleDateString("pt-BR")}
-            </Badge>
-            <Button size="sm" variant="outline" onClick={() => router.push(`/students/${studentId}/evaluation/${evaluationId}/edit`)}>
-              <Edit className="w-4 h-4 mr-2" />
-              Editar
-            </Button>
-          </div>
-        </div>
+        <EvaluationDetailHeader
+          studentName={studentName}
+          evaluationDate={evaluation.date}
+          onBack={() => router.back()}
+          onEdit={() =>
+            router.push(`/students/${studentId}/evaluation/${evaluationId}/edit`)
+          }
+        />
 
-        {/* Dados Básicos */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="w-5 h-5" />
-              Dados Básicos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-primary">{evaluation.weight} kg</p>
-                <p className="text-sm text-muted-foreground">Peso</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-primary">{evaluation.height} cm</p>
-                <p className="text-sm text-muted-foreground">Altura</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-primary">{evaluation.bmi}</p>
-                <p className="text-sm text-muted-foreground">IMC</p>
-              </div>
-              <div className="text-center">
-                <Badge className={`${bmiStatus.color} text-white`}>
-                  {bmiStatus.text}
-                </Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <EvaluationSummaryCard
+          weight={evaluation.weight}
+          height={evaluation.height}
+          bmi={evaluation.bmi}
+          bmiStatus={bmiStatus}
+        />
 
-        {/* Circunferências */}
-        {evaluation.circumferences && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Circunferências</CardTitle>
-            <CardDescription>Medidas em centímetros</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Braços */}
-            <div>
-              <h3 className="font-semibold mb-3">Braços</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {evaluation.circumferences.rightArmRelaxed && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Direito Relaxado</p>
-                  <p className="font-medium">{evaluation.circumferences.rightArmRelaxed} cm</p>
-                </div>
-                )}
-                {evaluation.circumferences.leftArmRelaxed && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Esquerdo Relaxado</p>
-                  <p className="font-medium">{evaluation.circumferences.leftArmRelaxed} cm</p>
-                </div>
-                )}
-                {evaluation.circumferences.rightArmFlexed && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Direito Flexionado</p>
-                  <p className="font-medium">{evaluation.circumferences.rightArmFlexed} cm</p>
-                </div>
-                )}
-                {evaluation.circumferences.leftArmFlexed && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Esquerdo Flexionado</p>
-                  <p className="font-medium">{evaluation.circumferences.leftArmFlexed} cm</p>
-                </div>
-                )}
-              </div>
-            </div>
+        <EvaluationMeasurementsCard
+          title="Circunferências"
+          description="Medidas em centímetros"
+          groups={[
+            {
+              title: "Braços",
+              gridClassName: "grid grid-cols-2 gap-4 md:grid-cols-4",
+              metrics: [
+                { label: "Direito Relaxado", value: evaluation.circumferences?.rightArmRelaxed, unit: "cm" },
+                { label: "Esquerdo Relaxado", value: evaluation.circumferences?.leftArmRelaxed, unit: "cm" },
+                { label: "Direito Flexionado", value: evaluation.circumferences?.rightArmFlexed, unit: "cm" },
+                { label: "Esquerdo Flexionado", value: evaluation.circumferences?.leftArmFlexed, unit: "cm" },
+              ],
+            },
+            {
+              title: "Tronco",
+              gridClassName: "grid grid-cols-1 gap-4 md:grid-cols-3",
+              metrics: [
+                { label: "Cintura", value: evaluation.circumferences?.waist, unit: "cm" },
+                { label: "Abdômen", value: evaluation.circumferences?.abdomen, unit: "cm" },
+                { label: "Quadril", value: evaluation.circumferences?.hip, unit: "cm" },
+              ],
+            },
+            {
+              title: "Pernas",
+              gridClassName: "grid grid-cols-2 gap-4 md:grid-cols-4",
+              metrics: [
+                { label: "Coxa Direita", value: evaluation.circumferences?.rightThigh, unit: "cm" },
+                { label: "Coxa Esquerda", value: evaluation.circumferences?.leftThigh, unit: "cm" },
+                { label: "Panturrilha Direita", value: evaluation.circumferences?.rightCalf, unit: "cm" },
+                { label: "Panturrilha Esquerda", value: evaluation.circumferences?.leftCalf, unit: "cm" },
+              ],
+            },
+          ]}
+        />
 
-            {/* Tronco */}
-            <div>
-              <h3 className="font-semibold mb-3">Tronco</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {evaluation.circumferences.waist && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Cintura</p>
-                  <p className="font-medium">{evaluation.circumferences.waist} cm</p>
-                </div>
-                )}
-                {evaluation.circumferences.abdomen && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Abdômen</p>
-                  <p className="font-medium">{evaluation.circumferences.abdomen} cm</p>
-                </div>
-                )}
-                {evaluation.circumferences.hip && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Quadril</p>
-                  <p className="font-medium">{evaluation.circumferences.hip} cm</p>
-                </div>
-                )}
-              </div>
-            </div>
+        <EvaluationMeasurementsCard
+          title="Dobras Subcutâneas"
+          description="Medidas em milímetros"
+          groups={[
+            {
+              gridClassName: "grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-7",
+              metrics: [
+                { label: "Tríceps", value: evaluation.subcutaneousFolds?.triceps, unit: "mm" },
+                { label: "Tórax", value: evaluation.subcutaneousFolds?.thorax, unit: "mm" },
+                { label: "Subaxilar", value: evaluation.subcutaneousFolds?.subaxillary, unit: "mm" },
+                { label: "Subescapular", value: evaluation.subcutaneousFolds?.subscapular, unit: "mm" },
+                { label: "Abdominal", value: evaluation.subcutaneousFolds?.abdominal, unit: "mm" },
+                { label: "Suprailíaca", value: evaluation.subcutaneousFolds?.suprailiac, unit: "mm" },
+                { label: "Coxa", value: evaluation.subcutaneousFolds?.thigh, unit: "mm" },
+              ],
+            },
+          ]}
+        />
 
-            {/* Pernas */}
-            <div>
-              <h3 className="font-semibold mb-3">Pernas</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {evaluation.circumferences.rightThigh && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Coxa Direita</p>
-                  <p className="font-medium">{evaluation.circumferences.rightThigh} cm</p>
-                </div>
-                )}
-                {evaluation.circumferences.leftThigh && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Coxa Esquerda</p>
-                  <p className="font-medium">{evaluation.circumferences.leftThigh} cm</p>
-                </div>
-                )}
-                {evaluation.circumferences.rightCalf && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Panturrilha Direita</p>
-                  <p className="font-medium">{evaluation.circumferences.rightCalf} cm</p>
-                </div>
-                )}
-                {evaluation.circumferences.leftCalf && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Panturrilha Esquerda</p>
-                  <p className="font-medium">{evaluation.circumferences.leftCalf} cm</p>
-                </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        )}
-
-        {/* Dobras Subcutâneas */}
-        {evaluation.subcutaneousFolds && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Dobras Subcutâneas</CardTitle>
-            <CardDescription>Medidas em milímetros</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-              {evaluation.subcutaneousFolds.triceps && (
-              <div>
-                <p className="text-sm text-muted-foreground">Tríceps</p>
-                <p className="font-medium">{evaluation.subcutaneousFolds.triceps} mm</p>
-              </div>
-              )}
-              {evaluation.subcutaneousFolds.thorax && (
-              <div>
-                <p className="text-sm text-muted-foreground">Tórax</p>
-                <p className="font-medium">{evaluation.subcutaneousFolds.thorax} mm</p>
-              </div>
-              )}
-              {evaluation.subcutaneousFolds.subaxillary && (
-              <div>
-                <p className="text-sm text-muted-foreground">Subaxilar</p>
-                <p className="font-medium">{evaluation.subcutaneousFolds.subaxillary} mm</p>
-              </div>
-              )}
-              {evaluation.subcutaneousFolds.subscapular && (
-              <div>
-                <p className="text-sm text-muted-foreground">Subescapular</p>
-                <p className="font-medium">{evaluation.subcutaneousFolds.subscapular} mm</p>
-              </div>
-              )}
-              {evaluation.subcutaneousFolds.abdominal && (
-              <div>
-                <p className="text-sm text-muted-foreground">Abdominal</p>
-                <p className="font-medium">{evaluation.subcutaneousFolds.abdominal} mm</p>
-              </div>
-              )}
-              {evaluation.subcutaneousFolds.suprailiac && (
-              <div>
-                <p className="text-sm text-muted-foreground">Suprailíaca</p>
-                <p className="font-medium">{evaluation.subcutaneousFolds.suprailiac} mm</p>
-              </div>
-              )}
-              {evaluation.subcutaneousFolds.thigh && (
-              <div>
-                <p className="text-sm text-muted-foreground">Coxa</p>
-                <p className="font-medium">{evaluation.subcutaneousFolds.thigh} mm</p>
-              </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-        )}
-
-        {/* Diâmetros */}
-        {evaluation.diameters && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Diâmetros</CardTitle>
-            <CardDescription>Medidas em centímetros</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md">
-              {evaluation.diameters.umerus && (
-              <div>
-                <p className="text-sm text-muted-foreground">Cotovelo</p>
-                <p className="font-medium">{evaluation.diameters.umerus} cm</p>
-              </div>
-              )}
-              {evaluation.diameters.femur && (
-              <div>
-                <p className="text-sm text-muted-foreground">Joelho</p>
-                <p className="font-medium">{evaluation.diameters.femur} cm</p>
-              </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-        )}
+        <EvaluationMeasurementsCard
+          title="Diâmetros"
+          description="Medidas em centímetros"
+          groups={[
+            {
+              gridClassName: "grid max-w-md grid-cols-1 gap-4 md:grid-cols-2",
+              metrics: [
+                { label: "Cotovelo", value: evaluation.diameters?.umerus, unit: "cm" },
+                { label: "Joelho", value: evaluation.diameters?.femur, unit: "cm" },
+              ],
+            },
+          ]}
+        />
       </div>
     </Layout>
   )

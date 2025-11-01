@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { ArrowLeft, Save, Calculator, User } from "lucide-react"
 import { useRouter } from "next/navigation"
 
-interface EvaluationData {
+export interface EvaluationFormValues {
   id?: string
   weight: string
   height: string
@@ -45,9 +45,9 @@ interface EvaluationData {
 interface EvaluationFormProps {
   studentId: string
   studentName: string
-  initialData?: Partial<EvaluationData>
+  initialData?: Partial<EvaluationFormValues>
   isEdit?: boolean
-  onSubmit: (data: EvaluationData) => Promise<void>
+  onSubmit: (data: EvaluationFormValues) => Promise<void>
   onCancel: () => void
 }
 
@@ -62,7 +62,7 @@ export default function EvaluationForm({
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
-  const [evaluationData, setEvaluationData] = useState<EvaluationData>({
+  const [evaluationData, setEvaluationData] = useState<EvaluationFormValues>({
     // Dados básicos
     weight: "",
     height: "",
@@ -104,7 +104,7 @@ export default function EvaluationForm({
   // Load initial data if provided (for editing)
   useEffect(() => {
     if (initialData) {
-      setEvaluationData({
+  setEvaluationData({
         id: initialData.id,
         weight: initialData.weight || "",
         height: initialData.height || "",
