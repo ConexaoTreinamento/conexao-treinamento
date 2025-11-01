@@ -18,17 +18,19 @@ import type {Options, StudentResponseDto, UpdateStudentData} from "@/lib/api-cli
 export const useCreateStudent = () => {
   const queryClient = useQueryClient();
   const base = createStudentMutation();
+  const baseOnSuccess = base.onSuccess;
 
   return useMutation({
     ...base,
-    onSuccess: async (...args) => {
-      try {
-        if (base.onSuccess) {
-          await (base.onSuccess)(...args);
+    onSuccess: async (data, variables, context) => {
+      if (baseOnSuccess) {
+        try {
+          await baseOnSuccess(data, variables, context);
+        } catch (_error: unknown) {
+          // Best-effort: preserve base behaviour even if hook consumer swallows errors
         }
-      } catch (e) {
-        // ignore
       }
+
       await queryClient.invalidateQueries({
         predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === "findAllStudents",
       });
@@ -38,15 +40,25 @@ export const useCreateStudent = () => {
 
 export const useUpdateStudent = (options: UseMutationOptions<StudentResponseDto, Error, Options<UpdateStudentData>>) => {
   const queryClient = useQueryClient();
+  const base = updateStudentMutation();
+  const baseOnSuccess = base.onSuccess;
 
-  return useMutation({
-    ...updateStudentMutation(),
+  return useMutation<StudentResponseDto, Error, Options<UpdateStudentData>>({
+    ...base,
     ...options,
-    onSuccess: async (...args) => {
+    onSuccess: async (data, variables, context) => {
+      if (baseOnSuccess) {
+        try {
+          await baseOnSuccess(data, variables, context);
+        } catch (_error: unknown) {
+          // ignore
+        }
+      }
+
       if (options.onSuccess) {
         try {
-          await options.onSuccess(...args)
-        } catch (e) {
+          await options.onSuccess(data, variables, context)
+        } catch (_error: unknown) {
           // ignore
         }
       }
@@ -56,7 +68,7 @@ export const useUpdateStudent = (options: UseMutationOptions<StudentResponseDto,
       }),
         // Invalidate the specific cached student (findById) so the details refresh
         queryClient.invalidateQueries({
-          queryKey: findStudentByIdOptions({path: {id: args[1].path.id ?? ""}, client: apiClient}).queryKey
+          queryKey: findStudentByIdOptions({path: {id: variables.path.id ?? ""}, client: apiClient}).queryKey
         })])
     }
   });
@@ -65,12 +77,17 @@ export const useUpdateStudent = (options: UseMutationOptions<StudentResponseDto,
 export const useDeleteStudent = () => {
   const queryClient = useQueryClient();
   const base = deleteStudentMutation();
+  const baseOnSuccess = base.onSuccess;
 
   return useMutation({
     ...base,
-    onSuccess: async (...args) => {
-      if (base.onSuccess) {
-        await (base.onSuccess)(...args);
+    onSuccess: async (data, variables, context) => {
+      if (baseOnSuccess) {
+        try {
+          await baseOnSuccess(data, variables, context);
+        } catch (_error: unknown) {
+          // ignore
+        }
       }
       await queryClient.invalidateQueries({
         predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === "findAllStudents",
@@ -82,11 +99,18 @@ export const useDeleteStudent = () => {
 export const useRestoreStudent = () => {
   const queryClient = useQueryClient();
   const base = restoreStudentMutation();
+  const baseOnSuccess = base.onSuccess;
 
   return useMutation({
     ...base,
-    onSuccess: async (...args) => {
-      if (base.onSuccess) await (base.onSuccess)(...args);
+    onSuccess: async (data, variables, context) => {
+      if (baseOnSuccess) {
+        try {
+          await baseOnSuccess(data, variables, context);
+        } catch (error: unknown) {
+          // ignore
+        }
+      }
       await queryClient.invalidateQueries({
         predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === "findAllStudents",
       });

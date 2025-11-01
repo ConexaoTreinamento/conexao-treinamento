@@ -133,7 +133,7 @@ export default function StudentForm({
   })
 
   // Load plans from API
-  const plansQueryOptions = getAllPlansOptions({ client: apiClient, query: { status: "active" } })
+  const plansQueryOptions = getAllPlansOptions({ client: apiClient })
   const { data: plansData, isLoading: plansLoading } = useQuery(plansQueryOptions)
   const availablePlans: StudentPlanResponseDto[] = Array.isArray(plansData)
     ? (plansData as StudentPlanResponseDto[])

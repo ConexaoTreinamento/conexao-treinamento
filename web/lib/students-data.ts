@@ -60,8 +60,8 @@ export interface StudentProfile extends Student {
     }>
   }
   objectives: string[]
-  evaluations: any[]
-  recentClasses: any[]
+  evaluations: unknown[]
+  recentClasses: unknown[]
   classSchedule: {
     daysPerWeek: number
     selectedClasses: Array<{
@@ -71,7 +71,7 @@ export interface StudentProfile extends Student {
       instructor: string
     }>
   }
-  exercises: any[]
+  exercises: unknown[]
 }
 
 // Base student data for lists and basic info
