@@ -111,7 +111,6 @@ class StudentPlanServiceTest {
         // Arrange
         StudentPlan plan = newPlan(planId, "Silver", 2, 14, true);
         when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(plan));
-        when(assignmentRepository.findAllCurrentlyActive()).thenReturn(List.of()); // no active assignments
         when(studentPlanRepository.save(any(StudentPlan.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
@@ -123,17 +122,17 @@ class StudentPlanServiceTest {
     }
 
     @Test
-    void deletePlan_conflict_whenActiveAssignmentsExist() {
+    void deletePlan_softDeletes_evenWhenActiveAssignmentsExist() {
         // Arrange
         StudentPlan plan = newPlan(planId, "Silver", 2, 14, true);
         when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(plan));
-        StudentPlanAssignment activeAssign = assignment(UUID.randomUUID(), studentId, planId, LocalDate.now(), LocalDate.now().plusDays(14), userId);
-        when(assignmentRepository.findAllCurrentlyActive()).thenReturn(List.of(activeAssign));
 
-        // Act + Assert
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.deletePlan(planId));
-        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
-        verify(studentPlanRepository, never()).save(any());
+        // Act
+        studentPlanService.deletePlan(planId);
+
+        // Assert
+        assertFalse(plan.isActive(), "Plan should be soft deleted even with active assignments");
+        verify(studentPlanRepository).save(plan);
     }
 
     @Test
