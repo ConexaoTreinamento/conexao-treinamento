@@ -15,6 +15,7 @@ import { apiClient } from "@/lib/client"
 import { getReportsOptions, getTrainersForLookupOptions } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { AgeDistributionDto, TrainerLookupDto, TrainerReportDto } from "@/lib/api-client/types.gen"
 import { TrainerSelect } from "@/components/trainer-select"
+import { PageHeader } from "@/components/ui/page-header"
 
 type PeriodKey = "week" | "month" | "quarter" | "year" | "custom"
 
@@ -272,10 +273,10 @@ export default function ReportsPage() {
     <Layout>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Relatórios</h1>
-            <p className="text-muted-foreground">Análise de horas trabalhadas e aulas ministradas</p>
-          </div>
+          <PageHeader 
+            title="Relatórios" 
+            description="Análise de horas trabalhadas e aulas ministradas" 
+          />
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">

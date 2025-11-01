@@ -14,6 +14,7 @@ import { apiClient } from "@/lib/client"
 import { getScheduleOptions, findAllTrainersOptions, getSessionOptions, getScheduleQueryKey, createOneOffSessionMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { SessionResponseDto, StudentCommitmentResponseDto, TrainerResponseDto } from "@/lib/api-client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { PageHeader } from "@/components/ui/page-header"
 
 export default function SchedulePage() {
   return (
@@ -346,7 +347,9 @@ function SchedulePageContent() {
         <div className="flex flex-col space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Agenda</h1>
+          <PageHeader 
+            title="Agenda" 
+          />
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={goToToday}>
                 <CalendarDays className="w-4 h-4 mr-1" />
