@@ -160,11 +160,11 @@ export default function TrainerModal({
         <div className="space-y-6">
           {/* Personal Information */}
           <div className="space-y-4">
-            <h4 className="text-sm font-medium">Informações Pessoais</h4>
+            <h4 className="text-sm font-medium">Informações pessoais</h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="trainerName">Nome Completo *</Label>
+                <Label htmlFor="trainerName">Nome completo *</Label>
                 <Input
                   id="trainerName"
                   value={formData.name}
@@ -173,7 +173,7 @@ export default function TrainerModal({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="trainerBirthDate">Data de Nascimento *</Label>
+                <Label htmlFor="trainerBirthDate">Data de nascimento *</Label>
                 <Input
                   id="trainerBirthDate"
                   type="date"
@@ -223,11 +223,11 @@ export default function TrainerModal({
 
           {/* Professional Information */}
           <div className="space-y-4">
-            <h4 className="text-sm font-medium">Informações Profissionais</h4>
+            <h4 className="text-sm font-medium">Informações profissionais</h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2" onClick={() => setCompensationOpen(!compensationOpen)}>
-                <Label htmlFor="trainerCompensation">Tipo de Compensação *</Label>
+                <Label htmlFor="trainerCompensation">Tipo de compensação *</Label>
                 <Select
                   open={compensationOpen}
                   value={formData.compensationType}
@@ -253,7 +253,7 @@ export default function TrainerModal({
             <h4 className="text-sm font-medium">Especialidades</h4>
 
             <div className="space-y-2" onClick={() => setSpecialtyOpen(!specialtyOpen)}>
-              <Label>Adicionar Especialidade</Label>
+              <Label>Adicionar especialidade</Label>
               <Select
                 open={specialtyOpen}
                 value=""
@@ -280,7 +280,7 @@ export default function TrainerModal({
 
             {formData.specialties!.length > 0 && (
               <div className="space-y-2">
-                <Label>Especialidades Selecionadas</Label>
+                <Label>Especialidades selecionadas</Label>
                 <div className="flex flex-wrap gap-2">
                   {formData.specialties!.map((specialty) => (
                     <Badge key={specialty} variant="secondary" className="flex items-center gap-1">
