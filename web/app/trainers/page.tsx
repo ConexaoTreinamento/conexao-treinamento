@@ -171,8 +171,8 @@ export default function TrainersPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-xl font-bold">Professores</h1>
-            <p className="text-sm text-muted-foreground">Gerencie professores e instrutores</p>
+            <h1 className="text-2xl font-bold">Professores</h1>
+            <p className="text-muted-foreground">Gerencie professores e instrutores</p>
           </div>
           {userRole === "admin" && (
             <Button onClick={handleCreateTrainer} className="bg-green-600 hover:bg-green-700">

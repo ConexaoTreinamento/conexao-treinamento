@@ -90,7 +90,7 @@ export default function PlansPage(){
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Planos</h1>
-            <p className="text-sm text-muted-foreground">Gerencie os planos de assinatura</p>
+            <p className="text-muted-foreground">Gerencie os planos de assinatura</p>
           </div>
           <div className="flex gap-2">
             <Dialog open={open} onOpenChange={(o)=> {setOpen(o); if(!o) form.reset()}}>

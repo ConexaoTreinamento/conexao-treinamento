@@ -147,7 +147,7 @@ export default function TrainerProfilePage() {
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h1 className="text-xl font-bold">Perfil do Professor</h1>
+            <h1 className="text-2xl font-bold">Perfil do Professor</h1>
             <p className="text-sm text-muted-foreground">Informações completas e desempenho</p>
           </div>
         </div>

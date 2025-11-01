@@ -346,7 +346,7 @@ function SchedulePageContent() {
         <div className="flex flex-col space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold">Agenda</h1>
+            <h1 className="text-2xl font-bold">Agenda</h1>
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={goToToday}>
                 <CalendarDays className="w-4 h-4 mr-1" />
