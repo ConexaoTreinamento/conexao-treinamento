@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { ExerciseResponseDto, PageExerciseResponseDto, SessionResponseDto, StudentCommitmentResponseDto, TrainerResponseDto, ScheduleResponseDto } from "@/lib/api-client"
 import { useForm } from "react-hook-form"
-import { StudentPicker, type StudentSummary } from "@/components/student-picker"
+import { StudentPicker, type StudentSummary } from "@/components/students/student-picker"
 
 export default function ClassDetailPage() {
   return (

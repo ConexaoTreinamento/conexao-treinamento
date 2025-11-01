@@ -31,7 +31,7 @@ import {
 import { apiClient } from "@/lib/client"
 import type { EventResponseDto, EventParticipantResponseDto } from "@/lib/api-client/types.gen"
 import type { EventFormData } from "@/components/event-modal"
-import type { StudentSummary } from "@/components/student-picker"
+import type { StudentSummary } from "@/components/students/student-picker"
 
 export default function EventDetailPage() {
   const router = useRouter()

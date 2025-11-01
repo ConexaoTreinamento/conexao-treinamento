@@ -1,19 +1,14 @@
 "use client"
 
-import React, {type MouseEventHandler, Suspense, useState} from "react"
+import {Suspense, useMemo, useState} from "react"
 import type {
   AnamnesisResponseDto,
   StudentRequestDto,
   StudentResponseDto,
   StudentPlanAssignmentResponseDto
 } from "@/lib/api-client/types.gen"
-import {PlanAssignmentStatusBadge} from "@/lib/expiring-plans"
 import {Card, CardContent} from "@/components/ui/card"
 import {Button} from "@/components/ui/button"
-import {Input} from "@/components/ui/input"
-import {Badge} from "@/components/ui/badge"
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select"
-import {Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger} from "@/components/ui/sheet"
 import {
     Dialog,
     DialogContent,
@@ -22,245 +17,26 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog"
-import {Activity, Calendar, Filter, Mail, Phone, Plus, RotateCcw, Search, Trash2, X} from "lucide-react"
+import {Plus} from "lucide-react"
 import {useRouter, useSearchParams} from "next/navigation"
 import Layout from "@/components/layout"
-import StudentForm, {type StudentFormData} from "@/components/student-form"
+import StudentForm, {type StudentFormData} from "@/components/students/student-form"
 import PageSelector from "@/components/ui/page-selector"
 import useDebounce from "@/hooks/use-debounce"
 import {useForm} from "react-hook-form"
-import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form"
-import {Checkbox} from "@/components/ui/checkbox"
-import ConfirmDeleteButton from "@/components/confirm-delete-button"
 import {useCreateStudent, useDeleteStudent, useRestoreStudent} from "@/lib/hooks/student-mutations"
 import {assignPlanToStudentMutation} from '@/lib/api-client/@tanstack/react-query.gen'
 import {useMutation, useQueryClient, useQueries} from '@tanstack/react-query'
 import {useToast} from "@/hooks/use-toast"
 import { handleHttpError } from "@/lib/error-utils"
-import {useStudents} from "@/lib/hooks/student-queries";
-import {apiClient} from "@/lib/client";
+import {useStudents} from "@/lib/hooks/student-queries"
+import {apiClient} from "@/lib/client"
 import {getExpiringSoonAssignmentsOptions, getCurrentStudentPlanOptions} from '@/lib/api-client/@tanstack/react-query.gen'
 import {useQuery} from '@tanstack/react-query'
-
-// Type-safe filter interface
-interface StudentFilters {
-  status: "all" | "Ativo" | "Vencido" | "Inativo"
-  minAge: number | null
-  maxAge: number | null
-  profession: string
-  gender: "all" | "Masculino" | "Feminino" | "Outro"
-  startDate: string
-  endDate: string
-  includeInactive: boolean
-}
-
-// Default filter values
-const DEFAULT_FILTERS: StudentFilters = {
-  status: "all",
-  minAge: null,
-  maxAge: null,
-  profession: "all",
-  gender: "all",
-  startDate: "",
-  endDate: "",
-  includeInactive: false,
-}
-
-// Helper function to count active filters
-const countActiveFilters = (filters: StudentFilters): number => {
-  let count = 0
-  if (filters.status !== DEFAULT_FILTERS.status) count++
-  if (filters.minAge !== DEFAULT_FILTERS.minAge) count++
-  if (filters.maxAge !== DEFAULT_FILTERS.maxAge) count++
-  if (filters.profession !== DEFAULT_FILTERS.profession) count++
-  if (filters.gender !== DEFAULT_FILTERS.gender) count++
-  if (filters.startDate !== DEFAULT_FILTERS.startDate) count++
-  if (filters.endDate !== DEFAULT_FILTERS.endDate) count++
-  if (filters.includeInactive !== DEFAULT_FILTERS.includeInactive) count++
-  return count
-}
-
-const StudentCard = (props: {
-  student: StudentResponseDto,
-  onClick: () => void,
-  initials: string,
-  fullName: string,
-  badge: React.ReactNode,
-  planLabel: string,
-  onNewEvaluationClicked: MouseEventHandler<HTMLButtonElement>,
-  onClickedDelete: MouseEventHandler<HTMLButtonElement>,
-  isRestoring: boolean,
-  onConfirm: () => Promise<void>,
-  isDeleting: boolean,
-  age: number,
-  onDeleteClicked: () => void
-}) => (
-    <Card
-
-    className={`hover:shadow-md transition-shadow cursor-pointer ${props.student.deletedAt ? "bg-muted/60 border-dashed" : ""}`}
-    onClick={props.onClick}
->
-    <CardContent className="p-4">
-        {/* Mobile Layout */}
-        <div className="flex flex-col gap-3 sm:hidden">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div
-                        className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
-                            {props.initials}
-                          </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-base leading-tight">{props.fullName}</h3>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                            {props.badge}
-                        </div>
-                    </div>
-                </div>
-                <div className="flex items-center gap-1">
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={props.onNewEvaluationClicked}
-                        className="bg-transparent text-xs px-2 py-1 h-8 flex-shrink-0"
-                    >
-                        <Activity className="w-3 h-3 mr-1"/>
-                        Avaliação
-                    </Button>
-                    {props.student.deletedAt ? (
-                        <Button
-                            size="icon"
-                            variant="outline"
-                            onClick={props.onClickedDelete}
-                            className="h-8 w-8"
-                            disabled={props.isRestoring}
-                            aria-label="Reativar aluno"
-                        >
-                            <RotateCcw className="w-3 h-3"/>
-                        </Button>
-                    ) : (
-                        <ConfirmDeleteButton
-                            onConfirm={props.onConfirm}
-                            disabled={props.isDeleting}
-                            title="Excluir Aluno"
-                            description={`Tem certeza que deseja excluir ${props.fullName}? Ele será marcado como inativo e poderá ser restaurado.`}
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8"
-                        >
-                            <Trash2 className="w-3 h-3"/>
-                        </ConfirmDeleteButton>
-                    )}
-                </div>
-            </div>
-
-            <div className="space-y-2 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                    <Mail className="w-3 h-3 flex-shrink-0"/>
-                    <span className="truncate flex-1">{props.student.email}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Phone className="w-3 h-3 flex-shrink-0"/>
-                    <span>{props.student.phone}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Calendar className="w-3 h-3 flex-shrink-0"/>
-          <span>{props.planLabel}</span>
-                </div>
-            </div>
-
-            <div className="text-xs text-muted-foreground space-y-1">
-                <div>
-                    {props.age} anos • {props.student.profession || "Profissão não informada"} •{" "}
-                    {props.student.gender === "M" ? "Masculino" : props.student.gender === "F" ? "Feminino" : "Outro"}
-                </div>
-                <div>
-                    Ingresso:{" "}
-                    {props.student.registrationDate ? new Date(props.student.registrationDate).toLocaleDateString("pt-BR") : "Data não informada"}
-                </div>
-            </div>
-        </div>
-
-        {/* Desktop Layout */}
-        <div className="hidden sm:flex items-center gap-4">
-            <div
-                className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span
-                        className="text-green-700 dark:text-green-300 font-semibold select-none">{props.initials}</span>
-            </div>
-
-            <div className="flex-1 min-w-0">
-                <div className="flex flex-col gap-2 mb-1">
-                    <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-lg flex-1 min-w-0 truncate">{props.fullName}</h3>
-                        <div className="flex gap-2 flex-shrink-0">
-                            {props.badge}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1 min-w-0">
-                        <Mail className="w-3 h-3 flex-shrink-0"/>
-                        <span className="truncate">{props.student.email}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <Phone className="w-3 h-3 flex-shrink-0"/>
-                        <span>{props.student.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3 flex-shrink-0"/>
-            <span>{props.planLabel}</span>
-                    </div>
-                </div>
-
-                <div className="flex flex-col gap-1 mt-2 text-xs text-muted-foreground">
-                        <span>
-                          {props.age} anos • {props.student.profession || "Profissão não informada"} • {props.student.gender === "M" ? "Masculino" : props.student.gender === "F" ? "Feminino" : "Outro"}
-                        </span>
-                    <span>Ingresso: {props.student.registrationDate ? new Date(props.student.registrationDate).toLocaleDateString("pt-BR") : "Data não informada"}</span>
-                </div>
-            </div>
-
-            <div className="flex flex-col gap-2 flex-shrink-0">
-                <div className="flex gap-2 flex-wrap">
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={props.onNewEvaluationClicked}
-                        className="bg-transparent text-xs px-2 py-1 h-8"
-                    >
-                        <Activity className="w-3 h-3 mr-1"/>
-                        Avaliação
-                    </Button>
-                    {props.student.deletedAt ? (
-                        <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={props.onClickedDelete}
-                            disabled={props.isRestoring}
-                        >
-                            <RotateCcw className="w-3 h-3 mr-1"/> Reativar
-                        </Button>
-                    ) : (
-                        <ConfirmDeleteButton
-                            onConfirm={props.onDeleteClicked}
-                            disabled={props.isDeleting}
-                            title="Excluir Aluno"
-                            description={`Tem certeza que deseja excluir ${props.fullName}? Ele será marcado como inativo e poderá ser restaurado.`}
-                            size="sm"
-                            variant="outline"
-                        >
-                            <Trash2 className="w-3 h-3 mr-1"/> Excluir
-                        </ConfirmDeleteButton>
-                    )}
-                </div>
-            </div>
-        </div>
-    </CardContent>
-</Card>
-);
+import {StudentCard} from "@/components/students/student-card"
+import {StudentFiltersPanel} from "@/components/students/student-filters"
+import type {StudentFilters} from "@/components/students/types"
+import {DEFAULT_STUDENT_FILTERS, countActiveStudentFilters} from "@/components/students/types"
 
 export default function StudentsPage() {
   return (
@@ -278,12 +54,11 @@ export default function StudentsPage() {
 
 function StudentsPageContent() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   
   const form = useForm<StudentFilters>({
-    defaultValues: DEFAULT_FILTERS,
+    defaultValues: DEFAULT_STUDENT_FILTERS,
     mode: "onChange",
   })
   const watchedFilters = form.watch()
@@ -341,7 +116,7 @@ function StudentsPageContent() {
   }
 
   // Helper function to map frontend gender values to backend values
-  const mapGenderToBackend = (frontendGender: string): string | undefined => {
+  const mapGenderToBackend = (frontendGender: StudentFilters["gender"]): string | undefined => {
     switch (frontendGender) {
       case "Masculino": return "M"
       case "Feminino": return "F"
@@ -409,45 +184,30 @@ function StudentsPageContent() {
   const totalPages = studentsData?.totalPages || 0
   const totalElements = studentsData?.totalElements || 0
 
-  // Helper function to get student age from birthdate
-  const getStudentAge = (birthDate: string): number => {
-    if (!birthDate) {
-      return 0
-    }
-
-    const today = new Date()
-    const birth = new Date(birthDate)
-    let age = today.getFullYear() - birth.getFullYear()
-    const monthDiff = today.getMonth() - birth.getMonth()
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-      age--
-    }
-
-    return age
-  }
-
   // Handle search term change and reset page
   const handleSearchChange = (value: string) => {
     setSearchTerm(value)
     setCurrentPage(0) // Reset to first page when search changes
   }
 
-  // Helper function to get student full name
-  const getStudentFullName = (student: StudentResponseDto): string => {
-    return `${student.name || ""} ${student.surname || ""}`.trim()
-  }
-
   // Clear filters via RHF
-  const clearFilters = () => {
-    form.reset(DEFAULT_FILTERS)
-    setCurrentPage(0)
-  }
-
-  const hasActiveFilters = countActiveFilters(watchedFilters) > 0
+  const hasActiveFilters = countActiveStudentFilters(watchedFilters) > 0
 
   // Get unique professions from API data for filter dropdown
-  const uniqueProfessions = (studentsData?.content || []).map(s => s.profession).filter((p, i, arr) => p && arr.indexOf(p) === i)
+  const uniqueProfessions = useMemo(() => {
+    if (!studentsData?.content) {
+      return [] as string[]
+    }
+
+    const professionSet = new Set<string>()
+    studentsData.content.forEach(student => {
+      if (student.profession) {
+        professionSet.add(student.profession)
+      }
+    })
+
+    return Array.from(professionSet)
+  }, [studentsData?.content])
 
   const handleCreateStudent = async (formData: StudentFormData) => {
     setIsCreating(true)
@@ -496,8 +256,8 @@ function StudentsPageContent() {
         emergencyContactName: formData.emergencyName,
         emergencyContactPhone: formData.emergencyPhone,
         emergencyContactRelationship: formData.emergencyRelationship,
-    objectives: formData.objectives,
-    observations: formData.impairmentObservations,
+        objectives: formData.objectives,
+        observations: formData.impairmentObservations,
         anamnesis: hasAnamnesis ? {
           medication: formData.medication,
           isDoctorAwareOfPhysicalActivity: formData.isDoctorAwareOfPhysicalActivity,
@@ -625,214 +385,13 @@ function StudentsPageContent() {
         </div>
 
         {/* Search and Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Buscar alunos por nome, email, telefone ou profissão..."
-              value={searchTerm}
-              onChange={e => handleSearchChange(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline" className="relative bg-transparent w-full sm:w-auto">
-                <Filter className="w-4 h-4 mr-2" />
-                Filtros
-                {hasActiveFilters && (
-                  <Badge className="ml-2 bg-green-600 text-white text-xs px-1 py-0">
-                    {countActiveFilters(watchedFilters)}
-                  </Badge>
-                )}
-              </Button>
-            </SheetTrigger>
-            <SheetContent>
-              <SheetHeader>
-                <SheetTitle>Filtros Avançados</SheetTitle>
-                <SheetDescription>Refine sua busca por alunos</SheetDescription>
-              </SheetHeader>
-              <div className="space-y-4 mt-6">
-                <Form {...form}>
-                  <form className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="includeInactive"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-                          <div className="space-y-0.5">
-                            <FormLabel>Mostrar inativos</FormLabel>
-                            <p className="text-xs text-muted-foreground">Inclui alunos marcados como inativos no resultado.</p>
-                          </div>
-                          <FormControl>
-                            <Checkbox checked={Boolean(field.value)} onCheckedChange={(v) => field.onChange(Boolean(v))} />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="status"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Status</FormLabel>
-                          <FormControl>
-                            <Select value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">Todos</SelectItem>
-                                <SelectItem value="Ativo">Ativo</SelectItem>
-                                <SelectItem value="Vencido">Vencido</SelectItem>
-                                <SelectItem value="Inativo">Inativo</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="minAge"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Idade Mínima</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="Ex: 18"
-                              value={field.value ?? ""}
-                              onChange={e => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
-                              min={0}
-                              max={150}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="maxAge"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Idade Máxima</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="Ex: 65"
-                              value={field.value ?? ""}
-                              onChange={e => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
-                              min={0}
-                              max={150}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="gender"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Gênero</FormLabel>
-                          <FormControl>
-                            <Select value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">Todos</SelectItem>
-                                <SelectItem value="Masculino">Masculino</SelectItem>
-                                <SelectItem value="Feminino">Feminino</SelectItem>
-                                <SelectItem value="Outro">Outro</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="profession"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Profissão</FormLabel>
-                          <FormControl>
-                            <Select value={field.value} onValueChange={field.onChange}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="all">Todas</SelectItem>
-                                {uniqueProfessions.map((profession) => (
-                                  <SelectItem key={profession} value={profession!}>
-                                    {profession}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="startDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Data de Ingresso (De)</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="date"
-                              value={field.value}
-                              onChange={field.onChange}
-                              className={hasInvalidDateRange ? "border-red-500 focus-visible:ring-red-500" : undefined}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="endDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Data de Ingresso (Até)</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="date"
-                              value={field.value}
-                              onChange={field.onChange}
-                              className={hasInvalidDateRange ? "border-red-500 focus-visible:ring-red-500" : undefined}
-                            />
-                          </FormControl>
-                          {hasInvalidDateRange && (
-                            <p className="text-xs text-red-600">A data inicial não pode ser posterior à data final.</p>
-                          )}
-                        </FormItem>
-                      )}
-                    />
-
-                    {hasActiveFilters && (
-                      <Button type="button" variant="outline" onClick={clearFilters} className="w-full bg-transparent">
-                        <X className="w-4 h-4 mr-2" />
-                        Limpar Filtros
-                      </Button>
-                    )}
-                  </form>
-                </Form>
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
+        <StudentFiltersPanel
+          filtersForm={form}
+          searchTerm={searchTerm}
+          onSearchChange={handleSearchChange}
+          professions={uniqueProfessions}
+          onFiltersReset={() => setCurrentPage(0)}
+        />
 
         {/* Results Summary */}
         {!isLoading && !error && (
@@ -877,36 +436,25 @@ function StudentsPageContent() {
         {/* Students List */}
         <div className="space-y-3">
           {!isLoading && !error && (studentsData?.content || []).map((student: StudentResponseDto) => {
-            const age = getStudentAge(student.birthDate || "")
-            const fullName = getStudentFullName(student)
-            const initials = fullName
-              .split(' ')
-              .filter(Boolean)
-              .map(n => n[0])
-              .join('')
-              .toUpperCase()
+            const studentId = student.id
+            if (!studentId) {
+              return null
+            }
 
-            const expiring = student.id ? expiringMap.get(student.id) : undefined
-            const currentPlan = student.id ? currentPlanMap.get(student.id) : undefined
-            const badgeNode = <PlanAssignmentStatusBadge assignment={expiring || currentPlan || null} />
-            const activePlan = expiring || currentPlan || null
-            const planName = activePlan?.planName?.trim()
-            const planLabel = planName
-              ? (planName.toLowerCase().startsWith("plano") ? planName : `Plano: ${planName}`)
-              : "Plano: não atribuído"
+            const assignment = expiringMap.get(studentId) ?? currentPlanMap.get(studentId) ?? null
+
             return (
-              <StudentCard key={student.id} student={student}
-                           onClick={() => router.push(`/students/${student.id}`)} initials={initials}
-                           fullName={fullName} badge={badgeNode} planLabel={planLabel} onNewEvaluationClicked={e => {
-                  e.stopPropagation()
-                  router.push(`/students/${student.id}/evaluation/new`)
-              }} onClickedDelete={async e => {
-                  e.stopPropagation();
-                  await handleRestore(student.id!)
-              }} isRestoring={isRestoring} onConfirm={() => handleDelete(student.id!)} isDeleting={isDeleting} age={age}
-                           onDeleteClicked={() => {
-                                    void handleDelete(student.id!)
-                                }}/>
+              <StudentCard
+                key={studentId}
+                student={student}
+                assignment={assignment}
+                onOpenDetails={() => router.push(`/students/${studentId}`)}
+                onCreateEvaluation={() => router.push(`/students/${studentId}/evaluation/new`)}
+                onRestore={() => handleRestore(studentId)}
+                onDelete={() => handleDelete(studentId)}
+                isRestoring={isRestoring}
+                isDeleting={isDeleting}
+              />
             )
           })}
         </div>

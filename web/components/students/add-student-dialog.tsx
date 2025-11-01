@@ -1,8 +1,8 @@
 import { Dialog, DialogTrigger } from "@radix-ui/react-dialog";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import { Search, UserPlus, Users, Check } from "lucide-react";
-import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
-import { Input } from "./ui/input";
+import { DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Input } from "../ui/input";
 import { useState } from "react";
 
 const StudentToAdd = (props: {

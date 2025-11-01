@@ -19,7 +19,7 @@ import { useQuery } from "@tanstack/react-query"
 import { getTrainersForLookupOptions } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import type { TrainerLookupDto } from "@/lib/api-client/types.gen"
-import { StudentPicker, type StudentSummary } from "@/components/student-picker"
+import { StudentPicker, type StudentSummary } from "@/components/students/student-picker"
 import { Controller, useForm } from "react-hook-form"
 
 export interface EventFormData {
