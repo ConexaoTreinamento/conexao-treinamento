@@ -159,7 +159,11 @@ function StudentsPageContent() {
   // We'll lazily fetch current plan per student only if needed for fallback (optional optimization skipped)
   // Build quick lookup maps
   const expiringMap = new Map<string, StudentPlanAssignmentResponseDto>()
-  expiringSoonAssignments?.forEach(a => { if (a.studentId) expiringMap.set(a.studentId, a) })
+  expiringSoonAssignments?.forEach(assignment => {
+    if (assignment.studentId) {
+      expiringMap.set(assignment.studentId, assignment)
+    }
+  })
 
   // Prepare current plan queries only for students on the current page that are NOT in expiringMap
   const studentIdsNeedingCurrentPlan = (studentsData?.content || [])
@@ -174,9 +178,11 @@ function StudentsPageContent() {
   })
 
   const currentPlanMap = new Map<string, StudentPlanAssignmentResponseDto | null>()
-  currentPlanQueries.forEach((q, idx) => {
+  currentPlanQueries.forEach((query, idx) => {
     const sid = studentIdsNeedingCurrentPlan[idx]
-    if (sid) currentPlanMap.set(sid, q.data ?? null)
+    if (sid) {
+      currentPlanMap.set(sid, query.data ?? null)
+    }
   })
 
   // Helper data extraction with proper typing
@@ -232,10 +238,14 @@ function StudentsPageContent() {
         "alteredCholesterol",
         "osteoporosisLocation"
       ];
-      const hasAnamnesis = anamnesisFields.some((f: string) => {
-        const v = (formData as unknown as Record<string, unknown>)[f];
-        if (v === undefined || v === null) return false;
-        if (typeof v === "string") return v.trim() !== "";
+      const hasAnamnesis = anamnesisFields.some((field: string) => {
+        const value = (formData as unknown as Record<string, unknown>)[field];
+        if (value === undefined || value === null) {
+          return false;
+        }
+        if (typeof value === "string") {
+          return value.trim() !== "";
+        }
         return true;
       });
 
