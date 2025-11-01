@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import type React from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -12,34 +12,36 @@ import Image from "next/image"
 import { useMutation } from "@tanstack/react-query"
 import { loginMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 
 export default function HomePage() {
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
-  const { mutateAsync: login, isPending: isLoading } = useMutation(loginMutation({client: apiClient}));
-
-  useEffect(() => {
-    const userRole = localStorage.getItem("userRole")
-    if (userRole) {
-      router.push("/schedule")
+  const { mutate: login, isPending } = useMutation({
+    ...loginMutation({client: apiClient}),
+    onSuccess: (result) => {
+      setError(null)
+      const payload = getJWTTokenPayload(result.token!)
+      if (payload.role && result.token) {
+        localStorage.setItem("userRole", getRoleName(payload.role))
+        localStorage.setItem("token", result.token)
+        localStorage.setItem("userId", payload.userId)
+        router.push("/schedule")
+      }
+    },
+    onError: (error) => {
+      console.error("Erro no login:", error)
+      setError("E-mail ou senha incorretos!")
     }
-  }, [router])
+  });
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
-    // Mock login logic
-    const result = await login({
-      body: { email, password }, client: apiClient
-    });
-    const payload = getJWTTokenPayload(result.token!)
-    if (payload.role && result.token) {
-      localStorage.setItem("userRole", getRoleName(payload.role))
-      localStorage.setItem("token", result.token)
-      localStorage.setItem("userId", payload.userId)
-      router.push("/schedule")
-    }
+  setError(null)
+    login({ body: { email, password }, client: apiClient })
   }
 
   function getJWTTokenPayload(token: string) {
@@ -72,6 +74,12 @@ export default function HomePage() {
           </div>
         </CardHeader>
         <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTitle>Erro</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -106,8 +114,8 @@ export default function HomePage() {
                 </Button>
               </div>
             </div>
-            <Button type="submit" className="w-full bg-green-600 hover:bg-green-700">
-              Entrar
+            <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={isPending}>
+              {isPending ? "Carregando..." : "Entrar"}
             </Button>
           </form>
         </CardContent>
