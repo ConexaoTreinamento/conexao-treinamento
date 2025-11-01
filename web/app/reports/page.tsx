@@ -427,7 +427,7 @@ export default function ReportsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="w-5 h-5" />
-              Performance dos Professores
+              Performance dos professores
             </CardTitle>
             <CardDescription>Detalhamento de horas trabalhadas e aulas ministradas por professor</CardDescription>
           </CardHeader>
@@ -447,8 +447,8 @@ export default function ReportsPage() {
                     <thead>
                       <tr className="border-b">
                         <th className="text-left p-3">Professor</th>
-                        <th className="text-left p-3">Horas Trabalhadas</th>
-                        <th className="text-left p-3">Aulas Ministradas</th>
+                        <th className="text-left p-3">Horas trabalhadas</th>
+                        <th className="text-left p-3">Aulas ministradas</th>
                         <th className="text-left p-3">Alunos</th>
                         <th className="text-left p-3">Regime</th>
                         <th className="text-left p-3">Especialidades</th>
@@ -574,7 +574,7 @@ export default function ReportsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="w-5 h-5" />
-              Perfil Etário dos Alunos
+              Perfil etário dos alunos
             </CardTitle>
             <CardDescription>Distribuição dos alunos por faixa etária</CardDescription>
           </CardHeader>

@@ -486,11 +486,11 @@ export default function ProfilePage() {
                     </CardTitle>
                     <CardDescription>
                       Gerencie suas configurações de segurança
-                    </CardDescription>
+                    </CardDescription>  
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="currentPassword">Senha Atual</Label>
+                      <Label htmlFor="currentPassword">Senha atual</Label>
                       <div className="relative">
                         <Input
                             id="currentPassword"
@@ -512,7 +512,7 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="newPassword">Nova Senha</Label>
+                      <Label htmlFor="newPassword">Nova senha</Label>
                       <div className="relative">
                         <Input
                             id="newPassword"
@@ -534,7 +534,7 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
+                      <Label htmlFor="confirmPassword">Confirmar nova senha</Label>
                       <div className="relative">
                         <Input
                             id="confirmPassword"

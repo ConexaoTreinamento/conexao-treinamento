@@ -602,12 +602,12 @@ function StudentsPageContent() {
             <DialogTrigger asChild>
               <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
                 <Plus className="w-4 h-4 mr-2" />
-                Novo Aluno
+                Novo aluno
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Cadastrar Novo Aluno</DialogTitle>
+                <DialogTitle>Cadastrar novo aluno</DialogTitle>
                 <DialogDescription>
                   Preencha as informações do aluno e a ficha de anamnese
                 </DialogDescription>

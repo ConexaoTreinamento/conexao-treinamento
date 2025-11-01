@@ -332,7 +332,7 @@ function SchedulePageContent() {
           {resolvedStudents.length === 0 && (
             <div className="text-center py-2">
               <p className="text-sm text-muted-foreground">Nenhum aluno inscrito</p>
-              <Button size="sm" variant="outline" disabled={!classItem.real} title={!classItem.real? 'Sessão não materializada ainda':'Adicionar alunos'} className="mt-2 h-7 px-2 text-xs bg-transparent" onClick={onManage}>Adicionar Alunos</Button>
+              <Button size="sm" variant="outline" disabled={!classItem.real} title={!classItem.real? 'Sessão não materializada ainda':'Adicionar alunos'} className="mt-2 h-7 px-2 text-xs bg-transparent" onClick={onManage}>Adicionar alunos</Button>
             </div>
           )}
         </CardContent>

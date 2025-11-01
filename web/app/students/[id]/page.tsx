@@ -694,11 +694,11 @@ export default function StudentProfilePage() {
               <div className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Informações Pessoais</CardTitle>
+                    <CardTitle className="text-base">Informações pessoais</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div>
-                      <span className="text-sm text-muted-foreground">Data de Nascimento:</span>
+                      <span className="text-sm text-muted-foreground">Data de nascimento:</span>
                       <p>{formatDate(studentData.birthDate)}</p>
                     </div>
                     <div>
@@ -706,11 +706,11 @@ export default function StudentProfilePage() {
                       <p>{studentData.profession}</p>
                     </div>
                     <div>
-                      <span className="text-sm text-muted-foreground">Data de Ingresso:</span>
+                      <span className="text-sm text-muted-foreground">Data de ingresso:</span>
                       <p className="text-sm">{formatDate(studentData.registrationDate)}</p>
                     </div>
                     <div>
-                    <span className="text-sm text-muted-foreground">Última Renovação:</span>
+                    <span className="text-sm text-muted-foreground">Última renovação:</span>
                       <p>{new Date(studentMockData.lastRenewal).toLocaleDateString("pt-BR")}</p>
                     </div>
                     <div>
@@ -722,7 +722,7 @@ export default function StudentProfilePage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Contato de Emergência</CardTitle>
+                    <CardTitle className="text-base">Contato de emergência</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div>
@@ -737,7 +737,7 @@ export default function StudentProfilePage() {
                 </Card>
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Ficha de Anamnese</CardTitle>
+                    <CardTitle className="text-base">Ficha de anamnese</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div>
@@ -818,7 +818,7 @@ export default function StudentProfilePage() {
                 {studentData.physicalImpairments && studentData.physicalImpairments.length > 0 && (
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-base">Impedimentos Físicos</CardTitle>
+                        <CardTitle className="text-base">Impedimentos físicos</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
                         {studentData.physicalImpairments.map((impairment, index) => (
