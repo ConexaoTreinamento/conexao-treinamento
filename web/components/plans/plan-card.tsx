@@ -38,7 +38,7 @@ export default function PlanCard(props: PlanCardProps){
           </CardTitle>
           <Badge
             variant={active ? "outline" : "secondary"}
-            className={cn("text-[11px] uppercase tracking-wide", active ? "border-green-500 text-green-600" : "bg-muted text-muted-foreground")}
+            className={cn("text-[11px] tracking-wide", active ? "border-green-500 text-green-600" : "bg-muted text-muted-foreground")}
           >
             {active ? "Ativo" : "Inativo"}
           </Badge>
