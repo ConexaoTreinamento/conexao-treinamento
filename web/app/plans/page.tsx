@@ -51,8 +51,8 @@ export default function PlansPage(){
     ...createPlanMutation({client: apiClient}),
     onSuccess: async () => {
       // invalidate after successful create
-      await invalidateAllStatusVariants()
-      toast({title:'Plano criado'})
+      await qc.invalidateQueries({queryKey: plansQueryOptions.queryKey})
+      toast({title:'Plano criado', variant: 'success'})
       form.reset({name:'', maxDays:3, durationDays:30})
       setOpen(false)
     },

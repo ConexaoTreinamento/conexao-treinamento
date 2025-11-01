@@ -92,7 +92,7 @@ export default function ProfilePage() {
       client: apiClient,
     }),
     onSuccess: () => {
-      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!" })
+      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!", variant: "success" })
       queryClient.invalidateQueries({ queryKey: ["findAdministratorByUserId"] })
     },
     onError: () => {
@@ -128,7 +128,7 @@ export default function ProfilePage() {
       client: apiClient,
     }),
     onSuccess: () => {
-      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!" })
+      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!", variant: "success" })
       queryClient.invalidateQueries({ queryKey: ["findTrainerById"] })
     },
     onError: () => {
@@ -361,7 +361,6 @@ export default function ProfilePage() {
             <Tabs defaultValue="personal" className="space-y-4">
               <TabsList>
                 <TabsTrigger value="personal">Informações</TabsTrigger>
-                {userRole !== "admin" && <TabsTrigger value="professional">Profissional</TabsTrigger>}
                 <TabsTrigger value="security">Segurança</TabsTrigger>
               </TabsList>
 
@@ -428,54 +427,6 @@ export default function ProfilePage() {
                   </CardContent>
                 </Card>
               </TabsContent>
-
-              {userRole !== "admin" && (
-                <TabsContent value="professional">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Award className="w-5 h-5" />
-                        Profissional
-                      </CardTitle>
-                      <CardDescription>
-                        Gerencie suas informações profissionais
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="joinDate">Data de Contratação</Label>
-                          <Input
-                            id="joinDate"
-                            type="date"
-                            value={profileData.joinDate}
-                            onChange={(e) => handleInputChange("joinDate", e.target.value)}
-                            disabled
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="role">Função</Label>
-                          <Input
-                            id="role"
-                            value={userRole === "admin" ? "Administrador" : "Professor"}
-                            disabled
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="specialties">Especialidades</Label>
-                        <Input
-                          id="specialties"
-                          value={specialtiesInput}
-                          onChange={(e) => handleInputChange("specialties", e.target.value)}
-                          onBlur={handleSpecialtiesBlur}
-                          placeholder="Musculação, Pilates, Yoga..."
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              )}
 
               <TabsContent value="security">
                 <Card>

@@ -55,7 +55,7 @@ export default function EditStudentPage() {
 
   const {mutateAsync: updateStudent, isPending: isEditPending} = useUpdateStudent({
     onSuccess: () => {
-      toast({title: "Aluno atualizado", description: "As alterações foram salvas.", duration: 3000})
+      toast({title: "Aluno atualizado", description: "As alterações foram salvas.", variant: 'success', duration: 3000})
       if (id) {
         router.back()
       }
