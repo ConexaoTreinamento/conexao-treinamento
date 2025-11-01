@@ -102,12 +102,13 @@ const toRecentClassEntries = (
 ): RecentClassEntry[] => {
   const sessions = schedule?.sessions ?? []
 
-  const enriched = sessions
+  const enriched: Array<RecentClassEntry & { sortTimestamp: number }> = sessions
     .filter((session) => session.students?.some((attendee) => attendee.studentId === studentId))
     .map((session, index) => {
       const participant = session.students?.find((attendee) => attendee.studentId === studentId)
       const wasPresent = Boolean(participant?.present ?? (participant?.commitmentStatus === "ATTENDING"))
       const start = session.startTime ? new Date(session.startTime) : undefined
+      const sortTimestamp = start?.getTime() ?? 0
 
       return {
         id: String(session.sessionId ?? `${session.seriesName ?? "session"}-${session.startTime ?? index}`),
@@ -115,13 +116,19 @@ const toRecentClassEntries = (
         trainerName: session.trainerName ?? "Instrutor",
         dateLabel: start ? start.toLocaleDateString("pt-BR") : "—",
         status: wasPresent ? "Presente" : "Ausente",
-        sortValue: start?.getTime() ?? 0,
+        sortTimestamp,
       }
     })
 
   return enriched
-    .sort((a, b) => b.sortValue - a.sortValue)
-    .map(({ sortValue: _sortValue, ...entry }) => entry)
+    .sort((a, b) => b.sortTimestamp - a.sortTimestamp)
+    .map((entry) => ({
+      id: entry.id,
+      title: entry.title,
+      trainerName: entry.trainerName,
+      dateLabel: entry.dateLabel,
+      status: entry.status,
+    }))
 }
 
 const toExerciseRecords = (
@@ -130,7 +137,7 @@ const toExerciseRecords = (
 ): ExerciseRecord[] => {
   const sessions = schedule?.sessions ?? []
 
-  const records = sessions
+  const records: Array<(ExerciseRecord & { timeValue: number }) | null> = sessions
     .map((session, index) => {
       const participant = session.students?.find((attendee) => attendee.studentId === studentId)
       const exercises = participant?.participantExercises ?? []
@@ -172,7 +179,19 @@ const toExerciseRecords = (
     })
     .filter((record): record is ExerciseRecord & { timeValue: number } => Boolean(record))
 
-  return records.sort((a, b) => b.timeValue - a.timeValue).map(({ timeValue: _timeValue, ...record }) => record)
+  const nonEmptyRecords = records.filter(
+    (record): record is ExerciseRecord & { timeValue: number } => Boolean(record)
+  )
+
+  return nonEmptyRecords
+    .sort((a, b) => b.timeValue - a.timeValue)
+    .map((record) => ({
+      key: record.key,
+      className: record.className,
+      instructor: record.instructor,
+      classDateLabel: record.classDateLabel,
+      exercises: record.exercises,
+    }))
 }
 
 const formatDateLabel = (value?: string | null) => (value ? new Date(value).toLocaleDateString("pt-BR") : "N/A")
