@@ -1,241 +1,131 @@
 "use client"
 
-import React, { useMemo } from "react"
-import { ArrowLeft } from "lucide-react"
-import { useRouter, useParams } from "next/navigation"
+import { useMemo } from "react"
+import { useParams, useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import StudentForm, { type StudentFormData } from "@/components/students/student-form"
-import { Button } from "@/components/ui/button"
-import { apiClient } from "@/lib/client"
+import { StudentEditHeader } from "@/components/students/profile/edit/student-edit-header"
+import { StudentEditLoading } from "@/components/students/profile/edit/student-edit-loading"
+import {
+  buildStudentRequestPayload,
+  mapStudentResponseToForm,
+} from "@/components/students/profile/edit/student-form-transforms"
 import { useToast } from "@/hooks/use-toast"
 import { handleHttpError } from "@/lib/error-utils"
-import type {StudentResponseDto, StudentRequestDto, AnamnesisResponseDto} from "@/lib/api-client/types.gen"
-import {useUpdateStudent} from "@/lib/hooks/student-mutations";
-import { useQueryClient } from "@tanstack/react-query"
-import {useStudent} from "@/lib/hooks/student-queries";
+import { apiClient } from "@/lib/client"
+import type { StudentResponseDto } from "@/lib/api-client/types.gen"
+import { useStudent } from "@/lib/hooks/student-queries"
+import { useUpdateStudent } from "@/lib/hooks/student-mutations"
 
-/**
- * Edit student page - fetches student by id, maps response to StudentFormData and
- * wires updateMutation from generated react-query client.
- *
- * Notes:
- * - On successful update we invalidate the students list and navigate back to student page.
- */
+const ensureStudentId = (value: unknown): string => {
+  if (typeof value === "string") {
+    return value
+  }
+  if (Array.isArray(value) && value.length > 0 && typeof value[0] === "string") {
+    return value[0]
+  }
+  return ""
+}
 
 export default function EditStudentPage() {
   const router = useRouter()
   const params = useParams()
-  const id = params?.id as string | undefined
-  const queryClient = useQueryClient()
   const { toast } = useToast()
+  const studentId = ensureStudentId(params.id)
 
-  const { data: studentData, isLoading: isStudentLoading } = useStudent(
-    {
-      path: { id: id ?? "" },
-    },
-    {
-      enabled: Boolean(id)
-    }
+  const { data: studentData, isLoading, error } = useStudent(
+    { path: { id: studentId } },
+    { enabled: studentId.length > 0 }
   )
-  const studentFromCache = React.useMemo(() => {
-    const queries = queryClient.getQueriesData({}) as Array<[unknown, unknown]>
-    for (const [key, data] of queries) {
-      if (Array.isArray(key) && key[0] && typeof key[0] === "object") {
-        const first = key[0] as Record<string, unknown>
-        if (first["_id"] === 'findAll') {
-          const content = (data as Record<string, unknown> | null)?.content as unknown
-          if (Array.isArray(content) && content.length > 0) return content[0] as StudentResponseDto
-        }
-      }
-    }
-    return undefined
-  }, [queryClient])
 
-  const student: StudentResponseDto | undefined = (studentData as StudentResponseDto | undefined) ?? studentFromCache
+  const student = studentData as StudentResponseDto | undefined
 
-  const {mutateAsync: updateStudent, isPending: isEditPending} = useUpdateStudent({
+  const initialData = useMemo(
+    () => mapStudentResponseToForm(student),
+    [student]
+  )
+
+  const { mutateAsync: updateStudent, isPending: isSubmitting } = useUpdateStudent({
     onSuccess: () => {
-      toast({title: "Aluno atualizado", description: "As alterações foram salvas.", variant: 'success', duration: 3000})
-      if (id) {
+      toast({
+        title: "Aluno atualizado",
+        description: "As alterações foram salvas.",
+        variant: "success",
+        duration: 3000,
+      })
+      if (studentId.length > 0) {
         router.back()
       }
-    }
+    },
   })
-
-  const mapStudentResponseToForm = (s?: StudentResponseDto): Partial<StudentFormData> | undefined => {
-    if (!s) return undefined
-    return {
-      name: s.name ?? "",
-      surname: s.surname ?? "",
-      email: s.email ?? "",
-      phone: s.phone ?? "",
-      sex: s.gender ?? undefined,
-      birthDate: s.birthDate ?? undefined,
-      profession: s.profession ?? undefined,
-      street: s.street ?? undefined,
-      number: s.number ?? undefined,
-      complement: s.complement ?? undefined,
-      neighborhood: s.neighborhood ?? undefined,
-      cep: s.cep ?? undefined,
-      emergencyName: s.emergencyContactName ?? undefined,
-      emergencyPhone: s.emergencyContactPhone ?? undefined,
-      emergencyRelationship: s.emergencyContactRelationship ?? undefined,
-      objectives: s.objectives ?? undefined,
-      impairmentObservations: s.observations ?? undefined,
-      // anamnesis
-      medication: s.anamnesis?.medication ?? undefined,
-      isDoctorAwareOfPhysicalActivity: s.anamnesis?.isDoctorAwareOfPhysicalActivity ?? undefined,
-      favoritePhysicalActivity: s.anamnesis?.favoritePhysicalActivity ?? undefined,
-      hasInsomnia: s.anamnesis?.hasInsomnia ?? undefined,
-      dietOrientedBy: s.anamnesis?.dietOrientedBy ?? undefined,
-      cardiacProblems: s.anamnesis?.cardiacProblems ?? undefined,
-      hasHypertension: s.anamnesis?.hasHypertension ?? undefined,
-      chronicDiseases: s.anamnesis?.chronicDiseases ?? undefined,
-      difficultiesInPhysicalActivities: s.anamnesis?.difficultiesInPhysicalActivities ?? undefined,
-      medicalOrientationsToAvoidPhysicalActivity: s.anamnesis?.medicalOrientationsToAvoidPhysicalActivity ?? undefined,
-      surgeriesInTheLast12Months: s.anamnesis?.surgeriesInTheLast12Months ?? undefined,
-      respiratoryProblems: s.anamnesis?.respiratoryProblems ?? undefined,
-      jointMuscularBackPain: s.anamnesis?.jointMuscularBackPain ?? undefined,
-      spinalDiscProblems: s.anamnesis?.spinalDiscProblems ?? undefined,
-      diabetes: s.anamnesis?.diabetes ?? undefined,
-      smokingDuration: s.anamnesis?.smokingDuration ?? undefined,
-      alteredCholesterol: s.anamnesis?.alteredCholesterol ?? undefined,
-      osteoporosisLocation: s.anamnesis?.osteoporosisLocation ?? undefined,
-      // physical impairments
-      physicalImpairments: s.physicalImpairments?.map((p) => ({
-        id: p.id ?? String(Math.random()),
-        type: p.type,
-        name: p.name ?? "",
-        observations: p.observations ?? ""
-      })) ?? []
-    }
-  }
-
-  const initialData = useMemo(() => mapStudentResponseToForm(student), [student])
 
   const handleCancel = () => {
     if (window.history.length > 1) {
       router.back()
-    } else if (id) {
-      router.push(`/students/${id}`)
-    } else {
-      router.push(`/students`)
+      return
     }
+    if (studentId.length > 0) {
+      router.push(`/students/${studentId}`)
+      return
+    }
+    router.push("/students")
   }
 
   const handleSubmit = async (formData: StudentFormData) => {
-    if (!id) return
+    if (studentId.length === 0) {
+      return
+    }
 
     try {
-      const anamnesisFields: (keyof AnamnesisResponseDto)[] = [
-        "medication",
-        "isDoctorAwareOfPhysicalActivity",
-        "favoritePhysicalActivity",
-        "hasInsomnia",
-        "dietOrientedBy",
-        "cardiacProblems",
-        "hasHypertension",
-        "chronicDiseases",
-        "difficultiesInPhysicalActivities",
-        "medicalOrientationsToAvoidPhysicalActivity",
-        "surgeriesInTheLast12Months",
-        "respiratoryProblems",
-        "jointMuscularBackPain",
-        "spinalDiscProblems",
-        "diabetes",
-        "smokingDuration",
-        "alteredCholesterol",
-        "osteoporosisLocation"
-      ] as const;
-
-      const hasAnamnesis = anamnesisFields.some((f: string) => {
-        const v = (formData as unknown as Record<string, unknown>)[f];
-        if (v === undefined || v === null) return false;
-        if (typeof v === "string") return v.trim() !== "";
-        return true;
-      });
-
-      const requestBody = {
-        email: formData.email,
-        name: formData.name,
-        surname: formData.surname,
-        gender: formData.sex ?? "O",
-        birthDate: formData.birthDate,
-        phone: formData.phone,
-        profession: formData.profession,
-        street: formData.street,
-        number: formData.number,
-        complement: formData.complement,
-        neighborhood: formData.neighborhood,
-        cep: formData.cep,
-        emergencyContactName: formData.emergencyName,
-        emergencyContactPhone: formData.emergencyPhone,
-        emergencyContactRelationship: formData.emergencyRelationship,
-        objectives: formData.objectives,
-        observations: formData.impairmentObservations,
-        anamnesis: hasAnamnesis ? {
-          medication: formData.medication,
-          isDoctorAwareOfPhysicalActivity: formData.isDoctorAwareOfPhysicalActivity,
-          favoritePhysicalActivity: formData.favoritePhysicalActivity,
-          hasInsomnia: formData.hasInsomnia,
-          dietOrientedBy: formData.dietOrientedBy,
-          cardiacProblems: formData.cardiacProblems,
-          hasHypertension: formData.hasHypertension,
-          chronicDiseases: formData.chronicDiseases,
-          difficultiesInPhysicalActivities: formData.difficultiesInPhysicalActivities,
-          medicalOrientationsToAvoidPhysicalActivity: formData.medicalOrientationsToAvoidPhysicalActivity,
-          surgeriesInTheLast12Months: formData.surgeriesInTheLast12Months,
-          respiratoryProblems: formData.respiratoryProblems,
-          jointMuscularBackPain: formData.jointMuscularBackPain,
-          spinalDiscProblems: formData.spinalDiscProblems,
-          diabetes: formData.diabetes,
-          smokingDuration: formData.smokingDuration,
-          alteredCholesterol: formData.alteredCholesterol,
-          osteoporosisLocation: formData.osteoporosisLocation
-        } : undefined,
-        physicalImpairments: formData.physicalImpairments
-          ?.filter((p): p is NonNullable<StudentFormData['physicalImpairments']>[number] => {
-            if (!p) return false
-            const hasContent =
-              String((p.type ?? "")).trim().length > 0 ||
-              String((p.name ?? "")).trim().length > 0 ||
-              String((p.observations ?? "")).trim().length > 0
-            return hasContent
-          })
-          .map((p) => ({
-            type: p.type,
-            name: p.name || "",
-            observations: p.observations
-          }))
-      } as StudentRequestDto
-
-      await updateStudent({ path: { id }, body: requestBody, client: apiClient })
-    } catch (e: any) {
-      handleHttpError(e, "atualizar aluno", "Não foi possível salvar as alterações. Tente novamente.")
+      const requestPayload = buildStudentRequestPayload(formData)
+      await updateStudent({
+        path: { id: studentId },
+        body: requestPayload,
+        client: apiClient,
+      })
+    } catch (submissionError: unknown) {
+      handleHttpError(
+        submissionError,
+        "atualizar aluno",
+        "Não foi possível salvar as alterações. Tente novamente."
+      )
     }
+  }
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <StudentEditLoading />
+      </Layout>
+    )
+  }
+
+  if (error) {
+    const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado."
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center space-y-2">
+            <p className="text-lg font-semibold text-red-600">Erro ao carregar aluno</p>
+            <p className="text-sm text-muted-foreground">{errorMessage}</p>
+          </div>
+        </div>
+      </Layout>
+    )
   }
 
   return (
     <Layout>
       <div className="space-y-4">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={handleCancel}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <div>
-            <h1 className="text-xl font-bold">Editar Aluno</h1>
-            <p className="text-sm text-muted-foreground">Atualize as informações do aluno</p>
-          </div>
-        </div>
+        <StudentEditHeader onBack={handleCancel} />
 
         <StudentForm
-          key={student ? `student-${student.id ?? id}` : `student-${initialData ? JSON.stringify(initialData) : "none"}`}
+          key={`student-${student?.id ?? studentId ?? "edit"}`}
           initialData={initialData}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
           submitLabel="Salvar Alterações"
-          isLoading={isStudentLoading || isEditPending}
+          isLoading={isSubmitting}
           mode="edit"
         />
       </div>
