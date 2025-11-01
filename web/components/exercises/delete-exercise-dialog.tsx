@@ -39,6 +39,7 @@ export function DeleteExerciseDialog({
       toast({
         title: "Sucesso",
         description: "Exercício excluído com sucesso!",
+        variant: "success",
       })
       await queryClient.invalidateQueries({
         predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllExercises'

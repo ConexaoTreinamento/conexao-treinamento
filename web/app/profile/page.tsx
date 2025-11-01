@@ -92,7 +92,7 @@ export default function ProfilePage() {
       client: apiClient,
     }),
     onSuccess: () => {
-      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!" })
+      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!", variant: "success" })
       queryClient.invalidateQueries({ queryKey: ["findAdministratorByUserId"] })
     },
     onError: () => {
@@ -128,7 +128,7 @@ export default function ProfilePage() {
       client: apiClient,
     }),
     onSuccess: () => {
-      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!" })
+      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!", variant: "success" })
       queryClient.invalidateQueries({ queryKey: ["findTrainerById"] })
     },
     onError: () => {
