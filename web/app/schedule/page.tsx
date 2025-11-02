@@ -300,10 +300,12 @@ function SchedulePageContent() {
               onNextMonth={goToNextMonth}
             />
             <p className="text-sm text-muted-foreground capitalize">{selectedDateLabel}</p>
-            <ScheduleDayPicker
-              days={dayPickerItems}
-              onSelectDay={(date) => setUrlParams(currentMonth, date)}
-            />
+            <div className="mx-auto w-full md:max-w-[80vw]">
+              <ScheduleDayPicker
+                days={dayPickerItems}
+                onSelectDay={(date) => setUrlParams(currentMonth, date)}
+              />
+            </div>
           </div>
         </div>
 
