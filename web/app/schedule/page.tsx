@@ -1,20 +1,23 @@
 "use client"
 
-import { Suspense, useState, useEffect, useMemo } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Calendar, Clock, Plus, User, CheckCircle, XCircle, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Suspense, useState, useEffect, useMemo, useCallback } from "react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
+import { Calendar } from "lucide-react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import Layout from "@/components/layout"
 import ClassModal from "@/components/schedule/class-modal"
-import { apiClient } from "@/lib/client"
-import { getScheduleOptions, findAllTrainersOptions, getSessionOptions, getScheduleQueryKey, createOneOffSessionMutation } from "@/lib/api-client/@tanstack/react-query.gen"
-import type { SessionResponseDto, StudentCommitmentResponseDto } from "@/lib/api-client"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { PageHeader } from "@/components/base/page-header"
+import { Section } from "@/components/base/section"
+import { EmptyState } from "@/components/base/empty-state"
+import { Button } from "@/components/ui/button"
+import { apiClient } from "@/lib/client"
+import { getScheduleOptions, findAllTrainersOptions, getScheduleQueryKey, createOneOffSessionMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { ScheduleToolbar } from "@/components/schedule/schedule-toolbar"
+import { ScheduleMonthNavigation } from "@/components/schedule/schedule-month-navigation"
+import { ScheduleDayPicker } from "@/components/schedule/schedule-day-picker"
+import { ScheduleClassCard } from "@/components/schedule/schedule-class-card"
+import { ScheduleClassSkeletonList } from "@/components/schedule/schedule-class-skeleton"
+import type { ScheduleClassItem, ScheduleDayItem, ScheduleStudent } from "@/components/schedule/types"
 
 export default function SchedulePage() {
   return (
@@ -81,18 +84,17 @@ function SchedulePageContent() {
   // State now derived from search params, no sync needed
 
   // Helper to push month/day into URL without scroll jump
-  const setUrlParams = (monthDate: Date, dayDate: Date) => {
+  const setUrlParams = useCallback((monthDate: Date, dayDate: Date) => {
     const sp = new URLSearchParams(searchParams.toString())
-    const mm = String(monthDate.getMonth() + 1).padStart(2, '0')
-    const monthStr = `${monthDate.getFullYear()}-${mm}`
-    const dd = String(dayDate.getDate()).padStart(2, '0')
-    const dayStr = `${dayDate.getFullYear()}-${String(dayDate.getMonth()+1).padStart(2,'0')}-${dd}`
-    sp.set('month', monthStr)
-    sp.set('day', dayStr)
+    const monthIndex = String(monthDate.getMonth() + 1).padStart(2, "0")
+    const monthStr = `${monthDate.getFullYear()}-${monthIndex}`
+    const dayStr = `${dayDate.getFullYear()}-${String(dayDate.getMonth() + 1).padStart(2, "0")}-${String(dayDate.getDate()).padStart(2, "0")}`
+    sp.set("month", monthStr)
+    sp.set("day", dayStr)
     const qs = sp.toString()
     const url = qs ? `${pathname}?${qs}` : pathname
     router.replace(url, { scroll: false })
-  }
+  }, [pathname, router, searchParams])
 
   // Helper: format Date to LocalDate (yyyy-MM-dd) for backend LocalDate params
   const formatLocalDate = (d: Date) => {
@@ -116,30 +118,38 @@ function SchedulePageContent() {
     refetchInterval: 60_000,
   })
   const apiSessions = useMemo(() => scheduleQuery.data?.sessions || [], [scheduleQuery.data?.sessions])
-  const backendClasses = useMemo(()=> apiSessions.map(s => {
-    const students = (s.students||[]).map(st => ({ id: st.studentId || '', name: st.studentName || 'Aluno', present: (st).present ?? (st.commitmentStatus === 'ATTENDING') }))
-    const date = s.startTime?.slice(0,10) || selectedIso
-    const realId = s.sessionId && s.sessionId.length > 0 ? s.sessionId : undefined
-    return {
-      id: realId, // may be undefined if backend failed to generate; we will guard navigation
-      real: !!realId,
-      name: s.seriesName || 'Aula',
-      instructor: s.trainerName || '—',
-      trainerId: s.trainerId,
-      time: s.startTime?.slice(11,16) || '',
-      endTime: s.endTime?.slice(11,16) || '',
-      canceled: !!s.canceled,
-      overridden: !!s.instanceOverride,
-      currentStudents: students.length,
-      students,
-      date
-    }
-  }), [apiSessions, selectedIso])
-  const classesForSelectedDate = useMemo(()=> {
-    return backendClasses
-      .filter(c => c.date === selectedIso)
-      .sort((a,b)=> (a.time||'').localeCompare(b.time||''))
-  }, [backendClasses, selectedIso])
+  const backendClasses = useMemo<ScheduleClassItem[]>(() => (
+    apiSessions.map((session) => {
+      const students: ScheduleStudent[] = (session.students || []).map((student) => ({
+        id: student.studentId || "",
+        name: student.studentName || "Aluno",
+        present: student.present ?? student.commitmentStatus === "ATTENDING",
+      }))
+
+      const dateIso = session.startTime?.slice(0, 10) || selectedIso
+      const sessionId = session.sessionId && session.sessionId.length > 0 ? session.sessionId : undefined
+
+      return {
+        id: sessionId,
+        real: Boolean(sessionId),
+        name: session.seriesName || "Aula",
+        instructor: session.trainerName || "—",
+        trainerId: session.trainerId,
+        time: session.startTime?.slice(11, 16) || "",
+        endTime: session.endTime?.slice(11, 16) || "",
+        canceled: Boolean(session.canceled),
+        overridden: Boolean(session.instanceOverride),
+        students,
+        dateIso,
+      }
+    })
+  ), [apiSessions, selectedIso])
+
+  const classesForSelectedDate = useMemo(() => (
+    backendClasses
+      .filter((classItem) => classItem.dateIso === selectedIso)
+      .sort((a, b) => (a.time || "").localeCompare(b.time || ""))
+  ), [backendClasses, selectedIso])
 
   // Trainers (real backend)
   const trainersQuery = useQuery({
@@ -167,24 +177,45 @@ function SchedulePageContent() {
   }, [monthStart, monthEnd])
 
   // Aggregate counts per day
-  const daySessionCounts = useMemo(()=> {
-    const map: Record<string, { total:number; present:number }> = {}
-    backendClasses.forEach(cls => {
-      const key = cls.date
-      if(!map[key]) map[key] = { total:0, present:0 }
+  const daySessionCounts = useMemo(() => {
+    const map: Record<string, { total: number; present: number }> = {}
+    backendClasses.forEach((classItem) => {
+      const key = classItem.dateIso
+      if (!map[key]) {
+        map[key] = { total: 0, present: 0 }
+      }
       map[key].total += 1
-      map[key].present += cls.students.filter(s=> s.present).length
+      map[key].present += classItem.students.filter((student) => student.present).length
     })
     return map
   }, [backendClasses])
 
-  const formatDayName = (date: Date) => {
-    const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
-    return days[date.getDay()]
-  }
-  const isToday = (date: Date) => date.toDateString() === new Date().toDateString()
-  const isSelected = (date: Date) => date.toDateString() === selectedDate.toDateString()
+  const todayIso = useMemo(() => formatLocalDate(new Date()), [])
 
+  const dayPickerItems = useMemo<ScheduleDayItem[]>(() => (
+    monthDays.map((date) => {
+      const iso = formatLocalDate(date)
+      return {
+        date,
+        iso,
+        stats: daySessionCounts[iso],
+        isToday: iso === todayIso,
+        isSelected: iso === selectedIso,
+      }
+    })
+  ), [daySessionCounts, monthDays, selectedIso, todayIso])
+
+  const selectedDateLabel = useMemo(
+    () => selectedDate.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" }),
+    [selectedDate],
+  )
+
+  const monthLabel = useMemo(
+    () => currentMonth.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }),
+    [currentMonth],
+  )
+
+  const canCreateClass = userRole === "admin"
 
   // removed occupancy color; we no longer display capacity
 
@@ -223,231 +254,111 @@ function SchedulePageContent() {
   const goToToday = () => { const today = new Date(); setUrlParams(today, today) }
   const goToPreviousMonth = () => { const m = new Date(currentMonth); m.setMonth(m.getMonth()-1); const first = new Date(m.getFullYear(), m.getMonth(), 1); setUrlParams(m, first) }
   const goToNextMonth = () => { const m = new Date(currentMonth); m.setMonth(m.getMonth()+1); const first = new Date(m.getFullYear(), m.getMonth(), 1); setUrlParams(m, first) }
-  const formatMonthYear = (date: Date) => date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })
 
-  // Child component to render a class card; if overridden, fetch session details to use accurate instructor
-  type ClassItem = {
-    id?: string
-    real: boolean
-    name: string
-    instructor: string
-    trainerId?: string
-    time?: string
-    endTime?: string
-    canceled: boolean
-    overridden: boolean
-    currentStudents: number
-    students: Array<{ id: string; name: string; present: boolean }>
-  }
-  function ScheduleClassCard({ classItem }: { classItem: ClassItem }) {
-    const detailsQuery = useQuery({
-      ...getSessionOptions({ client: apiClient, path: { sessionId: classItem.id ?? '' }, query: {} }),
-      enabled: Boolean(classItem.real && classItem.overridden && classItem.id)
-    })
-    const details: SessionResponseDto | undefined = detailsQuery.data
-    const resolvedInstructor = (classItem.overridden && classItem.real)
-      ? (details?.trainerName ?? (details?.trainerId ? trainersById[details.trainerId] : undefined) ?? '—')
-      : classItem.instructor
-    const studentsOverride: StudentCommitmentResponseDto[] | undefined = details?.students
-    const resolvedStudents = studentsOverride
-      ? studentsOverride.map(s => ({ id: s.studentId ?? '', name: s.studentName ?? 'Aluno', present: s.present ?? false }))
-      : classItem.students
-    const studentCount = resolvedStudents.length
-    const onManage = () => {
-      if (!classItem.real || !classItem.id) return
-      const startHHmm = (classItem.time || '').replace(':','')
-      const trainer = classItem.trainerId || ''
-      const qs = `?date=${selectedIso}${startHHmm? `&start=${startHHmm}`:''}${trainer? `&trainer=${trainer}`:''}`
-      router.push(`/schedule/${classItem.id}${qs}`)
-    }
-    return (
-      <Card key={classItem.id} className={`hover:shadow-sm transition-shadow ${classItem.canceled? 'opacity-70 grayscale':''}`}>
-        <CardHeader className="pb-2">
-          <div className="flex items-start justify-between">
-            <div className="space-y-1 flex-1 min-w-0">
-              <CardTitle className="text-base leading-tight flex items-center gap-2">
-                {classItem.name}
-                {classItem.overridden && (
-                  <TooltipProvider delayDuration={300}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Badge variant="outline" className="text-[10px] cursor-help">Ajuste</Badge>
-                      </TooltipTrigger>
-                      <TooltipContent>Instância ajustada (instrutor/participantes podem ter sido alterados)</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-                {classItem.canceled && (
-                  <TooltipProvider delayDuration={300}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Badge variant="destructive" className="text-[10px] cursor-help">Cancelada</Badge>
-                      </TooltipTrigger>
-                      <TooltipContent>Esta aula foi cancelada</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-              </CardTitle>
-              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  <span>{classItem.time}{classItem.endTime? ` - ${classItem.endTime}`:''}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <User className="w-3 h-3" />
-                  <span>{resolvedInstructor}</span>
-                </div>
-              </div>
-            </div>
-            <Badge className="bg-muted text-xs">
-              {studentCount} aluno{studentCount===1?'':'s'}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {resolvedStudents.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Alunos</span>
-                <Button size="sm" variant="outline" disabled={!classItem.real} title={!classItem.real? 'Sessão não materializada ainda':'Gerenciar sessão'} className="h-7 px-2 text-xs bg-transparent" onClick={onManage}>Gerenciar</Button>
-              </div>
-              <div className="max-h-32 overflow-y-auto space-y-1" style={{ scrollbarWidth: "thin" }}>
-                {resolvedStudents.map((student: {id:string; name:string; present:boolean}) => (
-                  <div key={student.id} className="flex items-center gap-2 p-1">
-                    <Avatar className="w-6 h-6">
-                      <AvatarFallback className="text-xs">{student.name.split(" ").map((n: string) => n[0]).join("")}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm flex-1 min-w-0 truncate">{student.name}</span>
-                    {student.present ? <CheckCircle className="w-4 h-4 text-green-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {resolvedStudents.length === 0 && (
-            <div className="text-center py-2">
-              <p className="text-sm text-muted-foreground">Nenhum aluno inscrito</p>
-              <Button size="sm" variant="outline" disabled={!classItem.real} title={!classItem.real? 'Sessão não materializada ainda':'Adicionar alunos'} className="mt-2 h-7 px-2 text-xs bg-transparent" onClick={onManage}>Adicionar alunos</Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    )
-  }
+  const scheduleError = scheduleQuery.error as Error | null | undefined
+  const isScheduleLoading = scheduleQuery.isLoading
+
+  const handleManageSession = useCallback(
+    ({ sessionId, trainerId, startTime }: { sessionId: string; trainerId?: string; startTime?: string }) => {
+      if (!sessionId) {
+        return
+      }
+
+      const params = new URLSearchParams({ date: selectedIso })
+      if (startTime) {
+        const hhmm = startTime.replace(":", "")
+        if (hhmm) {
+          params.set("start", hhmm)
+        }
+      }
+      if (trainerId) {
+        params.set("trainer", trainerId)
+      }
+
+      router.push(`/schedule/${sessionId}?${params.toString()}`)
+    },
+    [router, selectedIso],
+  )
 
   return (
     <Layout>
-      <div className="space-y-3 pb-4">
-        <div className="flex flex-col space-y-4">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-          <PageHeader 
-            title="Agenda" 
-          />
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={goToToday}>
-                <CalendarDays className="w-4 h-4 mr-1" />
-                Hoje
-              </Button>
-              {userRole === "admin" && (
-                <div className="flex gap-1">
-                  <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={handleOpenClassModal}>
-                    <Plus className="w-4 h-4" />
-                  </Button>
-                </div>
-              )}
-            </div>
+      <div className="space-y-6 pb-4">
+        <div className="space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <PageHeader title="Agenda" description="Organize aulas e sessões da equipe" />
+            <ScheduleToolbar
+              onGoToday={goToToday}
+              canCreateClass={canCreateClass}
+              onCreateClass={handleOpenClassModal}
+            />
           </div>
-          {/* Month bar */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button size="sm" variant="outline" onClick={goToPreviousMonth} className="h-8 w-8 p-0" aria-label="Mês anterior">
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <h2 className="text-lg font-semibold capitalize min-w-[120px] text-center">{formatMonthYear(currentMonth)}</h2>
-              <Button size="sm" variant="outline" onClick={goToNextMonth} className="h-8 w-8 p-0" aria-label="Próximo mês">
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-          <p className="text-sm text-muted-foreground">{selectedDate.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}</p>
-        </div>
-        <div className="w-full">
-          <div className="mx-auto w-full md:max-w-[75vw]">
-            <div
-              className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin"
-              style={{scrollbarWidth:'thin'}}
-              onKeyDown={(e)=>{
-                if(e.key !== 'ArrowRight' && e.key !== 'ArrowLeft' && e.key !== 'Home' && e.key !== 'End') return
-                const container = e.currentTarget
-                const items = Array.from(container.querySelectorAll<HTMLButtonElement>('button[data-day-pill="1"]'))
-                if(items.length===0) return
-                const active = document.activeElement as HTMLElement | null
-                let idx = items.findIndex(el => el === active)
-                if(e.key==='Home') idx = 0
-                else if(e.key==='End') idx = items.length-1
-                else if(e.key==='ArrowRight') idx = Math.min(items.length-1, Math.max(0, idx<0? 0: idx+1))
-                else if(e.key==='ArrowLeft') idx = Math.max(0, Math.min(items.length-1, idx<0? items.length-1: idx-1))
-                const target = items[idx]
-                if(target){ target.focus(); e.preventDefault() }
-              }}
-              aria-label="Selecionar dia do mês"
-              role="group"
-            >
-            {monthDays.map((date)=> {
-              const key = date.toISOString().slice(0,10)
-              const stats = daySessionCounts[key]
-              const hasSessions = !!stats
-              const fullLabel = date.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })
-              return (
-                <button
-                  key={key}
-                  onClick={()=> { setUrlParams(currentMonth, date) }}
-                  className={`relative flex flex-col min-w-[68px] flex-shrink-0 items-center justify-center p-2 rounded-lg border h-[72px] text-center transition-all group ${isSelected(date)?'bg-green-600 text-white border-green-600 shadow':'hover:bg-muted'} ${!isSelected(date)&& isToday(date)?'ring-1 ring-green-600':''} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600`}
-                  title={`${fullLabel}${hasSessions ? ` • ${stats.total} aula${stats.total>1?'s':''}` : ''}`}
-                  aria-pressed={isSelected(date)}
-                  aria-label={`Selecionar ${fullLabel}${hasSessions ? `; ${stats.total} aula${stats.total>1?'s':''}` : ''}`}
-                  data-day-pill="1"
-                  tabIndex={0}
-                >
-                  <span className="text-[10px] font-medium leading-none uppercase tracking-wide">{formatDayName(date)}</span>
-                  <span className="text-lg font-bold leading-none mt-1">{date.getDate()}</span>
-                  {hasSessions && (
-                    <span className={`mt-1 text-[10px] font-medium px-1 rounded ${isSelected(date)?'bg-green-700/70':'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'}`}>
-                      {stats.total} aula{stats.total>1?'s':''}
-                    </span>
-                  )}
-                  {!hasSessions && <span className="mt-1 text-[10px] text-muted-foreground">—</span>}
-                </button>
-              )})}
-            </div>
+
+          <div className="space-y-3">
+            <ScheduleMonthNavigation
+              monthLabel={monthLabel}
+              onPreviousMonth={goToPreviousMonth}
+              onNextMonth={goToNextMonth}
+            />
+            <p className="text-sm text-muted-foreground capitalize">{selectedDateLabel}</p>
+            <ScheduleDayPicker
+              days={dayPickerItems}
+              onSelectDay={(date) => setUrlParams(currentMonth, date)}
+            />
           </div>
         </div>
-        <div className="space-y-3">
-          {scheduleQuery.isLoading && (
-            <Card><CardContent className="text-center py-8 text-sm text-muted-foreground">Carregando...</CardContent></Card>
-          )}
-          {!scheduleQuery.isLoading && classesForSelectedDate.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-8">
-                <Calendar className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-                <h3 className="font-semibold mb-1">Nenhuma aula</h3>
-                <p className="text-sm text-muted-foreground">Não há aulas para este dia.</p>
-                {userRole === "admin" && (
-                  <Button size="sm" className="mt-3 bg-green-600 hover:bg-green-700" onClick={handleOpenClassModal}>
-                    <Plus className="w-4 h-4 mr-1" />
+
+        <Section title="Aulas do dia" description={selectedDateLabel}>
+          {isScheduleLoading ? <ScheduleClassSkeletonList count={3} /> : null}
+
+          {scheduleError ? (
+            <EmptyState
+              icon={<Calendar className="h-10 w-10" aria-hidden="true" />}
+              title="Não foi possível carregar a agenda"
+              description={scheduleError instanceof Error ? scheduleError.message : "Tente novamente em instantes."}
+              action={
+                <Button variant="outline" onClick={() => scheduleQuery.refetch()}>
+                  Tentar novamente
+                </Button>
+              }
+            />
+          ) : null}
+
+          {!isScheduleLoading && !scheduleError && classesForSelectedDate.length > 0 ? (
+            <div className="space-y-3">
+              {classesForSelectedDate.map((classItem) => (
+                <ScheduleClassCard
+                  key={classItem.id ?? `${classItem.dateIso}-${classItem.time}`}
+                  classItem={classItem}
+                  trainersById={trainersById}
+                  onManage={handleManageSession}
+                />
+              ))}
+            </div>
+          ) : null}
+
+          {!isScheduleLoading && !scheduleError && classesForSelectedDate.length === 0 ? (
+            <EmptyState
+              icon={<Calendar className="h-10 w-10" aria-hidden="true" />}
+              title="Nenhuma aula para este dia"
+              description="Selecione outra data ou crie uma nova aula para preencher a agenda."
+              action={
+                canCreateClass ? (
+                  <Button className="bg-green-600 hover:bg-green-700" onClick={handleOpenClassModal}>
                     Criar aula
                   </Button>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            classesForSelectedDate.map(classItem => (
-              <ScheduleClassCard key={classItem.id} classItem={classItem} />
-            ))
-          )}
-        </div>
-        <ClassModal open={isNewClassOpen} mode="create" initialData={modalInitialData} onClose={handleCloseClassModal} onSubmitData={handleCreateClass} />
+                ) : undefined
+              }
+            />
+          ) : null}
+        </Section>
+
+        <ClassModal
+          open={isNewClassOpen}
+          mode="create"
+          initialData={modalInitialData}
+          onClose={handleCloseClassModal}
+          onSubmitData={handleCreateClass}
+        />
       </div>
     </Layout>
   )
