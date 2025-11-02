@@ -12,13 +12,36 @@ import Image from "next/image"
 import { useMutation } from "@tanstack/react-query"
 import { loginMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
+import { useToast } from "@/hooks/use-toast"
 
 export default function HomePage() {
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const router = useRouter()
-  const { mutateAsync: login } = useMutation(loginMutation({client: apiClient}));
+  const { toast } = useToast()
+  
+  const { mutate: login, isPending } = useMutation({
+    ...loginMutation({client: apiClient}),
+    onSuccess: (result) => {
+      const payload = getJWTTokenPayload(result.token!)
+      if (payload.role && result.token) {
+        localStorage.setItem("userRole", getRoleName(payload.role))
+        localStorage.setItem("token", result.token)
+        localStorage.setItem("userId", payload.userId)
+        router.push("/schedule")
+      }
+    },
+    onError: (error) => {
+      console.error("Erro no login:", error)
+      toast({
+        title: "Erro",
+        description: "E-mail ou senha incorretos!",
+        variant: "destructive",
+        duration: 5000
+      })
+    }
+  })
 
   useEffect(() => {
     const userRole = localStorage.getItem("userRole")
@@ -27,19 +50,9 @@ export default function HomePage() {
     }
   }, [router])
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
-    // Mock login logic
-    const result = await login({
-      body: { email, password }, client: apiClient
-    });
-    const payload = getJWTTokenPayload(result.token!)
-    if (payload.role && result.token) {
-      localStorage.setItem("userRole", getRoleName(payload.role))
-      localStorage.setItem("token", result.token)
-      localStorage.setItem("userId", payload.userId)
-      router.push("/schedule")
-    }
+    login({ body: { email, password }, client: apiClient })
   }
 
   function getJWTTokenPayload(token: string) {
@@ -106,8 +119,8 @@ export default function HomePage() {
                 </Button>
               </div>
             </div>
-            <Button type="submit" className="w-full bg-green-600 hover:bg-green-700">
-              Entrar
+            <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={isPending}>
+              {isPending ? "Carregando..." : "Entrar"}
             </Button>
           </form>
         </CardContent>
