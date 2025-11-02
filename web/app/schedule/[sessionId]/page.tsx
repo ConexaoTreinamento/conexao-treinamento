@@ -621,7 +621,7 @@ function ClassDetailPageContent() {
         <Dialog open={isEditClassOpen} onOpenChange={setIsEditClassOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Editar Aula</DialogTitle>
+              <DialogTitle>Editar aula</DialogTitle>
               <DialogDescription>Atualize o instrutor desta instância da aula</DialogDescription>
             </DialogHeader>
             <div className="space-y-3">

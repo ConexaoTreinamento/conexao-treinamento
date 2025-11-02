@@ -83,7 +83,7 @@ export default function ClassModal({ open, mode = "create", initialData, onClose
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-sm max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{mode === "create" ? "Nova Aula" : "Editar Aula"}</DialogTitle>
+          <DialogTitle>{mode === "create" ? "Nova aula" : "Editar aula"}</DialogTitle>
           <DialogDescription>Aula avulsa para o dia selecionado</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 mt-4">
