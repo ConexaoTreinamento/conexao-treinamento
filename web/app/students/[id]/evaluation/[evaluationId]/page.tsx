@@ -8,7 +8,7 @@ import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
 import { useEvaluation } from "@/lib/hooks/evaluation-queries"
 import { useStudent } from "@/lib/hooks/student-queries"
-import { MeasurementCard } from "@/components/base/measurement-card"
+import { MeasurementCard } from "@/components/ui/measurement-card"
 
 export default function EvaluationDetailPage() {
   const router = useRouter()

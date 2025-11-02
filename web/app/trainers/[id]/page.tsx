@@ -7,7 +7,7 @@ import { ArrowLeft, Phone, Mail, Calendar, Clock, Edit, MapPin } from "lucide-re
 import { useRouter, useParams } from "next/navigation"
 import { useState } from "react"
 import Layout from "@/components/layout"
-import TrainerModal from "@/components/trainer-modal"
+import TrainerModal from "@/components/trainers/trainer-modal"
 import { findTrainerByIdOptions, findTrainerByIdQueryKey, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"

@@ -1,38 +1,44 @@
-import { type ClientOptions, createClient, createConfig } from './api-client/client'
+import {
+  type ClientOptions,
+  createClient,
+  createConfig,
+} from "./api-client/client";
 
 // Create a custom client with query serializer for nested objects
 export const apiClient = createClient(
   createConfig<ClientOptions>({
-    baseUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
+    baseUrl:
+      process.env.NEXT_PUBLIC_API_URL ||
+      "https://eagwj8dp9p.us-east-2.awsapprunner.com",
     auth: () => localStorage.getItem("token") ?? undefined,
     querySerializer: (params: Record<string, unknown>) => {
-      const searchParams = new URLSearchParams()
+      const searchParams = new URLSearchParams();
 
-      const flattenObject = (obj: Record<string, unknown>, prefix = '') => {
+      const flattenObject = (obj: Record<string, unknown>, prefix = "") => {
         for (const key in obj) {
           if (obj[key] != null) {
-            const paramKey = prefix ? `${prefix}.${key}` : key
-            const value = obj[key]
+            const paramKey = prefix ? `${prefix}.${key}` : key;
+            const value = obj[key];
 
-            if (typeof value === 'object' && !Array.isArray(value)) {
+            if (typeof value === "object" && !Array.isArray(value)) {
               // Special handling for pageable object - flatten to root level
               flattenObject(
                 value as Record<string, unknown>,
-                paramKey === 'pageable' ? '' : paramKey,
-              )
+                paramKey === "pageable" ? "" : paramKey
+              );
             } else if (Array.isArray(value)) {
               value.forEach((item: unknown) => {
-                searchParams.append(paramKey, String(item))
-              })
+                searchParams.append(paramKey, String(item));
+              });
             } else {
-              searchParams.append(paramKey, String(value))
+              searchParams.append(paramKey, String(value));
             }
           }
         }
-      }
+      };
 
-      flattenObject(params)
-      return searchParams.toString()
+      flattenObject(params);
+      return searchParams.toString();
     },
-  }),
-)
+  })
+);

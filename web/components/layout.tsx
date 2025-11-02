@@ -11,7 +11,7 @@ import { Menu, BarChart3, Users, Calendar, UserCheck, Dumbbell, User, Sun, Moon,
 import { useTheme } from "next-themes"
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import Image from "next/image"
-import ExpiringPlansModal from "@/components/expiring-plans-modal"
+import ExpiringPlansModal from "@/components/plans/expiring-plans-modal"
 
 const navigation = [
 	{ name: "Agenda", href: "/schedule", icon: Calendar },

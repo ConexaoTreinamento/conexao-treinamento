@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label"
 import { Mail, Plus, Search, Shield, AlertCircle, CheckCircle, Eye, EyeOff } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
-import { PageHeader } from "@/components/base/page-header"
+import { PageHeader } from "@/components/ui/page-header"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { findAllAdministratorsOptions, createAdministratorAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client";

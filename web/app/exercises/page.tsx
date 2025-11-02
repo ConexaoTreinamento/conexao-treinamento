@@ -38,7 +38,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { findAllExercisesOptions, restoreExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { ExerciseResponseDto } from "@/lib/api-client"
-import { PageHeader } from "@/components/base/page-header"
+import { PageHeader } from "@/components/ui/page-header"
 
 
 export default function ExercisesPage() {
