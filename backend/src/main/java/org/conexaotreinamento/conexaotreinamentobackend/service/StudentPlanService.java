@@ -37,7 +37,7 @@ public class StudentPlanService {
     @Transactional
     public StudentPlanResponseDTO createPlan(StudentPlanRequestDTO requestDTO) {
         // Check if plan with same name already exists
-        if (studentPlanRepository.existsByNameAndActiveTrue(requestDTO.getName())) {
+        if (studentPlanRepository.existsByName(requestDTO.getName())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, 
                 "Plan with name '" + requestDTO.getName() + "' already exists");
         }
