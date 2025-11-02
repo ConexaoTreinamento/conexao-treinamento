@@ -4,7 +4,7 @@ import React, { useMemo } from "react"
 import { ArrowLeft } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
-import StudentForm, { type StudentFormData } from "@/components/student-form"
+import StudentForm, { type StudentFormData } from "@/components/students/student-form"
 import { Button } from "@/components/ui/button"
 import { apiClient } from "@/lib/client"
 import { useToast } from "@/hooks/use-toast"
@@ -210,7 +210,7 @@ export default function EditStudentPage() {
       } as StudentRequestDto
 
       await updateStudent({ path: { id }, body: requestBody, client: apiClient })
-    } catch (e: any) {
+    } catch (e: unknown) {
       handleHttpError(e, "atualizar aluno", "Não foi possível salvar as alterações. Tente novamente.")
     }
   }
@@ -224,7 +224,7 @@ export default function EditStudentPage() {
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h1 className="text-xl font-bold">Editar Aluno</h1>
+            <h1 className="text-2xl font-bold">Editar Aluno</h1>
             <p className="text-sm text-muted-foreground">Atualize as informações do aluno</p>
           </div>
         </div>

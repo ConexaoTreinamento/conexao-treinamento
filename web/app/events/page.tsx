@@ -7,13 +7,14 @@ import { Input } from "@/components/ui/input"
 import { Plus, Calendar, Clock, MapPin, Users, Trophy } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
-import EventModal from "@/components/event-modal"
-import type { EventFormData } from "@/components/event-modal"
+import EventModal from "@/components/events/event-modal"
+import type { EventFormData } from "@/components/events/event-modal"
 import { findAllEventsOptions, createEventMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/use-debounce"
 import type { EventResponseDto } from "@/lib/api-client/types.gen"
+import { PageHeader } from "@/components/base/page-header"
 
 export default function EventsPage() {
   const router = useRouter()
@@ -86,12 +87,10 @@ export default function EventsPage() {
     <Layout>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Eventos</h1>
-            <p className="text-muted-foreground">
-              Gerencie eventos, workshops e atividades especiais
-            </p>
-          </div>
+          <PageHeader 
+            title="Eventos" 
+            description="Gerencie eventos, workshops e atividades especiais" 
+          />
           <Button onClick={() => setIsCreateModalOpen(true)} className="bg-green-600 hover:bg-green-700">
             <Plus className="w-4 h-4 mr-2" />
             Novo Evento

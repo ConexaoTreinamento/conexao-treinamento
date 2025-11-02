@@ -11,20 +11,20 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Search, Filter, Phone, Mail, Calendar, Clock, Edit, Trash2, UserPlus } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
-import TrainerModal from "@/components/trainer-modal"
+import TrainerModal from "@/components/trainers/trainer-modal"
+import { PageHeader } from "@/components/base/page-header"
 import { createTrainerAndUserMutation, findAllTrainersOptions, softDeleteTrainerUserMutation, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { TrainerResponseDto } from "@/lib/api-client"
 import { apiClient } from "@/lib/client"
-import { useToast } from "@/hooks/use-toast"
 import { handleHttpError } from "@/lib/error-utils"
+import { useToast } from "@/hooks/use-toast"
 
 // Interface for trainer data to match the modal
 
 export default function TrainersPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [userRole, setUserRole] = useState<string>("admin")
-  const { toast } = useToast()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<"create" | "edit">("create")
   const [editingTrainer, setEditingTrainer] = useState<TrainerResponseDto | null>(null)
@@ -35,15 +35,16 @@ export default function TrainersPage() {
     specialty: "",
   })
   const router = useRouter()
-  const { mutateAsync: deleteTrainer, isPending: isDeleting } = useMutation(softDeleteTrainerUserMutation({ client: apiClient }))
-  const { mutateAsync: createTrainer, isPending: isCreating } = useMutation(createTrainerAndUserMutation({ client: apiClient }))
-  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerAndUserMutation({ client: apiClient }))
+  const { toast } = useToast()
+  const { mutateAsync: deleteTrainer } = useMutation(softDeleteTrainerUserMutation({ client: apiClient }))
+  const { mutateAsync: createTrainer } = useMutation(createTrainerAndUserMutation({ client: apiClient }))
+  const { mutateAsync: updateTrainer } = useMutation(updateTrainerAndUserMutation({ client: apiClient }))
 
   const queryClient = useQueryClient();
 
   const invalidateTrainersQueries = () => queryClient.invalidateQueries({
-    predicate: (query) => {
-      const root = (query.queryKey as any)?.[0]
+      predicate: (query) => {
+        const root = (query.queryKey as unknown[])?.[0] as { _id?: string } | undefined
       if (!root || typeof root !== "object") return false
       const id = root._id
       return id === "findAllTrainers" || id === "getTrainersForLookup"
@@ -55,7 +56,7 @@ export default function TrainersPage() {
   }, [])
 
 
-  const { data: trainers, isLoading, error } = useQuery({
+  const { data: trainers } = useQuery({
     ...findAllTrainersOptions({
       client: apiClient,
     })
@@ -76,7 +77,7 @@ export default function TrainersPage() {
   }
 
   // Handle modal submission
-  const handleModalSubmit = async (formData: any) => {
+  const handleModalSubmit = async (formData: Record<string, unknown>) => {
     try {
       if (modalMode === "create") {
         // Create new trainer
@@ -97,7 +98,7 @@ export default function TrainersPage() {
       await invalidateTrainersQueries()
       setIsModalOpen(false)
       setEditingTrainer(null)
-    } catch (error: any) {
+    } catch (error: unknown) {
       const action = modalMode === "create" ? "criar treinador" : "atualizar treinador"
       handleHttpError(error, action, `Não foi possível ${action}. Tente novamente.`)
     }
@@ -112,7 +113,7 @@ export default function TrainersPage() {
         });
         toast({ title: "Professor excluído", description: "O professor foi marcado como inativo.", variant: 'destructive', duration: 3000 })
         await invalidateTrainersQueries()
-      } catch (error: any) {
+      } catch (error: unknown) {
         handleHttpError(error, "excluir treinador", "Não foi possível excluir o treinador. Tente novamente.")
       }
     }
@@ -170,10 +171,10 @@ export default function TrainersPage() {
       <div className="space-y-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-xl font-bold">Professores</h1>
-            <p className="text-sm text-muted-foreground">Gerencie professores e instrutores</p>
-          </div>
+          <PageHeader 
+            title="Professores" 
+            description="Gerencie professores e instrutores" 
+          />
           {userRole === "admin" && (
             <Button onClick={handleCreateTrainer} className="bg-green-600 hover:bg-green-700">
               <UserPlus className="w-4 h-4 mr-2" />

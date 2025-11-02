@@ -11,7 +11,7 @@ import { Menu, BarChart3, Users, Calendar, UserCheck, Dumbbell, User, Sun, Moon,
 import { useTheme } from "next-themes"
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
 import Image from "next/image"
-import ExpiringPlansModal from "@/components/expiring-plans-modal"
+import ExpiringPlansModal from "@/components/plans/expiring-plans-modal"
 
 const navigation = [
 	{ name: "Agenda", href: "/schedule", icon: Calendar },
@@ -100,7 +100,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 						</SheetTrigger>
 						<SheetContent side="right" className="w-64">
 							<VisuallyHidden>
-								<SheetTitle>Menu de Navegação</SheetTitle>
+								<SheetTitle>Menu de navegação</SheetTitle>
 							</VisuallyHidden>
 							<div className="flex flex-col h-full">
 								<div className="p-4 border-b">

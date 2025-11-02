@@ -360,8 +360,8 @@ export type SessionParticipant = {
     active?: boolean;
     exercises?: Array<ParticipantExercise>;
     present?: boolean;
-    excluded?: boolean;
     included?: boolean;
+    excluded?: boolean;
 };
 
 export type SessionUpdateRequestDto = {
@@ -607,15 +607,15 @@ export type Pageable = {
 };
 
 export type PageUserResponseDto = {
-    totalPages?: number;
     totalElements?: number;
-    first?: boolean;
-    last?: boolean;
+    totalPages?: number;
     size?: number;
     content?: Array<UserResponseDto>;
     number?: number;
     sort?: SortObject;
     numberOfElements?: number;
+    first?: boolean;
+    last?: boolean;
     pageable?: PageableObject;
     empty?: boolean;
 };
@@ -623,10 +623,10 @@ export type PageUserResponseDto = {
 export type PageableObject = {
     offset?: number;
     sort?: SortObject;
+    unpaged?: boolean;
+    paged?: boolean;
     pageNumber?: number;
     pageSize?: number;
-    paged?: boolean;
-    unpaged?: boolean;
 };
 
 export type SortObject = {
@@ -636,15 +636,15 @@ export type SortObject = {
 };
 
 export type PageStudentResponseDto = {
-    totalPages?: number;
     totalElements?: number;
-    first?: boolean;
-    last?: boolean;
+    totalPages?: number;
     size?: number;
     content?: Array<StudentResponseDto>;
     number?: number;
     sort?: SortObject;
     numberOfElements?: number;
+    first?: boolean;
+    last?: boolean;
     pageable?: PageableObject;
     empty?: boolean;
 };
@@ -675,15 +675,15 @@ export type TrainerReportDto = {
 };
 
 export type PageExerciseResponseDto = {
-    totalPages?: number;
     totalElements?: number;
-    first?: boolean;
-    last?: boolean;
+    totalPages?: number;
     size?: number;
     content?: Array<ExerciseResponseDto>;
     number?: number;
     sort?: SortObject;
     numberOfElements?: number;
+    first?: boolean;
+    last?: boolean;
     pageable?: PageableObject;
     empty?: boolean;
 };
@@ -714,15 +714,15 @@ export type TrainerSchedule = {
 };
 
 export type PageListAdministratorsDto = {
-    totalPages?: number;
     totalElements?: number;
-    first?: boolean;
-    last?: boolean;
+    totalPages?: number;
     size?: number;
     content?: Array<ListAdministratorsDto>;
     number?: number;
     sort?: SortObject;
     numberOfElements?: number;
+    first?: boolean;
+    last?: boolean;
     pageable?: PageableObject;
     empty?: boolean;
 };
@@ -1484,7 +1484,9 @@ export type CreateOneOffSessionResponse = CreateOneOffSessionResponses[keyof Cre
 export type GetAllPlansData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        status?: string;
+    };
     url: '/plans';
 };
 
@@ -1512,6 +1514,24 @@ export type CreatePlanResponses = {
 };
 
 export type CreatePlanResponse = CreatePlanResponses[keyof CreatePlanResponses];
+
+export type RestorePlanData = {
+    body?: never;
+    path: {
+        planId: string;
+    };
+    query?: never;
+    url: '/plans/{planId}/restore';
+};
+
+export type RestorePlanResponses = {
+    /**
+     * OK
+     */
+    200: StudentPlanResponseDto;
+};
+
+export type RestorePlanResponse = RestorePlanResponses[keyof RestorePlanResponses];
 
 export type AssignPlanToStudentData = {
     body: AssignPlanRequestDto;

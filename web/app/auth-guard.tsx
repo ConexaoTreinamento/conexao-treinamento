@@ -9,13 +9,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      if (isTokenExpired(localStorage.getItem("token")) || !localStorage.getItem("token")) {
-          localStorage.removeItem("userRole");
-          localStorage.removeItem("userName");
-          localStorage.removeItem('token');
-          router.push("/");
-          setChecking(false);
-          return;
+      const storedToken = localStorage.getItem("token");
+      if (!storedToken || isTokenExpired(storedToken)) {
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("userName");
+        localStorage.removeItem("token");
+        router.push("/");
+        setChecking(false);
+        return;
       }
       if (pathname === "/") {
         setChecking(false);
@@ -30,17 +31,25 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [router, pathname]);
 
-  if (checking) return null; // checking para não renderizar sem token
+  if (checking) {
+    return null;
+  }
 
   return <>{children}</>;
 }
 
-function isTokenExpired(token: string): boolean {
+function isTokenExpired(token: string | null): boolean {
+  if (!token) {
+    return true;
+  }
   try {
     const payload = token.split('.')[1];
     const decoded = JSON.parse(atob(payload));
     const exp = decoded.exp;
-    if (!exp) return true;
+    if (!exp) {
+      return true;
+    }
+
     return exp < Math.floor(Date.now() / 1000);
   } catch {
     return true;

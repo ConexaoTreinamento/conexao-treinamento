@@ -16,9 +16,7 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import {
   Pagination,
@@ -28,8 +26,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
-import CreateExerciseModal from "@/components/ui/create-exercise-modal"
-import EditExerciseModal from "@/components/ui/edit-exercise-modal"
+import CreateExerciseModal from "@/components/exercises/create-exercise-modal"
+import EditExerciseModal from "@/components/exercises/edit-exercise-modal"
 
 import { Search, Plus, Activity, Edit, Trash2, X, Eye, RotateCcw, MoreVertical } from "lucide-react"
 import Layout from "@/components/layout"
@@ -40,16 +38,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { findAllExercisesOptions, restoreExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { ExerciseResponseDto } from "@/lib/api-client"
+import { PageHeader } from "@/components/base/page-header"
 
-const getAuthHeaders = () => ({ 'Authorization': `Bearer ${localStorage.getItem('token')}` })
-
-interface Exercise {
-  id: number
-  name: string
-  description?: string
-  createdAt?: string
-  deletedAt?: string
-}
 
 export default function ExercisesPage() {
   const [searchInput, setSearchInput] = useState("")
@@ -68,17 +58,19 @@ export default function ExercisesPage() {
   const { toast } = useToast()
   const queryClient = useQueryClient();
 
-  const { data: exercises, isLoading, error } = useQuery({
+  const { data: exercises, isLoading } = useQuery({
     ...findAllExercisesOptions({
       client: apiClient,
       query: { pageable: { page: currentPage }, search: searchTerm, includeInactive: showInactive }
     })
   })
 
-  const { mutateAsync: restoreExercise, isPending: isRestoring } = useMutation(restoreExerciseMutation({ client: apiClient }));
+  const { mutateAsync: restoreExercise } = useMutation(restoreExerciseMutation({ client: apiClient }));
 
   useEffect(() => {
-    setTotalPages(exercises?.totalPages!)
+    if (exercises?.totalPages !== undefined) {
+      setTotalPages(exercises.totalPages)
+    }
   }, [exercises])
 
   const handleSearchInputChange = (value: string) => {
@@ -89,8 +81,7 @@ export default function ExercisesPage() {
     try {
       setSearchTerm(searchInput)
       setCurrentPage(0)
-    } catch (err) {
-      console.error('Erro ao realizar busca:', err)
+    } catch {
       toast({
         title: "Erro",
         description: "Erro ao realizar busca. Tente novamente.",
@@ -108,8 +99,7 @@ export default function ExercisesPage() {
   const handlePageChange = (newPage: number) => {
     try {
       setCurrentPage(newPage)
-    } catch (err) {
-      console.error('Erro ao mudar página:', err)
+    } catch {
       toast({
         title: "Erro",
         description: "Erro ao mudar página. Tente novamente.",
@@ -160,11 +150,10 @@ export default function ExercisesPage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Exercícios</h1>
-            <p className="text-muted-foreground">Biblioteca de exercícios para fichas de treino</p>
-          </div>
-
+          <PageHeader 
+            title="Exercícios" 
+            description="Biblioteca de exercícios para fichas de treino" 
+          />
           <Button
             className="bg-green-600 hover:bg-green-700"
             onClick={() => setIsNewExerciseOpen(true)}

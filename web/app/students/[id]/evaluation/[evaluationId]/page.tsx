@@ -8,6 +8,7 @@ import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
 import { useEvaluation } from "@/lib/hooks/evaluation-queries"
 import { useStudent } from "@/lib/hooks/student-queries"
+import { MeasurementCard } from "@/components/students/measurement-card"
 
 export default function EvaluationDetailPage() {
   const router = useRouter()
@@ -57,25 +58,25 @@ export default function EvaluationDetailPage() {
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.back()}>
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold">Avaliação Física</h1>
-              <p className="text-sm text-muted-foreground">{`${student.name} ${student.surname}`}</p>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <h1 className="text-2xl font-bold">Avaliação física</h1>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              {new Date(evaluation.date).toLocaleDateString("pt-BR")}
-            </Badge>
             <Button size="sm" variant="outline" onClick={() => router.push(`/students/${studentId}/evaluation/${evaluationId}/edit`)}>
               <Edit className="w-4 h-4 mr-2" />
               Editar
             </Button>
+          </div>
+          <div className="flex flex-col items-center sm:flex-row sm:items-center sm:justify-between gap-2">
+            <p className="text-sm text-muted-foreground text-center sm:text-left">{`${student.name} ${student.surname}`}</p>
+            <Badge variant="outline" className="flex items-center gap-1 w-fit">
+              <Calendar className="w-3 h-3" />
+              {new Date(evaluation.date).toLocaleDateString("pt-BR")}
+            </Badge>
           </div>
         </div>
 
@@ -84,7 +85,7 @@ export default function EvaluationDetailPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="w-5 h-5" />
-              Dados Básicos
+              Dados básicos
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -117,91 +118,128 @@ export default function EvaluationDetailPage() {
             <CardTitle>Circunferências</CardTitle>
             <CardDescription>Medidas em centímetros</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-8">
             {/* Braços */}
-            <div>
-              <h3 className="font-semibold mb-3">Braços</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {evaluation.circumferences.rightArmRelaxed && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Direito Relaxado</p>
-                  <p className="font-medium">{evaluation.circumferences.rightArmRelaxed} cm</p>
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg border-b border-border pb-2">Braços</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Braço Direito */}
+                <div className="space-y-3">
+                  <h4 className="font-medium text-muted-foreground text-sm uppercase tracking-wide">Braço Direito</h4>
+                  <div className="grid grid-cols-1 gap-3">
+                    {evaluation.circumferences.rightArmRelaxed && (
+                      <MeasurementCard 
+                        label="Relaxado" 
+                        value={evaluation.circumferences.rightArmRelaxed} 
+                        unit="cm" 
+                      />
+                    )}
+                    {evaluation.circumferences.rightArmFlexed && (
+                      <MeasurementCard 
+                        label="Flexionado" 
+                        value={evaluation.circumferences.rightArmFlexed} 
+                        unit="cm" 
+                      />
+                    )}
+                  </div>
                 </div>
-                )}
-                {evaluation.circumferences.leftArmRelaxed && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Esquerdo Relaxado</p>
-                  <p className="font-medium">{evaluation.circumferences.leftArmRelaxed} cm</p>
+                
+                {/* Braço Esquerdo */}
+                <div className="space-y-3">
+                  <h4 className="font-medium text-muted-foreground text-sm uppercase tracking-wide">Braço Esquerdo</h4>
+                  <div className="grid grid-cols-1 gap-3">
+                    {evaluation.circumferences.leftArmRelaxed && (
+                      <MeasurementCard 
+                        label="Relaxado" 
+                        value={evaluation.circumferences.leftArmRelaxed} 
+                        unit="cm" 
+                      />
+                    )}
+                    {evaluation.circumferences.leftArmFlexed && (
+                      <MeasurementCard 
+                        label="Flexionado" 
+                        value={evaluation.circumferences.leftArmFlexed} 
+                        unit="cm" 
+                      />
+                    )}
+                  </div>
                 </div>
-                )}
-                {evaluation.circumferences.rightArmFlexed && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Direito Flexionado</p>
-                  <p className="font-medium">{evaluation.circumferences.rightArmFlexed} cm</p>
-                </div>
-                )}
-                {evaluation.circumferences.leftArmFlexed && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Esquerdo Flexionado</p>
-                  <p className="font-medium">{evaluation.circumferences.leftArmFlexed} cm</p>
-                </div>
-                )}
               </div>
             </div>
 
             {/* Tronco */}
-            <div>
-              <h3 className="font-semibold mb-3">Tronco</h3>
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg border-b border-border pb-2">Tronco</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {evaluation.circumferences.waist && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Cintura</p>
-                  <p className="font-medium">{evaluation.circumferences.waist} cm</p>
-                </div>
+                  <MeasurementCard 
+                    label="Cintura" 
+                    value={evaluation.circumferences.waist} 
+                    unit="cm" 
+                  />
                 )}
                 {evaluation.circumferences.abdomen && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Abdômen</p>
-                  <p className="font-medium">{evaluation.circumferences.abdomen} cm</p>
-                </div>
+                  <MeasurementCard 
+                    label="Abdômen" 
+                    value={evaluation.circumferences.abdomen} 
+                    unit="cm" 
+                  />
                 )}
                 {evaluation.circumferences.hip && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Quadril</p>
-                  <p className="font-medium">{evaluation.circumferences.hip} cm</p>
-                </div>
+                  <MeasurementCard 
+                    label="Quadril" 
+                    value={evaluation.circumferences.hip} 
+                    unit="cm" 
+                  />
                 )}
               </div>
             </div>
 
             {/* Pernas */}
-            <div>
-              <h3 className="font-semibold mb-3">Pernas</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {evaluation.circumferences.rightThigh && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Coxa Direita</p>
-                  <p className="font-medium">{evaluation.circumferences.rightThigh} cm</p>
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg border-b border-border pb-2">Pernas</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Perna Direita */}
+                <div className="space-y-3">
+                  <h4 className="font-medium text-muted-foreground text-sm uppercase tracking-wide">Perna Direita</h4>
+                  <div className="grid grid-cols-1 gap-3">
+                    {evaluation.circumferences.rightThigh && (
+                      <MeasurementCard 
+                        label="Coxa" 
+                        value={evaluation.circumferences.rightThigh} 
+                        unit="cm" 
+                      />
+                    )}
+                    {evaluation.circumferences.rightCalf && (
+                      <MeasurementCard 
+                        label="Panturrilha" 
+                        value={evaluation.circumferences.rightCalf} 
+                        unit="cm" 
+                      />
+                    )}
+                  </div>
                 </div>
-                )}
-                {evaluation.circumferences.leftThigh && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Coxa Esquerda</p>
-                  <p className="font-medium">{evaluation.circumferences.leftThigh} cm</p>
+                
+                {/* Perna Esquerda */}
+                <div className="space-y-3">
+                  <h4 className="font-medium text-muted-foreground text-sm uppercase tracking-wide">Perna Esquerda</h4>
+                  <div className="grid grid-cols-1 gap-3">
+                    {evaluation.circumferences.leftThigh && (
+                      <MeasurementCard 
+                        label="Coxa" 
+                        value={evaluation.circumferences.leftThigh} 
+                        unit="cm" 
+                      />
+                    )}
+                    {evaluation.circumferences.leftCalf && (
+                      <MeasurementCard 
+                        label="Panturrilha" 
+                        value={evaluation.circumferences.leftCalf} 
+                        unit="cm" 
+                      />
+                    )}
+                  </div>
                 </div>
-                )}
-                {evaluation.circumferences.rightCalf && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Panturrilha Direita</p>
-                  <p className="font-medium">{evaluation.circumferences.rightCalf} cm</p>
-                </div>
-                )}
-                {evaluation.circumferences.leftCalf && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Panturrilha Esquerda</p>
-                  <p className="font-medium">{evaluation.circumferences.leftCalf} cm</p>
-                </div>
-                )}
               </div>
             </div>
           </CardContent>
@@ -212,52 +250,59 @@ export default function EvaluationDetailPage() {
         {evaluation.subcutaneousFolds && (
         <Card>
           <CardHeader>
-            <CardTitle>Dobras Subcutâneas</CardTitle>
+            <CardTitle>Dobras subcutâneas</CardTitle>
             <CardDescription>Medidas em milímetros</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {evaluation.subcutaneousFolds.triceps && (
-              <div>
-                <p className="text-sm text-muted-foreground">Tríceps</p>
-                <p className="font-medium">{evaluation.subcutaneousFolds.triceps} mm</p>
-              </div>
+                <MeasurementCard 
+                  label="Tríceps" 
+                  value={evaluation.subcutaneousFolds.triceps} 
+                  unit="mm" 
+                />
               )}
               {evaluation.subcutaneousFolds.thorax && (
-              <div>
-                <p className="text-sm text-muted-foreground">Tórax</p>
-                <p className="font-medium">{evaluation.subcutaneousFolds.thorax} mm</p>
-              </div>
+                <MeasurementCard 
+                  label="Tórax" 
+                  value={evaluation.subcutaneousFolds.thorax} 
+                  unit="mm" 
+                />
               )}
               {evaluation.subcutaneousFolds.subaxillary && (
-              <div>
-                <p className="text-sm text-muted-foreground">Subaxilar</p>
-                <p className="font-medium">{evaluation.subcutaneousFolds.subaxillary} mm</p>
-              </div>
+                <MeasurementCard 
+                  label="Subaxilar" 
+                  value={evaluation.subcutaneousFolds.subaxillary} 
+                  unit="mm" 
+                />
               )}
               {evaluation.subcutaneousFolds.subscapular && (
-              <div>
-                <p className="text-sm text-muted-foreground">Subescapular</p>
-                <p className="font-medium">{evaluation.subcutaneousFolds.subscapular} mm</p>
-              </div>
+                <MeasurementCard 
+                  label="Subescapular" 
+                  value={evaluation.subcutaneousFolds.subscapular} 
+                  unit="mm" 
+                />
               )}
               {evaluation.subcutaneousFolds.abdominal && (
-              <div>
-                <p className="text-sm text-muted-foreground">Abdominal</p>
-                <p className="font-medium">{evaluation.subcutaneousFolds.abdominal} mm</p>
-              </div>
+                <MeasurementCard 
+                  label="Abdominal" 
+                  value={evaluation.subcutaneousFolds.abdominal} 
+                  unit="mm" 
+                />
               )}
               {evaluation.subcutaneousFolds.suprailiac && (
-              <div>
-                <p className="text-sm text-muted-foreground">Suprailíaca</p>
-                <p className="font-medium">{evaluation.subcutaneousFolds.suprailiac} mm</p>
-              </div>
+                <MeasurementCard 
+                  label="Suprailíaca" 
+                  value={evaluation.subcutaneousFolds.suprailiac} 
+                  unit="mm" 
+                />
               )}
               {evaluation.subcutaneousFolds.thigh && (
-              <div>
-                <p className="text-sm text-muted-foreground">Coxa</p>
-                <p className="font-medium">{evaluation.subcutaneousFolds.thigh} mm</p>
-              </div>
+                <MeasurementCard 
+                  label="Coxa" 
+                  value={evaluation.subcutaneousFolds.thigh} 
+                  unit="mm" 
+                />
               )}
             </div>
           </CardContent>
@@ -271,19 +316,21 @@ export default function EvaluationDetailPage() {
             <CardTitle>Diâmetros</CardTitle>
             <CardDescription>Medidas em centímetros</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md">
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
               {evaluation.diameters.umerus && (
-              <div>
-                <p className="text-sm text-muted-foreground">Cotovelo</p>
-                <p className="font-medium">{evaluation.diameters.umerus} cm</p>
-              </div>
+                <MeasurementCard 
+                  label="Cotovelo" 
+                  value={evaluation.diameters.umerus} 
+                  unit="cm" 
+                />
               )}
               {evaluation.diameters.femur && (
-              <div>
-                <p className="text-sm text-muted-foreground">Joelho</p>
-                <p className="font-medium">{evaluation.diameters.femur} cm</p>
-              </div>
+                <MeasurementCard 
+                  label="Joelho" 
+                  value={evaluation.diameters.femur} 
+                  unit="cm" 
+                />
               )}
             </div>
           </CardContent>

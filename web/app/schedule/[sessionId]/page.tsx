@@ -17,9 +17,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updatePresenceMutation, getScheduleQueryKey, findAllExercisesOptions, updateRegisteredParticipantExerciseMutation, addRegisteredParticipantExerciseMutation, removeRegisteredParticipantExerciseMutation, updateSessionTrainerMutation, removeSessionParticipantMutation, addSessionParticipantMutation, cancelOrRestoreSessionMutation, createExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import type { ExerciseResponseDto, PageExerciseResponseDto, SessionResponseDto, StudentCommitmentResponseDto, TrainerResponseDto, ScheduleResponseDto } from "@/lib/api-client"
+import type { ExerciseResponseDto, PageExerciseResponseDto, SessionResponseDto, StudentCommitmentResponseDto } from "@/lib/api-client"
 import { useForm } from "react-hook-form"
-import { StudentPicker, type StudentSummary } from "@/components/student-picker"
+import { StudentPicker, type StudentSummary } from "@/components/students/student-picker"
 
 export default function ClassDetailPage() {
   return (
@@ -78,13 +78,16 @@ function ClassDetailPageContent() {
 
   // Exercises catalog (for exercise selection)
   const exercisesQuery = useQuery({ ...findAllExercisesOptions({ client: apiClient, query: { pageable: { page:0, size: 200 } } }) })
-  const allExercises: ExerciseResponseDto[] = ((exercisesQuery.data as PageExerciseResponseDto | undefined)?.content) ?? []
+  const allExercises: ExerciseResponseDto[] = useMemo(() => {
+    return ((exercisesQuery.data as PageExerciseResponseDto | undefined)?.content) ?? []
+  }, [exercisesQuery.data])
 
   // Local UI state derived from session
   const [isExerciseOpen, setIsExerciseOpen] = useState(false)
   const [isEditClassOpen, setIsEditClassOpen] = useState(false)
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
   const [exerciseSearchTerm, setExerciseSearchTerm] = useState("")
+  const [isExerciseListOpen, setIsExerciseListOpen] = useState(false)
   const [editTrainer, setEditTrainer] = useState<string>("none")
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [isCreateExerciseOpen, setIsCreateExerciseOpen] = useState(false)
@@ -103,6 +106,13 @@ function ClassDetailPageContent() {
       setEditTrainer(session.trainerId || "none")
     }
   }, [session])
+
+  useEffect(() => {
+    if (!isExerciseOpen) {
+      setExerciseSearchTerm("")
+      setIsExerciseListOpen(false)
+    }
+  }, [isExerciseOpen])
 
   // Mutations
   const mUpdateTrainer = useMutation(updateSessionTrainerMutation({ client: apiClient }))
@@ -140,8 +150,8 @@ function ClassDetailPageContent() {
     // Fallback: broadly invalidate all schedule queries regardless of date ranges to avoid key mismatches due to timezone/date formatting differences
     qc.invalidateQueries({
       predicate: (q) => {
-        const k0 = (q.queryKey as any)?.[0]
-        return k0 && typeof k0 === 'object' && k0._id === 'getSchedule'
+        const k0 = (q.queryKey as unknown[])?.[0] as { _id?: string } | undefined
+        return !!(k0 && typeof k0 === 'object' && k0._id === 'getSchedule')
       }
     })
   }
@@ -152,8 +162,8 @@ function ClassDetailPageContent() {
     if (sessionId) {
       qc.invalidateQueries({
         predicate: (q) => {
-          const k0 = (q.queryKey as any)?.[0]
-          return k0 && typeof k0 === 'object' && k0._id === 'getSession' && k0.path?.sessionId === sessionId
+          const k0 = (q.queryKey as unknown[])?.[0] as { _id?: string; path?: { sessionId?: string } } | undefined
+          return !!(k0 && typeof k0 === 'object' && k0._id === 'getSession' && k0.path?.sessionId === sessionId)
         }
       })
     }
@@ -208,6 +218,8 @@ function ClassDetailPageContent() {
     setSelectedStudentId(sid)
     setIsExerciseOpen(true)
     registerExerciseForm.reset({ exerciseId: "", sets: "", reps: "", weight: "", notes: "" })
+    setExerciseSearchTerm("")
+    setIsExerciseListOpen(false)
   }
 
   const openCreateExercise = () => {
@@ -218,8 +230,8 @@ function ClassDetailPageContent() {
   const addToExercisesCaches = (ex: ExerciseResponseDto) => {
     const entries = qc.getQueriesData<import("@/lib/api-client").PageExerciseResponseDto>({
       predicate: (q) => {
-        const k0 = (q.queryKey as any)?.[0]
-        return k0 && typeof k0 === 'object' && k0._id === 'findAllExercises'
+        const k0 = (q.queryKey as unknown[])?.[0] as { _id?: string } | undefined
+        return !!(k0 && typeof k0 === 'object' && k0._id === 'findAllExercises')
       }
     })
     entries.forEach(([key, data]) => {
@@ -239,6 +251,8 @@ function ClassDetailPageContent() {
     addToExercisesCaches(created)
     // Select it in the register exercise modal
     registerExerciseForm.setValue("exerciseId", created.id || "")
+    setExerciseSearchTerm("")
+    setIsExerciseListOpen(false)
     setIsCreateExerciseOpen(false)
   })
 
@@ -321,6 +335,13 @@ function ClassDetailPageContent() {
   }
 }
 
+  // Move all derived values and hooks before early returns
+  const selectedExerciseId = registerExerciseForm.watch("exerciseId")
+  const selectedExercise = useMemo(() => {
+    if (!selectedExerciseId) return null
+    return (allExercises || []).find((ex) => ex.id === selectedExerciseId) ?? null
+  }, [allExercises, selectedExerciseId])
+
   if (sessionQuery.isLoading) return <Layout><div className="p-6 text-sm">Carregando...</div></Layout>
   if (sessionQuery.error || !session) return <Layout><div className="p-6 text-sm text-red-600">Sessão não encontrada.</div></Layout>
 
@@ -335,7 +356,9 @@ function ClassDetailPageContent() {
   const handleStudentSelect = (student: StudentSummary) => {
     void addStudent(student)
   }
-  const filteredExercises = (allExercises||[]).filter(e => (e.name || '').toLowerCase().includes(exerciseSearchTerm.toLowerCase()))
+  const normalizedExerciseSearch = exerciseSearchTerm.trim().toLowerCase()
+  const filteredExercises = (allExercises||[]).filter(e => (e.name || '').toLowerCase().includes(normalizedExerciseSearch))
+  const shouldShowExerciseList = isExerciseListOpen && exerciseSearchTerm.trim().length > 0
 
   return (
     <Layout>
@@ -382,7 +405,7 @@ function ClassDetailPageContent() {
                     title="Editar"
                   >
                     <Edit className="w-3 h-3 mr-1" />
-                    <span className="hidden sm:inline">Editar</span>
+                    <span>Editar</span>
                   </Button>
                   <Button
                     size="sm"
@@ -396,12 +419,12 @@ function ClassDetailPageContent() {
                     {session.canceled ? (
                       <>
                         <CheckCircle className="w-3 h-3 mr-1" />
-                        <span className="hidden sm:inline">Restaurar</span>
+                        <span>Restaurar</span>
                       </>
                     ) : (
                       <>
                         <XCircle className="w-3 h-3 mr-1" />
-                        <span className="hidden sm:inline">Cancelar</span>
+                        <span>Cancelar</span>
                       </>
                     )}
                   </Button>
@@ -440,11 +463,11 @@ function ClassDetailPageContent() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Activity className="w-5 h-5" />
-                  Alunos da Aula
+                  Alunos da aula
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" onClick={() => setAddDialogOpen(true)}>
-                    Adicionar Aluno
+                    Adicionar aluno
                   </Button>
                 </div>
               </div>
@@ -453,7 +476,7 @@ function ClassDetailPageContent() {
               <div className="space-y-3">
                 {/* Search Input */}
                 <div>
-                  <Label htmlFor="studentSearch">Buscar Aluno</Label>
+                  <Label htmlFor="studentSearch">Buscar aluno</Label>
                   <Input id="studentSearch" placeholder="Digite o nome do aluno..." value={participantSearchTerm} onChange={(e)=> setParticipantSearchTerm(e.target.value)} />
                 </div>
 
@@ -507,7 +530,7 @@ function ClassDetailPageContent() {
                           {[...((student.participantExercises||[]))].sort((a,b)=> (a.exerciseName||'').localeCompare(b.exerciseName||'')).map((ex) => (
                             <div key={ex.id} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm gap-2">
                               <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <Checkbox checked={!!ex.done} onCheckedChange={(v)=> ex.id && student.studentId && toggleExerciseDone(student.studentId, ex.id, !!ex.done)} aria-label="Marcar como concluído" />
+                                <Checkbox checked={!!ex.done} onCheckedChange={()=> ex.id && student.studentId && toggleExerciseDone(student.studentId, ex.id, !!ex.done)} aria-label="Marcar como concluído" />
                                 <span className={`flex-1 min-w-0 truncate ${ex.done? 'line-through opacity-70':''}`}>
                                   {ex.exerciseName || ex.exerciseId} {ex.setsCompleted!=null && `- ${ex.setsCompleted}x${ex.repsCompleted ?? ''}`} {ex.weightCompleted!=null && `- ${ex.weightCompleted}kg`}
                                 </span>
@@ -566,28 +589,62 @@ function ClassDetailPageContent() {
                 <Label>Exercício</Label>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <Input placeholder="Buscar exercício..." value={exerciseSearchTerm} onChange={(e)=> setExerciseSearchTerm(e.target.value)} className="flex-1" />
+                    <div className="relative flex-1">
+                      <Input
+                        placeholder="Buscar exercício..."
+                        value={exerciseSearchTerm}
+                        onFocus={() => setIsExerciseListOpen(exerciseSearchTerm.trim().length > 0)}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          setExerciseSearchTerm(value)
+                          setIsExerciseListOpen(value.trim().length > 0)
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") {
+                            setIsExerciseListOpen(false)
+                          }
+                        }}
+                        className="w-full"
+                      />
+                      {shouldShowExerciseList && (
+                        <div className="absolute left-0 right-0 top-full z-20 mt-2 max-h-60 overflow-y-auto rounded border bg-background shadow-md">
+                          {(filteredExercises || []).map((ex) => {
+                            const selected = selectedExerciseId === ex.id
+                            return (
+                              <button
+                                key={ex.id}
+                                type="button"
+                                className={`w-full text-left px-3 py-2 text-sm cursor-pointer ${selected ? 'bg-green-600 text-white hover:bg-green-700' : 'hover:bg-muted'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600`}
+                                aria-pressed={selected}
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  registerExerciseForm.setValue('exerciseId', ex.id || '')
+                                  setIsExerciseListOpen(false)
+                                  setExerciseSearchTerm('')
+                                }}
+                              >
+                                {ex.name || ex.id}
+                              </button>
+                            )
+                          })}
+                          {filteredExercises.length === 0 && (
+                            <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+                              Nenhum exercício encontrado
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     <Button type="button" size="icon" variant="outline" onClick={openCreateExercise} aria-label="Novo exercício" title="Novo exercício">
                       <Plus className="w-4 h-4" />
                     </Button>
                   </div>
-                  <div className="max-h-48 overflow-y-auto border rounded">
-                    {(filteredExercises||[]).map(ex => {
-                      const selected = registerExerciseForm.watch('exerciseId')===ex.id
-                      return (
-                        <button
-                          key={ex.id}
-                          type="button"
-                          className={`w-full text-left px-3 py-2 text-sm cursor-pointer ${selected ? 'bg-green-600 text-white hover:bg-green-700' : 'hover:bg-muted'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600`}
-                          aria-pressed={selected}
-                          onClick={(e)=> { e.preventDefault(); registerExerciseForm.setValue('exerciseId', ex.id || ''); }}
-                        >
-                          {ex.name}
-                        </button>
-                      )
-                    })}
-                    {filteredExercises.length===0 && <div className="text-center text-sm text-muted-foreground py-4">Nenhum exercício encontrado</div>}
-                  </div>
+                  {selectedExerciseId && (
+                    <p className="text-xs text-muted-foreground">
+                      Exercício selecionado: {selectedExercise?.name || selectedExerciseId}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-3">
@@ -646,7 +703,7 @@ function ClassDetailPageContent() {
         <Dialog open={isEditClassOpen} onOpenChange={setIsEditClassOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Editar Aula</DialogTitle>
+              <DialogTitle>Editar aula</DialogTitle>
               <DialogDescription>Atualize o instrutor desta instância da aula</DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
@@ -657,8 +714,8 @@ function ClassDetailPageContent() {
                   <SelectContent>
                     <SelectItem value="none">(Sem instrutor)</SelectItem>
                     {(trainersQuery.data||[])
-                      .filter((t:any)=> !!t?.id)
-                      .map((t:any)=> <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                      .filter((t) => !!t?.id)
+                      .map((t) => <SelectItem key={t.id!} value={t.id!}>{t.name || ''}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

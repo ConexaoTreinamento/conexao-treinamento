@@ -25,13 +25,14 @@ import {
 import {Activity, Calendar, Filter, Mail, Phone, Plus, RotateCcw, Search, Trash2, X} from "lucide-react"
 import {useRouter, useSearchParams} from "next/navigation"
 import Layout from "@/components/layout"
-import StudentForm, {type StudentFormData} from "@/components/student-form"
+import StudentForm, {type StudentFormData} from "@/components/students/student-form"
 import PageSelector from "@/components/ui/page-selector"
+import { PageHeader } from "@/components/base/page-header"
 import useDebounce from "@/hooks/use-debounce"
 import {useForm} from "react-hook-form"
 import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form"
 import {Checkbox} from "@/components/ui/checkbox"
-import ConfirmDeleteButton from "@/components/confirm-delete-button"
+import ConfirmDeleteButton from "@/components/base/confirm-delete-button"
 import {useCreateStudent, useDeleteStudent, useRestoreStudent} from "@/lib/hooks/student-mutations"
 import {assignPlanToStudentMutation} from '@/lib/api-client/@tanstack/react-query.gen'
 import {useMutation, useQueryClient, useQueries} from '@tanstack/react-query'
@@ -560,7 +561,7 @@ function StudentsPageContent() {
 
       toast({ title: "Aluno criado", description: assignedPlan ? "Aluno e plano atribuídos." : "Aluno cadastrado com sucesso.", variant: 'success', duration: 3000 })      
       setIsCreateOpen(false)
-    } catch (e: any) {
+    } catch (e: unknown) {
       handleHttpError(e, "criar aluno", "Não foi possível criar o aluno. Tente novamente.")
     } finally {
       setIsCreating(false)
@@ -575,7 +576,7 @@ function StudentsPageContent() {
     try {
       await deleteStudent({ path: { id }, client: apiClient })
       toast({ title: "Aluno excluído", description: "O aluno foi marcado como inativo.", duration: 3000 })
-    } catch (e: any) {
+    } catch (e: unknown) {
       handleHttpError(e, "excluir aluno", "Não foi possível excluir o aluno. Tente novamente.")
     }
   }
@@ -584,7 +585,7 @@ function StudentsPageContent() {
     try {
       await restoreStudent({ path: { id }, client: apiClient })
       toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
-    } catch (e: any) {
+    } catch (e: unknown) {
       handleHttpError(e, "reativar aluno", "Não foi possível reativar o aluno. Tente novamente.")
     }
   }
@@ -594,20 +595,20 @@ function StudentsPageContent() {
       <div className="space-y-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Alunos</h1>
-            <p className="text-muted-foreground">Gerencie todos os alunos da academia</p>
-          </div>
+          <PageHeader 
+            title="Alunos" 
+            description="Gerencie todos os alunos da academia" 
+          />
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
               <Button className="bg-green-600 hover:bg-green-700 w-full sm:w-auto">
                 <Plus className="w-4 h-4 mr-2" />
-                Novo Aluno
+                Novo aluno
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Cadastrar Novo Aluno</DialogTitle>
+                <DialogTitle>Cadastrar novo aluno</DialogTitle>
                 <DialogDescription>
                   Preencha as informações do aluno e a ficha de anamnese
                 </DialogDescription>
