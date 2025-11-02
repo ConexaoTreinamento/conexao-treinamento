@@ -69,14 +69,16 @@ export default function PlansPage(){
     onMutate: async (vars) => {
       await qc.cancelQueries({queryKey: plansQueryOptions.queryKey})
       const prev = qc.getQueryData<StudentPlanResponseDto[]>(plansQueryOptions.queryKey)
-      if(prev){
+      if (prev) {
         const next = prev.map(plan => (plan?.id === vars.path.planId ? ({...plan, active: false}) : plan))
         qc.setQueryData(plansQueryOptions.queryKey, next)
       }
       return {prev}
     },
     onError: (_err, _vars, context) => {
-      if(context?.prev) qc.setQueryData(plansQueryOptions.queryKey, context.prev)
+      if (context?.prev) {
+        qc.setQueryData(plansQueryOptions.queryKey, context.prev)
+      }
       toast({title:'Erro ao excluir plano', variant:'destructive'})
     },
     onSuccess: () => toast({title:'Plano excluído'}),
