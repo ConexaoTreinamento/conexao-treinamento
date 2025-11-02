@@ -2,10 +2,8 @@
 
 import type React from "react";
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -15,13 +13,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Mail, Plus, Search, Shield, AlertCircle, CheckCircle, Eye, EyeOff } from "lucide-react"
+import { Plus, Shield, AlertCircle, CheckCircle, Eye, EyeOff } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import { PageHeader } from "@/components/base/page-header"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { findAllAdministratorsOptions, createAdministratorAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client";
+import { FilterToolbar } from "@/components/base/filter-toolbar"
+import { AdministratorCard } from "@/components/administrators/administrator-card"
+import { EmptyState } from "@/components/base/empty-state"
 
 interface FormData {
   firstName: string;
@@ -356,16 +357,12 @@ export default function AdministratorsPage() {
           </Dialog>
         </div>
 
-        {/* Search */}
-        <div className="flex items-center gap-2">
-          <Search className="w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome ou email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-sm"
-          />
-        </div>
+        <FilterToolbar
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchPlaceholder="Buscar por nome ou email..."
+          searchLabel="Buscar administradores"
+        />
 
         {/* Loading State */}
         {isLoading && (
@@ -379,56 +376,36 @@ export default function AdministratorsPage() {
 
         {/* Administrators List */}
         {!isLoading && (
-          <div className="grid gap-4">
+          <div className="space-y-3">
             {filteredAdministrators.length === 0 ? (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-8">
-                  <Shield className="w-12 h-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">
-                    {searchTerm ? "Nenhum administrador encontrado" : "Nenhum administrador cadastrado"}
-                  </h3>
-                  <p className="text-muted-foreground text-center">
-                    {searchTerm
-                      ? "Tente ajustar os termos de busca"
-                      : "Comece cadastrando o primeiro administrador"
-                    }
-                  </p>
-                </CardContent>
-              </Card>
+              <EmptyState
+                icon={<Shield className="h-12 w-12" aria-hidden="true" />}
+                title={searchTerm ? "Nenhum administrador encontrado" : "Nenhum administrador cadastrado"}
+                description={
+                  searchTerm
+                    ? "Tente ajustar o termo de busca."
+                    : "Cadastre o primeiro administrador para começar."
+                }
+                action={
+                  searchTerm ? (
+                    <Button variant="outline" onClick={() => setSearchTerm("")}>
+                      Limpar busca
+                    </Button>
+                  ) : (
+                    <Button onClick={() => setIsCreateOpen(true)}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Novo Administrador
+                    </Button>
+                  )
+                }
+              />
             ) : (
               filteredAdministrators.map((admin) => (
-                <Card key={admin.id} 
-                  className="hover:shadow-md transition-shadow cursor-pointer" 
-                  onClick={() => router.push(`/administrators/${admin.id}`)}
-                > 
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                          <Shield className="w-6 h-6 text-blue-700 dark:text-blue-300" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-lg">{admin.fullName}</h3>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Mail className="w-4 h-4" />
-                            <span>{admin.email}</span>
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-                              Administrador
-                            </Badge>
-                            {!admin.active && (
-                              <Badge variant="destructive">Inativo</Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right text-sm text-muted-foreground">
-                        <p>Criado em {admin.joinDate ? new Date(admin.joinDate).toLocaleDateString("pt-BR") : 'N/A'}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <AdministratorCard
+                  key={admin.id}
+                  administrator={admin}
+                  onOpen={() => router.push(`/administrators/${admin.id}`)}
+                />
               ))
             )}
           </div>

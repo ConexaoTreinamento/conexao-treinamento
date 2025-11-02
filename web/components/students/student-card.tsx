@@ -126,7 +126,7 @@ export const StudentCard = ({
         size="sm"
         variant="outline"
         onClick={handleCreateEvaluation}
-        className="bg-transparent text-xs px-2 py-1 h-8"
+        className="h-8 px-2 text-xs"
       >
         <Activity className="mr-1 h-3 w-3" aria-hidden="true" />
         Avaliação
@@ -164,7 +164,7 @@ export const StudentCard = ({
         size="sm"
         variant="outline"
         onClick={handleCreateEvaluation}
-        className="bg-transparent text-xs px-2 py-1 h-8"
+        className="h-8 px-3 text-sm"
       >
         <Activity className="mr-1 h-3 w-3" aria-hidden="true" />
         Avaliação
@@ -175,6 +175,7 @@ export const StudentCard = ({
           variant="outline"
           onClick={handleRestore}
           disabled={isRestoring}
+          className="h-8 px-3 text-sm"
         >
           <RotateCcw className="mr-1 h-3 w-3" aria-hidden="true" /> Reativar
         </Button>
@@ -186,6 +187,7 @@ export const StudentCard = ({
           description={`Tem certeza que deseja excluir ${fullName}? Ele será marcado como inativo e poderá ser restaurado.`}
           size="sm"
           variant="outline"
+          className="h-8"
         >
           <Trash2 className="mr-1 h-3 w-3" aria-hidden="true" /> Excluir
         </ConfirmDeleteButton>

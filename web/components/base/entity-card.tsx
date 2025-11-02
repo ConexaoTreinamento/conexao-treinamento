@@ -114,7 +114,7 @@ export function EntityCard({
     >
       <CardContent className="p-4">
         <div className="flex flex-col gap-3 sm:hidden">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-start gap-3">
             <div className="flex min-w-0 flex-1 items-center gap-3">
               {getAvatarNode({ ...avatar, size: "sm" })}
               <div className="min-w-0 space-y-1">
@@ -128,7 +128,11 @@ export function EntityCard({
                 ) : null}
               </div>
             </div>
-            {mobileActions ? <div className="flex shrink-0 items-center gap-2">{mobileActions}</div> : null}
+            {mobileActions ? (
+              <div className="flex w-full items-center justify-end gap-2 min-[360px]:ml-auto min-[360px]:w-auto">
+                {mobileActions}
+              </div>
+            ) : null}
           </div>
 
           {metadata?.length ? (

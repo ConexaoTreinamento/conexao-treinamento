@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { EntityCard, type EntityCardMetadataItem } from "@/components/base/entity-card"
+import { StatusBadge } from "@/components/base/status-badge"
 
 export interface TrainerCardData {
   id: string
@@ -184,20 +185,13 @@ function TrainerCard({ trainer, onOpen, onEdit, onDelete, canManage }: TrainerCa
   const hoursWorkedLabel = typeof trainer.hoursWorked === "number" ? `${trainer.hoursWorked}h este mês` : null
   const compensationLabel = trainer.compensationType === "MONTHLY" ? "Mensalista" : trainer.compensationType === "HOURLY" ? "Horista" : null
 
-  const statusBadge: ReactNode = (
-    <Badge className={trainer.active ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"}>
-      {trainer.active ? "Ativo" : "Inativo"}
-    </Badge>
-  )
+  const statusBadge: ReactNode = <StatusBadge active={trainer.active} />
 
   const compensationBadge: ReactNode | null = compensationLabel
     ? (
         <Badge
-          className={
-            trainer.compensationType === "MONTHLY"
-              ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-              : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
-          }
+          variant="secondary"
+          className="text-xs"
         >
           {compensationLabel}
         </Badge>
@@ -273,22 +267,10 @@ function TrainerCard({ trainer, onOpen, onEdit, onDelete, canManage }: TrainerCa
   const mobileActions = canManage && trainer.active
     ? (
         <>
-          <Button
-            size="icon"
-            variant="outline"
-            className="h-8 w-8"
-            onClick={handleEdit}
-            aria-label="Editar professor"
-          >
+          <Button size="icon" variant="outline" className="h-8 w-8" onClick={handleEdit} aria-label="Editar professor">
             <Edit className="h-3 w-3" aria-hidden="true" />
           </Button>
-          <Button
-            size="icon"
-            variant="outline"
-            className="h-8 w-8"
-            onClick={handleDelete}
-            aria-label="Excluir professor"
-          >
+          <Button size="icon" variant="outline" className="h-8 w-8" onClick={handleDelete} aria-label="Excluir professor">
             <Trash2 className="h-3 w-3" aria-hidden="true" />
           </Button>
         </>
@@ -298,11 +280,11 @@ function TrainerCard({ trainer, onOpen, onEdit, onDelete, canManage }: TrainerCa
   const desktopActions = canManage && trainer.active
     ? (
         <>
-          <Button size="sm" variant="outline" onClick={handleEdit}>
+          <Button size="sm" variant="outline" onClick={handleEdit} className="h-8 px-3 text-sm">
             <Edit className="mr-1 h-4 w-4" aria-hidden="true" />
             Editar
           </Button>
-          <Button size="sm" variant="outline" onClick={handleDelete} className="text-destructive">
+          <Button size="sm" variant="outline" onClick={handleDelete} className="h-8 px-3 text-sm">
             <Trash2 className="mr-1 h-4 w-4" aria-hidden="true" />
             Excluir
           </Button>
