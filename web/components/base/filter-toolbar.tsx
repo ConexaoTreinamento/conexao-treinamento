@@ -11,10 +11,10 @@ interface FilterToolbarProps {
   onSearchChange: (value: string) => void
   searchPlaceholder: string
   searchLabel: string
-  activeFilterCount: number
-  filterTitle: string
+  activeFilterCount?: number
+  filterTitle?: string
   filterDescription?: string
-  renderFilters: (helpers: { close: () => void }) => ReactNode
+  renderFilters?: (helpers: { close: () => void }) => ReactNode
   className?: string
   toolbarActions?: ReactNode
   filterButtonLabel?: string
@@ -25,7 +25,7 @@ export function FilterToolbar({
   onSearchChange,
   searchPlaceholder,
   searchLabel,
-  activeFilterCount,
+  activeFilterCount = 0,
   filterTitle,
   filterDescription,
   renderFilters,
@@ -40,6 +40,8 @@ export function FilterToolbar({
     setIsOpen(open)
   }
 
+  const shouldRenderFilters = Boolean(renderFilters)
+
   return (
     <div className={cn("flex flex-col gap-3 sm:flex-row sm:items-center", className)}>
       <SearchInput
@@ -51,28 +53,30 @@ export function FilterToolbar({
 
       <div className="flex w-full items-center gap-2 sm:w-auto">
         {toolbarActions}
-        <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-          <SheetTrigger asChild>
-            <Button type="button" variant="outline" className="relative w-full bg-transparent sm:w-auto">
-              <Filter className="mr-2 h-4 w-4" aria-hidden="true" />
-              {filterButtonLabel}
-              {activeFilterCount > 0 ? (
-                <Badge className="ml-2 bg-green-600 text-xs text-white" aria-label={`Existem ${activeFilterCount} filtros ativos`}>
-                  {activeFilterCount}
-                </Badge>
-              ) : null}
-            </Button>
-          </SheetTrigger>
-          <SheetContent className="w-full sm:max-w-md">
-            <SheetHeader>
-              <SheetTitle>{filterTitle}</SheetTitle>
-              {filterDescription ? <SheetDescription>{filterDescription}</SheetDescription> : null}
-            </SheetHeader>
-            <div className="mt-6 space-y-6">
-              {renderFilters({ close })}
-            </div>
-          </SheetContent>
-        </Sheet>
+        {shouldRenderFilters ? (
+          <Sheet open={isOpen} onOpenChange={handleOpenChange}>
+            <SheetTrigger asChild>
+              <Button type="button" variant="outline" className="relative w-full bg-transparent sm:w-auto">
+                <Filter className="mr-2 h-4 w-4" aria-hidden="true" />
+                {filterButtonLabel}
+                {activeFilterCount > 0 ? (
+                  <Badge className="ml-2 bg-green-600 text-xs text-white" aria-label={`Existem ${activeFilterCount} filtros ativos`}>
+                    {activeFilterCount}
+                  </Badge>
+                ) : null}
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="w-full sm:max-w-md">
+              <SheetHeader>
+                {filterTitle ? <SheetTitle>{filterTitle}</SheetTitle> : null}
+                {filterDescription ? <SheetDescription>{filterDescription}</SheetDescription> : null}
+              </SheetHeader>
+              <div className="mt-6 space-y-6">
+                {renderFilters?.({ close })}
+              </div>
+            </SheetContent>
+          </Sheet>
+        ) : null}
       </div>
     </div>
   )

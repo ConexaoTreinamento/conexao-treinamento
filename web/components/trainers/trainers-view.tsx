@@ -1,14 +1,13 @@
-import type { ChangeEvent } from "react"
+import type { ChangeEvent, MouseEvent, ReactNode } from "react"
 import { Mail, Phone, Calendar, Clock, Edit, Trash2, Users, TriangleAlert, X } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/base/empty-state"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { EntityCard, type EntityCardMetadataItem } from "@/components/base/entity-card"
 
 export interface TrainerCardData {
   id: string
@@ -147,7 +146,7 @@ export function TrainersGrid({ trainers, onOpen, onEdit, onDelete, canManage }: 
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div className="space-y-3">
       {trainers.map((trainer) => (
         <TrainerCard
           key={trainer.id}
@@ -171,158 +170,185 @@ interface TrainerCardProps {
 }
 
 function TrainerCard({ trainer, onOpen, onEdit, onDelete, canManage }: TrainerCardProps) {
-  const initials = (trainer.name ?? "")
+  const nameSource = trainer.name?.trim() || trainer.email || ""
+  const displayName = trainer.name?.trim() || trainer.email || "Professor"
+
+  const initials = nameSource
     .split(" ")
     .filter(Boolean)
     .map((token: string) => token[0]?.toUpperCase() ?? "")
     .join("")
     .slice(0, 2)
 
-  const joinDateLabel = trainer.joinDate ? new Date(trainer.joinDate).toLocaleDateString("pt-BR") : undefined
-  const hoursWorkedLabel = typeof trainer.hoursWorked === "number" ? `${trainer.hoursWorked}h este mês` : undefined
-  const compensationLabel = trainer.compensationType === "MONTHLY" ? "Mensalista" : "Horista"
+  const joinDateLabel = trainer.joinDate ? new Date(trainer.joinDate).toLocaleDateString("pt-BR") : null
+  const hoursWorkedLabel = typeof trainer.hoursWorked === "number" ? `${trainer.hoursWorked}h este mês` : null
+  const compensationLabel = trainer.compensationType === "MONTHLY" ? "Mensalista" : trainer.compensationType === "HOURLY" ? "Horista" : null
 
-  const statusBadgeClass = trainer.active
-    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-    : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+  const statusBadge: ReactNode = (
+    <Badge className={trainer.active ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"}>
+      {trainer.active ? "Ativo" : "Inativo"}
+    </Badge>
+  )
 
-  const compensationBadgeClass = trainer.compensationType === "MONTHLY"
-    ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-    : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
+  const compensationBadge: ReactNode | null = compensationLabel
+    ? (
+        <Badge
+          className={
+            trainer.compensationType === "MONTHLY"
+              ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+              : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
+          }
+        >
+          {compensationLabel}
+        </Badge>
+      )
+    : null
 
-  const isClickable = trainer.active
+  const badges: ReactNode[] = [statusBadge, compensationBadge].filter(Boolean) as ReactNode[]
 
-  const handleOpen = () => {
-    if (!isClickable) {
-      return
-    }
-    onOpen()
+  const metadata: EntityCardMetadataItem[] = [
+    {
+      icon: <Mail className="h-3 w-3 text-muted-foreground" aria-hidden="true" />,
+      content: trainer.email ?? "Email não informado",
+    },
+    {
+      icon: <Phone className="h-3 w-3 text-muted-foreground" aria-hidden="true" />,
+      content: trainer.phone ?? "Telefone não informado",
+    },
+    {
+      icon: <Calendar className="h-3 w-3 text-muted-foreground" aria-hidden="true" />,
+      content: joinDateLabel ? `Desde ${joinDateLabel}` : "Data de ingresso não informada",
+    },
+    {
+      icon: <Clock className="h-3 w-3 text-muted-foreground" aria-hidden="true" />,
+      content: hoursWorkedLabel ?? "Carga mensal não informada",
+    },
+  ]
+
+  const infoRows: ReactNode[] = []
+
+  if (compensationLabel) {
+    infoRows.push(<span key="compensation">Compensação: {compensationLabel}</span>)
   }
 
+  if (trainer.specialties.length) {
+    const total = trainer.specialties.length
+    infoRows.push(
+      <span key="specialties-count">
+        {total} especialidade{total === 1 ? "" : "s"} cadastrada{total === 1 ? "" : "s"}
+      </span>
+    )
+  }
+
+  const specialtiesBody: ReactNode | undefined = trainer.specialties.length
+    ? (
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-foreground">Especialidades</p>
+          <div className="flex flex-wrap gap-1">
+            {trainer.specialties.slice(0, 4).map((specialty) => (
+              <Badge key={specialty} variant="outline" className="text-xs">
+                {specialty}
+              </Badge>
+            ))}
+            {trainer.specialties.length > 4 ? (
+              <Badge variant="outline" className="text-xs">
+                +{trainer.specialties.length - 4}
+              </Badge>
+            ) : null}
+          </div>
+        </div>
+      )
+    : undefined
+
+  const handleEdit = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation()
+    onEdit()
+  }
+
+  const handleDelete = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation()
+    onDelete()
+  }
+
+  const mobileActions = canManage && trainer.active
+    ? (
+        <>
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-8 w-8"
+            onClick={handleEdit}
+            aria-label="Editar professor"
+          >
+            <Edit className="h-3 w-3" aria-hidden="true" />
+          </Button>
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-8 w-8"
+            onClick={handleDelete}
+            aria-label="Excluir professor"
+          >
+            <Trash2 className="h-3 w-3" aria-hidden="true" />
+          </Button>
+        </>
+      )
+    : null
+
+  const desktopActions = canManage && trainer.active
+    ? (
+        <>
+          <Button size="sm" variant="outline" onClick={handleEdit}>
+            <Edit className="mr-1 h-4 w-4" aria-hidden="true" />
+            Editar
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleDelete} className="text-destructive">
+            <Trash2 className="mr-1 h-4 w-4" aria-hidden="true" />
+            Excluir
+          </Button>
+        </>
+      )
+    : null
+
   return (
-    <Card
-      role={isClickable ? "button" : undefined}
-      tabIndex={isClickable ? 0 : undefined}
-      aria-disabled={!isClickable}
-      onClick={handleOpen}
-      onKeyDown={(event) => {
-        if (!isClickable) {
-          return
-        }
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault()
-          onOpen()
-        }
-      }}
-      className={`transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 ${
-        isClickable ? "cursor-pointer hover:shadow-md" : "cursor-default"
-      }`}
-    >
-      <CardHeader className="pb-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <Avatar>
-              <AvatarFallback>{initials}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 space-y-1">
-              <CardTitle className="text-base leading-tight">{trainer.name}</CardTitle>
-              <div className="flex flex-wrap gap-1">
-                <Badge className={statusBadgeClass}>{trainer.active ? "Ativo" : "Inativo"}</Badge>
-                {trainer.compensationType ? <Badge className={compensationBadgeClass}>{compensationLabel}</Badge> : null}
-              </div>
-            </div>
-          </div>
-
-          {canManage && trainer.active ? (
-            <div className="flex shrink-0 gap-1" onClick={(event) => event.stopPropagation()}>
-              <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onEdit} aria-label="Editar professor">
-                <Edit className="h-4 w-4" aria-hidden="true" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 text-red-600 hover:text-red-700"
-                onClick={onDelete}
-                aria-label="Excluir professor"
-              >
-                <Trash2 className="h-4 w-4" aria-hidden="true" />
-              </Button>
-            </div>
-          ) : null}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3 text-sm">
-        <div className="space-y-2 text-sm">
-          {trainer.email ? (
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-              <span className="truncate" title={trainer.email}>
-                {trainer.email}
-              </span>
-            </div>
-          ) : null}
-          {trainer.phone ? (
-            <div className="flex items-center gap-2">
-              <Phone className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-              <span>{trainer.phone}</span>
-            </div>
-          ) : null}
-          {joinDateLabel ? (
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-              <span>Desde {joinDateLabel}</span>
-            </div>
-          ) : null}
-          {hoursWorkedLabel ? (
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-              <span>{hoursWorkedLabel}</span>
-            </div>
-          ) : null}
-        </div>
-
-        {trainer.specialties.length ? (
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Especialidades</p>
-            <div className="flex flex-wrap gap-1">
-              {trainer.specialties.slice(0, 2).map((specialty: string) => (
-                <Badge key={specialty} variant="outline" className="text-xs">
-                  {specialty}
-                </Badge>
-              ))}
-              {trainer.specialties.length > 2 ? (
-                <Badge variant="outline" className="text-xs">
-                  +{trainer.specialties.length - 2}
-                </Badge>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-      </CardContent>
-    </Card>
+    <EntityCard
+      title={displayName}
+      avatar={{ label: initials }}
+      badges={badges}
+      metadata={metadata}
+      infoRows={infoRows}
+      body={specialtiesBody}
+      onClick={trainer.active ? onOpen : undefined}
+      disabled={!trainer.active}
+      muted={!trainer.active}
+      mobileActions={mobileActions}
+      desktopActions={desktopActions}
+    />
   )
 }
 
 export function TrainersSkeletonGrid() {
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div className="space-y-3">
       {Array.from({ length: 3 }).map((_, index) => (
-        <Card key={index} className="border-dashed">
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <Skeleton className="h-12 w-12 rounded-full" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-4 w-1/2" />
+        <div key={index} className="rounded-lg border border-dashed bg-card p-4">
+          <div className="flex gap-3">
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <div className="flex-1 space-y-3">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+              <div className="grid gap-2 text-sm md:grid-cols-2 lg:grid-cols-3">
+                <Skeleton className="h-3 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+                <Skeleton className="h-3 w-2/3" />
                 <Skeleton className="h-3 w-1/3" />
               </div>
+              <Skeleton className="h-3 w-1/4" />
             </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Skeleton className="h-3 w-3/4" />
-            <Skeleton className="h-3 w-2/3" />
-            <Skeleton className="h-3 w-1/2" />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ))}
     </div>
   )
