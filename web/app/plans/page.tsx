@@ -2,10 +2,10 @@
 
 import {useCallback, useMemo, useState} from 'react'
 import Layout from '@/components/layout'
-import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
+import {useMutation, useQuery, useQueryClient, type DefaultError} from '@tanstack/react-query'
 import {apiClient} from '@/lib/client'
 import {getAllPlansOptions, getAllPlansQueryKey, createPlanMutation, deletePlanMutation, restorePlanMutation} from '@/lib/api-client/@tanstack/react-query.gen'
-import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
+import {Card, CardContent} from '@/components/ui/card'
 import {Button} from '@/components/ui/button'
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from '@/components/ui/dialog'
 import {Input} from '@/components/ui/input'
@@ -17,7 +17,7 @@ import {useForm} from 'react-hook-form'
 import {z} from 'zod'
 import {zodResolver} from '@hookform/resolvers/zod'
 import {useToast} from '@/hooks/use-toast'
-import { StudentPlanResponseDto } from '@/lib/api-client'
+import type {StudentPlanResponseDto, Options, DeletePlanData, RestorePlanData} from '@/lib/api-client'
 import { PageHeader } from '@/components/base/page-header'
 import { handleHttpError } from '@/lib/error-utils'
 
@@ -30,6 +30,17 @@ const planSchema = z.object({
 type PlanForm = z.infer<typeof planSchema>
 
 type StatusFilter = 'all' | 'active' | 'inactive'
+
+type PlanWithId = StudentPlanResponseDto & { id: string }
+
+type DeletePlanContext = {
+  prev?: StudentPlanResponseDto[]
+}
+
+const hasStatus = (value: unknown): value is { status?: number } =>
+  typeof value === 'object' && value !== null && 'status' in value
+
+const hasPlanId = (plan: StudentPlanResponseDto | undefined): plan is PlanWithId => typeof plan?.id === 'string' && plan.id.length > 0
 
 export default function PlansPage(){
   const qc = useQueryClient()
@@ -51,13 +62,13 @@ export default function PlansPage(){
     ...createPlanMutation({client: apiClient}),
     onSuccess: async () => {
       // invalidate after successful create
-      await qc.invalidateQueries({queryKey: plansQueryOptions.queryKey})
+      await invalidateAllStatusVariants()
       toast({title:'Plano criado', variant: 'success'})
       form.reset({name:'', maxDays:3, durationDays:30})
       setOpen(false)
     },
-    onError: (err: any) => {
-      if (err?.status === 409) {
+    onError: (err: DefaultError) => {
+      if (hasStatus(err) && err.status === 409) {
         toast({
           title: 'Nome já utilizado',
           description: 'Já existe um plano com este nome. Escolha outro nome e tente novamente.',
@@ -69,19 +80,19 @@ export default function PlansPage(){
     }
   })
 
-  const deletePlan = useMutation({
+  const deletePlan = useMutation<unknown, DefaultError, Options<DeletePlanData>, DeletePlanContext>({
     ...deletePlanMutation({client: apiClient}),
     // optimistic update: mark as inactive locally instead of removing to allow restore from UI
     onMutate: async (vars) => {
       await qc.cancelQueries({queryKey: plansQueryOptions.queryKey})
       const prev = qc.getQueryData<StudentPlanResponseDto[]>(plansQueryOptions.queryKey)
       if(prev){
-        const next = prev.map(p => p.id === vars.path.planId ? ({...p, active: false}) : p)
+        const next = prev.map(plan => (plan?.id === vars.path.planId ? ({...plan, active: false}) : plan))
         qc.setQueryData(plansQueryOptions.queryKey, next)
       }
       return {prev}
     },
-    onError: (_err: Error, context: any) => {
+    onError: (_err, _vars, context) => {
       if(context?.prev) qc.setQueryData(plansQueryOptions.queryKey, context.prev)
       toast({title:'Erro ao excluir plano', variant:'destructive'})
     },
@@ -91,7 +102,7 @@ export default function PlansPage(){
     }
   })
 
-  const restorePlan = useMutation({
+  const restorePlan = useMutation<StudentPlanResponseDto, DefaultError, Options<RestorePlanData>>({
     ...restorePlanMutation({client: apiClient}),
     onMutate: async () => {
       await qc.cancelQueries({queryKey: plansQueryOptions.queryKey})
@@ -100,7 +111,7 @@ export default function PlansPage(){
       toast({title:'Plano restaurado'})
       await invalidateAllStatusVariants()
     },
-    onError: (err: any) => handleHttpError(err, 'restaurar plano', 'Erro ao restaurar plano'),
+    onError: (err) => handleHttpError(err, 'restaurar plano', 'Erro ao restaurar plano'),
     onSettled: async () => {
       await invalidateAllStatusVariants()
     }
@@ -109,42 +120,9 @@ export default function PlansPage(){
   // Normalize plans: support both API field naming variants (planId/planName or id/name)
   const plans = useMemo(() => {
     const list = Array.isArray(data) ? data : []
-
-    const normalized = list
-      .map<{
-        _raw: StudentPlanResponseDto
-        id: string
-        name: string
-        maxDays: number
-        durationDays: number
-        active: boolean
-        description?: string | null
-      } | null>(p => {
-        const id = (p.id ?? (p as any).planId) as string | undefined
-        if (!id) return null
-
-        return {
-          _raw: p,
-          id,
-          name: p.name ?? (p as any).planName ?? '',
-          maxDays: (p.maxDays ?? (p as any).planMaxDays ?? 0) as number,
-          durationDays: (p.durationDays ?? (p as any).planDurationDays ?? 0) as number,
-          active: Boolean(p.active ?? (p as any).planActive ?? true),
-          description: p.description ?? (p as any).planDescription ?? null
-        }
-      })
-      .filter(Boolean) as Array<{
-        _raw: StudentPlanResponseDto
-        id: string
-        name: string
-        maxDays: number
-        durationDays: number
-        active: boolean
-        description?: string | null
-      }>
-
-    normalized.sort((a, b) => a.name.localeCompare(b.name))
-    return normalized
+    const withId = list.filter(hasPlanId)
+    withId.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
+    return withId
   }, [data])
 
   const [open,setOpen] = useState(false)
@@ -227,15 +205,15 @@ export default function PlansPage(){
         {error && <Card><CardContent className="p-6 text-sm text-red-600">Erro ao carregar planos.</CardContent></Card>}
         {isLoading && <div className="space-y-2">{[...Array(3)].map((_,i)=><Card key={i} className="animate-pulse"><CardContent className="h-16"/></Card>)}</div>}
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {plans.map(({_raw: p, id, name, maxDays, durationDays, active, description}) => (
+          {plans.map(({id, name, maxDays, durationDays, active, description}) => (
             <PlanCard
               key={id}
               id={id}
-              name={name}
-              maxDays={maxDays}
-              durationDays={durationDays}
-              active={!!active}
-              description={description}
+              name={name ?? 'Plano sem nome'}
+              maxDays={maxDays ?? 0}
+              durationDays={durationDays ?? 0}
+              active={Boolean(active)}
+              description={description ?? null}
               onDelete={() => deletePlan.mutate({ path: { planId: id }, client: apiClient })}
               onRestore={() => restorePlan.mutate({ path: { planId: id }, client: apiClient })}
               deleting={deletePlan.isPending}
