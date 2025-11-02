@@ -187,17 +187,17 @@ export default function EvaluationForm({
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="space-y-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={onCancel}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <div>
-            <h1 className="text-xl font-bold">
-              {isEdit ? "Editar Avaliação Física" : "Avaliação Física"}
-            </h1>
-            <p className="text-sm text-muted-foreground">{studentName}</p>
-          </div>
+          <h1 className="text-2xl font-bold">
+            {isEdit ? "Editar avaliação física" : "Nova avaliação física"}
+          </h1>
+        </div>
+        <div className="flex flex-col items-center sm:flex-row sm:items-center gap-2">
+          <p className="text-sm text-muted-foreground text-center sm:text-left">{studentName}</p>
         </div>
       </div>
 
