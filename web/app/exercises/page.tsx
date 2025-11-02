@@ -37,7 +37,8 @@ import { useToast } from "@/hooks/use-toast"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { findAllExercisesOptions, restoreExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
-import type { ExerciseResponseDto } from "@/lib/api-client"
+import { ExerciseResponseDto } from "@/lib/api-client"
+import { PageHeader } from "@/components/base/page-header"
 
 
 export default function ExercisesPage() {
@@ -149,11 +150,10 @@ export default function ExercisesPage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Exercícios</h1>
-            <p className="text-muted-foreground">Biblioteca de exercícios para fichas de treino</p>
-          </div>
-
+          <PageHeader 
+            title="Exercícios" 
+            description="Biblioteca de exercícios para fichas de treino" 
+          />
           <Button
             className="bg-green-600 hover:bg-green-700"
             onClick={() => setIsNewExerciseOpen(true)}

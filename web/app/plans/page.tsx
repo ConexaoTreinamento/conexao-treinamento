@@ -16,6 +16,7 @@ import {useForm} from 'react-hook-form'
 import {z} from 'zod'
 import {zodResolver} from '@hookform/resolvers/zod'
 import {useToast} from '@/hooks/use-toast'
+import { PageHeader } from '@/components/base/page-header'
 
 const planSchema = z.object({
   name: z.string().min(2,'Nome obrigatório'),
@@ -87,10 +88,10 @@ export default function PlansPage(){
     <Layout>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Planos</h1>
-            <p className="text-sm text-muted-foreground">Gerencie os planos de assinatura</p>
-          </div>
+          <PageHeader 
+            title="Planos" 
+            description="Gerencie os planos de assinatura" 
+          />
           <div className="flex gap-2">
             <Dialog open={open} onOpenChange={(o)=> {setOpen(o); if(!o) form.reset()}}>
               <DialogTrigger asChild>

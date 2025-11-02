@@ -331,7 +331,7 @@ export default function ClassSchedulePage() {
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={()=> router.back()}><ArrowLeft className="w-4 h-4"/></Button>
           <div>
-            <h1 className="text-xl font-bold">Cronograma de Aulas</h1>
+            <h1 className="text-2xl font-bold">Cronograma de Aulas</h1>
             <p className="text-sm text-muted-foreground">Selecione as séries que deseja frequentar</p>
           </div>
         </div>

@@ -221,7 +221,7 @@ export default function ProfilePage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Meu Perfil</h1>
+            <h1 className="text-2xl font-bold">Meu perfil</h1>
             <p className="text-muted-foreground">
               Gerencie suas informações pessoais e configurações
             </p>
@@ -371,11 +371,11 @@ export default function ProfilePage() {
                     </CardTitle>
                     <CardDescription>
                       Gerencie suas configurações de segurança
-                    </CardDescription>
+                    </CardDescription>  
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="currentPassword">Senha Atual</Label>
+                      <Label htmlFor="currentPassword">Senha atual</Label>
                       <div className="relative">
                         <Input
                             id="currentPassword"
@@ -397,7 +397,7 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="newPassword">Nova Senha</Label>
+                      <Label htmlFor="newPassword">Nova senha</Label>
                       <div className="relative">
                         <Input
                             id="newPassword"
@@ -419,7 +419,7 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
+                      <Label htmlFor="confirmPassword">Confirmar nova senha</Label>
                       <div className="relative">
                         <Input
                             id="confirmPassword"

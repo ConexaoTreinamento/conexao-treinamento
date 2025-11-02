@@ -15,6 +15,7 @@ import { apiClient } from "@/lib/client"
 import { getReportsOptions, getTrainersForLookupOptions } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { AgeDistributionDto, TrainerLookupDto, TrainerReportDto } from "@/lib/api-client/types.gen"
 import { TrainerSelect } from "@/components/trainer-select"
+import { PageHeader } from "@/components/base/page-header"
 
 type PeriodKey = "week" | "month" | "quarter" | "year" | "custom"
 
@@ -269,10 +270,10 @@ export default function ReportsPage() {
     <Layout>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Relatórios</h1>
-            <p className="text-muted-foreground">Análise de horas trabalhadas e aulas ministradas</p>
-          </div>
+          <PageHeader 
+            title="Relatórios" 
+            description="Análise de horas trabalhadas e aulas ministradas" 
+          />
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4">
@@ -424,7 +425,7 @@ export default function ReportsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="w-5 h-5" />
-              Performance dos Professores
+              Performance dos professores
             </CardTitle>
             <CardDescription>Detalhamento de horas trabalhadas e aulas ministradas por professor</CardDescription>
           </CardHeader>
@@ -444,8 +445,8 @@ export default function ReportsPage() {
                     <thead>
                       <tr className="border-b">
                         <th className="text-left p-3">Professor</th>
-                        <th className="text-left p-3">Horas Trabalhadas</th>
-                        <th className="text-left p-3">Aulas Ministradas</th>
+                        <th className="text-left p-3">Horas trabalhadas</th>
+                        <th className="text-left p-3">Aulas ministradas</th>
                         <th className="text-left p-3">Alunos</th>
                         <th className="text-left p-3">Regime</th>
                         <th className="text-left p-3">Especialidades</th>
@@ -571,7 +572,7 @@ export default function ReportsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="w-5 h-5" />
-              Perfil Etário dos Alunos
+              Perfil etário dos alunos
             </CardTitle>
             <CardDescription>Distribuição dos alunos por faixa etária</CardDescription>
           </CardHeader>

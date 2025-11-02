@@ -12,6 +12,7 @@ import { Search, Filter, Phone, Mail, Calendar, Clock, Edit, Trash2, UserPlus } 
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import TrainerModal from "@/components/trainer-modal"
+import { PageHeader } from "@/components/base/page-header"
 import { createTrainerAndUserMutation, findAllTrainersOptions, softDeleteTrainerUserMutation, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { TrainerResponseDto } from "@/lib/api-client"
@@ -168,10 +169,10 @@ export default function TrainersPage() {
       <div className="space-y-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-xl font-bold">Professores</h1>
-            <p className="text-sm text-muted-foreground">Gerencie professores e instrutores</p>
-          </div>
+          <PageHeader 
+            title="Professores" 
+            description="Gerencie professores e instrutores" 
+          />
           {userRole === "admin" && (
             <Button onClick={handleCreateTrainer} className="bg-green-600 hover:bg-green-700">
               <UserPlus className="w-4 h-4 mr-2" />
