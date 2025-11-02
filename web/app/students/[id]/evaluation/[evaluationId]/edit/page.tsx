@@ -3,7 +3,7 @@
 import { useRouter, useParams } from "next/navigation"
 import { toast } from "sonner"
 import Layout from "@/components/layout"
-import EvaluationForm, { type EvaluationData } from "@/components/evaluation-form"
+import EvaluationForm, { type EvaluationData } from "@/components/students/evaluation-form"
 import { useEvaluation } from "@/lib/hooks/evaluation-queries"
 import { useUpdateEvaluation } from "@/lib/hooks/evaluation-mutations"
 import { useStudent } from "@/lib/hooks/student-queries"

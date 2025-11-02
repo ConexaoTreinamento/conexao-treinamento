@@ -25,14 +25,14 @@ import {
 import {Activity, Calendar, Filter, Mail, Phone, Plus, RotateCcw, Search, Trash2, X} from "lucide-react"
 import {useRouter, useSearchParams} from "next/navigation"
 import Layout from "@/components/layout"
-import StudentForm, {type StudentFormData} from "@/components/student-form"
+import StudentForm, {type StudentFormData} from "@/components/students/student-form"
 import PageSelector from "@/components/ui/page-selector"
 import { PageHeader } from "@/components/base/page-header"
 import useDebounce from "@/hooks/use-debounce"
 import {useForm} from "react-hook-form"
 import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form"
 import {Checkbox} from "@/components/ui/checkbox"
-import ConfirmDeleteButton from "@/components/confirm-delete-button"
+import ConfirmDeleteButton from "@/components/base/confirm-delete-button"
 import {useCreateStudent, useDeleteStudent, useRestoreStudent} from "@/lib/hooks/student-mutations"
 import {assignPlanToStudentMutation} from '@/lib/api-client/@tanstack/react-query.gen'
 import {useMutation, useQueryClient, useQueries} from '@tanstack/react-query'
