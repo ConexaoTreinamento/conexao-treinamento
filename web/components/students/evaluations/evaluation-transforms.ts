@@ -1,4 +1,4 @@
-import type { EvaluationFormValues } from "@/components/evaluation-form"
+import type { EvaluationData } from "@/components/evaluation-form"
 import type { PhysicalEvaluationResponse } from "@/lib/hooks/evaluation-queries"
 import type { PhysicalEvaluationRequest } from "@/lib/hooks/evaluation-mutations"
 
@@ -32,7 +32,7 @@ const normalizeSection = <T extends Record<string, string | undefined>>(
 }
 
 export const buildEvaluationRequestPayload = (
-  values: EvaluationFormValues
+  values: EvaluationData
 ): PhysicalEvaluationRequest => ({
   weight: parseDecimal(values.weight) ?? 0,
   height: parseDecimal(values.height) ?? 0,
@@ -43,7 +43,7 @@ export const buildEvaluationRequestPayload = (
 
 export const mapEvaluationResponseToFormValues = (
   evaluation: PhysicalEvaluationResponse | undefined
-): EvaluationFormValues | undefined => {
+): EvaluationData | undefined => {
   if (!evaluation) {
     return undefined
   }
