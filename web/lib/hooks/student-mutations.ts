@@ -29,6 +29,8 @@ export const useCreateStudent = () => {
         } catch (_error: unknown) {
           // Best-effort: preserve base behaviour even if hook consumer swallows errors
         }
+      } catch {
+        // ignore
       }
 
       await queryClient.invalidateQueries({
@@ -57,8 +59,8 @@ export const useUpdateStudent = (options: UseMutationOptions<StudentResponseDto,
 
       if (options.onSuccess) {
         try {
-          await options.onSuccess(data, variables, context)
-        } catch (_error: unknown) {
+          await options.onSuccess(...args)
+        } catch {
           // ignore
         }
       }

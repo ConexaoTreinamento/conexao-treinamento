@@ -3,51 +3,35 @@
 import { useRouter, useParams } from "next/navigation"
 import { toast } from "sonner"
 import Layout from "@/components/layout"
-import EvaluationForm, { type EvaluationFormValues } from "@/components/evaluation-form"
-import { EvaluationLoading } from "@/components/students/evaluations/evaluation-loading"
-import { buildEvaluationRequestPayload } from "@/components/students/evaluations/evaluation-transforms"
+import EvaluationForm, { type EvaluationData } from "@/components/evaluation-form"
 import { useCreateEvaluation } from "@/lib/hooks/evaluation-mutations"
 import { useStudent } from "@/lib/hooks/student-queries"
-
-const ensureParam = (value: unknown): string => {
-  if (typeof value === "string") {
-    return value
-  }
-  if (Array.isArray(value) && value.length > 0 && typeof value[0] === "string") {
-    return value[0]
-  }
-  return ""
-}
+import { toPhysicalEvaluationRequest } from "@/lib/evaluations/transform"
 
 export default function StudentEvaluationPage() {
   const router = useRouter()
   const params = useParams()
-  const studentId = ensureParam(params.id)
+  const studentId = params.id as string
 
-  const {
-    data: student,
-    isLoading: isLoadingStudent,
-    error: studentError,
-  } = useStudent(
-    { path: { id: studentId } },
-    { enabled: studentId.length > 0 }
-  )
+  // Get student data
+  const { data: student, isLoading: isLoadingStudent } = useStudent({ path: { id: studentId } })
 
-  const { mutateAsync: createEvaluation } = useCreateEvaluation()
+  // Create evaluation mutation
+  const createEvaluation = useCreateEvaluation()
 
-  const handleSubmit = async (values: EvaluationFormValues) => {
+  const handleSubmit = async (data: EvaluationData) => {
     try {
-      const payload = buildEvaluationRequestPayload(values)
+      const requestData = toPhysicalEvaluationRequest(data)
 
-      await createEvaluation({
+      await createEvaluation.mutateAsync({
         studentId,
-        data: payload,
+        data: requestData,
       })
 
       toast.success("Avaliação criada com sucesso!")
       router.push(`/students/${studentId}`)
     } catch (error) {
-      console.error("Error creating evaluation:", error)
+      console.error('Error creating evaluation:', error)
       toast.error("Erro ao criar avaliação. Por favor, tente novamente.")
     }
   }
@@ -59,18 +43,11 @@ export default function StudentEvaluationPage() {
   if (isLoadingStudent) {
     return (
       <Layout>
-        <EvaluationLoading />
-      </Layout>
-    )
-  }
-
-  if (studentError) {
-    return (
-      <Layout>
-        <div className="flex h-64 items-center justify-center">
-          <p className="text-sm text-muted-foreground">
-            {studentError.message || "Não foi possível carregar o aluno."}
-          </p>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-sm text-muted-foreground">Carregando...</p>
+          </div>
         </div>
       </Layout>
     )

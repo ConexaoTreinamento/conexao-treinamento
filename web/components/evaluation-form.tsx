@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, Save, Calculator, User } from "lucide-react"
 
-export interface EvaluationFormValues {
+export interface EvaluationData {
   id?: string
   weight: string
   height: string
@@ -44,14 +44,13 @@ export interface EvaluationFormValues {
 interface EvaluationFormProps {
   studentId: string
   studentName: string
-  initialData?: Partial<EvaluationFormValues>
+  initialData?: Partial<EvaluationData>
   isEdit?: boolean
-  onSubmit: (data: EvaluationFormValues) => Promise<void>
+  onSubmit: (data: EvaluationData) => Promise<void>
   onCancel: () => void
 }
 
 export default function EvaluationForm({
-  studentId,
   studentName,
   initialData,
   isEdit = false,
@@ -60,7 +59,7 @@ export default function EvaluationForm({
 }: EvaluationFormProps) {
   const [isLoading, setIsLoading] = useState(false)
 
-  const [evaluationData, setEvaluationData] = useState<EvaluationFormValues>({
+  const [evaluationData, setEvaluationData] = useState<EvaluationData>({
     // Dados básicos
     weight: "",
     height: "",
@@ -102,7 +101,7 @@ export default function EvaluationForm({
   // Load initial data if provided (for editing)
   useEffect(() => {
     if (initialData) {
-  setEvaluationData({
+      setEvaluationData({
         id: initialData.id,
         weight: initialData.weight || "",
         height: initialData.height || "",
@@ -183,19 +182,19 @@ export default function EvaluationForm({
   }
 
   return (
-  <div className="space-y-4" data-student-id={studentId}>
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="space-y-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={onCancel}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <div>
-            <h1 className="text-xl font-bold">
-              {isEdit ? "Editar Avaliação Física" : "Avaliação Física"}
-            </h1>
-            <p className="text-sm text-muted-foreground">{studentName}</p>
-          </div>
+          <h1 className="text-2xl font-bold">
+            {isEdit ? "Editar avaliação física" : "Nova avaliação física"}
+          </h1>
+        </div>
+        <div className="flex flex-col items-center sm:flex-row sm:items-center gap-2">
+          <p className="text-sm text-muted-foreground text-center sm:text-left">{studentName}</p>
         </div>
       </div>
 

@@ -1,57 +1,45 @@
 "use client"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, User, Phone, Mail, Calendar, Clock, Edit, MapPin } from "lucide-react"
+import { ArrowLeft, Phone, Mail, Calendar, Clock, Edit, MapPin } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Layout from "@/components/layout"
 import TrainerModal from "@/components/trainer-modal"
-import { findTrainerByIdOptions, findTrainerByIdQueryKey, updateTrainerAndUserMutation, resetPasswordMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { findTrainerByIdOptions, findTrainerByIdQueryKey, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useToast } from "@/hooks/use-toast"
 import { handleHttpError } from "@/lib/error-utils"
+import { useToast } from "@/hooks/use-toast"
+
 
 
 export default function TrainerProfilePage() {
   const router = useRouter()
   const params = useParams()
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerAndUserMutation({ client: apiClient }));
   const { toast } = useToast()
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const { mutateAsync: updateTrainer } = useMutation(updateTrainerAndUserMutation({ client: apiClient }));
 
   const queryClient = useQueryClient();
 
   const invalidateTrainersQueries = () => queryClient.invalidateQueries({
-    predicate: (query) => {
-      const root = (query.queryKey as any)?.[0]
+      predicate: (query) => {
+        const root = (query.queryKey as unknown[])?.[0] as { _id?: string } | undefined
       if (!root || typeof root !== "object") return false
       const id = root._id
       return id === "findAllTrainers" || id === "getTrainersForLookup"
     }
   })
 
-  const { data: trainerData, isLoading, error } = useQuery({
+  const { data: trainerData, isLoading } = useQuery({
     ...findTrainerByIdOptions({
       path: { id: params.id as string },
       client: apiClient,
     })
   })
-
-  const { mutateAsync: resetPassword, isPending: isResettingPassword } = useMutation({
-    ...resetPasswordMutation({ client: apiClient }),
-    onSuccess: () => {
-      console.log("Senha do usuário resetada com sucesso!");
-    },
-    onError: (error) => {
-      console.error("Erro ao resetar a senha:", error);
-    }
-  });
-
-
 
   const getStatusColor = (status: boolean) => {
     if (status) {
@@ -83,7 +71,7 @@ export default function TrainerProfilePage() {
   }
 
   // Handle modal submission
-  const handleModalSubmit = async (formData: any) => {
+  const handleModalSubmit = async (formData: Record<string, unknown>) => {
     try {
       if (trainerData) {
         // Update the trainer data with new form data
@@ -101,7 +89,7 @@ export default function TrainerProfilePage() {
       }
       setIsModalOpen(false)
       toast({ title: "Professor atualizado", description: "As alterações foram salvas.", variant: 'success', duration: 3000 })
-    } catch (error: any) {
+    } catch (error: unknown) {
       handleHttpError(error, "atualizar treinador", "Não foi possível atualizar o treinador. Tente novamente.")
     }
   }

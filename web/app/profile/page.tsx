@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Clock, Award, Eye, EyeOff } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Eye, EyeOff } from 'lucide-react'
 import Layout from "@/components/layout"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
@@ -25,9 +25,7 @@ export default function ProfilePage() {
   const [token, setToken] = useState<string>("")
   const [userId, setUserId] = useState<string>("")
   const [userRole, setUserRole] = useState<string>("")
-  const [userName, setUserName] = useState<string>("")
   //const [isLoading, setIsLoading] = useState(false)
-  const [specialtiesInput, setSpecialtiesInput] = useState("")
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -67,12 +65,10 @@ export default function ProfilePage() {
     const uToken = localStorage.getItem("token") || "";
     const uUserId = localStorage.getItem("userId") || "";
     const role = localStorage.getItem("userRole") || "";
-    const name = localStorage.getItem("userName") || "";
 
     setToken(uToken);
     setUserId(uUserId);
     setUserRole(role);
-    setUserName(name);
   }, []);
 
 
@@ -166,18 +162,8 @@ export default function ProfilePage() {
     }
   }, [userRole, trainerData, adminDataByUser])
 
-  useEffect(() => {
-    if (profileData.specialties) {
-      setSpecialtiesInput(profileData.specialties.join(", "))
-    }
-  }, [profileData.specialties])
-
   const handleInputChange = (field: string, value: string) => {
-    if (field === "specialties") {
-      setSpecialtiesInput(value)
-    } else {
-      setProfileData(prev => ({ ...prev, [field]: value }))
-    }
+    setProfileData(prev => ({ ...prev, [field]: value }))
   }
 
   const handlePasswordSubmit = () => {
@@ -202,16 +188,6 @@ export default function ProfilePage() {
 
   };
 
-  const handleSpecialtiesBlur = () => {
-    setProfileData(prev => ({
-      ...prev,
-      specialties: specialtiesInput
-        .split(",")
-        .map(s => s.trim())
-        .filter(s => s.length > 0)
-    }))
-  }
-
   const handleSave = () => {
     if (userRole === "admin") {
       if (!adminId) return
@@ -234,48 +210,6 @@ export default function ProfilePage() {
       path: { id: String(trainerId) },
       body: { ...profileData },
     })
-  }
-
-  const handleChangePassword = () => {
-    if (userRole === "admin") {
-      if (!adminId) return
-      if (newPassword !== confirmPassword) {
-        toast({
-          title: "Erro",
-          description: "As senhas não coincidem!",
-          variant: "destructive"
-        })
-        return
-      }
-      const [firstName = "", ...rest] = (profileData.name ?? "").split(" ")
-      const lastName = rest.join(" ")
-      updateAdminMutation.mutate({
-        path: { id: String(adminId) },
-        body: {
-          firstName,
-          lastName,
-          email: profileData.email,
-        },
-      })
-      setNewPassword("")
-      setConfirmPassword("")
-      return
-    }
-    if (!trainerId) return
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "Erro",
-        description: "As senhas não coincidem!",
-        variant: "destructive"
-      })
-      return
-    }
-    updateTrainerMutation.mutate({
-      path: { id: String(trainerId) },
-      body: { ...profileData, password: newPassword },
-    })
-    setNewPassword("")
-    setConfirmPassword("")
   }
 
   const isSaving = (updateAdminMutation.isPending || updateTrainerMutation.isPending)
