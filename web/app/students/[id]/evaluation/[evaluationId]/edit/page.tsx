@@ -21,7 +21,7 @@ export default function EditEvaluationPage() {
   // Update evaluation mutation
   const updateEvaluation = useUpdateEvaluation()
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: Record<string, unknown>) => {
     try {
       // Convert string values to numbers and prepare the request
       const requestData = {

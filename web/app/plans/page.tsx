@@ -1,163 +1,174 @@
 "use client"
 
-import {useState, useMemo} from 'react'
+import {useCallback, useMemo, useState} from 'react'
 import Layout from '@/components/layout'
-import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query'
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {apiClient} from '@/lib/client'
-import {getAllPlansOptions, createPlanMutation, deletePlanMutation} from '@/lib/api-client/@tanstack/react-query.gen'
-import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
-import {Button} from '@/components/ui/button'
-import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from '@/components/ui/dialog'
-import {Input} from '@/components/ui/input'
-import {Badge} from '@/components/ui/badge'
-import {Plus, Loader2, RefreshCcw, Save, Pencil, Trash2, X} from 'lucide-react'
-import ConfirmDeleteButton from '@/components/confirm-delete-button'
-import {useForm} from 'react-hook-form'
-import {z} from 'zod'
-import {zodResolver} from '@hookform/resolvers/zod'
+import {getAllPlansOptions, getAllPlansQueryKey, createPlanMutation, deletePlanMutation, restorePlanMutation} from '@/lib/api-client/@tanstack/react-query.gen'
 import {useToast} from '@/hooks/use-toast'
-import { StudentPlanResponseDto } from '@/lib/api-client'
+import type {StudentPlanResponseDto} from '@/lib/api-client'
+import { PageHeader } from '@/components/base/page-header'
+import { handleHttpError } from '@/lib/error-utils'
+import { PlanStatusFilter } from '@/components/plans/plan-status-filter'
+import { PlanCreateDialog, type PlanFormValues } from '@/components/plans/plan-create-dialog'
+import { PlanGrid } from '@/components/plans/plan-grid'
+import type { PlanStatusValue, PlanWithId } from '@/components/plans/plan-types'
 
-const planSchema = z.object({
-  name: z.string().min(2,'Nome obrigatório'),
-  maxDays: z.coerce.number().int().min(1).max(7),
-  durationDays: z.coerce.number().int().min(7).max(365)
-})
+const PLAN_STATUS_TO_INVALIDATE: PlanStatusValue[] = ['active', 'inactive', 'all']
 
-type PlanForm = z.infer<typeof planSchema>
+const hasStatus = (value: unknown): value is { status?: number } =>
+  typeof value === 'object' && value !== null && 'status' in value
+
+const hasPlanId = (plan: StudentPlanResponseDto | undefined): plan is PlanWithId =>
+  typeof plan?.id === 'string' && plan.id.length > 0
 
 export default function PlansPage(){
   const qc = useQueryClient()
   const {toast} = useToast()
-  const plansQueryOptions = getAllPlansOptions({client: apiClient})
+
+  const [statusFilter, setStatusFilter] = useState<PlanStatusValue>('all')
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+
+  const invalidateAllStatusVariants = useCallback(
+    () => Promise.all(
+      PLAN_STATUS_TO_INVALIDATE.map((status) =>
+        qc.invalidateQueries({ queryKey: getAllPlansQueryKey({ client: apiClient, query: { status } }) })
+      )
+    ),
+    [qc]
+  )
+
+  const plansQueryOptions = useMemo(
+    () => getAllPlansOptions({ client: apiClient, query: { status: statusFilter } }),
+    [statusFilter]
+  )
+
   const {data, isLoading, error} = useQuery(plansQueryOptions)
 
   const createPlan = useMutation({
     ...createPlanMutation({client: apiClient}),
     onSuccess: async () => {
-      // invalidate after successful create
-      await qc.invalidateQueries({queryKey: plansQueryOptions.queryKey})
-      toast({title:'Plano criado'})
-      form.reset({name:'', maxDays:3, durationDays:30})
-      setOpen(false)
+      await invalidateAllStatusVariants()
+      toast({title:'Plano criado', variant: 'success'})
     },
-    onError: () => toast({title:'Erro ao criar plano', variant:'destructive'})
+    onError: (err) => {
+      if (hasStatus(err) && err.status === 409) {
+        toast({
+          title: 'Nome já utilizado',
+          description: 'Já existe um plano com este nome. Escolha outro nome e tente novamente.',
+          variant: 'destructive'
+        })
+      } else {
+        handleHttpError(err, 'criar plano', 'Erro ao criar plano')
+      }
+    }
   })
 
   const deletePlan = useMutation({
     ...deletePlanMutation({client: apiClient}),
-    // optimistic update
     onMutate: async (vars) => {
       await qc.cancelQueries({queryKey: plansQueryOptions.queryKey})
-      const prev = qc.getQueryData(plansQueryOptions.queryKey)
-      if(prev){
-        qc.setQueryData(plansQueryOptions.queryKey, prev.filter(p=> p.id !== vars.path.planId))
+      const prev = qc.getQueryData<StudentPlanResponseDto[]>(plansQueryOptions.queryKey)
+      if (prev) {
+        const next = prev.map(plan => (plan?.id === vars.path.planId ? ({...plan, active: false}) : plan))
+        qc.setQueryData(plansQueryOptions.queryKey, next)
       }
       return {prev}
     },
-    onError: (_err: Error, context: any) => {
-      if(context?.prev) qc.setQueryData(plansQueryOptions.queryKey, context.prev)
+    onError: (_err, _vars, context) => {
+      if (context?.prev) {
+        qc.setQueryData(plansQueryOptions.queryKey, context.prev)
+      }
       toast({title:'Erro ao excluir plano', variant:'destructive'})
     },
     onSuccess: () => toast({title:'Plano excluído'}),
-    onSettled: () => qc.invalidateQueries({queryKey: plansQueryOptions.queryKey})
+    onSettled: async () => {
+      await invalidateAllStatusVariants()
+    }
   })
 
-  // Normalize plans: support both API field naming variants (planId/planName or id/name)
-  const plans = useMemo(()=> {
-    const list = (data||[]) as any[]
-    const normalized = list.map(p => ({
-      _raw: p,
-      id: p.planId ?? p.id,
-      name: p.planName ?? p.name ?? '',
-      maxDays: p.planMaxDays ?? p.maxDays,
-      durationDays: p.planDurationDays ?? p.durationDays
-    })).filter(p=> !!p.id)
-    normalized.sort((a,b)=> a.name.localeCompare(b.name))
-    return normalized
-  },[data])
+  const restorePlan = useMutation({
+    ...restorePlanMutation({client: apiClient}),
+    onMutate: async () => {
+      await qc.cancelQueries({queryKey: plansQueryOptions.queryKey})
+    },
+    onSuccess: async () => {
+      toast({title:'Plano restaurado'})
+      await invalidateAllStatusVariants()
+    },
+    onError: (err) => handleHttpError(err, 'restaurar plano', 'Erro ao restaurar plano'),
+    onSettled: async () => {
+      await invalidateAllStatusVariants()
+    }
+  })
 
-  const [open,setOpen] = useState(false)
-  const form = useForm<PlanForm>({resolver: zodResolver(planSchema), defaultValues:{name:'', maxDays:3, durationDays:30}})
+  const plans = useMemo(() => {
+    const list = Array.isArray(data) ? data : []
+    const withId = list.filter(hasPlanId)
+    withId.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''))
+    return withId
+  }, [data])
 
-  const submit = (v:PlanForm)=>{
-    createPlan.mutate({body:{name: v.name, maxDays: v.maxDays, durationDays: v.durationDays}, client: apiClient})
-  }
+  const handleCreatePlan = useCallback(
+    async (values: PlanFormValues) => {
+      await createPlan.mutateAsync({
+        body: {
+          name: values.name,
+          maxDays: values.maxDays,
+          durationDays: values.durationDays
+        },
+        client: apiClient
+      })
+    },
+    [createPlan]
+  )
+
+  const handleDeletePlan = useCallback(
+    (planId: string) => {
+      deletePlan.mutate({ path: { planId }, client: apiClient })
+    },
+    [deletePlan]
+  )
+
+  const handleRestorePlan = useCallback(
+    (planId: string) => {
+      restorePlan.mutate({ path: { planId }, client: apiClient })
+    },
+    [restorePlan]
+  )
 
   return (
     <Layout>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Planos</h1>
-            <p className="text-sm text-muted-foreground">Gerencie os planos de assinatura</p>
-          </div>
-          <div className="flex gap-2">
-            <Dialog open={open} onOpenChange={(o)=> {setOpen(o); if(!o) form.reset()}}>
-              <DialogTrigger asChild>
-                <Button className="bg-green-600 hover:bg-green-700"><Plus className="w-4 h-4 mr-2"/> Novo Plano</Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-sm">
-                <DialogHeader><DialogTitle>Novo Plano</DialogTitle></DialogHeader>
-                <form onSubmit={form.handleSubmit(submit)} className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">Nome</label>
-                    <Input {...form.register('name')}/>
-                    {form.formState.errors.name && <p className="text-xs text-red-600">{form.formState.errors.name.message}</p>}
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium">Dias/semana</label>
-                      <Input type="number" {...form.register('maxDays',{valueAsNumber:true})}/>
-                      {form.formState.errors.maxDays && <p className="text-xs text-red-600">{form.formState.errors.maxDays.message}</p>}
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-medium">Duração (dias)</label>
-                      <Input type="number" {...form.register('durationDays',{valueAsNumber:true})}/>
-                      {form.formState.errors.durationDays && <p className="text-xs text-red-600">{form.formState.errors.durationDays.message}</p>}
-                    </div>
-                  </div>
-                  <Button type="submit" disabled={createPlan.isPending} className="w-full bg-green-600 hover:bg-green-700">{createPlan.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin"/>}<Save className="w-4 h-4 mr-2"/> Salvar</Button>
-                </form>
-              </DialogContent>
-            </Dialog>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <PageHeader
+            title="Planos"
+            description="Gerencie os planos de assinatura"
+          />
+          <div className="flex items-center gap-2">
+            <PlanStatusFilter
+              value={statusFilter}
+              onValueChange={setStatusFilter}
+              open={isFilterOpen}
+              onOpenChange={setIsFilterOpen}
+            />
+            <PlanCreateDialog
+              onCreate={handleCreatePlan}
+              isSubmitting={createPlan.isPending}
+            />
           </div>
         </div>
-        {error && <Card><CardContent className="p-6 text-sm text-red-600">Erro ao carregar planos.</CardContent></Card>}
-        {isLoading && <div className="space-y-2">{[...Array(3)].map((_,i)=><Card key={i} className="animate-pulse"><CardContent className="h-16"/></Card>)}</div>}
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {plans.map(({_raw: p, id, name, maxDays, durationDays})=> {
-            return (
-              <Card key={id} className={'border-l-4 border-l-green-600'}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center justify-between gap-2">
-                      <span className="truncate" title={name}>{name}</span>
-                    <Badge variant="outline" className="text-xs whitespace-nowrap">{maxDays}d/sem</Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Duração: {durationDays} dias</span>
-                  </div>
-                  <div className="flex gap-2 pt-1">
-                      <ConfirmDeleteButton
-                        size="sm"
-                        variant="outline"
-                        className="h-8 px-2"
-                        title="Excluir Plano"
-                        description={`Tem certeza que deseja excluir o plano "${name}"?`}
-                        onConfirm={()=> deletePlan.mutate({path:{planId: id}, client: apiClient})}
-                        disabled={deletePlan.isPending}
-                      >
-                        <Trash2 className="w-3 h-3"/>
-                      </ConfirmDeleteButton>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-          {!isLoading && (data||[]).length===0 && <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhum plano cadastrado.</CardContent></Card>}
-        </div>
+
+        <PlanGrid
+          plans={plans}
+          statusFilter={statusFilter}
+          isLoading={isLoading}
+          error={error}
+          onDeletePlan={handleDeletePlan}
+          onRestorePlan={handleRestorePlan}
+          isDeleting={deletePlan.isPending}
+          isRestoring={restorePlan.isPending}
+        />
       </div>
     </Layout>
   )

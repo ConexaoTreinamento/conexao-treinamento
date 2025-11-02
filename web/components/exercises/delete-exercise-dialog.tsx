@@ -39,6 +39,7 @@ export function DeleteExerciseDialog({
       toast({
         title: "Sucesso",
         description: "Exercício excluído com sucesso!",
+        variant: "success",
       })
       await queryClient.invalidateQueries({
         predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllExercises'
@@ -59,7 +60,7 @@ export function DeleteExerciseDialog({
         <AlertDialogTitle className="sr-only">Excluir Exercício</AlertDialogTitle>
         <h2 className="text-lg font-semibold mb-4">Excluir Exercício</h2>
         <p className="text-sm text-muted-foreground mb-6">
-          Tem certeza que deseja excluir o exercício "{exercise?.name}"? Esta ação não pode ser desfeita.
+          Tem certeza que deseja excluir o exercício &quot;{exercise?.name}&quot;? Esta ação não pode ser desfeita.
         </p>
         <div className="flex gap-2 justify-end items-baseline">
           <AlertDialogCancel disabled={isDeleting}>

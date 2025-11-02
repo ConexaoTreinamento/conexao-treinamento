@@ -55,7 +55,7 @@ export default function EditStudentPage() {
 
   const {mutateAsync: updateStudent, isPending: isEditPending} = useUpdateStudent({
     onSuccess: () => {
-      toast({title: "Aluno atualizado", description: "As alterações foram salvas.", duration: 3000})
+      toast({title: "Aluno atualizado", description: "As alterações foram salvas.", variant: 'success', duration: 3000})
       if (id) {
         router.back()
       }
@@ -210,7 +210,7 @@ export default function EditStudentPage() {
       } as StudentRequestDto
 
       await updateStudent({ path: { id }, body: requestBody, client: apiClient })
-    } catch (e: any) {
+    } catch (e: unknown) {
       handleHttpError(e, "atualizar aluno", "Não foi possível salvar as alterações. Tente novamente.")
     }
   }
@@ -224,7 +224,7 @@ export default function EditStudentPage() {
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h1 className="text-xl font-bold">Editar Aluno</h1>
+            <h1 className="text-2xl font-bold">Editar Aluno</h1>
             <p className="text-sm text-muted-foreground">Atualize as informações do aluno</p>
           </div>
         </div>

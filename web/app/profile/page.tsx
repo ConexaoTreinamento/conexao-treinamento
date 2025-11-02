@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Clock, Award, Eye, EyeOff } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Eye, EyeOff } from 'lucide-react'
 import Layout from "@/components/layout"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
@@ -25,9 +25,7 @@ export default function ProfilePage() {
   const [token, setToken] = useState<string>("")
   const [userId, setUserId] = useState<string>("")
   const [userRole, setUserRole] = useState<string>("")
-  const [userName, setUserName] = useState<string>("")
   //const [isLoading, setIsLoading] = useState(false)
-  const [specialtiesInput, setSpecialtiesInput] = useState("")
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -67,12 +65,10 @@ export default function ProfilePage() {
     const uToken = localStorage.getItem("token") || "";
     const uUserId = localStorage.getItem("userId") || "";
     const role = localStorage.getItem("userRole") || "";
-    const name = localStorage.getItem("userName") || "";
 
     setToken(uToken);
     setUserId(uUserId);
     setUserRole(role);
-    setUserName(name);
   }, []);
 
 
@@ -92,7 +88,7 @@ export default function ProfilePage() {
       client: apiClient,
     }),
     onSuccess: () => {
-      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!" })
+      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!", variant: "success" })
       queryClient.invalidateQueries({ queryKey: ["findAdministratorByUserId"] })
     },
     onError: () => {
@@ -128,7 +124,7 @@ export default function ProfilePage() {
       client: apiClient,
     }),
     onSuccess: () => {
-      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!" })
+      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!", variant: "success" })
       queryClient.invalidateQueries({ queryKey: ["findTrainerById"] })
     },
     onError: () => {
@@ -166,18 +162,8 @@ export default function ProfilePage() {
     }
   }, [userRole, trainerData, adminDataByUser])
 
-  useEffect(() => {
-    if (profileData.specialties) {
-      setSpecialtiesInput(profileData.specialties.join(", "))
-    }
-  }, [profileData.specialties])
-
   const handleInputChange = (field: string, value: string) => {
-    if (field === "specialties") {
-      setSpecialtiesInput(value)
-    } else {
-      setProfileData(prev => ({ ...prev, [field]: value }))
-    }
+    setProfileData(prev => ({ ...prev, [field]: value }))
   }
 
   const handlePasswordSubmit = () => {
@@ -201,16 +187,6 @@ export default function ProfilePage() {
     });
 
   };
-
-  const handleSpecialtiesBlur = () => {
-    setProfileData(prev => ({
-      ...prev,
-      specialties: specialtiesInput
-        .split(",")
-        .map(s => s.trim())
-        .filter(s => s.length > 0)
-    }))
-  }
 
   const handleSave = () => {
     if (userRole === "admin") {
@@ -236,48 +212,6 @@ export default function ProfilePage() {
     })
   }
 
-  const handleChangePassword = () => {
-    if (userRole === "admin") {
-      if (!adminId) return
-      if (newPassword !== confirmPassword) {
-        toast({
-          title: "Erro",
-          description: "As senhas não coincidem!",
-          variant: "destructive"
-        })
-        return
-      }
-      const [firstName = "", ...rest] = (profileData.name ?? "").split(" ")
-      const lastName = rest.join(" ")
-      updateAdminMutation.mutate({
-        path: { id: String(adminId) },
-        body: {
-          firstName,
-          lastName,
-          email: profileData.email,
-        },
-      })
-      setNewPassword("")
-      setConfirmPassword("")
-      return
-    }
-    if (!trainerId) return
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "Erro",
-        description: "As senhas não coincidem!",
-        variant: "destructive"
-      })
-      return
-    }
-    updateTrainerMutation.mutate({
-      path: { id: String(trainerId) },
-      body: { ...profileData, password: newPassword },
-    })
-    setNewPassword("")
-    setConfirmPassword("")
-  }
-
   const isSaving = (updateAdminMutation.isPending || updateTrainerMutation.isPending)
   const isLoading = isSaving || isChangingPassword || isLoadingAdminId || isLoadingTrainerId || isLoadingTrainer
 
@@ -287,7 +221,7 @@ export default function ProfilePage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl font-bold">Meu Perfil</h1>
+            <h1 className="text-2xl font-bold">Meu perfil</h1>
             <p className="text-muted-foreground">
               Gerencie suas informações pessoais e configurações
             </p>
@@ -361,7 +295,6 @@ export default function ProfilePage() {
             <Tabs defaultValue="personal" className="space-y-4">
               <TabsList>
                 <TabsTrigger value="personal">Informações</TabsTrigger>
-                {userRole !== "admin" && <TabsTrigger value="professional">Profissional</TabsTrigger>}
                 <TabsTrigger value="security">Segurança</TabsTrigger>
               </TabsList>
 
@@ -429,54 +362,6 @@ export default function ProfilePage() {
                 </Card>
               </TabsContent>
 
-              {userRole !== "admin" && (
-                <TabsContent value="professional">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Award className="w-5 h-5" />
-                        Profissional
-                      </CardTitle>
-                      <CardDescription>
-                        Gerencie suas informações profissionais
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="joinDate">Data de Contratação</Label>
-                          <Input
-                            id="joinDate"
-                            type="date"
-                            value={profileData.joinDate}
-                            onChange={(e) => handleInputChange("joinDate", e.target.value)}
-                            disabled
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="role">Função</Label>
-                          <Input
-                            id="role"
-                            value={userRole === "admin" ? "Administrador" : "Professor"}
-                            disabled
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="specialties">Especialidades</Label>
-                        <Input
-                          id="specialties"
-                          value={specialtiesInput}
-                          onChange={(e) => handleInputChange("specialties", e.target.value)}
-                          onBlur={handleSpecialtiesBlur}
-                          placeholder="Musculação, Pilates, Yoga..."
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              )}
-
               <TabsContent value="security">
                 <Card>
                   <CardHeader>
@@ -486,11 +371,11 @@ export default function ProfilePage() {
                     </CardTitle>
                     <CardDescription>
                       Gerencie suas configurações de segurança
-                    </CardDescription>
+                    </CardDescription>  
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="currentPassword">Senha Atual</Label>
+                      <Label htmlFor="currentPassword">Senha atual</Label>
                       <div className="relative">
                         <Input
                             id="currentPassword"
@@ -512,7 +397,7 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="newPassword">Nova Senha</Label>
+                      <Label htmlFor="newPassword">Nova senha</Label>
                       <div className="relative">
                         <Input
                             id="newPassword"
@@ -534,7 +419,7 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
+                      <Label htmlFor="confirmPassword">Confirmar nova senha</Label>
                       <div className="relative">
                         <Input
                             id="confirmPassword"

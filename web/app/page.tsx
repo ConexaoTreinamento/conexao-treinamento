@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import type React from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -20,6 +20,7 @@ export default function HomePage() {
   const [password, setPassword] = useState("")
   const router = useRouter()
   const { toast } = useToast()
+  
   const { mutate: login, isPending } = useMutation({
     ...loginMutation({client: apiClient}),
     onSuccess: (result) => {
@@ -40,7 +41,14 @@ export default function HomePage() {
         duration: 5000
       })
     }
-  });
+  })
+
+  useEffect(() => {
+    const userRole = localStorage.getItem("userRole")
+    if (userRole) {
+      router.push("/schedule")
+    }
+  }, [router])
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()

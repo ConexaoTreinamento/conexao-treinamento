@@ -12,8 +12,9 @@ import Layout from "@/components/layout"
 import ClassModal from "@/components/class-modal"
 import { apiClient } from "@/lib/client"
 import { getScheduleOptions, findAllTrainersOptions, getSessionOptions, getScheduleQueryKey, createOneOffSessionMutation } from "@/lib/api-client/@tanstack/react-query.gen"
-import type { SessionResponseDto, StudentCommitmentResponseDto, TrainerResponseDto } from "@/lib/api-client"
+import type { SessionResponseDto, StudentCommitmentResponseDto } from "@/lib/api-client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { PageHeader } from "@/components/base/page-header"
 
 export default function SchedulePage() {
   return (
@@ -54,7 +55,7 @@ function SchedulePageContent() {
       return new Date(y, (m - 1), 1)
     }
     return new Date()
-  }, [dayParam, monthParam, currentMonth])
+  }, [dayParam, monthParam])
   const [userRole, setUserRole] = useState<string>("")
   const [isNewClassOpen, setIsNewClassOpen] = useState(false)
   type OneOffClassData = { name: string; trainerId: string; trainerName?: string; startTime: string; endTime: string }
@@ -109,13 +110,12 @@ function SchedulePageContent() {
   const monthEnd = useMemo(()=> new Date(currentMonth.getFullYear(), currentMonth.getMonth()+1, 0), [currentMonth])
   const monthStartIso = useMemo(()=> formatLocalDate(monthStart), [monthStart])
   const monthEndIso = useMemo(()=> formatLocalDate(monthEnd), [monthEnd])
-  interface SessionStudent { studentId?: string; studentName?: string; commitmentStatus?: string }
   // Fetch entire visible month once; reuse locally for per-day filtering
   const scheduleQuery = useQuery({
     ...getScheduleOptions({ client: apiClient, query: { startDate: monthStartIso, endDate: monthEndIso } }),
     refetchInterval: 60_000,
   })
-  const apiSessions = scheduleQuery.data?.sessions || []
+  const apiSessions = useMemo(() => scheduleQuery.data?.sessions || [], [scheduleQuery.data?.sessions])
   const backendClasses = useMemo(()=> apiSessions.map(s => {
     const students = (s.students||[]).map(st => ({ id: st.studentId || '', name: st.studentName || 'Aluno', present: (st).present ?? (st.commitmentStatus === 'ATTENDING') }))
     const date = s.startTime?.slice(0,10) || selectedIso
@@ -145,7 +145,6 @@ function SchedulePageContent() {
   const trainersQuery = useQuery({
     ...findAllTrainersOptions({ client: apiClient })
   })
-  const trainerOptions = (Array.isArray(trainersQuery.data) ? trainersQuery.data : []).map((t: TrainerResponseDto) => ({ id: t.id || '', name: t.name || '—' })).filter(t => t.id)
   const trainersById = useMemo(() => {
     const map: Record<string, string> = {}
     const list = Array.isArray(trainersQuery.data) ? trainersQuery.data : []
@@ -186,10 +185,6 @@ function SchedulePageContent() {
   const isToday = (date: Date) => date.toDateString() === new Date().toDateString()
   const isSelected = (date: Date) => date.toDateString() === selectedDate.toDateString()
 
-  const getDayOfWeekValue = (date: Date) => {
-    const days = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
-    return days[date.getDay()]
-  }
 
   // removed occupancy color; we no longer display capacity
 
@@ -332,7 +327,7 @@ function SchedulePageContent() {
           {resolvedStudents.length === 0 && (
             <div className="text-center py-2">
               <p className="text-sm text-muted-foreground">Nenhum aluno inscrito</p>
-              <Button size="sm" variant="outline" disabled={!classItem.real} title={!classItem.real? 'Sessão não materializada ainda':'Adicionar alunos'} className="mt-2 h-7 px-2 text-xs bg-transparent" onClick={onManage}>Adicionar Alunos</Button>
+              <Button size="sm" variant="outline" disabled={!classItem.real} title={!classItem.real? 'Sessão não materializada ainda':'Adicionar alunos'} className="mt-2 h-7 px-2 text-xs bg-transparent" onClick={onManage}>Adicionar alunos</Button>
             </div>
           )}
         </CardContent>
@@ -346,7 +341,9 @@ function SchedulePageContent() {
         <div className="flex flex-col space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold">Agenda</h1>
+          <PageHeader 
+            title="Agenda" 
+          />
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={goToToday}>
                 <CalendarDays className="w-4 h-4 mr-1" />

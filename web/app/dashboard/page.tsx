@@ -141,7 +141,7 @@ export default function Dashboard() {
           <div className="flex gap-2">
             <Button onClick={() => router.push("/students/new")} className="bg-green-600 hover:bg-green-700">
               <Plus className="w-4 h-4 mr-2" />
-              Novo Aluno
+              Novo aluno
             </Button>
           </div>
         </div>

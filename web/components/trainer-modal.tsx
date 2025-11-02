@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Dialog,
@@ -17,18 +16,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { X, Eye, EyeOff } from "lucide-react"
 import { CreateTrainerDto, TrainerResponseDto } from "@/lib/api-client"
-
-interface TrainerFormData {
-  name: string
-  email: string
-  phone: string
-  address: string
-  birthDate: string
-  specialties: string[]
-  compensation: string
-  status: string
-  newPassword?: string
-}
 
 interface TrainerModalProps {
   open: boolean
@@ -56,7 +43,8 @@ export default function TrainerModal({
     compensationType: "HOURLY",
     password: "",
   })
-
+  const [specialtyOpen, setSpecialtyOpen] = useState(false);
+  const [compensationOpen, setCompensationOpen] = useState(false);
   // Available specialties for suggestions
   const availableSpecialties = [
     "Pilates",
@@ -121,7 +109,7 @@ export default function TrainerModal({
   }
 
   const handleSubmit = () => {
-    onSubmit({...formData})
+    onSubmit({ ...formData })
     onClose()
   }
 
@@ -143,7 +131,7 @@ export default function TrainerModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle>
             {mode === "create" ? "Cadastrar Novo Professor" : "Editar Professor"}
@@ -159,11 +147,11 @@ export default function TrainerModal({
         <div className="space-y-6">
           {/* Personal Information */}
           <div className="space-y-4">
-            <h4 className="text-sm font-medium">Informações Pessoais</h4>
+            <h4 className="text-sm font-medium">Informações pessoais</h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="trainerName">Nome Completo *</Label>
+                <Label htmlFor="trainerName">Nome completo *</Label>
                 <Input
                   id="trainerName"
                   value={formData.name}
@@ -172,7 +160,7 @@ export default function TrainerModal({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="trainerBirthDate">Data de Nascimento *</Label>
+                <Label htmlFor="trainerBirthDate">Data de nascimento *</Label>
                 <Input
                   id="trainerBirthDate"
                   type="date"
@@ -222,19 +210,23 @@ export default function TrainerModal({
 
           {/* Professional Information */}
           <div className="space-y-4">
-            <h4 className="text-sm font-medium">Informações Profissionais</h4>
+            <h4 className="text-sm font-medium">Informações profissionais</h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="trainerCompensation">Tipo de Compensação *</Label>
+              <div className="space-y-2" onClick={() => setCompensationOpen(!compensationOpen)}>
+                <Label htmlFor="trainerCompensation">Tipo de compensação *</Label>
                 <Select
+                  open={compensationOpen}
                   value={formData.compensationType}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, compensationType: value as typeof formData.compensationType }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent
+                    onPointerDownOutside={() => {
+                      setCompensationOpen(false)
+                    }}>
                     <SelectItem value="HOURLY">Horista</SelectItem>
                     <SelectItem value="MONTHLY">Mensalista</SelectItem>
                   </SelectContent>
@@ -247,16 +239,21 @@ export default function TrainerModal({
           <div className="space-y-4">
             <h4 className="text-sm font-medium">Especialidades</h4>
 
-            <div className="space-y-2">
-              <Label>Adicionar Especialidade</Label>
+            <div className="space-y-2" onClick={() => setSpecialtyOpen(!specialtyOpen)}>
+              <Label>Adicionar especialidade</Label>
               <Select
+                open={specialtyOpen}
                 value=""
                 onValueChange={handleAddSpecialty}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione uma especialidade" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent
+                  onPointerDownOutside={() => {
+                    setSpecialtyOpen(false);
+                  }}
+                >
                   {availableSpecialties
                     .filter(spec => !formData.specialties!.includes(spec))
                     .map((specialty) => (
@@ -270,7 +267,7 @@ export default function TrainerModal({
 
             {formData.specialties!.length > 0 && (
               <div className="space-y-2">
-                <Label>Especialidades Selecionadas</Label>
+                <Label>Especialidades selecionadas</Label>
                 <div className="flex flex-wrap gap-2">
                   {formData.specialties!.map((specialty) => (
                     <Badge key={specialty} variant="secondary" className="flex items-center gap-1">
@@ -299,27 +296,27 @@ export default function TrainerModal({
                 {mode === "create" ? "Senha *" : "Nova Senha"}
               </Label>
               <div className="relative">
-  <Input
-    id="trainerPassword"
-    type={showPassword ? "text" : "password"}
-    value={formData.password || ""}
-    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-    placeholder={mode === "create" ? "Digite a senha" : "Deixe vazio para manter a senha atual"}
-  />
-  <Button
-    type="button"
-    variant="ghost"
-    size="icon"
-    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
-    onClick={() => setShowPassword(!showPassword)}
-  >
-    {showPassword ? (
-      <EyeOff className="h-4 w-4" />
-    ) : (
-      <Eye className="h-4 w-4" />
-    )}
-  </Button>
-</div>
+                <Input
+                  id="trainerPassword"
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password || ""}
+                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                  placeholder={mode === "create" ? "Digite a senha" : "Deixe vazio para manter a senha atual"}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

@@ -24,40 +24,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useEvaluations } from '@/lib/hooks/evaluation-queries'
 
-// Type definitions
-interface Evaluation {
-  id: string
-  date: string
-  weight: number
-  height: number
-  bmi: number
-  circumferences: {
-    rightArmRelaxed: number
-    leftArmRelaxed: number
-    rightArmFlexed: number
-    leftArmFlexed: number
-    waist: number
-    abdomen: number
-    hip: number
-    rightThigh: number
-    leftThigh: number
-    rightCalf: number
-    leftCalf: number
-  }
-  subcutaneousFolds: {
-    triceps: number
-    thorax: number
-    subaxillary: number
-    subscapular: number
-    abdominal: number
-    suprailiac: number
-    thigh: number
-  }
-  diameters: {
-    umerus: number
-    femur: number
-  }
-}
+// Type definitions - not used but kept for future reference
 
 export default function StudentProfilePage() {
   const router = useRouter()
@@ -82,7 +49,7 @@ export default function StudentProfilePage() {
     enabled: !!studentId,
   })
   const allPlansQuery = useQuery({
-    ...getAllPlansOptions({ client: apiClient })
+    ...getAllPlansOptions({ client: apiClient, query: { status: "active" } })
   })
 
   // Recent classes (last 7 days) schedule query — backend expects LocalDate (yyyy-MM-dd)
@@ -152,7 +119,7 @@ export default function StudentProfilePage() {
 
   const handleRestore = async () => {
     await restoreStudent({ path: { id: String(params.id) }, client: apiClient })
-    toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
+    toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000, variant: 'success' })
   }
 
   const { data: studentData, isLoading, error } = useStudent({path: {id: String(params.id)}}, {enabled: Boolean(params.id)})
@@ -168,7 +135,7 @@ export default function StudentProfilePage() {
         body: { planId: assignPlanId, startDate: assignStartDate, assignmentNotes: assignNotes || undefined },
         client: apiClient
       })
-      toast({ title: 'Plano atribuído', description: 'O plano foi atribuído/renovado com sucesso.' })
+      toast({ title: 'Plano atribuído', description: 'O plano foi atribuído/renovado com sucesso.', variant: 'success' })
       setOpenAssignDialog(false)
       setAssignNotes('')
       setAssignPlanId('')
@@ -177,8 +144,9 @@ export default function StudentProfilePage() {
         qc.invalidateQueries({ queryKey: getStudentPlanHistoryQueryKey(currentPlanOptions) }),
         qc.invalidateQueries({ queryKey: getStudentCommitmentsQueryKey(currentPlanOptions) }),
       ])
-    } catch (e:any) {
-      toast({ title: 'Erro ao atribuir plano', description: e?.message || 'Tente novamente', variant: 'destructive' })
+    } catch (e: unknown) {
+      const errorMessage = (e instanceof Error && e.message) || (typeof e === 'object' && e !== null && 'message' in e && typeof e.message === 'string' ? e.message : null) || 'Tente novamente'
+      toast({ title: 'Erro ao atribuir plano', description: errorMessage, variant: 'destructive' })
     }
   }
 
@@ -299,7 +267,7 @@ export default function StudentProfilePage() {
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h1 className="text-xl font-bold">Perfil do Aluno</h1>
+            <h1 className="text-2xl font-bold">Perfil do Aluno</h1>
             <p className="text-sm text-muted-foreground">Informações completas e histórico</p>
           </div>
         </div>
@@ -694,11 +662,11 @@ export default function StudentProfilePage() {
               <div className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Informações Pessoais</CardTitle>
+                    <CardTitle className="text-base">Informações pessoais</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div>
-                      <span className="text-sm text-muted-foreground">Data de Nascimento:</span>
+                      <span className="text-sm text-muted-foreground">Data de nascimento:</span>
                       <p>{formatDate(studentData.birthDate)}</p>
                     </div>
                     <div>
@@ -706,11 +674,11 @@ export default function StudentProfilePage() {
                       <p>{studentData.profession}</p>
                     </div>
                     <div>
-                      <span className="text-sm text-muted-foreground">Data de Ingresso:</span>
+                      <span className="text-sm text-muted-foreground">Data de ingresso:</span>
                       <p className="text-sm">{formatDate(studentData.registrationDate)}</p>
                     </div>
                     <div>
-                    <span className="text-sm text-muted-foreground">Última Renovação:</span>
+                    <span className="text-sm text-muted-foreground">Última renovação:</span>
                       <p>{new Date(studentMockData.lastRenewal).toLocaleDateString("pt-BR")}</p>
                     </div>
                     <div>
@@ -722,7 +690,7 @@ export default function StudentProfilePage() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Contato de Emergência</CardTitle>
+                    <CardTitle className="text-base">Contato de emergência</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div>
@@ -737,7 +705,7 @@ export default function StudentProfilePage() {
                 </Card>
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Ficha de Anamnese</CardTitle>
+                    <CardTitle className="text-base">Ficha de anamnese</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div>
@@ -818,7 +786,7 @@ export default function StudentProfilePage() {
                 {studentData.physicalImpairments && studentData.physicalImpairments.length > 0 && (
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-base">Impedimentos Físicos</CardTitle>
+                        <CardTitle className="text-base">Impedimentos físicos</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
                         {studentData.physicalImpairments.map((impairment, index) => (
