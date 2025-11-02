@@ -26,8 +26,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
-import CreateExerciseModal from "@/components/ui/create-exercise-modal"
-import EditExerciseModal from "@/components/ui/edit-exercise-modal"
+import CreateExerciseModal from "@/components/base/create-exercise-modal"
+import EditExerciseModal from "@/components/exercises/edit-exercise-modal"
 
 import { Search, Plus, Activity, Edit, Trash2, X, Eye, RotateCcw, MoreVertical } from "lucide-react"
 import Layout from "@/components/layout"
@@ -38,7 +38,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { findAllExercisesOptions, restoreExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { ExerciseResponseDto } from "@/lib/api-client"
-import { PageHeader } from "@/components/ui/page-header"
+import { PageHeader } from "@/components/base/page-header"
 
 
 export default function ExercisesPage() {

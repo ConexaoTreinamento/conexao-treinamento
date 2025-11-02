@@ -11,7 +11,7 @@ import { PlanAssignmentStatusBadge, getAssignmentDaysRemaining, getAssignmentEnd
 import {hasInsomniaTypes, impairmentTypes, STUDENT_PROFILES} from "@/lib/students-data"
 import { useDeleteStudent, useRestoreStudent } from "@/lib/hooks/student-mutations";
 import {apiClient} from "@/lib/client";
-import ConfirmDeleteButton from "@/components/ui/confirm-delete-button";
+import ConfirmDeleteButton from "@/components/base/confirm-delete-button";
 import { useToast } from "@/hooks/use-toast";
 import type { StudentResponseDto } from "@/lib/api-client/types.gen"
 import {useStudent} from "@/lib/hooks/student-queries";

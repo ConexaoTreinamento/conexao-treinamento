@@ -12,7 +12,7 @@ import { Search, Filter, Phone, Mail, Calendar, Clock, Edit, Trash2, UserPlus } 
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import TrainerModal from "@/components/trainers/trainer-modal"
-import { PageHeader } from "@/components/ui/page-header"
+import { PageHeader } from "@/components/base/page-header"
 import { createTrainerAndUserMutation, findAllTrainersOptions, softDeleteTrainerUserMutation, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { TrainerResponseDto } from "@/lib/api-client"

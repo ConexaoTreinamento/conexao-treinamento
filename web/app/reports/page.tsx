@@ -15,7 +15,7 @@ import { apiClient } from "@/lib/client"
 import { getReportsOptions, getTrainersForLookupOptions } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { AgeDistributionDto, TrainerLookupDto, TrainerReportDto } from "@/lib/api-client/types.gen"
 import { TrainerSelect } from "@/components/trainers/trainer-select"
-import { PageHeader } from "@/components/ui/page-header"
+import { PageHeader } from "@/components/base/page-header"
 
 type PeriodKey = "week" | "month" | "quarter" | "year" | "custom"
 

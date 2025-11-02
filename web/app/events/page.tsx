@@ -14,7 +14,7 @@ import { apiClient } from "@/lib/client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/use-debounce"
 import type { EventResponseDto } from "@/lib/api-client/types.gen"
-import { PageHeader } from "@/components/ui/page-header"
+import { PageHeader } from "@/components/base/page-header"
 
 export default function EventsPage() {
   const router = useRouter()
