@@ -11,15 +11,17 @@ import { Section } from "@/components/base/section"
 import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/base/empty-state"
 import {
-  TrainersToolbar,
-  TrainersFiltersPanel,
+  TrainerFiltersContent,
   TrainersGrid,
   TrainersSkeletonGrid,
   TrainersEmptyState,
   TrainersErrorState,
+  DEFAULT_TRAINER_FILTERS,
+  countActiveTrainerFilters,
   type TrainerCardData,
   type TrainerFilters,
 } from "@/components/trainers/trainers-view"
+import { FilterToolbar } from "@/components/base/filter-toolbar"
 import { createTrainerAndUserMutation, findAllTrainersOptions, softDeleteTrainerUserMutation, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { ListTrainersDto, TrainerResponseDto } from "@/lib/api-client"
 import { apiClient } from "@/lib/client"
@@ -27,7 +29,7 @@ import { handleHttpError } from "@/lib/error-utils"
 import { useToast } from "@/hooks/use-toast"
 import { useDebounce } from "@/hooks/use-debounce"
 
-const INITIAL_FILTERS: TrainerFilters = { status: "Ativo", compensation: "all", specialty: "" }
+const INITIAL_FILTERS: TrainerFilters = { ...DEFAULT_TRAINER_FILTERS }
 
 interface NormalizedTrainer extends TrainerCardData {
   searchText: string
@@ -36,7 +38,6 @@ interface NormalizedTrainer extends TrainerCardData {
 export default function TrainersPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [filters, setFilters] = useState<TrainerFilters>({ ...INITIAL_FILTERS })
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [userRole, setUserRole] = useState<string>("admin")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<"create" | "edit">("create")
@@ -126,9 +127,8 @@ export default function TrainersPage() {
     })
   }, [normalizedTrainers, debouncedSearch, filters])
 
-  const hasActiveFilters = useMemo(() => {
-    return filters.status !== INITIAL_FILTERS.status || filters.compensation !== INITIAL_FILTERS.compensation || Boolean(filters.specialty.trim())
-  }, [filters])
+  const activeFilterCount = useMemo(() => countActiveTrainerFilters(filters), [filters])
+  const hasActiveFilters = activeFilterCount > 0
 
   const resultsSummary = useMemo(() => {
     if (isLoading) {
@@ -158,10 +158,6 @@ export default function TrainersPage() {
   const { mutateAsync: updateTrainer } = useMutation(updateTrainerAndUserMutation({ client: apiClient }))
   const { mutateAsync: deleteTrainer } = useMutation(softDeleteTrainerUserMutation({ client: apiClient }))
 
-  const handleToggleFilters = useCallback(() => {
-    setIsFiltersOpen((open) => !open)
-  }, [])
-
   const handleFiltersChange = useCallback((nextFilters: TrainerFilters) => {
     setFilters(nextFilters)
   }, [])
@@ -188,7 +184,7 @@ export default function TrainersPage() {
       }
 
       setModalMode("edit")
-  setEditingTrainer(trainer)
+      setEditingTrainer(trainer)
       setIsModalOpen(true)
     },
     [trainerMap],
@@ -284,17 +280,23 @@ export default function TrainersPage() {
           </Button>
         </div>
 
-        <TrainersToolbar
+        <FilterToolbar
           searchValue={searchTerm}
           onSearchChange={handleSearchChange}
-          onToggleFilters={handleToggleFilters}
-          filtersOpen={isFiltersOpen}
-          hasActiveFilters={hasActiveFilters}
+          searchPlaceholder="Buscar por nome, email ou telefone"
+          searchLabel="Buscar professores"
+          activeFilterCount={activeFilterCount}
+          filterTitle="Filtros de professores"
+          filterDescription="Combine filtros para localizar professores rapidamente."
+          renderFilters={({ close }) => (
+            <TrainerFiltersContent
+              filters={filters}
+              onChange={handleFiltersChange}
+              onReset={handleClearFilters}
+              onClose={close}
+            />
+          )}
         />
-
-        {isFiltersOpen ? (
-          <TrainersFiltersPanel filters={filters} onChange={handleFiltersChange} />
-        ) : null}
 
         <Section title="Professores" description={resultsSummary}>
           {isLoading ? <TrainersSkeletonGrid /> : null}

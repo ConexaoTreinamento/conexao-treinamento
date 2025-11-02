@@ -1,10 +1,10 @@
-import { Filter, Mail, Phone, Calendar, Clock, Edit, Trash2, Users, TriangleAlert } from "lucide-react"
+import type { ChangeEvent } from "react"
+import { Mail, Phone, Calendar, Clock, Edit, Trash2, Users, TriangleAlert, X } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
-import { SearchInput } from "@/components/base/search-input"
 import { EmptyState } from "@/components/base/empty-state"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -28,42 +28,34 @@ export interface TrainerFilters {
   specialty: string
 }
 
-interface TrainersToolbarProps {
-  searchValue: string
-  onSearchChange: (value: string) => void
-  onToggleFilters: () => void
-  filtersOpen: boolean
-  hasActiveFilters: boolean
+export const DEFAULT_TRAINER_FILTERS: TrainerFilters = {
+  status: "Ativo",
+  compensation: "all",
+  specialty: "",
 }
 
-export function TrainersToolbar({ searchValue, onSearchChange, onToggleFilters, filtersOpen, hasActiveFilters }: TrainersToolbarProps) {
-  return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-      <SearchInput
-        value={searchValue}
-        onChange={(event) => onSearchChange(event.target.value)}
-        placeholder="Buscar por nome, email ou telefone"
-        label="Buscar professores"
-      />
-      <Button
-        type="button"
-        variant={hasActiveFilters ? "default" : "outline"}
-        onClick={onToggleFilters}
-        className="sm:w-auto"
-      >
-        <Filter className="mr-2 h-4 w-4" aria-hidden="true" />
-        {filtersOpen ? "Ocultar filtros" : "Mostrar filtros"}
-      </Button>
-    </div>
-  )
+export const countActiveTrainerFilters = (filters: TrainerFilters): number => {
+  let count = 0
+  if (filters.status !== DEFAULT_TRAINER_FILTERS.status) {
+    count += 1
+  }
+  if (filters.compensation !== DEFAULT_TRAINER_FILTERS.compensation) {
+    count += 1
+  }
+  if (filters.specialty.trim() !== DEFAULT_TRAINER_FILTERS.specialty) {
+    count += 1
+  }
+  return count
 }
 
-interface TrainersFiltersPanelProps {
+interface TrainerFiltersContentProps {
   filters: TrainerFilters
   onChange: (nextFilters: TrainerFilters) => void
+  onReset?: () => void
+  onClose?: () => void
 }
 
-export function TrainersFiltersPanel({ filters, onChange }: TrainersFiltersPanelProps) {
+export function TrainerFiltersContent({ filters, onChange, onReset, onClose }: TrainerFiltersContentProps) {
   const handleStatusChange = (value: "Ativo" | "Inativo" | "all") => {
     onChange({ ...filters, status: value })
   }
@@ -76,12 +68,22 @@ export function TrainersFiltersPanel({ filters, onChange }: TrainersFiltersPanel
     onChange({ ...filters, specialty: value })
   }
 
+  const handleReset = () => {
+    onReset?.()
+    onClose?.()
+  }
+
+  const hasActiveFilters = countActiveTrainerFilters(filters) > 0
+
   return (
-    <Card className="border-dashed">
-      <CardContent className="grid grid-cols-1 gap-4 pt-6 sm:grid-cols-3">
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="trainer-status-filter">Status</Label>
-          <Select value={filters.status} onValueChange={(value) => handleStatusChange(value as TrainerFilters["status"])}>
+          <Select
+            value={filters.status}
+            onValueChange={(value: string) => handleStatusChange(value as TrainerFilters["status"])}
+          >
             <SelectTrigger id="trainer-status-filter">
               <SelectValue placeholder="Selecione um status" />
             </SelectTrigger>
@@ -97,7 +99,7 @@ export function TrainersFiltersPanel({ filters, onChange }: TrainersFiltersPanel
           <Label htmlFor="trainer-compensation-filter">Compensação</Label>
           <Select
             value={filters.compensation}
-            onValueChange={(value) => handleCompensationChange(value as TrainerFilters["compensation"])}
+            onValueChange={(value: string) => handleCompensationChange(value as TrainerFilters["compensation"])}
           >
             <SelectTrigger id="trainer-compensation-filter">
               <SelectValue placeholder="Selecione o formato" />
@@ -110,17 +112,24 @@ export function TrainersFiltersPanel({ filters, onChange }: TrainersFiltersPanel
           </Select>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="trainer-specialty-filter">Especialidade</Label>
           <Input
             id="trainer-specialty-filter"
             placeholder="Filtrar por especialidade"
             value={filters.specialty}
-            onChange={(event) => handleSpecialtyChange(event.target.value)}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => handleSpecialtyChange(event.target.value)}
           />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      {hasActiveFilters ? (
+        <Button type="button" variant="outline" onClick={handleReset} className="w-full sm:w-auto">
+          <X className="mr-2 h-4 w-4" aria-hidden="true" />
+          Limpar filtros
+        </Button>
+      ) : null}
+    </div>
   )
 }
 
@@ -165,7 +174,7 @@ function TrainerCard({ trainer, onOpen, onEdit, onDelete, canManage }: TrainerCa
   const initials = (trainer.name ?? "")
     .split(" ")
     .filter(Boolean)
-    .map((token) => token[0]?.toUpperCase() ?? "")
+    .map((token: string) => token[0]?.toUpperCase() ?? "")
     .join("")
     .slice(0, 2)
 
@@ -181,18 +190,33 @@ function TrainerCard({ trainer, onOpen, onEdit, onDelete, canManage }: TrainerCa
     ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
     : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
 
+  const isClickable = trainer.active
+
+  const handleOpen = () => {
+    if (!isClickable) {
+      return
+    }
+    onOpen()
+  }
+
   return (
     <Card
-      role="button"
-      tabIndex={0}
-      onClick={onOpen}
+      role={isClickable ? "button" : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      aria-disabled={!isClickable}
+      onClick={handleOpen}
       onKeyDown={(event) => {
+        if (!isClickable) {
+          return
+        }
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault()
           onOpen()
         }
       }}
-      className="cursor-pointer transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600"
+      className={`transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600 ${
+        isClickable ? "cursor-pointer hover:shadow-md" : "cursor-default"
+      }`}
     >
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between gap-3">
@@ -261,7 +285,7 @@ function TrainerCard({ trainer, onOpen, onEdit, onDelete, canManage }: TrainerCa
           <div className="space-y-2">
             <p className="text-sm font-medium">Especialidades</p>
             <div className="flex flex-wrap gap-1">
-              {trainer.specialties.slice(0, 2).map((specialty) => (
+              {trainer.specialties.slice(0, 2).map((specialty: string) => (
                 <Badge key={specialty} variant="outline" className="text-xs">
                   {specialty}
                 </Badge>

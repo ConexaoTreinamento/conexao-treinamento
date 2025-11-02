@@ -33,7 +33,8 @@ import {useStudents} from "@/lib/students/hooks/student-queries"
 import {apiClient} from "@/lib/client"
 import {getExpiringSoonAssignmentsOptions, getCurrentStudentPlanOptions} from '@/lib/api-client/@tanstack/react-query.gen'
 import {useQuery} from '@tanstack/react-query'
-import {StudentFiltersPanel} from "@/components/students/student-filters"
+import { StudentFiltersContent } from "@/components/students/student-filters"
+import { FilterToolbar } from "@/components/base/filter-toolbar"
 import type {StudentFilters} from "@/components/students/types"
 import {DEFAULT_STUDENT_FILTERS, countActiveStudentFilters} from "@/components/students/types"
 import { StudentsEmptyState, StudentsErrorState, StudentsList, StudentsLoadingList } from "@/components/students/students-view"
@@ -218,7 +219,8 @@ function StudentsPageContent() {
   }
 
   // Clear filters via RHF
-  const hasActiveFilters = countActiveStudentFilters(watchedFilters) > 0
+  const activeFilterCount = countActiveStudentFilters(watchedFilters)
+  const hasActiveFilters = activeFilterCount > 0
 
   const handleClearSearch = () => {
     setSearchTerm("")
@@ -431,12 +433,22 @@ function StudentsPageContent() {
         </div>
 
         {/* Search and Filters */}
-        <StudentFiltersPanel
-          filtersForm={form}
-          searchTerm={searchTerm}
+        <FilterToolbar
+          searchValue={searchTerm}
           onSearchChange={handleSearchChange}
-          professions={uniqueProfessions}
-          onFiltersReset={() => setCurrentPage(0)}
+          searchPlaceholder="Buscar alunos por nome, email, telefone ou profissão..."
+          searchLabel="Buscar alunos"
+          activeFilterCount={activeFilterCount}
+          filterTitle="Filtros avançados"
+          filterDescription="Refine sua busca por alunos"
+          renderFilters={({ close }) => (
+            <StudentFiltersContent
+              filtersForm={form}
+              professions={uniqueProfessions}
+              onFiltersReset={() => setCurrentPage(0)}
+              onClose={close}
+            />
+          )}
         />
 
         <Section title="Resultados" description={resultDescription}>
