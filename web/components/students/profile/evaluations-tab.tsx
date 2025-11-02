@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import type { PhysicalEvaluationResponse } from "@/lib/hooks/evaluation-queries"
+import type { PhysicalEvaluationResponse } from "@/lib/evaluations/hooks/evaluation-queries"
 import { Activity } from "lucide-react"
 
 interface StudentEvaluationsTabProps {

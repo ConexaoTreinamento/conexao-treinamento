@@ -3,7 +3,7 @@ import {Card, CardContent} from "@/components/ui/card"
 import {Activity, Calendar, Mail, Phone, RotateCcw, Trash2} from "lucide-react"
 import {Button} from "@/components/ui/button"
 import ConfirmDeleteButton from "@/components/base/confirm-delete-button"
-import {PlanAssignmentStatusBadge} from "@/lib/expiring-plans"
+import {PlanAssignmentStatusBadge} from "@/components/plans/expiring-plans"
 import type {StudentResponseDto} from "@/lib/api-client/types.gen"
 import type {StudentPlanAssignmentResponseDto} from "@/lib/api-client/types.gen"
 

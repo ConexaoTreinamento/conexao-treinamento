@@ -47,7 +47,7 @@ export const useUpdateStudent = (options: UseMutationOptions<StudentResponseDto,
   const base = updateStudentMutation();
   const baseOnSuccess = base.onSuccess;
 
-  return useMutation<StudentResponseDto, Error, Options<UpdateStudentData>>({
+  return useMutation({
     ...base,
     ...options,
     onSuccess: async (data, variables, context) => {

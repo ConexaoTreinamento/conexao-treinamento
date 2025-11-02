@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { useStudents } from "@/lib/hooks/student-queries"
+import { useStudents } from "@/lib/students/hooks/student-queries"
 import type { PageStudentResponseDto } from "@/lib/api-client"
 import { cn } from "@/lib/utils"
 import { useDebounce } from "@/hooks/use-debounce"

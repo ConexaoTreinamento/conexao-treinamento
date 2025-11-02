@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, User, Edit, Calendar } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
-import { useEvaluation } from "@/lib/hooks/evaluation-queries"
-import { useStudent } from "@/lib/hooks/student-queries"
+import { useEvaluation } from "@/lib/evaluations/hooks/evaluation-queries"
+import { useStudent } from "@/lib/students/hooks/student-queries"
 import { MeasurementCard } from "@/components/students/measurement-card"
 
 export default function EvaluationDetailPage() {

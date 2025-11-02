@@ -1,12 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { AlertTriangle, Calendar, User, Phone, Mail } from "lucide-react"
 import Link from "next/link"
-import { getStudentPlanExpirationDate, calculateDaysUntilExpiration, UnifiedStatusBadge } from "@/lib/expiring-plans"
-import { STUDENTS, getStudentFullName } from "@/lib/students-data"
+import { UnifiedStatusBadge } from "./expiring-plans"
 
 interface Student {
   id: number
@@ -23,36 +22,7 @@ interface ExpiringPlansModalProps {
 }
 
 export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansModalProps) {
-  const [expiringStudents, setExpiringStudents] = useState<Student[]>([])
-
-  useEffect(() => {
-    if (isOpen) {
-      // Process students and get their expiration data
-      const studentsWithExpiration = STUDENTS.map(student => {
-        const planExpirationDate = getStudentPlanExpirationDate(student.id)
-        const daysUntilExpiration = calculateDaysUntilExpiration(planExpirationDate)
-
-        return {
-          id: student.id,
-          name: getStudentFullName(student),
-          email: student.email,
-          phone: student.phone,
-          planExpirationDate,
-          daysUntilExpiration
-        }
-      })
-
-      // Filter students whose plans expire within 7 days or are already expired
-      const expiring = studentsWithExpiration.filter(student =>
-        student.daysUntilExpiration <= 7
-      )
-
-      // Sort by expiration date - earliest first (expired plans first)
-      expiring.sort((a, b) => a.daysUntilExpiration - b.daysUntilExpiration)
-
-      setExpiringStudents(expiring)
-    }
-  }, [isOpen])
+  const [expiringStudents] = useState<Student[]>([])
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("pt-BR")

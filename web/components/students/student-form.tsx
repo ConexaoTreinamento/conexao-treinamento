@@ -14,7 +14,7 @@ import { User, Plus, Trash2 } from "lucide-react"
 import { useQuery } from '@tanstack/react-query'
 import {apiClient} from '@/lib/client'
 import {getAllPlansOptions} from '@/lib/api-client/@tanstack/react-query.gen'
-import {hasInsomniaTypes, impairmentTypes} from "@/lib/students-data";
+import {hasInsomniaTypes, impairmentTypes} from "@/lib/students/student-types";
 import type { StudentPlanResponseDto } from "@/lib/api-client/types.gen"
 
 interface PhysicalImpairment {

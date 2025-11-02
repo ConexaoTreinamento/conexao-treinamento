@@ -1,6 +1,6 @@
 import type { EvaluationData } from "@/components/students/evaluation-form"
-import type { PhysicalEvaluationResponse } from "@/lib/hooks/evaluation-queries"
-import type { PhysicalEvaluationRequest } from "@/lib/hooks/evaluation-mutations"
+import type { PhysicalEvaluationResponse } from "@/lib/evaluations/hooks/evaluation-queries"
+import type { PhysicalEvaluationRequest } from "@/lib/evaluations/hooks/evaluation-mutations"
 
 const parseDecimal = (value: string | undefined): number | null => {
   if (!value) {

@@ -24,12 +24,12 @@ import { PageHeader } from "@/components/base/page-header"
 import { Section } from "@/components/base/section"
 import useDebounce from "@/hooks/use-debounce"
 import {useForm} from "react-hook-form"
-import {useCreateStudent, useDeleteStudent, useRestoreStudent} from "@/lib/hooks/student-mutations"
+import {useCreateStudent, useDeleteStudent, useRestoreStudent} from "@/lib/students/hooks/student-mutations"
 import {assignPlanToStudentMutation} from '@/lib/api-client/@tanstack/react-query.gen'
 import {useMutation, useQueryClient, useQueries} from '@tanstack/react-query'
 import {useToast} from "@/hooks/use-toast"
 import { handleHttpError } from "@/lib/error-utils"
-import {useStudents} from "@/lib/hooks/student-queries"
+import {useStudents} from "@/lib/students/hooks/student-queries"
 import {apiClient} from "@/lib/client"
 import {getExpiringSoonAssignmentsOptions, getCurrentStudentPlanOptions} from '@/lib/api-client/@tanstack/react-query.gen'
 import {useQuery} from '@tanstack/react-query'

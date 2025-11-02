@@ -14,8 +14,8 @@ import { useToast } from "@/hooks/use-toast"
 import { handleHttpError } from "@/lib/error-utils"
 import { apiClient } from "@/lib/client"
 import type { StudentResponseDto } from "@/lib/api-client/types.gen"
-import { useStudent } from "@/lib/hooks/student-queries"
-import { useUpdateStudent } from "@/lib/hooks/student-mutations"
+import { useStudent } from "@/lib/students/hooks/student-queries"
+import { useUpdateStudent } from "@/lib/students/hooks/student-mutations"
 
 const ensureStudentId = (value: unknown): string => {
   if (typeof value === "string") {

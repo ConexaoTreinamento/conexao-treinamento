@@ -1,5 +1,5 @@
 import type { EvaluationData } from "@/components/students/evaluation-form";
-import type { PhysicalEvaluationRequest } from "@/lib/hooks/evaluation-mutations";
+import type { PhysicalEvaluationRequest } from "@/lib/evaluations/hooks/evaluation-mutations";
 
 const normalizeNumber = (value: string): string =>
   value.replace(",", ".").trim();

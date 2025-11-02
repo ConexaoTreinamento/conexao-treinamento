@@ -24,15 +24,15 @@ import type {
   StudentPlanAssignmentResponseDto,
 } from "@/lib/api-client/types.gen"
 import { apiClient } from "@/lib/client"
-import { useStudent } from "@/lib/hooks/student-queries"
-import { useDeleteStudent, useRestoreStudent } from "@/lib/hooks/student-mutations"
-import { useEvaluations } from "@/lib/hooks/evaluation-queries"
+import { useStudent } from "@/lib/students/hooks/student-queries"
+import { useDeleteStudent, useRestoreStudent } from "@/lib/students/hooks/student-mutations"
+import { useEvaluations } from "@/lib/evaluations/hooks/evaluation-queries"
 import {
   getAssignmentDaysRemaining,
   getAssignmentDurationDays,
   getAssignmentEndDate,
-} from "@/lib/expiring-plans"
-import { hasInsomniaTypes, impairmentTypes } from "@/lib/students-data"
+} from "@/components/plans/expiring-plans"
+import { hasInsomniaTypes, impairmentTypes } from "@/lib/students/student-types"
 import { handleHttpError } from "@/lib/error-utils"
 import { StudentProfileHeader } from "@/components/students/profile/profile-header"
 import { StudentProfileSummaryCard } from "@/components/students/profile/profile-summary-card"
