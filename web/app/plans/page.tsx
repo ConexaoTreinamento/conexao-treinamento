@@ -2,21 +2,17 @@
 
 import {useCallback, useMemo, useState} from 'react'
 import Layout from '@/components/layout'
-import {useMutation, useQuery, useQueryClient, type DefaultError} from '@tanstack/react-query'
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query'
 import {apiClient} from '@/lib/client'
 import {getAllPlansOptions, getAllPlansQueryKey, createPlanMutation, deletePlanMutation, restorePlanMutation} from '@/lib/api-client/@tanstack/react-query.gen'
 import {useToast} from '@/hooks/use-toast'
-import type {StudentPlanResponseDto, Options, DeletePlanData, RestorePlanData, CreatePlanData} from '@/lib/api-client'
+import type {StudentPlanResponseDto} from '@/lib/api-client'
 import { PageHeader } from '@/components/base/page-header'
 import { handleHttpError } from '@/lib/error-utils'
 import { PlanStatusFilter } from '@/components/plans/plan-status-filter'
 import { PlanCreateDialog, type PlanFormValues } from '@/components/plans/plan-create-dialog'
 import { PlanGrid } from '@/components/plans/plan-grid'
 import type { PlanStatusValue, PlanWithId } from '@/components/plans/plan-types'
-
-type DeletePlanContext = {
-  prev?: StudentPlanResponseDto[]
-}
 
 const PLAN_STATUS_TO_INVALIDATE: PlanStatusValue[] = ['active', 'inactive', 'all']
 
@@ -49,7 +45,7 @@ export default function PlansPage(){
 
   const {data, isLoading, error} = useQuery(plansQueryOptions)
 
-  const createPlan = useMutation<StudentPlanResponseDto, DefaultError, Options<CreatePlanData>>({
+  const createPlan = useMutation({
     ...createPlanMutation({client: apiClient}),
     onSuccess: async () => {
       await invalidateAllStatusVariants()
@@ -68,7 +64,7 @@ export default function PlansPage(){
     }
   })
 
-  const deletePlan = useMutation<unknown, DefaultError, Options<DeletePlanData>, DeletePlanContext>({
+  const deletePlan = useMutation({
     ...deletePlanMutation({client: apiClient}),
     onMutate: async (vars) => {
       await qc.cancelQueries({queryKey: plansQueryOptions.queryKey})
@@ -89,7 +85,7 @@ export default function PlansPage(){
     }
   })
 
-  const restorePlan = useMutation<StudentPlanResponseDto, DefaultError, Options<RestorePlanData>>({
+  const restorePlan = useMutation({
     ...restorePlanMutation({client: apiClient}),
     onMutate: async () => {
       await qc.cancelQueries({queryKey: plansQueryOptions.queryKey})
