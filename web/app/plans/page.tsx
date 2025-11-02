@@ -36,7 +36,7 @@ export default function PlansPage(){
     onSuccess: async () => {
       // invalidate after successful create
       await qc.invalidateQueries({queryKey: plansQueryOptions.queryKey})
-      toast({title:'Plano criado'})
+      toast({title:'Plano criado', variant: 'success'})
       form.reset({name:'', maxDays:3, durationDays:30})
       setOpen(false)
     },

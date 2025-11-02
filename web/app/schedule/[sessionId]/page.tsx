@@ -84,6 +84,7 @@ function ClassDetailPageContent() {
   const [isEditClassOpen, setIsEditClassOpen] = useState(false)
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
   const [exerciseSearchTerm, setExerciseSearchTerm] = useState("")
+  const [isExerciseListOpen, setIsExerciseListOpen] = useState(false)
   const [editTrainer, setEditTrainer] = useState<string>("none")
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [isCreateExerciseOpen, setIsCreateExerciseOpen] = useState(false)
@@ -100,6 +101,13 @@ function ClassDetailPageContent() {
       setEditTrainer(session.trainerId || "none")
     }
   }, [session])
+
+  useEffect(() => {
+    if (!isExerciseOpen) {
+      setExerciseSearchTerm("")
+      setIsExerciseListOpen(false)
+    }
+  }, [isExerciseOpen])
 
   // Mutations
   const mUpdateTrainer = useMutation(updateSessionTrainerMutation({ client: apiClient }))
@@ -205,6 +213,8 @@ function ClassDetailPageContent() {
     setSelectedStudentId(sid)
     setIsExerciseOpen(true)
     registerExerciseForm.reset({ exerciseId: "", sets: "", reps: "", weight: "", notes: "" })
+    setExerciseSearchTerm("")
+    setIsExerciseListOpen(false)
   }
 
   const openCreateExercise = () => {
@@ -236,6 +246,8 @@ function ClassDetailPageContent() {
     addToExercisesCaches(created)
     // Select it in the register exercise modal
     registerExerciseForm.setValue("exerciseId", created.id || "")
+    setExerciseSearchTerm("")
+    setIsExerciseListOpen(false)
     setIsCreateExerciseOpen(false)
   })
 
@@ -310,7 +322,14 @@ function ClassDetailPageContent() {
   const handleStudentSelect = (student: StudentSummary) => {
     void addStudent(student)
   }
-  const filteredExercises = (allExercises||[]).filter(e => (e.name || '').toLowerCase().includes(exerciseSearchTerm.toLowerCase()))
+  const normalizedExerciseSearch = exerciseSearchTerm.trim().toLowerCase()
+  const filteredExercises = (allExercises||[]).filter(e => (e.name || '').toLowerCase().includes(normalizedExerciseSearch))
+  const selectedExerciseId = registerExerciseForm.watch("exerciseId")
+  const selectedExercise = useMemo(() => {
+    if (!selectedExerciseId) return null
+    return (allExercises || []).find((ex) => ex.id === selectedExerciseId) ?? null
+  }, [allExercises, selectedExerciseId])
+  const shouldShowExerciseList = isExerciseListOpen && exerciseSearchTerm.trim().length > 0
 
   return (
     <Layout>
@@ -541,28 +560,62 @@ function ClassDetailPageContent() {
                 <Label>Exercício</Label>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <Input placeholder="Buscar exercício..." value={exerciseSearchTerm} onChange={(e)=> setExerciseSearchTerm(e.target.value)} className="flex-1" />
+                    <div className="relative flex-1">
+                      <Input
+                        placeholder="Buscar exercício..."
+                        value={exerciseSearchTerm}
+                        onFocus={() => setIsExerciseListOpen(exerciseSearchTerm.trim().length > 0)}
+                        onChange={(e) => {
+                          const value = e.target.value
+                          setExerciseSearchTerm(value)
+                          setIsExerciseListOpen(value.trim().length > 0)
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") {
+                            setIsExerciseListOpen(false)
+                          }
+                        }}
+                        className="w-full"
+                      />
+                      {shouldShowExerciseList && (
+                        <div className="absolute left-0 right-0 top-full z-20 mt-2 max-h-60 overflow-y-auto rounded border bg-background shadow-md">
+                          {(filteredExercises || []).map((ex) => {
+                            const selected = selectedExerciseId === ex.id
+                            return (
+                              <button
+                                key={ex.id}
+                                type="button"
+                                className={`w-full text-left px-3 py-2 text-sm cursor-pointer ${selected ? 'bg-green-600 text-white hover:bg-green-700' : 'hover:bg-muted'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600`}
+                                aria-pressed={selected}
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  registerExerciseForm.setValue('exerciseId', ex.id || '')
+                                  setIsExerciseListOpen(false)
+                                  setExerciseSearchTerm('')
+                                }}
+                              >
+                                {ex.name || ex.id}
+                              </button>
+                            )
+                          })}
+                          {filteredExercises.length === 0 && (
+                            <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+                              Nenhum exercício encontrado
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     <Button type="button" size="icon" variant="outline" onClick={openCreateExercise} aria-label="Novo exercício" title="Novo exercício">
                       <Plus className="w-4 h-4" />
                     </Button>
                   </div>
-                  <div className="max-h-48 overflow-y-auto border rounded">
-                    {(filteredExercises||[]).map(ex => {
-                      const selected = registerExerciseForm.watch('exerciseId')===ex.id
-                      return (
-                        <button
-                          key={ex.id}
-                          type="button"
-                          className={`w-full text-left px-3 py-2 text-sm cursor-pointer ${selected ? 'bg-green-600 text-white hover:bg-green-700' : 'hover:bg-muted'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600`}
-                          aria-pressed={selected}
-                          onClick={(e)=> { e.preventDefault(); registerExerciseForm.setValue('exerciseId', ex.id || ''); }}
-                        >
-                          {ex.name}
-                        </button>
-                      )
-                    })}
-                    {filteredExercises.length===0 && <div className="text-center text-sm text-muted-foreground py-4">Nenhum exercício encontrado</div>}
-                  </div>
+                  {selectedExerciseId && (
+                    <p className="text-xs text-muted-foreground">
+                      Exercício selecionado: {selectedExercise?.name || selectedExerciseId}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-3">

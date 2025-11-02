@@ -297,17 +297,6 @@ export default function ClassSchedulePage() {
     setSelectedSeries(prev=> prev.includes(seriesId)? prev.filter(i=> i!==seriesId): canSelectSeries(seriesId)? [...prev, seriesId]: prev)
   }
 
-  const toggleDay = (weekday: number) => {
-    setInitializedSelection(true)
-    const ids = filteredSeries.filter(s => s.weekday === weekday).map(s => s.id)
-    const anySelected = ids.some(id => selectedSeries.includes(id))
-    if(anySelected){
-      setSelectedSeries(prev=> prev.filter(id=> !ids.includes(id)))
-    } else if(selectedDays.length < planDays) {
-      setSelectedSeries(prev=> [...prev, ...ids.filter(id => !prev.includes(id))])
-    }
-  }
-
   const handleSave = async () => {
     // Determine adds/removals
     // Determine latest active ATTENDING set from activeCommitmentsQuery (already filtered server-side)
@@ -411,7 +400,6 @@ export default function ClassSchedulePage() {
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base flex items-center gap-2">
-                      <Checkbox checked={isDaySelected} onCheckedChange={()=> toggleDay(day.weekday)} disabled={!canSelectDay && !isDaySelected}/>
                       <Calendar className="w-4 h-4"/> {day.day}
                     </CardTitle>
                     <Badge variant="outline" className="text-xs">{day.classes.length} séries</Badge>

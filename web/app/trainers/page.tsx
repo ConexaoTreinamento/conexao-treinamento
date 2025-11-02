@@ -82,6 +82,7 @@ export default function TrainersPage() {
           body: formData,
           client: apiClient,
         })
+        toast({ title: "Professor criado", description: "Professor cadastrado com sucesso.", variant: 'success', duration: 3000 })
       } else {
         // Update existing trainer
         await updateTrainer({
@@ -89,6 +90,7 @@ export default function TrainersPage() {
           body: formData,
           client: apiClient,
         })
+        toast({ title: "Professor atualizado", description: "As alterações foram salvas.", variant: 'success', duration: 3000 })
       }
       await invalidateTrainersQueries()
       setIsModalOpen(false)
@@ -106,6 +108,7 @@ export default function TrainersPage() {
         await deleteTrainer({
           path: { id: String(trainerId) }, client: apiClient
         });
+        toast({ title: "Professor excluído", description: "O professor foi marcado como inativo.", variant: 'destructive', duration: 3000 })
         await invalidateTrainersQueries()
       } catch (error: unknown) {
         handleHttpError(error, "excluir treinador", "Não foi possível excluir o treinador. Tente novamente.")

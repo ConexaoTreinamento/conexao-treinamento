@@ -153,7 +153,7 @@ export default function StudentProfilePage() {
 
   const handleRestore = async () => {
     await restoreStudent({ path: { id: String(params.id) }, client: apiClient })
-    toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
+    toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000, variant: 'success' })
   }
 
   const { data: studentData, isLoading, error } = useStudent({path: {id: String(params.id)}}, {enabled: Boolean(params.id)})
@@ -169,7 +169,7 @@ export default function StudentProfilePage() {
         body: { planId: assignPlanId, startDate: assignStartDate, assignmentNotes: assignNotes || undefined },
         client: apiClient
       })
-      toast({ title: 'Plano atribuído', description: 'O plano foi atribuído/renovado com sucesso.' })
+      toast({ title: 'Plano atribuído', description: 'O plano foi atribuído/renovado com sucesso.', variant: 'success' })
       setOpenAssignDialog(false)
       setAssignNotes('')
       setAssignPlanId('')

@@ -98,6 +98,7 @@ export default function TrainerProfilePage() {
         })
       }
       setIsModalOpen(false)
+      toast({ title: "Professor atualizado", description: "As alterações foram salvas.", variant: 'success', duration: 3000 })
     } catch (error: unknown) {
       handleHttpError(error, "atualizar treinador", "Não foi possível atualizar o treinador. Tente novamente.")
     }
