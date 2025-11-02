@@ -10,9 +10,11 @@ import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger} from "@
 import {Checkbox} from "@/components/ui/checkbox"
 import {Save, Loader2, Calendar as CalendarIcon, Clock, Settings2, Square, SquareCheck, ArrowLeft} from "lucide-react"
 import {useQueryClient, useMutation} from "@tanstack/react-query"
-import {apiClient} from "@/lib/client"
-import {getSchedulesByTrainerOptions, getSchedulesByTrainerQueryKey, createScheduleMutation, deleteScheduleMutation, getAvailableSessionSeriesQueryKey, getScheduleQueryKey} from "@/lib/api-client/@tanstack/react-query.gen"
 import {useQuery} from "@tanstack/react-query"
+import {useToast} from "@/hooks/use-toast"
+import {apiClient} from "@/lib/client"
+import {handleHttpError} from "@/lib/error-utils"
+import {getSchedulesByTrainerOptions, getSchedulesByTrainerQueryKey, createScheduleMutation, deleteScheduleMutation, getAvailableSessionSeriesQueryKey, getScheduleQueryKey} from "@/lib/api-client/@tanstack/react-query.gen"
 import {type TrainerScheduleResponseDto, type TrainerScheduleRequestDto} from "@/lib/api-client/types.gen"
 
 const weekdayNames: Record<number,string> = {0:"Domingo",1:"Segunda",2:"Terça",3:"Quarta",4:"Quinta",5:"Sexta",6:"Sábado"}
@@ -177,10 +179,22 @@ export default function TrainerSchedulePage(){
   const trainerId = params.id as string
   const router = useRouter()
   const qc = useQueryClient()
+  const { toast } = useToast()
   const [bulkOpen, setBulkOpen] = useState(false)
   const [weekConfig, setWeekConfig] = useState<WeekConfigRow[]>([])
   const [classDuration, setClassDuration] = useState<number>(60)
   const [saving, setSaving] = useState(false)
+
+  const genSlots = useCallback((row: WeekConfigRow): string[] => {
+    if(!row.enabled) return []
+    const out: string[] = []
+    let cur = row.shiftStart
+    while(cur && row.shiftEnd && cmpHHmm(addMinutesHHmm(cur, classDuration), row.shiftEnd) <= 0){
+      out.push(cur)
+      cur = addMinutesHHmm(cur, classDuration)
+    }
+    return out
+  }, [classDuration])
 
   const invalidateReportsQueries = () => {
     qc.invalidateQueries({
@@ -289,18 +303,6 @@ export default function TrainerSchedulePage(){
     for(const s of slots){ if(!selected.has(s)){ selected.add(s); changed = true } }
     return changed ? {...next, selectedStarts: selected} : next
   }))
-
-  // Generate slots for UI preview
-  const genSlots = useCallback((row: WeekConfigRow): string[] => {
-    if(!row.enabled) return []
-    const out: string[] = []
-    let cur = row.shiftStart
-    while(cur && row.shiftEnd && cmpHHmm(addMinutesHHmm(cur, classDuration), row.shiftEnd) <= 0){
-      out.push(cur)
-      cur = addMinutesHHmm(cur, classDuration)
-    }
-    return out
-  }, [classDuration])
   const toggleSlot = (weekday:number, start:string) => setWeekConfig(prev=> prev.map(r=> {
     if(r.weekday!==weekday) return r
     const sel = new Set(r.selectedStarts)
@@ -363,7 +365,14 @@ export default function TrainerSchedulePage(){
       const recentStart = formatLocalDate(new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate()-7))
       await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: recentStart, endDate: recentEnd } }) })
       invalidateReportsQueries()
+      toast({
+        title: "Agenda atualizada",
+        description: "Horários configurados com sucesso.",
+        variant: "success",
+      })
       setBulkOpen(false)
+    } catch (error: unknown) {
+      handleHttpError(error, "atualizar agenda", "Não foi possível atualizar a agenda. Tente novamente.")
     } finally {
       setSaving(false)
     }

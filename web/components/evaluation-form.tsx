@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, Save, Calculator, User } from "lucide-react"
 
-interface EvaluationData {
+export interface EvaluationData {
   id?: string
   weight: string
   height: string
