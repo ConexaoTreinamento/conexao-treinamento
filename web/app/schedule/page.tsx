@@ -14,7 +14,7 @@ import { apiClient } from "@/lib/client"
 import { getScheduleOptions, findAllTrainersOptions, getSessionOptions, getScheduleQueryKey, createOneOffSessionMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { SessionResponseDto, StudentCommitmentResponseDto, TrainerResponseDto } from "@/lib/api-client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { PageHeader } from "@/components/ui/page-header"
+import { PageHeader } from "@/components/base/page-header"
 
 export default function SchedulePage() {
   return (

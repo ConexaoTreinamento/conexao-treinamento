@@ -17,7 +17,7 @@ import {z} from 'zod'
 import {zodResolver} from '@hookform/resolvers/zod'
 import {useToast} from '@/hooks/use-toast'
 import { StudentPlanResponseDto } from '@/lib/api-client'
-import { PageHeader } from '@/components/ui/page-header'
+import { PageHeader } from '@/components/base/page-header'
 
 const planSchema = z.object({
   name: z.string().min(2,'Nome obrigatório'),
