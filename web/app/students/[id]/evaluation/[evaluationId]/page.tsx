@@ -58,25 +58,25 @@ export default function EvaluationDetailPage() {
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.back()}>
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
               <h1 className="text-2xl font-bold">Avaliação física</h1>
-              <p className="text-sm text-muted-foreground">{`${student.name} ${student.surname}`}</p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              {new Date(evaluation.date).toLocaleDateString("pt-BR")}
-            </Badge>
             <Button size="sm" variant="outline" onClick={() => router.push(`/students/${studentId}/evaluation/${evaluationId}/edit`)}>
               <Edit className="w-4 h-4 mr-2" />
               Editar
             </Button>
+          </div>
+          <div className="flex flex-col items-center sm:flex-row sm:items-center sm:justify-between gap-2">
+            <p className="text-sm text-muted-foreground text-center sm:text-left">{`${student.name} ${student.surname}`}</p>
+            <Badge variant="outline" className="flex items-center gap-1 w-fit">
+              <Calendar className="w-3 h-3" />
+              {new Date(evaluation.date).toLocaleDateString("pt-BR")}
+            </Badge>
           </div>
         </div>
 
