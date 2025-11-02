@@ -22,24 +22,6 @@ const hasStatus = (value: unknown): value is { status?: number } =>
 const hasPlanId = (plan: StudentPlanResponseDto | undefined): plan is PlanWithId =>
   typeof plan?.id === 'string' && plan.id.length > 0
 
-type DeletePlanContext = {
-  prev?: StudentPlanResponseDto[]
-}
-
-type RawPlan = StudentPlanResponseDto & {
-  planId?: string
-  planName?: string
-  planMaxDays?: number
-  planDurationDays?: number
-}
-
-type NormalizedPlan = {
-  id: string
-  name: string
-  maxDays: number
-  durationDays: number
-}
-
 export default function PlansPage(){
   const qc = useQueryClient()
   const {toast} = useToast()
@@ -63,7 +45,7 @@ export default function PlansPage(){
 
   const {data, isLoading, error} = useQuery(plansQueryOptions)
 
-  const createPlan = useMutation<StudentPlanResponseDto, DefaultError, Options<CreatePlanData>>({
+  const createPlan = useMutation({
     ...createPlanMutation({client: apiClient}),
     onSuccess: async () => {
       await invalidateAllStatusVariants()
@@ -82,7 +64,7 @@ export default function PlansPage(){
     }
   })
 
-  const deletePlan = useMutation<unknown, DefaultError, Options<DeletePlanData>, DeletePlanContext>({
+  const deletePlan = useMutation({
     ...deletePlanMutation({client: apiClient}),
     onMutate: async (vars) => {
       await qc.cancelQueries({queryKey: plansQueryOptions.queryKey})
