@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, Save, Calculator, User } from "lucide-react"
-import { useRouter } from "next/navigation"
 
 interface EvaluationData {
   id?: string
@@ -52,14 +51,12 @@ interface EvaluationFormProps {
 }
 
 export default function EvaluationForm({
-  studentId,
   studentName,
   initialData,
   isEdit = false,
   onSubmit,
   onCancel
 }: EvaluationFormProps) {
-  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
 
   const [evaluationData, setEvaluationData] = useState<EvaluationData>({

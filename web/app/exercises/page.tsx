@@ -16,9 +16,7 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import {
   Pagination,
@@ -42,15 +40,6 @@ import { apiClient } from "@/lib/client"
 import { ExerciseResponseDto } from "@/lib/api-client"
 import { PageHeader } from "@/components/base/page-header"
 
-const getAuthHeaders = () => ({ 'Authorization': `Bearer ${localStorage.getItem('token')}` })
-
-interface Exercise {
-  id: number
-  name: string
-  description?: string
-  createdAt?: string
-  deletedAt?: string
-}
 
 export default function ExercisesPage() {
   const [searchInput, setSearchInput] = useState("")
@@ -69,17 +58,19 @@ export default function ExercisesPage() {
   const { toast } = useToast()
   const queryClient = useQueryClient();
 
-  const { data: exercises, isLoading, error } = useQuery({
+  const { data: exercises, isLoading } = useQuery({
     ...findAllExercisesOptions({
       client: apiClient,
       query: { pageable: { page: currentPage }, search: searchTerm, includeInactive: showInactive }
     })
   })
 
-  const { mutateAsync: restoreExercise, isPending: isRestoring } = useMutation(restoreExerciseMutation({ client: apiClient }));
+  const { mutateAsync: restoreExercise } = useMutation(restoreExerciseMutation({ client: apiClient }));
 
   useEffect(() => {
-    setTotalPages(exercises?.totalPages!)
+    if (exercises?.totalPages !== undefined) {
+      setTotalPages(exercises.totalPages)
+    }
   }, [exercises])
 
   const handleSearchInputChange = (value: string) => {
@@ -90,8 +81,7 @@ export default function ExercisesPage() {
     try {
       setSearchTerm(searchInput)
       setCurrentPage(0)
-    } catch (err) {
-      console.error('Erro ao realizar busca:', err)
+    } catch {
       toast({
         title: "Erro",
         description: "Erro ao realizar busca. Tente novamente.",
@@ -109,8 +99,7 @@ export default function ExercisesPage() {
   const handlePageChange = (newPage: number) => {
     try {
       setCurrentPage(newPage)
-    } catch (err) {
-      console.error('Erro ao mudar página:', err)
+    } catch {
       toast({
         title: "Erro",
         description: "Erro ao mudar página. Tente novamente.",

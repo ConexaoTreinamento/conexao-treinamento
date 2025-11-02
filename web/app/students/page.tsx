@@ -561,7 +561,7 @@ function StudentsPageContent() {
 
       toast({ title: "Aluno criado", description: assignedPlan ? "Aluno e plano atribuídos." : "Aluno cadastrado com sucesso.", variant: 'success', duration: 3000 })      
       setIsCreateOpen(false)
-    } catch (e: any) {
+    } catch (e: unknown) {
       handleHttpError(e, "criar aluno", "Não foi possível criar o aluno. Tente novamente.")
     } finally {
       setIsCreating(false)
@@ -576,7 +576,7 @@ function StudentsPageContent() {
     try {
       await deleteStudent({ path: { id }, client: apiClient })
       toast({ title: "Aluno excluído", description: "O aluno foi marcado como inativo.", duration: 3000 })
-    } catch (e: any) {
+    } catch (e: unknown) {
       handleHttpError(e, "excluir aluno", "Não foi possível excluir o aluno. Tente novamente.")
     }
   }
@@ -585,7 +585,7 @@ function StudentsPageContent() {
     try {
       await restoreStudent({ path: { id }, client: apiClient })
       toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
-    } catch (e: any) {
+    } catch (e: unknown) {
       handleHttpError(e, "reativar aluno", "Não foi possível reativar o aluno. Tente novamente.")
     }
   }

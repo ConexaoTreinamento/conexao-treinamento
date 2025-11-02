@@ -24,40 +24,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useEvaluations } from '@/lib/hooks/evaluation-queries'
 
-// Type definitions
-interface Evaluation {
-  id: string
-  date: string
-  weight: number
-  height: number
-  bmi: number
-  circumferences: {
-    rightArmRelaxed: number
-    leftArmRelaxed: number
-    rightArmFlexed: number
-    leftArmFlexed: number
-    waist: number
-    abdomen: number
-    hip: number
-    rightThigh: number
-    leftThigh: number
-    rightCalf: number
-    leftCalf: number
-  }
-  subcutaneousFolds: {
-    triceps: number
-    thorax: number
-    subaxillary: number
-    subscapular: number
-    abdominal: number
-    suprailiac: number
-    thigh: number
-  }
-  diameters: {
-    umerus: number
-    femur: number
-  }
-}
+// Type definitions - not used but kept for future reference
 
 export default function StudentProfilePage() {
   const router = useRouter()
@@ -177,8 +144,9 @@ export default function StudentProfilePage() {
         qc.invalidateQueries({ queryKey: getStudentPlanHistoryQueryKey(currentPlanOptions) }),
         qc.invalidateQueries({ queryKey: getStudentCommitmentsQueryKey(currentPlanOptions) }),
       ])
-    } catch (e:any) {
-      toast({ title: 'Erro ao atribuir plano', description: e?.message || 'Tente novamente', variant: 'destructive' })
+    } catch (e: unknown) {
+      const errorMessage = (e instanceof Error && e.message) || (typeof e === 'object' && e !== null && 'message' in e && typeof e.message === 'string' ? e.message : null) || 'Tente novamente'
+      toast({ title: 'Erro ao atribuir plano', description: errorMessage, variant: 'destructive' })
     }
   }
 

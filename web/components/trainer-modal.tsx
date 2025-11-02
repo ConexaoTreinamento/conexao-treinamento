@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Dialog,
@@ -17,18 +16,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { X, Eye, EyeOff } from "lucide-react"
 import { CreateTrainerDto, TrainerResponseDto } from "@/lib/api-client"
-
-interface TrainerFormData {
-  name: string
-  email: string
-  phone: string
-  address: string
-  birthDate: string
-  specialties: string[]
-  compensation: string
-  status: string
-  newPassword?: string
-}
 
 interface TrainerModalProps {
   open: boolean

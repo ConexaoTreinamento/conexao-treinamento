@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updatePresenceMutation, getScheduleQueryKey, findAllExercisesOptions, updateRegisteredParticipantExerciseMutation, addRegisteredParticipantExerciseMutation, removeRegisteredParticipantExerciseMutation, updateSessionTrainerMutation, removeSessionParticipantMutation, addSessionParticipantMutation, cancelOrRestoreSessionMutation, createExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import type { ExerciseResponseDto, PageExerciseResponseDto, SessionResponseDto, StudentCommitmentResponseDto, TrainerResponseDto, ScheduleResponseDto } from "@/lib/api-client"
+import type { ExerciseResponseDto, PageExerciseResponseDto, SessionResponseDto, StudentCommitmentResponseDto } from "@/lib/api-client"
 import { useForm } from "react-hook-form"
 import { StudentPicker, type StudentSummary } from "@/components/student-picker"
 
@@ -77,7 +77,9 @@ function ClassDetailPageContent() {
 
   // Exercises catalog (for exercise selection)
   const exercisesQuery = useQuery({ ...findAllExercisesOptions({ client: apiClient, query: { pageable: { page:0, size: 200 } } }) })
-  const allExercises: ExerciseResponseDto[] = ((exercisesQuery.data as PageExerciseResponseDto | undefined)?.content) ?? []
+  const allExercises: ExerciseResponseDto[] = useMemo(() => {
+    return ((exercisesQuery.data as PageExerciseResponseDto | undefined)?.content) ?? []
+  }, [exercisesQuery.data])
 
   // Local UI state derived from session
   const [isExerciseOpen, setIsExerciseOpen] = useState(false)
@@ -145,8 +147,8 @@ function ClassDetailPageContent() {
     // Fallback: broadly invalidate all schedule queries regardless of date ranges to avoid key mismatches due to timezone/date formatting differences
     qc.invalidateQueries({
       predicate: (q) => {
-        const k0 = (q.queryKey as any)?.[0]
-        return k0 && typeof k0 === 'object' && k0._id === 'getSchedule'
+        const k0 = (q.queryKey as unknown[])?.[0] as { _id?: string } | undefined
+        return !!(k0 && typeof k0 === 'object' && k0._id === 'getSchedule')
       }
     })
   }
@@ -157,8 +159,8 @@ function ClassDetailPageContent() {
     if (sessionId) {
       qc.invalidateQueries({
         predicate: (q) => {
-          const k0 = (q.queryKey as any)?.[0]
-          return k0 && typeof k0 === 'object' && k0._id === 'getSession' && k0.path?.sessionId === sessionId
+          const k0 = (q.queryKey as unknown[])?.[0] as { _id?: string; path?: { sessionId?: string } } | undefined
+          return !!(k0 && typeof k0 === 'object' && k0._id === 'getSession' && k0.path?.sessionId === sessionId)
         }
       })
     }
@@ -225,8 +227,8 @@ function ClassDetailPageContent() {
   const addToExercisesCaches = (ex: ExerciseResponseDto) => {
     const entries = qc.getQueriesData<import("@/lib/api-client").PageExerciseResponseDto>({
       predicate: (q) => {
-        const k0 = (q.queryKey as any)?.[0]
-        return k0 && typeof k0 === 'object' && k0._id === 'findAllExercises'
+        const k0 = (q.queryKey as unknown[])?.[0] as { _id?: string } | undefined
+        return !!(k0 && typeof k0 === 'object' && k0._id === 'findAllExercises')
       }
     })
     entries.forEach(([key, data]) => {
@@ -308,6 +310,13 @@ function ClassDetailPageContent() {
     invalidate()
   }
 
+  // Move all derived values and hooks before early returns
+  const selectedExerciseId = registerExerciseForm.watch("exerciseId")
+  const selectedExercise = useMemo(() => {
+    if (!selectedExerciseId) return null
+    return (allExercises || []).find((ex) => ex.id === selectedExerciseId) ?? null
+  }, [allExercises, selectedExerciseId])
+
   if (sessionQuery.isLoading) return <Layout><div className="p-6 text-sm">Carregando...</div></Layout>
   if (sessionQuery.error || !session) return <Layout><div className="p-6 text-sm text-red-600">Sessão não encontrada.</div></Layout>
 
@@ -324,11 +333,6 @@ function ClassDetailPageContent() {
   }
   const normalizedExerciseSearch = exerciseSearchTerm.trim().toLowerCase()
   const filteredExercises = (allExercises||[]).filter(e => (e.name || '').toLowerCase().includes(normalizedExerciseSearch))
-  const selectedExerciseId = registerExerciseForm.watch("exerciseId")
-  const selectedExercise = useMemo(() => {
-    if (!selectedExerciseId) return null
-    return (allExercises || []).find((ex) => ex.id === selectedExerciseId) ?? null
-  }, [allExercises, selectedExerciseId])
   const shouldShowExerciseList = isExerciseListOpen && exerciseSearchTerm.trim().length > 0
 
   return (
@@ -501,7 +505,7 @@ function ClassDetailPageContent() {
                           {[...((student.participantExercises||[]))].sort((a,b)=> (a.exerciseName||'').localeCompare(b.exerciseName||'')).map((ex) => (
                             <div key={ex.id} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm gap-2">
                               <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <Checkbox checked={!!ex.done} onCheckedChange={(v)=> ex.id && student.studentId && toggleExerciseDone(student.studentId, ex.id, !!ex.done)} aria-label="Marcar como concluído" />
+                                <Checkbox checked={!!ex.done} onCheckedChange={()=> ex.id && student.studentId && toggleExerciseDone(student.studentId, ex.id, !!ex.done)} aria-label="Marcar como concluído" />
                                 <span className={`flex-1 min-w-0 truncate ${ex.done? 'line-through opacity-70':''}`}>
                                   {ex.exerciseName || ex.exerciseId} {ex.setsCompleted!=null && `- ${ex.setsCompleted}x${ex.repsCompleted ?? ''}`} {ex.weightCompleted!=null && `- ${ex.weightCompleted}kg`}
                                 </span>
@@ -685,8 +689,8 @@ function ClassDetailPageContent() {
                   <SelectContent>
                     <SelectItem value="none">(Sem instrutor)</SelectItem>
                     {(trainersQuery.data||[])
-                      .filter((t:any)=> !!t?.id)
-                      .map((t:any)=> <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                      .filter((t) => !!t?.id)
+                      .map((t) => <SelectItem key={t.id!} value={t.id!}>{t.name || ''}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
