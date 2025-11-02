@@ -49,7 +49,7 @@ export default function StudentProfilePage() {
     enabled: !!studentId,
   })
   const allPlansQuery = useQuery({
-    ...getAllPlansOptions({ client: apiClient })
+    ...getAllPlansOptions({ client: apiClient, query: { status: "active" } })
   })
 
   // Recent classes (last 7 days) schedule query — backend expects LocalDate (yyyy-MM-dd)

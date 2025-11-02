@@ -82,7 +82,7 @@ class StudentPlanServiceTest {
     void createPlan_success_whenNameNotExists() {
         // Arrange
         StudentPlanRequestDTO req = new StudentPlanRequestDTO("Gold", 3, 30, "desc");
-        when(studentPlanRepository.existsByNameAndActiveTrue("Gold")).thenReturn(false);
+        when(studentPlanRepository.existsByName("Gold")).thenReturn(false);
         when(studentPlanRepository.save(any(StudentPlan.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
@@ -100,7 +100,7 @@ class StudentPlanServiceTest {
     void createPlan_conflict_whenNameExists() {
         // Arrange
         StudentPlanRequestDTO req = new StudentPlanRequestDTO("Gold", 3, 30, "desc");
-        when(studentPlanRepository.existsByNameAndActiveTrue("Gold")).thenReturn(true);
+        when(studentPlanRepository.existsByName("Gold")).thenReturn(true);
 
         // Act + Assert
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.createPlan(req));
@@ -113,7 +113,6 @@ class StudentPlanServiceTest {
         // Arrange
         StudentPlan plan = newPlan(planId, "Silver", 2, 14, true);
         when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(plan));
-        when(assignmentRepository.findAllCurrentlyActive()).thenReturn(List.of()); // no active assignments
         when(studentPlanRepository.save(any(StudentPlan.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
@@ -125,17 +124,17 @@ class StudentPlanServiceTest {
     }
 
     @Test
-    void deletePlan_conflict_whenActiveAssignmentsExist() {
+    void deletePlan_softDeletes_evenWhenActiveAssignmentsExist() {
         // Arrange
         StudentPlan plan = newPlan(planId, "Silver", 2, 14, true);
         when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(plan));
-        StudentPlanAssignment activeAssign = assignment(UUID.randomUUID(), studentId, planId, LocalDate.now(), LocalDate.now().plusDays(14), userId);
-        when(assignmentRepository.findAllCurrentlyActive()).thenReturn(List.of(activeAssign));
 
-        // Act + Assert
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.deletePlan(planId));
-        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
-        verify(studentPlanRepository, never()).save(any());
+        // Act
+        studentPlanService.deletePlan(planId);
+
+        // Assert
+        assertFalse(plan.isActive(), "Plan should be soft deleted even with active assignments");
+        verify(studentPlanRepository).save(plan);
     }
 
     @Test
@@ -146,6 +145,43 @@ class StudentPlanServiceTest {
         // Act + Assert
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.deletePlan(planId));
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+
+    @Test
+    void restorePlan_success_activatesInactivePlan() {
+        // Arrange
+        StudentPlan inactive = newPlan(planId, "Silver", 2, 14, false);
+        when(studentPlanRepository.findById(planId)).thenReturn(Optional.of(inactive));
+        when(studentPlanRepository.save(any(StudentPlan.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // Act
+        StudentPlanResponseDTO dto = studentPlanService.restorePlan(planId);
+
+        // Assert
+        assertTrue(dto.getActive());
+        verify(studentPlanRepository).save(inactive);
+    }
+
+    @Test
+    void restorePlan_notFound_throws404() {
+        // Arrange
+        when(studentPlanRepository.findById(planId)).thenReturn(Optional.empty());
+
+        // Act + Assert
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.restorePlan(planId));
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+
+    @Test
+    void restorePlan_alreadyActive_conflict() {
+        // Arrange
+        StudentPlan active = newPlan(planId, "Gold", 3, 30, true);
+        when(studentPlanRepository.findById(planId)).thenReturn(Optional.of(active));
+
+        // Act + Assert
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.restorePlan(planId));
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        verify(studentPlanRepository, never()).save(any());
     }
 
     @Test
