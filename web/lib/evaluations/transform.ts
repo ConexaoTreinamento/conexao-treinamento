@@ -10,7 +10,10 @@ const parseRequiredNumber = (value: string): number => {
 
 const parseOptionalNumber = (value: string): number | null => {
   const normalized = normalizeNumber(value)
-  if (!normalized) return null
+  if (!normalized) {
+    return null
+  }
+
   const parsed = Number(normalized)
   return Number.isFinite(parsed) ? parsed : null
 }
