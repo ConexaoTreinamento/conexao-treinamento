@@ -56,10 +56,12 @@ export function AdministratorCard({ administrator, onOpen }: AdministratorCardPr
       icon: <Mail className="h-3 w-3 text-muted-foreground" aria-hidden="true" />,
       content: administrator.email ?? "Email não informado",
     },
-    {
-      icon: <Calendar className="h-3 w-3 text-muted-foreground" aria-hidden="true" />,
-      content: formatJoinDate(administrator.joinDate),
-    },
+  ]
+
+  const infoRows = [
+    <span key="join-date" className="text-muted-foreground">
+      {formatJoinDate(administrator.joinDate)}
+    </span>,
   ]
 
   const badges = [
@@ -75,6 +77,8 @@ export function AdministratorCard({ administrator, onOpen }: AdministratorCardPr
       avatar={{ label: getInitials(administrator) }}
       badges={badges}
       metadata={metadata}
+      metadataColumns={1}
+      infoRows={infoRows}
       onClick={onOpen}
       muted={!administrator.active}
     />

@@ -13,6 +13,7 @@ import { PlanStatusFilter } from '@/components/plans/plan-status-filter'
 import { PlanCreateDialog, type PlanFormValues } from '@/components/plans/plan-create-dialog'
 import { PlanGrid } from '@/components/plans/plan-grid'
 import type { PlanStatusValue, PlanWithId } from '@/components/plans/plan-types'
+import { Section } from '@/components/base/section'
 
 const PLAN_STATUS_TO_INVALIDATE: PlanStatusValue[] = ['active', 'inactive', 'all']
 
@@ -109,6 +110,25 @@ export default function PlansPage(){
     return withId
   }, [data])
 
+  const resultsSummary = useMemo(() => {
+    if (isLoading) {
+      return 'Carregando planos...'
+    }
+
+    if (error) {
+      return 'Não foi possível carregar os planos.'
+    }
+
+    if (!plans.length) {
+      return statusFilter === 'all'
+        ? 'Nenhum plano cadastrado ainda.'
+        : 'Nenhum plano encontrado para o filtro selecionado.'
+    }
+
+    const label = plans.length === 1 ? 'plano exibido' : 'planos exibidos'
+    return `${plans.length} ${label}`
+  }, [error, isLoading, plans.length, statusFilter])
+
   const handleCreatePlan = useCallback(
     async (values: PlanFormValues) => {
       await createPlan.mutateAsync({
@@ -139,7 +159,7 @@ export default function PlansPage(){
 
   return (
     <Layout>
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <PageHeader
             title="Planos"
@@ -159,16 +179,18 @@ export default function PlansPage(){
           </div>
         </div>
 
-        <PlanGrid
-          plans={plans}
-          statusFilter={statusFilter}
-          isLoading={isLoading}
-          error={error}
-          onDeletePlan={handleDeletePlan}
-          onRestorePlan={handleRestorePlan}
-          isDeleting={deletePlan.isPending}
-          isRestoring={restorePlan.isPending}
-        />
+        <Section title="Resultados" description={resultsSummary}>
+          <PlanGrid
+            plans={plans}
+            statusFilter={statusFilter}
+            isLoading={isLoading}
+            error={error}
+            onDeletePlan={handleDeletePlan}
+            onRestorePlan={handleRestorePlan}
+            isDeleting={deletePlan.isPending}
+            isRestoring={restorePlan.isPending}
+          />
+        </Section>
       </div>
     </Layout>
   )

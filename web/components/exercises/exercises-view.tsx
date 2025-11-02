@@ -1,4 +1,4 @@
-import { Activity, Edit, Eye, MoreVertical, RotateCcw, Trash2, X } from "lucide-react"
+import { Activity, Edit, Eye, MoreVertical, RotateCcw, Trash2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -6,10 +6,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { EmptyState } from "@/components/base/empty-state"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
-import { SearchInput } from "@/components/base/search-input"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import type { ReactNode } from "react"
+import { FilterToolbar } from "@/components/base/filter-toolbar"
 
 export interface ExerciseCardData {
   id: string
@@ -147,29 +147,13 @@ interface ExercisesToolbarProps {
 }
 
 export function ExercisesToolbar({ searchValue, onSearchChange, onClearSearch, showInactive, onToggleInactive }: ExercisesToolbarProps) {
-  return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-      <div className="relative flex flex-1">
-        <SearchInput
-          value={searchValue}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Buscar exercícios por nome ou descrição..."
-          label="Buscar exercícios"
-          className="pr-10"
-        />
-        {searchValue ? (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClearSearch}
-            className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:bg-muted/50"
-          >
-            <X className="h-4 w-4" aria-hidden="true" />
-            <span className="sr-only">Limpar busca</span>
-          </Button>
-        ) : null}
-      </div>
-
+  const toolbarActions = (
+    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+      {searchValue ? (
+        <Button variant="outline" onClick={onClearSearch}>
+          Limpar busca
+        </Button>
+      ) : null}
       <div className="flex items-center gap-2">
         <Switch id="show-inactive-exercises" checked={showInactive} onCheckedChange={onToggleInactive} />
         <Label htmlFor="show-inactive-exercises" className="text-sm">
@@ -177,6 +161,17 @@ export function ExercisesToolbar({ searchValue, onSearchChange, onClearSearch, s
         </Label>
       </div>
     </div>
+  )
+
+  return (
+    <FilterToolbar
+      searchValue={searchValue}
+      onSearchChange={onSearchChange}
+      searchPlaceholder="Buscar exercícios por nome ou descrição..."
+      searchLabel="Buscar exercícios"
+      toolbarActions={toolbarActions}
+      className="gap-3"
+    />
   )
 }
 

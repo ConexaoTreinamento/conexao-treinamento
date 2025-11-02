@@ -3,8 +3,8 @@ import { Calendar, Clock, MapPin, Users } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/base/empty-state"
-import { SearchInput } from "@/components/base/search-input"
 import { Button } from "@/components/ui/button"
+import { FilterToolbar } from "@/components/base/filter-toolbar"
 
 export interface EventCardData {
   id: string
@@ -117,27 +117,28 @@ interface EventsSearchBarProps {
 }
 
 export function EventsSearchBar({ value, onValueChange, onReset, actionLabel, onAction }: EventsSearchBarProps) {
-  return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <SearchInput
-        value={value}
-        onChange={(event) => onValueChange(event.target.value)}
-        placeholder="Buscar eventos..."
-        label="Buscar eventos"
-        className="w-full"
-      />
-      <div className="flex gap-2">
-        {value ? (
-          <Button variant="ghost" onClick={onReset}>
-            Limpar
-          </Button>
-        ) : null}
-        {actionLabel && onAction ? (
-          <Button className="bg-green-600 hover:bg-green-700" onClick={onAction}>
-            {actionLabel}
-          </Button>
-        ) : null}
-      </div>
+  const toolbarActions = (
+    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
+      {value ? (
+        <Button variant="outline" onClick={onReset}>
+          Limpar
+        </Button>
+      ) : null}
+      {actionLabel && onAction ? (
+        <Button className="bg-green-600 hover:bg-green-700" onClick={onAction}>
+          {actionLabel}
+        </Button>
+      ) : null}
     </div>
+  )
+
+  return (
+    <FilterToolbar
+      searchValue={value}
+      onSearchChange={onValueChange}
+      searchPlaceholder="Buscar eventos..."
+      searchLabel="Buscar eventos"
+      toolbarActions={toolbarActions}
+    />
   )
 }

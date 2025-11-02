@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,6 +23,8 @@ import { apiClient } from "@/lib/client";
 import { FilterToolbar } from "@/components/base/filter-toolbar"
 import { AdministratorCard } from "@/components/administrators/administrator-card"
 import { EmptyState } from "@/components/base/empty-state"
+import { Section } from "@/components/base/section"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface FormData {
   firstName: string;
@@ -70,7 +72,7 @@ export default function AdministratorsPage() {
   }, [router]);
 
   // Usando React Query para buscar administradores
-  const { data: administrators = [], isLoading } = useQuery({
+  const { data: administrators = [], isLoading, error } = useQuery({
     ...findAllAdministratorsOptions({client: apiClient}),
     enabled: userRole === "admin"
   })
@@ -109,6 +111,32 @@ export default function AdministratorsPage() {
     return fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (admin.email || '').toLowerCase().includes(searchTerm.toLowerCase())
   })
+
+  const totalAdministrators = administrators.length
+
+  const resultsSummary = useMemo(() => {
+    if (isLoading) {
+      return "Carregando administradores..."
+    }
+
+    if (error) {
+      return "Não foi possível carregar os administradores."
+    }
+
+    if (!totalAdministrators) {
+      return "Nenhum administrador cadastrado ainda."
+    }
+
+    if (!filteredAdministrators.length) {
+      return "Ajuste a busca para encontrar administradores."
+    }
+
+    if (filteredAdministrators.length === totalAdministrators && !searchTerm) {
+      return `${filteredAdministrators.length} administradores cadastrados`
+    }
+
+    return `${filteredAdministrators.length} de ${totalAdministrators} administradores exibidos`
+  }, [error, filteredAdministrators.length, isLoading, searchTerm, totalAdministrators])
 
   // Validate individual fields
   const validateField = (name: string, value: string): string => {
@@ -200,9 +228,13 @@ export default function AdministratorsPage() {
     if (!open) resetForm();
   };
 
+  const makeInputChangeHandler = (field: keyof FormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    handleFieldChange(field, event.target.value)
+  }
+
   return (
     <Layout>
-      <div className="space-y-4">
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <PageHeader 
@@ -253,7 +285,7 @@ export default function AdministratorsPage() {
                     <Input
                       id="firstName"
                       value={formData.firstName}
-                      onChange={(e) => handleFieldChange('firstName', e.target.value)}
+                      onChange={makeInputChangeHandler("firstName")}
                       onBlur={() => handleFieldBlur('firstName')}
                       className={errors.firstName ? "border-red-500" : ""}
                       placeholder="Digite o nome"
@@ -271,7 +303,7 @@ export default function AdministratorsPage() {
                     <Input
                       id="lastName"
                       value={formData.lastName}
-                      onChange={(e) => handleFieldChange('lastName', e.target.value)}
+                      onChange={makeInputChangeHandler("lastName")}
                       onBlur={() => handleFieldBlur('lastName')}
                       className={errors.lastName ? "border-red-500" : ""}
                       placeholder="Digite o sobrenome"
@@ -291,7 +323,7 @@ export default function AdministratorsPage() {
                     id="email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => handleFieldChange('email', e.target.value)}
+                    onChange={makeInputChangeHandler("email")}
                     onBlur={() => handleFieldBlur('email')}
                     className={errors.email ? "border-red-500" : ""}
                     placeholder="Digite o email"
@@ -311,7 +343,7 @@ export default function AdministratorsPage() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
-                  onChange={(e) => handleFieldChange("password", e.target.value)}
+                  onChange={makeInputChangeHandler("password")}
                   onBlur={() => handleFieldBlur("password")}
                   className={errors.password ? "border-red-500 pr-10" : "pr-10"}
                   placeholder="Digite a senha"
@@ -364,52 +396,81 @@ export default function AdministratorsPage() {
           searchLabel="Buscar administradores"
         />
 
-        {/* Loading State */}
-        {isLoading && (
-          <div className="flex items-center justify-center h-32">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-              <p className="mt-2 text-sm text-muted-foreground">Carregando administradores...</p>
+        <Section title="Resultados" description={resultsSummary}>
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="rounded-lg border border-dashed bg-card p-4">
+                  <div className="flex items-center gap-3">
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <Skeleton className="h-4 w-1/3" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-        )}
+          ) : null}
 
-        {/* Administrators List */}
-        {!isLoading && (
-          <div className="space-y-3">
-            {filteredAdministrators.length === 0 ? (
-              <EmptyState
-                icon={<Shield className="h-12 w-12" aria-hidden="true" />}
-                title={searchTerm ? "Nenhum administrador encontrado" : "Nenhum administrador cadastrado"}
-                description={
-                  searchTerm
-                    ? "Tente ajustar o termo de busca."
-                    : "Cadastre o primeiro administrador para começar."
-                }
-                action={
-                  searchTerm ? (
-                    <Button variant="outline" onClick={() => setSearchTerm("")}>
-                      Limpar busca
-                    </Button>
-                  ) : (
-                    <Button onClick={() => setIsCreateOpen(true)}>
-                      <Plus className="mr-2 h-4 w-4" />
-                      Novo Administrador
-                    </Button>
-                  )
-                }
-              />
-            ) : (
-              filteredAdministrators.map((admin) => (
-                <AdministratorCard
-                  key={admin.id}
-                  administrator={admin}
-                  onOpen={() => router.push(`/administrators/${admin.id}`)}
-                />
-              ))
-            )}
-          </div>
-        )}
+          {!isLoading && error ? (
+            <EmptyState
+              icon={<Shield className="h-12 w-12" aria-hidden="true" />}
+              title="Não foi possível carregar administradores"
+              description={error instanceof Error ? error.message : "Tente novamente em instantes."}
+              action={
+                <Button variant="outline" onClick={() => void queryClient.invalidateQueries({
+                  predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllAdministrators'
+                })}>
+                  Tentar novamente
+                </Button>
+              }
+            />
+          ) : null}
+
+          {!isLoading && !error && filteredAdministrators.length ? (
+            <div className="space-y-3">
+              {filteredAdministrators.map((admin, index) => {
+                const key = admin.id ?? admin.email ?? admin.fullName ?? `administrator-${index}`
+                return (
+                  <AdministratorCard
+                    key={key}
+                    administrator={admin}
+                    onOpen={() => {
+                      if (admin.id) {
+                        router.push(`/administrators/${admin.id}`)
+                      }
+                    }}
+                  />
+                )
+              })}
+            </div>
+          ) : null}
+
+          {!isLoading && !error && !filteredAdministrators.length ? (
+            <EmptyState
+              icon={<Shield className="h-12 w-12" aria-hidden="true" />}
+              title={searchTerm ? "Nenhum administrador encontrado" : "Nenhum administrador cadastrado"}
+              description={
+                searchTerm
+                  ? "Tente ajustar o termo de busca."
+                  : "Cadastre o primeiro administrador para começar."
+              }
+              action={
+                searchTerm ? (
+                  <Button variant="outline" onClick={() => setSearchTerm("")}>
+                    Limpar busca
+                  </Button>
+                ) : (
+                  <Button onClick={() => setIsCreateOpen(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Novo Administrador
+                  </Button>
+                )
+              }
+            />
+          ) : null}
+        </Section>
       </div>
     </Layout>
   );
