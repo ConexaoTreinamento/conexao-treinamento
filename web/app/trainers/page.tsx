@@ -18,6 +18,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { TrainerResponseDto } from "@/lib/api-client"
 import { apiClient } from "@/lib/client"
 import { handleHttpError } from "@/lib/error-utils"
+import { useToast } from "@/hooks/use-toast"
 
 // Interface for trainer data to match the modal
 
@@ -34,6 +35,7 @@ export default function TrainersPage() {
     specialty: "",
   })
   const router = useRouter()
+  const { toast } = useToast()
   const { mutateAsync: deleteTrainer } = useMutation(softDeleteTrainerUserMutation({ client: apiClient }))
   const { mutateAsync: createTrainer } = useMutation(createTrainerAndUserMutation({ client: apiClient }))
   const { mutateAsync: updateTrainer } = useMutation(updateTrainerAndUserMutation({ client: apiClient }))
