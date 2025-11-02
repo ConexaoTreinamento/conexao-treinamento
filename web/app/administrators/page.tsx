@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label"
 import { Mail, Plus, Search, Shield, AlertCircle, CheckCircle, Eye, EyeOff } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
+import { PageHeader } from "@/components/base/page-header"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { findAllAdministratorsOptions, createAdministratorAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { ListAdministratorsDto, CreateAdministratorAndUserData } from "@/lib/api-client/types.gen"
@@ -201,12 +202,10 @@ export default function AdministratorsPage() {
       <div className="space-y-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Administradores</h1>
-            <p className="text-muted-foreground">
-              Gerencie todos os administradores do sistema
-            </p>
-          </div>
+          <PageHeader 
+            title="Administradores" 
+            description="Gerencie todos os administradores do sistema" 
+          />
           <Dialog open={isCreateOpen} onOpenChange={handleDialogOpenChange}>
             <DialogTrigger asChild>
               <Button className="bg-green-600 hover:bg-green-700">

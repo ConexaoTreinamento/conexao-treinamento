@@ -14,6 +14,7 @@ import { apiClient } from "@/lib/client"
 import { getScheduleOptions, findAllTrainersOptions, getSessionOptions, getScheduleQueryKey, createOneOffSessionMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { SessionResponseDto, StudentCommitmentResponseDto, TrainerResponseDto } from "@/lib/api-client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { PageHeader } from "@/components/base/page-header"
 
 export default function SchedulePage() {
   return (
@@ -332,7 +333,7 @@ function SchedulePageContent() {
           {resolvedStudents.length === 0 && (
             <div className="text-center py-2">
               <p className="text-sm text-muted-foreground">Nenhum aluno inscrito</p>
-              <Button size="sm" variant="outline" disabled={!classItem.real} title={!classItem.real? 'Sessão não materializada ainda':'Adicionar alunos'} className="mt-2 h-7 px-2 text-xs bg-transparent" onClick={onManage}>Adicionar Alunos</Button>
+              <Button size="sm" variant="outline" disabled={!classItem.real} title={!classItem.real? 'Sessão não materializada ainda':'Adicionar alunos'} className="mt-2 h-7 px-2 text-xs bg-transparent" onClick={onManage}>Adicionar alunos</Button>
             </div>
           )}
         </CardContent>
@@ -346,7 +347,9 @@ function SchedulePageContent() {
         <div className="flex flex-col space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold">Agenda</h1>
+          <PageHeader 
+            title="Agenda" 
+          />
             <div className="flex gap-2">
               <Button size="sm" variant="outline" onClick={goToToday}>
                 <CalendarDays className="w-4 h-4 mr-1" />

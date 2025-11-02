@@ -18,8 +18,9 @@ import {useForm} from 'react-hook-form'
 import {z} from 'zod'
 import {zodResolver} from '@hookform/resolvers/zod'
 import {useToast} from '@/hooks/use-toast'
+import { StudentPlanResponseDto } from '@/lib/api-client'
+import { PageHeader } from '@/components/base/page-header'
 import { handleHttpError } from '@/lib/error-utils'
-import type { StudentPlanResponseDto } from '@/lib/api-client'
 
 const planSchema = z.object({
   name: z.string().min(2,'Nome obrigatório'),
@@ -157,11 +158,11 @@ export default function PlansPage(){
   return (
     <Layout>
       <div className="space-y-4">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h1 className="text-2xl font-bold">Planos</h1>
-            <p className="text-sm text-muted-foreground">Gerencie os planos de assinatura</p>
-          </div>
+        <div className="flex items-center justify-between">
+          <PageHeader 
+            title="Planos" 
+            description="Gerencie os planos de assinatura" 
+          />
           <div className="flex items-center gap-2">
             <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
               <SheetTrigger asChild>
