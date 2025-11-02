@@ -8,15 +8,18 @@ import { useRouter, useParams } from "next/navigation"
 import { useState } from "react"
 import Layout from "@/components/layout"
 import TrainerModal from "@/components/trainer-modal"
-import { findTrainerByIdOptions, findTrainerByIdQueryKey, updateTrainerAndUserMutation, resetPasswordMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { findTrainerByIdOptions, findTrainerByIdQueryKey, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { handleHttpError } from "@/lib/error-utils"
+import { useToast } from "@/hooks/use-toast"
+
 
 
 export default function TrainerProfilePage() {
   const router = useRouter()
   const params = useParams()
+  const { toast } = useToast()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const { mutateAsync: updateTrainer } = useMutation(updateTrainerAndUserMutation({ client: apiClient }));
 
@@ -37,19 +40,6 @@ export default function TrainerProfilePage() {
       client: apiClient,
     })
   })
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { mutateAsync: resetPassword } = useMutation({
-    ...resetPasswordMutation({ client: apiClient }),
-    onSuccess: () => {
-      console.log("Senha do usuário resetada com sucesso!");
-    },
-    onError: (error) => {
-      console.error("Erro ao resetar a senha:", error);
-    }
-  });
-
-
 
   const getStatusColor = (status: boolean) => {
     if (status) {

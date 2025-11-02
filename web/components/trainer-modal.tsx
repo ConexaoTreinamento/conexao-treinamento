@@ -17,19 +17,6 @@ import { Badge } from "@/components/ui/badge"
 import { X, Eye, EyeOff } from "lucide-react"
 import { CreateTrainerDto, TrainerResponseDto } from "@/lib/api-client"
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-interface TrainerFormData {
-  name: string
-  email: string
-  phone: string
-  address: string
-  birthDate: string
-  specialties: string[]
-  compensation: string
-  status: string
-  newPassword?: string
-}
-
 interface TrainerModalProps {
   open: boolean
   mode: "create" | "edit"

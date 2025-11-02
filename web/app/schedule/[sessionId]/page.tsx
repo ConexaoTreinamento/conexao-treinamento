@@ -77,7 +77,9 @@ function ClassDetailPageContent() {
 
   // Exercises catalog (for exercise selection)
   const exercisesQuery = useQuery({ ...findAllExercisesOptions({ client: apiClient, query: { pageable: { page:0, size: 200 } } }) })
-  const allExercises: ExerciseResponseDto[] = ((exercisesQuery.data as PageExerciseResponseDto | undefined)?.content) ?? []
+  const allExercises: ExerciseResponseDto[] = useMemo(() => {
+    return ((exercisesQuery.data as PageExerciseResponseDto | undefined)?.content) ?? []
+  }, [exercisesQuery.data])
 
   // Local UI state derived from session
   const [isExerciseOpen, setIsExerciseOpen] = useState(false)
@@ -146,7 +148,7 @@ function ClassDetailPageContent() {
     qc.invalidateQueries({
       predicate: (q) => {
         const k0 = (q.queryKey as unknown[])?.[0] as { _id?: string } | undefined
-        return k0 && typeof k0 === 'object' && k0._id === 'getSchedule'
+        return !!(k0 && typeof k0 === 'object' && k0._id === 'getSchedule')
       }
     })
   }
@@ -158,7 +160,7 @@ function ClassDetailPageContent() {
       qc.invalidateQueries({
         predicate: (q) => {
           const k0 = (q.queryKey as unknown[])?.[0] as { _id?: string; path?: { sessionId?: string } } | undefined
-          return k0 && typeof k0 === 'object' && k0._id === 'getSession' && k0.path?.sessionId === sessionId
+          return !!(k0 && typeof k0 === 'object' && k0._id === 'getSession' && k0.path?.sessionId === sessionId)
         }
       })
     }
@@ -226,7 +228,7 @@ function ClassDetailPageContent() {
     const entries = qc.getQueriesData<import("@/lib/api-client").PageExerciseResponseDto>({
       predicate: (q) => {
         const k0 = (q.queryKey as unknown[])?.[0] as { _id?: string } | undefined
-        return k0 && typeof k0 === 'object' && k0._id === 'findAllExercises'
+        return !!(k0 && typeof k0 === 'object' && k0._id === 'findAllExercises')
       }
     })
     entries.forEach(([key, data]) => {
@@ -308,6 +310,13 @@ function ClassDetailPageContent() {
     invalidate()
   }
 
+  // Move all derived values and hooks before early returns
+  const selectedExerciseId = registerExerciseForm.watch("exerciseId")
+  const selectedExercise = useMemo(() => {
+    if (!selectedExerciseId) return null
+    return (allExercises || []).find((ex) => ex.id === selectedExerciseId) ?? null
+  }, [allExercises, selectedExerciseId])
+
   if (sessionQuery.isLoading) return <Layout><div className="p-6 text-sm">Carregando...</div></Layout>
   if (sessionQuery.error || !session) return <Layout><div className="p-6 text-sm text-red-600">Sessão não encontrada.</div></Layout>
 
@@ -324,11 +333,6 @@ function ClassDetailPageContent() {
   }
   const normalizedExerciseSearch = exerciseSearchTerm.trim().toLowerCase()
   const filteredExercises = (allExercises||[]).filter(e => (e.name || '').toLowerCase().includes(normalizedExerciseSearch))
-  const selectedExerciseId = registerExerciseForm.watch("exerciseId")
-  const selectedExercise = useMemo(() => {
-    if (!selectedExerciseId) return null
-    return (allExercises || []).find((ex) => ex.id === selectedExerciseId) ?? null
-  }, [allExercises, selectedExerciseId])
   const shouldShowExerciseList = isExerciseListOpen && exerciseSearchTerm.trim().length > 0
 
   return (
@@ -685,8 +689,8 @@ function ClassDetailPageContent() {
                   <SelectContent>
                     <SelectItem value="none">(Sem instrutor)</SelectItem>
                     {(trainersQuery.data||[])
-                      .filter((t: { id?: string }) => !!t?.id)
-                      .map((t: { id: string; name?: string }) => <SelectItem key={t.id} value={t.id}>{t.name || ''}</SelectItem>)}
+                      .filter((t) => !!t?.id)
+                      .map((t) => <SelectItem key={t.id!} value={t.id!}>{t.name || ''}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

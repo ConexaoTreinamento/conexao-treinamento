@@ -25,40 +25,6 @@ import { Label } from '@/components/ui/label'
 import { useEvaluations } from '@/lib/hooks/evaluation-queries'
 
 // Type definitions - not used but kept for future reference
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-interface Evaluation {
-  id: string
-  date: string
-  weight: number
-  height: number
-  bmi: number
-  circumferences: {
-    rightArmRelaxed: number
-    leftArmRelaxed: number
-    rightArmFlexed: number
-    leftArmFlexed: number
-    waist: number
-    abdomen: number
-    hip: number
-    rightThigh: number
-    leftThigh: number
-    rightCalf: number
-    leftCalf: number
-  }
-  subcutaneousFolds: {
-    triceps: number
-    thorax: number
-    subaxillary: number
-    subscapular: number
-    abdominal: number
-    suprailiac: number
-    thigh: number
-  }
-  diameters: {
-    umerus: number
-    femur: number
-  }
-}
 
 export default function StudentProfilePage() {
   const router = useRouter()
