@@ -452,9 +452,9 @@ export const getAllUsersSimpleInfiniteOptions = (options: Options<GetAllUsersSim
     // @ts-expect-error - Generated code may have type mismatches
     {
         queryFn: async ({ pageParam, queryKey, signal }) => {
-            // @ts-expect-error - Generated code may have type mismatches
             const page: Pick<QueryKey<Options<GetAllUsersSimpleData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
                 query: {
+                    // @ts-expect-error - Generated code may have type mismatches
                     'pageable.page': pageParam
                 }
             };
@@ -653,9 +653,9 @@ export const findAllStudentsInfiniteOptions = (options: Options<FindAllStudentsD
     // @ts-expect-error - Generated code may have type mismatches
     {
         queryFn: async ({ pageParam, queryKey, signal }) => {
-            // @ts-expect-error - Generated code may have type mismatches
             const page: Pick<QueryKey<Options<FindAllStudentsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
                 query: {
+                    // @ts-expect-error - Generated code may have type mismatches
                     'pageable.page': pageParam
                 }
             };
@@ -1119,9 +1119,9 @@ export const findAllExercisesInfiniteOptions = (options: Options<FindAllExercise
     // @ts-expect-error - Generated code may have type mismatches
     {
         queryFn: async ({ pageParam, queryKey, signal }) => {
-            // @ts-expect-error - Generated code may have type mismatches
             const page: Pick<QueryKey<Options<FindAllExercisesData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
                 query: {
+                    // @ts-expect-error - Generated code may have type mismatches
                     'pageable.page': pageParam
                 }
             };
@@ -1921,9 +1921,9 @@ export const findAllPaginatedInfiniteOptions = (options: Options<FindAllPaginate
     // @ts-expect-error - Generated code may have type mismatches
     {
         queryFn: async ({ pageParam, queryKey, signal }) => {
-            // @ts-expect-error - Generated code may have type mismatches
             const page: Pick<QueryKey<Options<FindAllPaginatedData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
                 query: {
+                    // @ts-expect-error - Generated code may have type mismatches
                     'pageable.page': pageParam
                 }
             };
