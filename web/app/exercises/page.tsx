@@ -1,49 +1,34 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import Layout from "@/components/layout"
 import CreateExerciseModal from "@/components/exercises/create-exercise-modal"
 import EditExerciseModal from "@/components/exercises/edit-exercise-modal"
-
-import { Search, Plus, Activity, Edit, Trash2, X, Eye, RotateCcw, MoreVertical } from "lucide-react"
-import Layout from "@/components/layout"
 import { DeleteExerciseDialog } from "@/components/exercises/delete-exercise-dialog"
-import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { findAllExercisesOptions, restoreExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { ExerciseResponseDto } from "@/lib/api-client"
 import { PageHeader } from "@/components/base/page-header"
+import { Section } from "@/components/base/section"
+import {
+  ExercisesEmptyState,
+  ExercisesErrorState,
+  ExercisesGrid,
+  ExercisesPagination,
+  ExercisesSkeletonGrid,
+  ExercisesToolbar,
+  type ExerciseCardData,
+} from "@/components/exercises/exercises-view"
+import { useDebounce } from "@/hooks/use-debounce"
 
 
 export default function ExercisesPage() {
-  const [searchInput, setSearchInput] = useState("")
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchValue, setSearchValue] = useState("")
   const [isNewExerciseOpen, setIsNewExerciseOpen] = useState(false)
   const [isEditExerciseOpen, setIsEditExerciseOpen] = useState(false)
   const [editingExercise, setEditingExercise] = useState<ExerciseResponseDto | null>(null)
@@ -52,98 +37,153 @@ export default function ExercisesPage() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
   const [selectedExercise, setSelectedExercise] = useState<ExerciseResponseDto | null>(null)
   const [showInactive, setShowInactive] = useState(false)
-
-  const [totalPages, setTotalPages] = useState(0)
   const [currentPage, setCurrentPage] = useState(0)
   const { toast } = useToast()
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
-  const { data: exercises, isLoading } = useQuery({
+  const debouncedSearchTerm = useDebounce(searchValue, 400)
+
+  const exercisesQuery = useQuery({
     ...findAllExercisesOptions({
       client: apiClient,
-      query: { pageable: { page: currentPage }, search: searchTerm, includeInactive: showInactive }
-    })
+      query: {
+        pageable: { page: currentPage },
+        ...(debouncedSearchTerm ? { search: debouncedSearchTerm } : {}),
+        includeInactive: showInactive,
+      },
+    }),
   })
 
-  const { mutateAsync: restoreExercise } = useMutation(restoreExerciseMutation({ client: apiClient }));
+  const { data: exercisesData, isLoading, error, refetch } = exercisesQuery
+  const { mutateAsync: restoreExercise } = useMutation(restoreExerciseMutation({ client: apiClient }))
 
-  useEffect(() => {
-    if (exercises?.totalPages !== undefined) {
-      setTotalPages(exercises.totalPages)
-    }
+  const exercises = useMemo(() => exercisesData?.content ?? [], [exercisesData?.content])
+
+  const exerciseMap = useMemo(() => {
+    const map = new Map<string, ExerciseResponseDto>()
+    exercises.forEach((exercise) => {
+      if (exercise.id) {
+        map.set(exercise.id, exercise)
+      }
+    })
+    return map
   }, [exercises])
 
-  const handleSearchInputChange = (value: string) => {
-    setSearchInput(value)
-  }
+  const normalizedExercises = useMemo<ExerciseCardData[]>(
+    () =>
+      exercises
+        .filter((exercise): exercise is ExerciseResponseDto & { id: string } => Boolean(exercise.id))
+        .map((exercise) => ({
+          id: exercise.id,
+          name: exercise.name ?? "Exercício",
+          description: exercise.description ?? undefined,
+          isDeleted: Boolean(exercise.deletedAt),
+        })),
+    [exercises],
+  )
 
-  const handleSearch = () => {
-    try {
-      setSearchTerm(searchInput)
-      setCurrentPage(0)
-    } catch {
-      toast({
-        title: "Erro",
-        description: "Erro ao realizar busca. Tente novamente.",
-        variant: "destructive",
-      })
-    }
-  }
+  const totalPages = exercisesData?.totalPages ?? 0
+  const totalElements = exercisesData?.totalElements ?? 0
+  const currentPageLabel = totalPages > 0 ? currentPage + 1 : 0
 
-  const handleClearSearch = () => {
-    setSearchInput("")
-    setSearchTerm("")
+  useEffect(() => {
     setCurrentPage(0)
-  }
+  }, [debouncedSearchTerm, showInactive])
 
-  const handlePageChange = (newPage: number) => {
-    try {
-      setCurrentPage(newPage)
-    } catch {
-      toast({
-        title: "Erro",
-        description: "Erro ao mudar página. Tente novamente.",
-        variant: "destructive",
-      })
+  const handleSelectExercise = useCallback(
+    (exerciseId: string) => {
+      const exercise = exerciseMap.get(exerciseId)
+      if (exercise) {
+        setSelectedExercise(exercise)
+        setIsDetailsDialogOpen(true)
+      }
+    },
+    [exerciseMap],
+  )
+
+  const handleEditExercise = useCallback(
+    (exerciseId: string) => {
+      const exercise = exerciseMap.get(exerciseId)
+      if (exercise) {
+        setEditingExercise(exercise)
+        setIsEditExerciseOpen(true)
+      }
+    },
+    [exerciseMap],
+  )
+
+  const handleDeleteExercise = useCallback(
+    (exerciseId: string) => {
+      const exercise = exerciseMap.get(exerciseId)
+      if (exercise) {
+        setExerciseToDelete(exercise)
+        setIsDeleteDialogOpen(true)
+      }
+    },
+    [exerciseMap],
+  )
+
+  const handleRestoreExercise = useCallback(
+    async (exerciseId: string) => {
+      try {
+        await restoreExercise({ path: { id: exerciseId }, client: apiClient })
+
+        toast({
+          title: "Exercício restaurado",
+          description: "O exercício foi restaurado com sucesso.",
+        })
+
+        await queryClient.invalidateQueries({
+          predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0]?._id === "findAllExercises",
+        })
+      } catch (restoreError) {
+        console.error("Erro ao restaurar exercício:", restoreError)
+        toast({
+          title: "Erro",
+          description: "Erro ao restaurar exercício. Tente novamente.",
+          variant: "destructive",
+        })
+      }
+    },
+    [queryClient, restoreExercise, toast],
+  )
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchValue(value)
+  }, [])
+
+  const handleToggleInactive = useCallback((value: boolean) => {
+    setShowInactive(value)
+  }, [])
+
+  const handleClearSearch = useCallback(() => {
+    setSearchValue("")
+    setCurrentPage(0)
+  }, [])
+
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page)
+  }, [])
+
+  const resultsSummary = (() => {
+    if (isLoading) {
+      return "Carregando exercícios..."
     }
-  }
 
-  const openDeleteDialog = (exercise: ExerciseResponseDto) => {
-    setExerciseToDelete(exercise)
-    setIsDeleteDialogOpen(true)
-  }
-
-  const openEditDialog = (exercise: ExerciseResponseDto) => {
-    setEditingExercise(exercise);
-    setIsEditExerciseOpen(true);
-  }
-
-  const openDetailsDialog = (exercise: ExerciseResponseDto) => {
-    setSelectedExercise(exercise)
-    setIsDetailsDialogOpen(true)
-  }
-
-  const handleRestoreExercise = async (exercise: ExerciseResponseDto) => {
-    try {
-      restoreExercise({ path: { id: String(exercise?.id) }, client: apiClient })
-
-      toast({
-        title: "Sucesso",
-        description: "Exercício restaurado com sucesso!",
-      })
-
-      await queryClient.invalidateQueries({
-        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === 'findAllExercises'
-      })
-    } catch (err) {
-      console.error('Erro ao restaurar exercício:', err)
-      toast({
-        title: "Erro",
-        description: "Erro ao restaurar exercício. Tente novamente.",
-        variant: "destructive",
-      })
+    if (error) {
+      return "Não foi possível carregar os exercícios."
     }
-  }
+
+    if (!totalElements) {
+      return searchValue || showInactive
+        ? "Ajuste a busca ou a visualização para encontrar exercícios."
+        : "Nenhum exercício cadastrado ainda."
+    }
+
+    const safeTotalPages = totalPages || 1
+    const safeCurrentPage = currentPageLabel > 0 ? currentPageLabel : 1
+    return `Página ${safeCurrentPage} de ${safeTotalPages} • ${totalElements} exercícios`
+  })()
 
   return (
     <Layout>
@@ -161,269 +201,77 @@ export default function ExercisesPage() {
             <Plus className="w-4 h-4 mr-2" />
             Novo Exercício
           </Button>
-
-          <CreateExerciseModal
-            isOpen={isNewExerciseOpen}
-            onClose={() => setIsNewExerciseOpen(false)}
-          />
-
-          <EditExerciseModal
-            isOpen={isEditExerciseOpen}
-            onClose={() => setIsEditExerciseOpen(false)}
-            exercise={editingExercise}
-          />
-
         </div>
+        <ExercisesToolbar
+          searchValue={searchValue}
+          onSearchChange={handleSearchChange}
+          onClearSearch={handleClearSearch}
+          showInactive={showInactive}
+          onToggleInactive={handleToggleInactive}
+        />
 
+        <Section title="Resultados" description={resultsSummary}>
+          {isLoading ? <ExercisesSkeletonGrid /> : null}
 
-        {/* Search and Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Buscar exercícios por nome ou descrição..."
-              value={searchInput}
-              onChange={(e) => handleSearchInputChange(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="pl-10 pr-10"
+          {error ? (
+            <ExercisesErrorState
+              message={error instanceof Error ? error.message : undefined}
+              onRetry={() => {
+                void refetch()
+              }}
             />
-            {searchInput && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleClearSearch}
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 hover:bg-muted/50 text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="show-inactive"
-              checked={showInactive}
-              onCheckedChange={setShowInactive}
+          ) : null}
+
+          {!isLoading && !error && normalizedExercises.length > 0 ? (
+            <>
+              <ExercisesGrid
+                exercises={normalizedExercises}
+                onSelect={handleSelectExercise}
+                onEdit={handleEditExercise}
+                onDelete={handleDeleteExercise}
+                onRestore={handleRestoreExercise}
+              />
+              <ExercisesPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
+            </>
+          ) : null}
+
+          {!isLoading && !error && normalizedExercises.length === 0 ? (
+            <ExercisesEmptyState
+              hasSearch={Boolean(searchValue)}
+              onCreate={() => setIsNewExerciseOpen(true)}
+              onClearSearch={searchValue ? handleClearSearch : undefined}
             />
-            <Label htmlFor="show-inactive" className="text-sm">
-              Mostrar excluídos
-            </Label>
-          </div>
-        </div>
+          ) : null}
+        </Section>
 
-        {/* Results Summary */}
-        <div className="text-sm text-muted-foreground">
-          Página {currentPage + 1} de {totalPages} ({exercises?.totalElements} exercícios nesta página)
-        </div>
+        <CreateExerciseModal
+          isOpen={isNewExerciseOpen}
+          onClose={() => setIsNewExerciseOpen(false)}
+        />
 
-
-        {/* Loading State */}
-        {isLoading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 gap-3">
-            {Array.from({ length: 8 }).map((_, index) => (
-              <Card key={index} className="h-36">
-                <CardHeader className="pb-3 pt-3 px-3 min-h-16">
-                  <Skeleton className="h-4 w-3/4" />
-                </CardHeader>
-                <CardContent className="px-3 pb-3 min-h-16">
-                  <Skeleton className="h-3 w-full mb-2" />
-                  <Skeleton className="h-3 w-2/3" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Exercises Grid */}
-        {!isLoading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3 gap-3">
-            {exercises?.content!.map((exercise) => (
-              <Card
-                key={exercise.id}
-                className={`hover:shadow-md transition-shadow h-36 flex flex-col cursor-pointer ${exercise.deletedAt ? 'opacity-60 border-red-200 bg-red-50/30' : ''
-                  }`}
-                onClick={() => openDetailsDialog(exercise)}
-              >
-                <CardHeader className="pb-3 pt-3 px-3 flex-shrink-0 min-h-16">
-                  <div className="flex items-start justify-between h-full">
-                    <div className="flex-1 min-w-0 pr-2 overflow-hidden">
-                      <div className="flex items-center gap-2 mb-1">
-                        <CardTitle className="text-sm font-medium leading-tight break-words min-h-8 flex-1"
-                          style={{
-                            display: '-webkit-box',
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            wordBreak: 'break-word'
-                          }}
-                        >
-                          {exercise.name}
-                        </CardTitle>
-                        {exercise.deletedAt && (
-                          <Badge variant="destructive" className="text-xs px-1 py-0 flex-shrink-0">
-                            Excluído
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={(e) => e.stopPropagation()}
-                            className="h-6 w-6 hover:bg-black hover:text-white"
-                          >
-                            <MoreVertical className="w-3 h-3" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              openDetailsDialog(exercise)
-                            }}
-                            className="cursor-pointer"
-                          >
-                            <Eye className="w-4 h-4 mr-2" />
-                            Ver detalhes
-                          </DropdownMenuItem>
-                          {!exercise.deletedAt ? (
-                            <>
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  openEditDialog(exercise)
-                                }}
-                                className="cursor-pointer"
-                              >
-                                <Edit className="w-4 h-4 mr-2" />
-                                Editar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  openDeleteDialog(exercise)
-                                }}
-                                className="cursor-pointer text-red-600 focus:text-white focus:bg-red-600"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Excluir
-                              </DropdownMenuItem>
-                            </>
-                          ) : (
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleRestoreExercise(exercise)
-                              }}
-                              className="cursor-pointer text-green-600 focus:text-white focus:bg-green-600"
-                            >
-                              <RotateCcw className="w-4 h-4 mr-2" />
-                              Restaurar
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="px-3 pb-3 flex-1 min-h-16">
-                  <div className="h-full overflow-hidden">
-                    {exercise.description ? (
-                      <CardDescription
-                        className="text-sm leading-relaxed break-words"
-                        style={{
-                          display: '-webkit-box',
-                          WebkitLineClamp: 3,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          wordBreak: 'break-word',
-                          hyphens: 'auto'
-                        }}
-                      >
-                        {exercise.description}
-                      </CardDescription>
-                    ) : (
-                      <div className="text-xs text-muted-foreground italic">
-                        Sem descrição
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {!isLoading && exercises?.content!.length === 0 && (
-          <Card>
-            <CardContent className="text-center py-12">
-              <Activity className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Nenhum exercício encontrado</h3>
-              <p className="text-muted-foreground mb-4">
-                {searchTerm ? "Tente ajustar o termo de busca." : "Comece adicionando o primeiro exercício."}
-              </p>
-              <Button className="bg-green-600 hover:bg-green-700" onClick={() => setIsNewExerciseOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar Primeiro Exercício
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Pagination */}
-        <div className="flex justify-center mt-6">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => currentPage > 0 && handlePageChange(currentPage - 1)}
-                  className={currentPage === 0 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                >
-                  Anterior
-                </PaginationPrevious>
-              </PaginationItem>
-
-              {/* Generate page numbers - show only 3 pages at a time */}
-              {(() => {
-                const pages = []
-                const startPage = Math.max(0, currentPage - 1)
-                const endPage = Math.min(totalPages - 1, currentPage + 1)
-
-                for (let i = startPage; i <= endPage; i++) {
-                  pages.push(
-                    <PaginationItem key={i}>
-                      <PaginationLink
-                        onClick={() => handlePageChange(i)}
-                        isActive={currentPage === i}
-                        className="cursor-pointer"
-                      >
-                        {i + 1}
-                      </PaginationLink>
-                    </PaginationItem>
-                  )
-                }
-                return pages
-              })()}
-
-
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() => currentPage < totalPages - 1 && handlePageChange(currentPage + 1)}
-                  className={currentPage === totalPages - 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                >
-                  Próxima
-                </PaginationNext>
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
+        <EditExerciseModal
+          isOpen={isEditExerciseOpen}
+          onClose={() => {
+            setIsEditExerciseOpen(false)
+            setEditingExercise(null)
+          }}
+          exercise={editingExercise}
+        />
 
         {/* Exercise Details Dialog */}
-        <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <Dialog
+          open={isDetailsDialogOpen}
+          onOpenChange={(open) => {
+            setIsDetailsDialogOpen(open)
+            if (!open) {
+              setSelectedExercise(null)
+            }
+          }}
+        >
           <DialogContent className="max-w-md">
             <DialogTitle className="text-lg font-semibold mb-4">Detalhes do Exercício</DialogTitle>
             <div className="space-y-4">
@@ -471,7 +319,12 @@ export default function ExercisesPage() {
         {/* Delete Exercise Dialog */}
         <DeleteExerciseDialog
           open={isDeleteDialogOpen}
-          onOpenChange={setIsDeleteDialogOpen}
+          onOpenChange={(open) => {
+            setIsDeleteDialogOpen(open)
+            if (!open) {
+              setExerciseToDelete(null)
+            }
+          }}
           exercise={exerciseToDelete}
         />
       </div>
