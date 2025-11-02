@@ -1,13 +1,11 @@
 "use client"
 
-import {Suspense, useMemo, useState} from "react"
+import {Suspense, useMemo, useState, useCallback} from "react"
 import type {
   AnamnesisResponseDto,
   StudentRequestDto,
-  StudentResponseDto,
   StudentPlanAssignmentResponseDto
 } from "@/lib/api-client/types.gen"
-import {Card, CardContent} from "@/components/ui/card"
 import {Button} from "@/components/ui/button"
 import {
     Dialog,
@@ -23,6 +21,7 @@ import Layout from "@/components/layout"
 import StudentForm, {type StudentFormData} from "@/components/students/student-form"
 import PageSelector from "@/components/ui/page-selector"
 import { PageHeader } from "@/components/base/page-header"
+import { Section } from "@/components/base/section"
 import useDebounce from "@/hooks/use-debounce"
 import {useForm} from "react-hook-form"
 import {useCreateStudent, useDeleteStudent, useRestoreStudent} from "@/lib/hooks/student-mutations"
@@ -34,10 +33,10 @@ import {useStudents} from "@/lib/hooks/student-queries"
 import {apiClient} from "@/lib/client"
 import {getExpiringSoonAssignmentsOptions, getCurrentStudentPlanOptions} from '@/lib/api-client/@tanstack/react-query.gen'
 import {useQuery} from '@tanstack/react-query'
-import {StudentCard} from "@/components/students/student-card"
 import {StudentFiltersPanel} from "@/components/students/student-filters"
 import type {StudentFilters} from "@/components/students/types"
 import {DEFAULT_STUDENT_FILTERS, countActiveStudentFilters} from "@/components/students/types"
+import { StudentsEmptyState, StudentsErrorState, StudentsList, StudentsLoadingList } from "@/components/students/students-view"
 
 export default function StudentsPage() {
   return (
@@ -137,7 +136,7 @@ function StudentsPageContent() {
   const debouncedInvalidDateRange = Boolean(debouncedFilters.startDate && debouncedFilters.endDate && debouncedFilters.startDate > debouncedFilters.endDate)
 
   // Fetch students using React Query with debounced values
-  const { data: studentsData, isLoading, error } = useStudents({
+  const { data: studentsData, isLoading, error, refetch } = useStudents({
     ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
     ...(debouncedFilters.gender !== "all" && { gender: mapGenderToBackend(debouncedFilters.gender) }),
     ...(debouncedFilters.profession !== "all" && { profession: debouncedFilters.profession }),
@@ -159,17 +158,31 @@ function StudentsPageContent() {
 
   // We'll lazily fetch current plan per student only if needed for fallback (optional optimization skipped)
   // Build quick lookup maps
-  const expiringMap = new Map<string, StudentPlanAssignmentResponseDto>()
-  expiringSoonAssignments?.forEach(assignment => {
-    if (assignment.studentId) {
-      expiringMap.set(assignment.studentId, assignment)
-    }
-  })
+  const expiringMap = useMemo(() => {
+    const map = new Map<string, StudentPlanAssignmentResponseDto>()
+    expiringSoonAssignments?.forEach((assignment) => {
+      if (assignment.studentId) {
+        map.set(assignment.studentId, assignment)
+      }
+    })
+    return map
+  }, [expiringSoonAssignments])
+
+  const students = useMemo(() => studentsData?.content ?? [], [studentsData?.content])
 
   // Prepare current plan queries only for students on the current page that are NOT in expiringMap
-  const studentIdsNeedingCurrentPlan = (studentsData?.content || [])
-    .map(s => s.id)
-    .filter((id): id is string => Boolean(id) && !expiringMap.has(id!))
+  const studentIdsNeedingCurrentPlan = useMemo(
+    () =>
+      students
+        .map((student) => student.id)
+        .filter((id): id is string => {
+          if (!id) {
+            return false
+          }
+          return !expiringMap.has(id)
+        }),
+    [students, expiringMap],
+  )
 
   const currentPlanQueries = useQueries({
     queries: studentIdsNeedingCurrentPlan.map(studentId => ({
@@ -178,13 +191,21 @@ function StudentsPageContent() {
     }))
   })
 
-  const currentPlanMap = new Map<string, StudentPlanAssignmentResponseDto | null>()
-  currentPlanQueries.forEach((query, idx) => {
-    const sid = studentIdsNeedingCurrentPlan[idx]
-    if (sid) {
-      currentPlanMap.set(sid, query.data ?? null)
-    }
-  })
+  const currentPlanMap = useMemo(() => {
+    const map = new Map<string, StudentPlanAssignmentResponseDto | null>()
+    currentPlanQueries.forEach((query, index) => {
+      const studentId = studentIdsNeedingCurrentPlan[index]
+      if (studentId) {
+        map.set(studentId, query.data ?? null)
+      }
+    })
+    return map
+  }, [currentPlanQueries, studentIdsNeedingCurrentPlan])
+
+  const resolveAssignment = useCallback(
+    (studentId: string) => expiringMap.get(studentId) ?? currentPlanMap.get(studentId) ?? null,
+    [expiringMap, currentPlanMap],
+  )
 
   // Helper data extraction with proper typing
   const totalPages = studentsData?.totalPages || 0
@@ -198,6 +219,21 @@ function StudentsPageContent() {
 
   // Clear filters via RHF
   const hasActiveFilters = countActiveStudentFilters(watchedFilters) > 0
+
+  const handleClearSearch = () => {
+    setSearchTerm("")
+    setCurrentPage(0)
+  }
+
+  const handleResetAllFilters = () => {
+    setSearchTerm("")
+    form.reset(DEFAULT_STUDENT_FILTERS)
+    setCurrentPage(0)
+  }
+
+  const resultDescription = !isLoading && !error
+    ? `Mostrando ${students.length} de ${totalElements} alunos${hasActiveFilters ? " (filtrados)" : ""}`
+    : "Acompanhe todos os alunos cadastrados e seus planos em andamento."
 
   // Get unique professions from API data for filter dropdown
   const uniqueProfessions = useMemo(() => {
@@ -403,100 +439,47 @@ function StudentsPageContent() {
           onFiltersReset={() => setCurrentPage(0)}
         />
 
-        {/* Results Summary */}
-        {!isLoading && !error && (
-          <div className="text-sm text-muted-foreground">
-            Mostrando {(studentsData?.content || []).length} de {totalElements} alunos
-            {hasActiveFilters && " (filtrados)"}
-          </div>
-        )}
+        <Section title="Resultados" description={resultDescription}>
+          {isLoading ? <StudentsLoadingList /> : null}
 
-        {/* Loading State */}
-        {isLoading && (
-          <div className="space-y-3">
-            {[...Array(3)].map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                    <div className="flex-1">
-                      <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+          {error ? (
+            <StudentsErrorState
+              message={error instanceof Error ? error.message : undefined}
+              onRetry={() => {
+                void refetch()
+              }}
+            />
+          ) : null}
 
-        {/* Error State */}
-        {error && (
-          <Card>
-            <CardContent className="text-center py-12">
-              <div className="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-red-700 dark:text-red-300 font-semibold text-lg">!</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Erro ao carregar alunos</h3>
-              <p className="text-muted-foreground">Tente recarregar a página</p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Students List */}
-        <div className="space-y-3">
-          {!isLoading && !error && (studentsData?.content || []).map((student: StudentResponseDto) => {
-            const studentId = student.id
-            if (!studentId) {
-              return null
-            }
-
-            const assignment = expiringMap.get(studentId) ?? currentPlanMap.get(studentId) ?? null
-
-            return (
-              <StudentCard
-                key={studentId}
-                student={student}
-                assignment={assignment}
-                onOpenDetails={() => router.push(`/students/${studentId}`)}
-                onCreateEvaluation={() => router.push(`/students/${studentId}/evaluation/new`)}
-                onRestore={() => handleRestore(studentId)}
-                onDelete={() => handleDelete(studentId)}
+          {!isLoading && !error && students.length > 0 ? (
+            <>
+              <StudentsList
+                students={students}
+                resolveAssignment={resolveAssignment}
+                onOpenDetails={(id) => router.push(`/students/${id}`)}
+                onCreateEvaluation={(id) => router.push(`/students/${id}/evaluation/new`)}
+                onRestore={(id) => handleRestore(id)}
+                onDelete={(id) => handleDelete(id)}
                 isRestoring={isRestoring}
                 isDeleting={isDeleting}
               />
-            )
-          })}
-        </div>
 
-        {!isLoading && !error && (studentsData?.content || []).length === 0 && (
-          <Card>
-            <CardContent className="text-center py-12">
-              <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-green-700 dark:text-green-300 font-semibold text-lg select-none">?</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">Nenhum aluno encontrado</h3>
-              <p className="text-muted-foreground mb-4">
-                {searchTerm || hasActiveFilters
-                  ? "Tente ajustar os filtros ou termo de busca."
-                  : "Comece adicionando o primeiro aluno."}
-              </p>
-              <Button className="bg-green-600 hover:bg-green-700" onClick={() => setIsCreateOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar Primeiro Aluno
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+              {totalPages > 1 ? (
+                <PageSelector currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+              ) : null}
+            </>
+          ) : null}
 
-        {/* Pagination */}
-        {!isLoading && !error && (studentsData?.content || []).length > 0 && totalPages > 1 && (
-          <PageSelector
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
-        )}
+          {!isLoading && !error && students.length === 0 ? (
+            <StudentsEmptyState
+              hasSearchTerm={Boolean(searchTerm)}
+              hasActiveFilters={hasActiveFilters}
+              onCreate={() => setIsCreateOpen(true)}
+              onClearSearch={searchTerm ? handleClearSearch : undefined}
+              onClearFilters={hasActiveFilters ? handleResetAllFilters : undefined}
+            />
+          ) : null}
+        </Section>
 
       </div>
     </Layout>
