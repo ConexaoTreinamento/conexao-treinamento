@@ -32,7 +32,7 @@ import useDebounce from "@/hooks/use-debounce"
 import {useForm} from "react-hook-form"
 import {Form, FormControl, FormField, FormItem, FormLabel} from "@/components/ui/form"
 import {Checkbox} from "@/components/ui/checkbox"
-import ConfirmDeleteButton from "@/components/students/confirm-delete-button"
+import ConfirmDeleteButton from "@/components/ui/confirm-delete-button"
 import {useCreateStudent, useDeleteStudent, useRestoreStudent} from "@/lib/hooks/student-mutations"
 import {assignPlanToStudentMutation} from '@/lib/api-client/@tanstack/react-query.gen'
 import {useMutation, useQueryClient, useQueries} from '@tanstack/react-query'
