@@ -358,7 +358,7 @@ function ClassDetailPageContent() {
               <div className="space-y-2">
                 <CardTitle className="text-base sm:text-lg flex items-center gap-2 min-w-0">
                   <Activity className="w-5 h-5 flex-shrink-0" />
-                  <span className="truncate">Informações da Aula</span>
+                  <span className="truncate">Informações da aula</span>
                 </CardTitle>
                 <div className="flex items-center gap-2 flex-wrap">
                   {session.canceled && (
@@ -449,12 +449,6 @@ function ClassDetailPageContent() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {/* Search Input */}
-                <div>
-                  <Label htmlFor="studentSearch">Buscar aluno</Label>
-                  <Input id="studentSearch" placeholder="Digite o nome do aluno..." value={participantSearchTerm} onChange={(e)=> setParticipantSearchTerm(e.target.value)} />
-                </div>
-
                 {filteredStudents.map((student) => (
                   <div key={student.studentId} className="p-3 rounded-lg border bg-card">
                     <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${student.participantExercises?.length ? 'mb-3' : ''}`}>
@@ -523,8 +517,7 @@ function ClassDetailPageContent() {
 
                 {filteredStudents.length === 0 && (
                   <div className="text-center py-12 text-muted-foreground">
-                    <p className="text-sm">Nenhum aluno encontrado.</p>
-                    <Button variant="outline" size="sm" onClick={() => setParticipantSearchTerm("") } className="mt-2">Limpar filtro</Button>
+                    <p className="text-sm">Nenhum aluno adicionado</p>
                   </div>
                 )}
               </div>
@@ -536,7 +529,7 @@ function ClassDetailPageContent() {
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Adicionar Aluno</DialogTitle>
+              <DialogTitle>Adicionar aluno</DialogTitle>
               <DialogDescription>Selecione um aluno para adicionar à aula</DialogDescription>
             </DialogHeader>
             <StudentPicker
