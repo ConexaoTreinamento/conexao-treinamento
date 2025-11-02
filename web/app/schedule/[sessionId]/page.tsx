@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { ArrowLeft, Activity, Calendar, CheckCircle, Edit, Save, X, XCircle, Plus } from "lucide-react"
 import { apiClient } from "@/lib/client"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -87,6 +88,8 @@ function ClassDetailPageContent() {
   const [editTrainer, setEditTrainer] = useState<string>("none")
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [isCreateExerciseOpen, setIsCreateExerciseOpen] = useState(false)
+  const [removeStudentConfirm, setRemoveStudentConfirm] = useState<{ id: string; name: string } | null>(null)
+  const [removeExerciseConfirm, setRemoveExerciseConfirm] = useState<{ id: string; name: string } | null>(null)
 
   // Exercise forms (react-hook-form)
   type RegisterExerciseForm = { exerciseId: string; sets?: string; reps?: string; weight?: string; notes?: string }
@@ -295,6 +298,28 @@ function ClassDetailPageContent() {
   await mCancelRestore.mutateAsync({ client: apiClient, path: { sessionId: session.sessionId! }, body: { cancel: !session.canceled } })
     invalidate()
   }
+  
+  const confirmRemoveStudent = (studentId: string, studentName: string) => {
+  setRemoveStudentConfirm({ id: studentId, name: studentName })
+}
+
+  const confirmRemoveExercise = (exerciseId: string, exerciseName: string) => {
+  setRemoveExerciseConfirm({ id: exerciseId, name: exerciseName })
+}
+
+  const handleConfirmRemoveStudent = async () => {
+    if (removeStudentConfirm) {
+  await removeStudent(removeStudentConfirm.id)
+    setRemoveStudentConfirm(null)
+  }
+}
+
+  const handleConfirmRemoveExercise = async () => {
+    if (removeExerciseConfirm) {
+  await deleteExercise(removeExerciseConfirm.id)
+    setRemoveExerciseConfirm(null)
+  }
+}
 
   if (sessionQuery.isLoading) return <Layout><div className="p-6 text-sm">Carregando...</div></Layout>
   if (sessionQuery.error || !session) return <Layout><div className="p-6 text-sm text-red-600">Sessão não encontrada.</div></Layout>
@@ -451,7 +476,7 @@ function ClassDetailPageContent() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => student.studentId && removeStudent(student.studentId)}
+                          onClick={() => student.studentId && confirmRemoveStudent(student.studentId, student.studentName || student.studentId || '')}
                           className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 flex-shrink-0 sm:hidden"
                           aria-label="Remover aluno da aula"
                           title="Remover"
@@ -468,7 +493,7 @@ function ClassDetailPageContent() {
                             <Activity className="w-3 h-3 mr-1" />Exercícios
                           </Button>
                         </div>
-                        <Button size="sm" variant="ghost" onClick={() => student.studentId && removeStudent(student.studentId)} className="hidden sm:flex h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 flex-shrink-0" aria-label="Remover aluno da aula" title="Remover">
+                        <Button size="sm" variant="ghost" onClick={() => student.studentId && confirmRemoveStudent(student.studentId, student.studentName || student.studentId || '')} className="hidden sm:flex h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 flex-shrink-0" aria-label="Remover aluno da aula" title="Remover">
                           <X className="w-4 h-4" />
                         </Button>
                       </div>
@@ -487,7 +512,7 @@ function ClassDetailPageContent() {
                                   {ex.exerciseName || ex.exerciseId} {ex.setsCompleted!=null && `- ${ex.setsCompleted}x${ex.repsCompleted ?? ''}`} {ex.weightCompleted!=null && `- ${ex.weightCompleted}kg`}
                                 </span>
                               </div>
-                              <Button size="sm" variant="ghost" onClick={() => ex.id && deleteExercise(ex.id)} className="h-6 w-6 p-0 flex-shrink-0 ml-2 text-red-500">
+                              <Button size="sm" variant="ghost" onClick={() => ex.id && confirmRemoveExercise(ex.id, ex.exerciseName || ex.exerciseId || '')} className="h-6 w-6 p-0 flex-shrink-0 ml-2 text-red-500">
                                 <X className="w-4 h-4" />
                               </Button>
                             </div>
@@ -644,6 +669,49 @@ function ClassDetailPageContent() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        {/* Confirm Remove Student AlertDialog */}
+        <AlertDialog open={!!removeStudentConfirm} onOpenChange={(open) => !open && setRemoveStudentConfirm(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remover Aluno da Aula?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja remover <strong>{removeStudentConfirm?.name}</strong> desta aula? 
+                Todos os exercícios registrados para este aluno nesta aula também serão removidos.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+          <AlertDialogFooter>
+        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+        onClick={handleConfirmRemoveStudent}
+        className="bg-red-600 hover:bg-red-700"
+      >
+        Remover
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+
+{/* Confirm Remove Exercise AlertDialog */}
+<AlertDialog open={!!removeExerciseConfirm} onOpenChange={(open) => !open && setRemoveExerciseConfirm(null)}>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle>Remover Exercício?</AlertDialogTitle>
+      <AlertDialogDescription>
+        Tem certeza que deseja remover o exercício <strong>{removeExerciseConfirm?.name}</strong>? 
+        Esta ação não pode ser desfeita.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+      <AlertDialogAction
+        onClick={handleConfirmRemoveExercise}
+        className="bg-red-600 hover:bg-red-700"
+      >
+        Remover
+      </AlertDialogAction>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
 
       </div>
     </Layout>
