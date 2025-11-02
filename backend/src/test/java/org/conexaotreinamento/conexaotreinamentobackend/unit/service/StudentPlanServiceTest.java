@@ -82,7 +82,7 @@ class StudentPlanServiceTest {
     void createPlan_success_whenNameNotExists() {
         // Arrange
         StudentPlanRequestDTO req = new StudentPlanRequestDTO("Gold", 3, 30, "desc");
-        when(studentPlanRepository.existsByNameAndActiveTrue("Gold")).thenReturn(false);
+        when(studentPlanRepository.existsByName("Gold")).thenReturn(false);
         when(studentPlanRepository.save(any(StudentPlan.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
@@ -100,7 +100,7 @@ class StudentPlanServiceTest {
     void createPlan_conflict_whenNameExists() {
         // Arrange
         StudentPlanRequestDTO req = new StudentPlanRequestDTO("Gold", 3, 30, "desc");
-        when(studentPlanRepository.existsByNameAndActiveTrue("Gold")).thenReturn(true);
+        when(studentPlanRepository.existsByName("Gold")).thenReturn(true);
 
         // Act + Assert
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.createPlan(req));
