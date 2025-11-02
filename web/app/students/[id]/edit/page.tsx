@@ -224,7 +224,7 @@ export default function EditStudentPage() {
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h1 className="text-xl font-bold">Editar Aluno</h1>
+            <h1 className="text-2xl font-bold">Editar Aluno</h1>
             <p className="text-sm text-muted-foreground">Atualize as informações do aluno</p>
           </div>
         </div>

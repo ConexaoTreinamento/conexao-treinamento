@@ -376,7 +376,7 @@ function ClassDetailPageContent() {
                     title="Editar"
                   >
                     <Edit className="w-3 h-3 mr-1" />
-                    <span className="hidden sm:inline">Editar</span>
+                    <span>Editar</span>
                   </Button>
                   <Button
                     size="sm"
@@ -390,12 +390,12 @@ function ClassDetailPageContent() {
                     {session.canceled ? (
                       <>
                         <CheckCircle className="w-3 h-3 mr-1" />
-                        <span className="hidden sm:inline">Restaurar</span>
+                        <span>Restaurar</span>
                       </>
                     ) : (
                       <>
                         <XCircle className="w-3 h-3 mr-1" />
-                        <span className="hidden sm:inline">Cancelar</span>
+                        <span>Cancelar</span>
                       </>
                     )}
                   </Button>
@@ -434,11 +434,11 @@ function ClassDetailPageContent() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Activity className="w-5 h-5" />
-                  Alunos da Aula
+                  Alunos da aula
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" onClick={() => setAddDialogOpen(true)}>
-                    Adicionar Aluno
+                    Adicionar aluno
                   </Button>
                 </div>
               </div>
@@ -447,7 +447,7 @@ function ClassDetailPageContent() {
               <div className="space-y-3">
                 {/* Search Input */}
                 <div>
-                  <Label htmlFor="studentSearch">Buscar Aluno</Label>
+                  <Label htmlFor="studentSearch">Buscar aluno</Label>
                   <Input id="studentSearch" placeholder="Digite o nome do aluno..." value={participantSearchTerm} onChange={(e)=> setParticipantSearchTerm(e.target.value)} />
                 </div>
 
@@ -674,7 +674,7 @@ function ClassDetailPageContent() {
         <Dialog open={isEditClassOpen} onOpenChange={setIsEditClassOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Editar Aula</DialogTitle>
+              <DialogTitle>Editar aula</DialogTitle>
               <DialogDescription>Atualize o instrutor desta instância da aula</DialogDescription>
             </DialogHeader>
             <div className="space-y-3">

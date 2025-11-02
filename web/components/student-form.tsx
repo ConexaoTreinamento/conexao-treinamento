@@ -173,7 +173,7 @@ export default function StudentForm({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="w-5 h-5" />
-            Informações Pessoais
+            Informações pessoais
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -267,7 +267,7 @@ export default function StudentForm({
       {/* Emergency Contact */}
       <Card>
         <CardHeader>
-          <CardTitle>Contato de Emergência</CardTitle>
+          <CardTitle>Contato de emergência</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -360,7 +360,7 @@ export default function StudentForm({
       {/* Anamnesis */}
       <Card>
         <CardHeader>
-          <CardTitle>Ficha de Anamnese</CardTitle>
+          <CardTitle>Ficha de anamnese</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Anamnesis fields in responsive grid */}
@@ -507,7 +507,7 @@ export default function StudentForm({
           {/* Physical Impairments Section */}
           <div className="space-y-4 mt-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <h4 className="text-md font-semibold">Comprometimentos Físicos</h4>
+              <h4 className="text-md font-semibold">Comprometimentos físicos</h4>
               <Button
                 type="button"
                 variant="outline"
