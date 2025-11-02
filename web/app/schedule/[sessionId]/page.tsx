@@ -517,7 +517,7 @@ function ClassDetailPageContent() {
 
                 {filteredStudents.length === 0 && (
                   <div className="text-center py-12 text-muted-foreground">
-                    <p className="text-sm">Nenhum aluno adicionado</p>
+                    <p className="text-sm">Nenhum aluno inscrito</p>
                   </div>
                 )}
               </div>
