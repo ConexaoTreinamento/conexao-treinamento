@@ -21,7 +21,6 @@ import Layout from "@/components/layout"
 import { PageHeader } from "@/components/base/page-header"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { findAllAdministratorsOptions, createAdministratorAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
-import type { ListAdministratorsDto, CreateAdministratorAndUserData } from "@/lib/api-client/types.gen"
 import { apiClient } from "@/lib/client";
 
 interface FormData {
@@ -76,8 +75,9 @@ export default function AdministratorsPage() {
   })
 
   // Mutation para criar administrador
+  const createAdministratorMutation = createAdministratorAndUserMutation({client: apiClient})
   const createAdministrator = useMutation({
-    ...createAdministratorAndUserMutation({client: apiClient}),
+    mutationFn: createAdministratorMutation.mutationFn,
     onSuccess: () => {
       setShowSuccess(true)
       resetForm()
@@ -88,15 +88,17 @@ export default function AdministratorsPage() {
       setIsCreateOpen(false)
       setShowSuccess(false)
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error('Erro ao criar administrador:', error)
 
-      if (error.response?.status === 409) {
+      const httpError = error as { response?: { status?: number; data?: { fieldErrors?: Record<string, string>; message?: string } } }
+      
+      if (httpError.response?.status === 409) {
         setErrors({ email: "Email já está em uso" })
-      } else if (error.response?.status === 400 && error.response?.data?.fieldErrors) {
-        setErrors(error.response.data.fieldErrors)
+      } else if (httpError.response?.status === 400 && httpError.response?.data?.fieldErrors) {
+        setErrors(httpError.response.data.fieldErrors)
       } else {
-        setErrors({ general: error.response?.data?.message || "Erro ao cadastrar administrador" })
+        setErrors({ general: httpError.response?.data?.message || "Erro ao cadastrar administrador" })
       }
     }
   })

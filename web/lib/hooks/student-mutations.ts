@@ -26,7 +26,7 @@ export const useCreateStudent = () => {
         if (base.onSuccess) {
           await (base.onSuccess)(...args);
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
       await queryClient.invalidateQueries({
@@ -46,7 +46,7 @@ export const useUpdateStudent = (options: UseMutationOptions<StudentResponseDto,
       if (options.onSuccess) {
         try {
           await options.onSuccess(...args)
-        } catch (e) {
+        } catch {
           // ignore
         }
       }

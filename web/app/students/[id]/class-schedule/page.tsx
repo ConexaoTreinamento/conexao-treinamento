@@ -11,7 +11,7 @@ import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
 import { TrainerSelect } from "@/components/trainer-select"
 import {apiClient} from "@/lib/client"
-import {getAvailableSessionSeriesOptions, getStudentCommitmentsOptions, bulkUpdateCommitmentsMutation, getCurrentStudentPlanOptions, getSessionSeriesCommitmentsOptions, getCommitmentHistoryOptions, getCurrentActiveCommitmentsOptions, updateCommitmentMutation, getStudentCommitmentsQueryKey, getCurrentActiveCommitmentsQueryKey, getScheduleQueryKey, getTrainersForLookupOptions} from "@/lib/api-client/@tanstack/react-query.gen"
+import {getAvailableSessionSeriesOptions, bulkUpdateCommitmentsMutation, getCurrentStudentPlanOptions, getSessionSeriesCommitmentsOptions, getCommitmentHistoryOptions, getCurrentActiveCommitmentsOptions, getStudentCommitmentsQueryKey, getCurrentActiveCommitmentsQueryKey, getScheduleQueryKey, getTrainersForLookupOptions} from "@/lib/api-client/@tanstack/react-query.gen"
 import {useQueryClient, useMutation, useQuery} from "@tanstack/react-query"
 import { TrainerSchedule, CommitmentDetailResponseDto } from "@/lib/api-client"
 import type { TrainerLookupDto } from "@/lib/api-client/types.gen"
@@ -53,10 +53,8 @@ export default function ClassSchedulePage() {
   const availableQuery = useQuery(getAvailableSessionSeriesOptions({client: apiClient}))
   const studentIdQueryOptions = { path: { studentId }, client: apiClient }
 
-  const commitmentsQuery = useQuery(getStudentCommitmentsOptions(studentIdQueryOptions))
   const planQuery = useQuery(getCurrentStudentPlanOptions(studentIdQueryOptions))
   const mutation = useMutation(bulkUpdateCommitmentsMutation({client: apiClient}))
-  const singleMutation = useMutation(updateCommitmentMutation({client: apiClient}))
   const activeCommitmentsQuery = useQuery(getCurrentActiveCommitmentsOptions(studentIdQueryOptions))
   const trainersQuery = useQuery(getTrainersForLookupOptions({ client: apiClient }))
   const participantsQuery = useQuery({
@@ -267,30 +265,6 @@ export default function ClassSchedulePage() {
     return false
   }, [selectedSeries, seriesById])
 
-  const handleQuickToggle = async (seriesId: string, currentlySelected: boolean) => {
-    const target = seriesById.get(seriesId)
-    if(!target) return
-    try {
-      await singleMutation.mutateAsync({ path:{ studentId, sessionSeriesId: seriesId}, body:{ commitmentStatus: currentlySelected? 'NOT_ATTENDING':'ATTENDING' }, client: apiClient })
-      // Invalidate student commitments & active commitments
-      await qc.invalidateQueries({queryKey: getStudentCommitmentsQueryKey(studentIdQueryOptions)})
-      await qc.invalidateQueries({queryKey: getCurrentActiveCommitmentsQueryKey(studentIdQueryOptions)})
-      // Also invalidate schedule views for the month containing today (broad refresh)
-      const today = new Date()
-      const monthStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1))
-      const monthEnd = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth()+1, 0))
-      const monthStartIso = monthStart.toISOString().slice(0,10)
-      const monthEndIso = monthEnd.toISOString().slice(0,10)
-  await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: monthStartIso, endDate: monthEndIso } }) })
-    // Also invalidate recent 7-day window used by Student > Recent Classes
-    const fmt = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`
-    const todayLocal = new Date()
-    const recentEnd = fmt(todayLocal)
-    const recentStart = fmt(new Date(todayLocal.getFullYear(), todayLocal.getMonth(), todayLocal.getDate()-7))
-    await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: recentStart, endDate: recentEnd } }) })
-      setSelectedSeries(prev=> currentlySelected? prev.filter(i=> i!==seriesId): [...prev, seriesId])
-    } catch(e){/* ignore */}
-  }
 
   const toggleSeries = (seriesId: string) => {
     setInitializedSelection(true) // user is manually editing
@@ -330,7 +304,7 @@ export default function ClassSchedulePage() {
     const recentStart = fmt(new Date(todayLocal.getFullYear(), todayLocal.getMonth(), todayLocal.getDate()-7))
     await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: recentStart, endDate: recentEnd } }) })
       router.back()
-    } catch(e){/* no-op */}
+    } catch{/* no-op */}
   }
 
   // Friendly Portuguese labels for commitment status
@@ -390,11 +364,6 @@ export default function ClassSchedulePage() {
         {availableQuery.isLoading && <div className="space-y-2">{[...Array(3)].map((_,i)=><Card key={i} className="animate-pulse"><CardContent className="h-16"/></Card>)}</div>}
         <div className="space-y-3">
           {weeklyByWeekday.map(day=> {
-            const isDaySelected = selectedSeries.some(id=> {
-              const s = seriesById.get(id)
-              return s?.weekday === day.weekday
-            })
-            const canSelectDay = selectedDays.includes(day.day) || selectedDays.length < planDays
             return (
               <Card key={day.weekday}>
                 <CardHeader className="pb-3">

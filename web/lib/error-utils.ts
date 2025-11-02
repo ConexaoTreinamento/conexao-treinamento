@@ -1,7 +1,7 @@
 import { toast } from "@/hooks/use-toast"
 
 export function handleHttpError(
-    error: any,
+    error: unknown,
     context: string,
     defaultMessage?: string
 ): void {
@@ -104,7 +104,7 @@ export function handleHttpError(
 }
 
 //extracts specific field errors for use in forms
-export function extractFieldErrors(error: any): Record<string, string> | null {
+export function extractFieldErrors(error: unknown): Record<string, string> | null {
   if (error?.fieldErrors && typeof error.fieldErrors === 'object') {
     return error.fieldErrors
   }
