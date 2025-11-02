@@ -1,166 +1,273 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect, Fragment } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Search, Filter, Phone, Mail, Calendar, Clock, Edit, Trash2, UserPlus } from "lucide-react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { ShieldAlert, UserPlus } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import Layout from "@/components/layout"
 import TrainerModal from "@/components/trainers/trainer-modal"
 import { PageHeader } from "@/components/base/page-header"
+import { Section } from "@/components/base/section"
+import { Button } from "@/components/ui/button"
+import { EmptyState } from "@/components/base/empty-state"
+import {
+  TrainersToolbar,
+  TrainersFiltersPanel,
+  TrainersGrid,
+  TrainersSkeletonGrid,
+  TrainersEmptyState,
+  TrainersErrorState,
+  type TrainerCardData,
+  type TrainerFilters,
+} from "@/components/trainers/trainers-view"
 import { createTrainerAndUserMutation, findAllTrainersOptions, softDeleteTrainerUserMutation, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { TrainerResponseDto } from "@/lib/api-client"
+import type { ListTrainersDto, TrainerResponseDto } from "@/lib/api-client"
 import { apiClient } from "@/lib/client"
 import { handleHttpError } from "@/lib/error-utils"
 import { useToast } from "@/hooks/use-toast"
+import { useDebounce } from "@/hooks/use-debounce"
 
-// Interface for trainer data to match the modal
+const INITIAL_FILTERS: TrainerFilters = { status: "Ativo", compensation: "all", specialty: "" }
+
+interface NormalizedTrainer extends TrainerCardData {
+  searchText: string
+}
 
 export default function TrainersPage() {
   const [searchTerm, setSearchTerm] = useState("")
+  const [filters, setFilters] = useState<TrainerFilters>({ ...INITIAL_FILTERS })
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [userRole, setUserRole] = useState<string>("admin")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<"create" | "edit">("create")
-  const [editingTrainer, setEditingTrainer] = useState<TrainerResponseDto | null>(null)
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false)
-  const [filters, setFilters] = useState({
-    status: "Ativo",
-    compensation: "all",
-    specialty: "",
-  })
+  const [editingTrainer, setEditingTrainer] = useState<ListTrainersDto | null>(null)
+
   const router = useRouter()
   const { toast } = useToast()
-  const { mutateAsync: deleteTrainer } = useMutation(softDeleteTrainerUserMutation({ client: apiClient }))
-  const { mutateAsync: createTrainer } = useMutation(createTrainerAndUserMutation({ client: apiClient }))
-  const { mutateAsync: updateTrainer } = useMutation(updateTrainerAndUserMutation({ client: apiClient }))
+  const queryClient = useQueryClient()
 
-  const queryClient = useQueryClient();
+  const debouncedSearch = useDebounce(searchTerm.trim().toLowerCase(), 250)
 
-  const invalidateTrainersQueries = () => queryClient.invalidateQueries({
-      predicate: (query) => {
-        const root = (query.queryKey as unknown[])?.[0] as { _id?: string } | undefined
-      if (!root || typeof root !== "object") return false
-      const id = root._id
-      return id === "findAllTrainers" || id === "getTrainersForLookup"
-    }
-  })
   useEffect(() => {
     const role = localStorage.getItem("userRole") || "admin"
     setUserRole(role)
   }, [])
 
-
-  const { data: trainers } = useQuery({
-    ...findAllTrainersOptions({
-      client: apiClient,
+  const invalidateTrainersQueries = useCallback(() => {
+    return queryClient.invalidateQueries({
+      predicate: (query) => (
+        Array.isArray(query.queryKey) &&
+        typeof query.queryKey[0] === "object" &&
+        query.queryKey[0] !== null &&
+        ((query.queryKey[0] as { _id?: string })._id === "findAllTrainers" ||
+          (query.queryKey[0] as { _id?: string })._id === "getTrainersForLookup")
+      ),
     })
+  }, [queryClient])
+
+  const trainersQuery = useQuery({
+    ...findAllTrainersOptions({ client: apiClient }),
   })
 
-  // Handle opening modal for creating a new trainer
-  const handleCreateTrainer = () => {
+  const { data: trainersData, isLoading, error, refetch } = trainersQuery
+
+  const normalizedTrainers = useMemo<NormalizedTrainer[]>(() => {
+    if (!trainersData?.length) {
+      return []
+    }
+
+    return trainersData
+      .filter((trainer): trainer is ListTrainersDto & { id: string } => Boolean(trainer?.id))
+      .map((trainer) => {
+        const specialties = trainer.specialties ?? []
+        const searchTokens = [trainer.name, trainer.email, trainer.phone, specialties.join(" ")] as Array<string | undefined>
+
+        return {
+          id: trainer.id,
+          name: trainer.name ?? "Professor",
+          email: trainer.email ?? null,
+          phone: trainer.phone ?? null,
+          joinDate: trainer.joinDate ?? null,
+          hoursWorked: trainer.hoursWorked ?? null,
+          active: Boolean(trainer.active),
+          compensationType: trainer.compensationType ?? null,
+          specialties,
+          searchText: searchTokens.filter(Boolean).join(" ").toLowerCase(),
+        }
+      })
+  }, [trainersData])
+
+  const trainerMap = useMemo(() => {
+    const map = new Map<string, ListTrainersDto>()
+    trainersData?.forEach((trainer) => {
+      if (trainer?.id) {
+        map.set(trainer.id, trainer)
+      }
+    })
+    return map
+  }, [trainersData])
+
+  const filteredTrainers = useMemo(() => {
+    return normalizedTrainers.filter((trainer) => {
+      const matchesSearch = debouncedSearch ? trainer.searchText.includes(debouncedSearch) : true
+      const matchesStatus =
+        filters.status === "all" ? true : filters.status === "Ativo" ? trainer.active : !trainer.active
+      const matchesCompensation =
+        filters.compensation === "all"
+          ? true
+          : filters.compensation === "Mensalista"
+            ? trainer.compensationType === "MONTHLY"
+            : trainer.compensationType === "HOURLY"
+      const matchesSpecialty = filters.specialty
+        ? trainer.specialties.some((spec) => spec.toLowerCase().includes(filters.specialty.toLowerCase()))
+        : true
+
+      return matchesSearch && matchesStatus && matchesCompensation && matchesSpecialty
+    })
+  }, [normalizedTrainers, debouncedSearch, filters])
+
+  const hasActiveFilters = useMemo(() => {
+    return filters.status !== INITIAL_FILTERS.status || filters.compensation !== INITIAL_FILTERS.compensation || Boolean(filters.specialty.trim())
+  }, [filters])
+
+  const resultsSummary = useMemo(() => {
+    if (isLoading) {
+      return "Carregando professores..."
+    }
+
+    if (error) {
+      return "Não foi possível carregar os professores."
+    }
+
+    if (!normalizedTrainers.length) {
+      return "Nenhum professor cadastrado ainda."
+    }
+
+    if (!filteredTrainers.length) {
+      return "Ajuste a busca ou filtros para encontrar professores."
+    }
+
+    if (hasActiveFilters || debouncedSearch) {
+      return `${filteredTrainers.length} de ${normalizedTrainers.length} professores exibidos`
+    }
+
+    return `${filteredTrainers.length} professores cadastrados`
+  }, [debouncedSearch, error, filteredTrainers.length, hasActiveFilters, isLoading, normalizedTrainers.length])
+
+  const { mutateAsync: createTrainer } = useMutation(createTrainerAndUserMutation({ client: apiClient }))
+  const { mutateAsync: updateTrainer } = useMutation(updateTrainerAndUserMutation({ client: apiClient }))
+  const { mutateAsync: deleteTrainer } = useMutation(softDeleteTrainerUserMutation({ client: apiClient }))
+
+  const handleToggleFilters = useCallback(() => {
+    setIsFiltersOpen((open) => !open)
+  }, [])
+
+  const handleFiltersChange = useCallback((nextFilters: TrainerFilters) => {
+    setFilters(nextFilters)
+  }, [])
+
+  const handleClearFilters = useCallback(() => {
+    setFilters({ ...INITIAL_FILTERS })
+  }, [])
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchTerm(value)
+  }, [])
+
+  const handleCreateTrainer = useCallback(() => {
     setModalMode("create")
     setEditingTrainer(null)
     setIsModalOpen(true)
-  }
+  }, [])
 
-  // Handle opening modal for editing an existing trainer
-  const handleEditTrainer = (trainer: TrainerResponseDto) => {
-    setModalMode("edit")
-    setEditingTrainer(trainer)
-    setIsModalOpen(true)
-  }
-
-  // Handle modal submission
-  const handleModalSubmit = async (formData: Record<string, unknown>) => {
-    try {
-      if (modalMode === "create") {
-        // Create new trainer
-        await createTrainer({
-          body: formData,
-          client: apiClient,
-        })
-        toast({ title: "Professor criado", description: "Professor cadastrado com sucesso.", variant: 'success', duration: 3000 })
-      } else {
-        // Update existing trainer
-        await updateTrainer({
-          path: { id: String(editingTrainer?.id) },
-          body: formData,
-          client: apiClient,
-        })
-        toast({ title: "Professor atualizado", description: "As alterações foram salvas.", variant: 'success', duration: 3000 })
+  const handleEditTrainer = useCallback(
+    (trainerId: string) => {
+      const trainer = trainerMap.get(trainerId)
+      if (!trainer) {
+        return
       }
-      await invalidateTrainersQueries()
-      setIsModalOpen(false)
-      setEditingTrainer(null)
-    } catch (error: unknown) {
-      const action = modalMode === "create" ? "criar treinador" : "atualizar treinador"
-      handleHttpError(error, action, `Não foi possível ${action}. Tente novamente.`)
-    }
-  }
 
-  // Handle trainer deletion
-  const handleDeleteTrainer = async (trainerId: string) => {
-    if (confirm("Tem certeza que deseja excluir este professor?")) {
+      setModalMode("edit")
+  setEditingTrainer(trainer)
+      setIsModalOpen(true)
+    },
+    [trainerMap],
+  )
+
+  const handleOpenTrainerDetails = useCallback(
+    (trainerId: string) => {
+      router.push(`/trainers/${trainerId}`)
+    },
+    [router],
+  )
+
+  const handleModalSubmit = useCallback(
+    async (formData: Record<string, unknown>) => {
       try {
-        await deleteTrainer({
-          path: { id: String(trainerId) }, client: apiClient
-        });
-        toast({ title: "Professor excluído", description: "O professor foi marcado como inativo.", variant: 'destructive', duration: 3000 })
+        if (modalMode === "create") {
+          await createTrainer({ client: apiClient, body: formData })
+          toast({
+            title: "Professor criado",
+            description: "Professor cadastrado com sucesso.",
+            variant: "success",
+            duration: 3000,
+          })
+        } else if (editingTrainer?.id) {
+          await updateTrainer({ client: apiClient, path: { id: String(editingTrainer.id) }, body: formData })
+          toast({
+            title: "Professor atualizado",
+            description: "As alterações foram salvas.",
+            variant: "success",
+            duration: 3000,
+          })
+        }
+
         await invalidateTrainersQueries()
-      } catch (error: unknown) {
-        handleHttpError(error, "excluir treinador", "Não foi possível excluir o treinador. Tente novamente.")
+        setIsModalOpen(false)
+        setEditingTrainer(null)
+      } catch (submitError) {
+        const action = modalMode === "create" ? "criar treinador" : "atualizar treinador"
+        handleHttpError(submitError, action, `Não foi possível ${action}. Tente novamente.`)
       }
-    }
-  }
+    },
+    [createTrainer, editingTrainer, invalidateTrainersQueries, modalMode, toast, updateTrainer],
+  )
 
-  // Filter trainers based on search and filters
-  const filteredTrainers = trainers?.filter(trainer => {
-    const matchesSearch = trainer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trainer.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = filters.status === "all" || (trainer.active ? filters.status === "Ativo" : filters.status === "Inativo")
-    const matchesCompensation = filters.compensation === "all" || trainer.compensationType === (filters.compensation === "Mensalista" ? "MONTHLY" : "HOURLY")
-    const matchesSpecialty = !filters.specialty ||
-      trainer.specialties?.some(spec =>
-        spec.toLowerCase().includes(filters.specialty.toLowerCase())
-      )
+  const handleDeleteTrainer = useCallback(
+    async (trainerId: string) => {
+      const confirmDelete = confirm("Tem certeza que deseja excluir este professor?")
+      if (!confirmDelete) {
+        return
+      }
 
-    return matchesSearch && matchesStatus && matchesCompensation && matchesSpecialty
-  })
+      try {
+        await deleteTrainer({ client: apiClient, path: { id: String(trainerId) } })
+        toast({
+          title: "Professor excluído",
+          description: "O professor foi marcado como inativo.",
+          variant: "destructive",
+          duration: 3000,
+        })
+        await invalidateTrainersQueries()
+      } catch (deleteError) {
+        handleHttpError(deleteError, "excluir treinador", "Não foi possível excluir o treinador. Tente novamente.")
+      }
+    },
+    [deleteTrainer, invalidateTrainersQueries, toast],
+  )
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Ativo":
-        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-      case "Inativo":
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-      case "Licença":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-      default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-    }
-  }
+  const canManageTrainers = userRole === "admin"
+  const hasSearchTerm = Boolean(searchTerm.trim())
 
-  const getCompensationColor = (compensation: 'HOURLY' | 'MONTHLY') => {
-    return compensation === "MONTHLY"
-      ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-      : "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
-  }
-
-  // Only show this page to admins
-  if (userRole !== "admin") {
+  if (!canManageTrainers) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold mb-2">Acesso Negado</h2>
-            <p className="text-muted-foreground">Apenas administradores podem acessar esta página.</p>
-          </div>
+        <div className="py-16">
+          <EmptyState
+            icon={<ShieldAlert className="h-12 w-12" aria-hidden="true" />}
+            title="Acesso restrito"
+            description="Apenas administradores podem acessar a gestão de professores."
+          />
         </div>
       </Layout>
     )
@@ -168,193 +275,71 @@ export default function TrainersPage() {
 
   return (
     <Layout>
-      <div className="space-y-4">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <PageHeader 
-            title="Professores" 
-            description="Gerencie professores e instrutores" 
-          />
-          {userRole === "admin" && (
-            <Button onClick={handleCreateTrainer} className="bg-green-600 hover:bg-green-700">
-              <UserPlus className="w-4 h-4 mr-2" />
-              Novo Professor
-            </Button>
-          )}
-        </div>
-
-        {/* Search and Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Buscar por nome ou email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
-            className="sm:w-auto"
-          >
-            <Filter className="w-4 h-4 mr-2" />
-            Filtros
+      <div className="space-y-6">
+        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <PageHeader title="Professores" description="Gerencie professores e instrutores" />
+          <Button className="bg-green-600 hover:bg-green-700" onClick={handleCreateTrainer}>
+            <UserPlus className="mr-2 h-4 w-4" aria-hidden="true" />
+            Novo professor
           </Button>
         </div>
 
-        {/* Filters Panel */}
-        {isFiltersOpen && (
-          <Card className="p-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Status</label>
-                <select
-                  value={filters.status}
-                  onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                  className="w-full p-2 border rounded-md"
-                >
-                  <option value="Ativo">Ativo</option>
-                  <option value="Inativo">Inativo</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Compensação</label>
-                <select
-                  value={filters.compensation}
-                  onChange={(e) => setFilters({ ...filters, compensation: e.target.value })}
-                  className="w-full p-2 border rounded-md"
-                >
-                  <option value="all">Todos</option>
-                  <option value="Horista">Horista</option>
-                  <option value="Mensalista">Mensalista</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Especialidade</label>
-                <Input
-                  placeholder="Filtrar por especialidade..."
-                  value={filters.specialty}
-                  onChange={(e) => setFilters({ ...filters, specialty: e.target.value })}
-                />
-              </div>
-            </div>
-          </Card>
-        )}
+        <TrainersToolbar
+          searchValue={searchTerm}
+          onSearchChange={handleSearchChange}
+          onToggleFilters={handleToggleFilters}
+          filtersOpen={isFiltersOpen}
+          hasActiveFilters={hasActiveFilters}
+        />
 
-        {/* Trainers Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredTrainers?.map((trainer) => (
-            <Card
-              key={trainer.id}
-              className="hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => router.push(`/trainers/${trainer.id}`)}
-            >
-              <CardHeader className="pb-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Avatar>
-                      <AvatarFallback>
-                        {trainer.name?.split(" ").map((n) => n[0]).join("")}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <CardTitle className="text-base">{trainer.name}</CardTitle>
-                      <div className="flex gap-1 mt-1">
-                        <Badge className={getStatusColor(trainer.active ? "Ativo" : "Inativo")}>
-                          {trainer.active ? "Ativo" : "Inativo"}
-                        </Badge>
-                        <Badge className={getCompensationColor(trainer.compensationType!)}>
-                          {trainer.compensationType === "MONTHLY" ? "Mensalista" : "Horista"}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                  {userRole === "admin" && (
-                    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                      {
-                        trainer.active &&
-                        <Fragment>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEditTrainer(trainer)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDeleteTrainer(trainer.id!)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </Fragment>
-                      }
-                    </div>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-muted-foreground" />
-                    <span className="truncate">{trainer.email}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-muted-foreground" />
-                    <span>{trainer.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span>Desde {new Date(trainer.joinDate!).toLocaleDateString("pt-BR")}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-muted-foreground" />
-                    <span>{trainer.hoursWorked}h este mês</span>
-                  </div>
-                </div>
+        {isFiltersOpen ? (
+          <TrainersFiltersPanel filters={filters} onChange={handleFiltersChange} />
+        ) : null}
 
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Especialidades:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {trainer.specialties!.slice(0, 2).map((specialty, idx) => (
-                      <Badge key={idx} variant="outline" className="text-xs">
-                        {specialty}
-                      </Badge>
-                    ))}
-                    {trainer.specialties!.length > 2 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{trainer.specialties!.length - 2}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Section title="Professores" description={resultsSummary}>
+          {isLoading ? <TrainersSkeletonGrid /> : null}
 
-        {filteredTrainers?.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Nenhum professor encontrado.</p>
-          </div>
-        )}
+          {error ? (
+            <TrainersErrorState
+              message={error instanceof Error ? error.message : undefined}
+              onRetry={() => {
+                void refetch()
+              }}
+            />
+          ) : null}
+
+          {!isLoading && !error && filteredTrainers.length ? (
+            <TrainersGrid
+              trainers={filteredTrainers}
+              canManage={canManageTrainers}
+              onOpen={handleOpenTrainerDetails}
+              onEdit={handleEditTrainer}
+              onDelete={handleDeleteTrainer}
+            />
+          ) : null}
+
+          {!isLoading && !error && !filteredTrainers.length ? (
+            <TrainersEmptyState
+              hasSearch={hasSearchTerm}
+              hasActiveFilters={hasActiveFilters}
+              onCreate={handleCreateTrainer}
+              onClearSearch={hasSearchTerm ? () => handleSearchChange("") : undefined}
+              onClearFilters={hasActiveFilters ? handleClearFilters : undefined}
+            />
+          ) : null}
+        </Section>
+
+        <TrainerModal
+          open={isModalOpen}
+          mode={modalMode}
+          initialData={(editingTrainer ?? undefined) as Partial<TrainerResponseDto> | undefined}
+          onClose={() => {
+            setIsModalOpen(false)
+            setEditingTrainer(null)
+          }}
+          onSubmit={handleModalSubmit}
+        />
       </div>
-
-      {/* Trainer Modal */}
-      <TrainerModal
-        open={isModalOpen}
-        mode={modalMode}
-        initialData={editingTrainer || undefined}
-        onClose={() => {
-          setIsModalOpen(false)
-          setEditingTrainer(null)
-        }}
-        onSubmit={handleModalSubmit}
-      />
     </Layout>
   )
 }
