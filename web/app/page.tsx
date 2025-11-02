@@ -12,18 +12,17 @@ import Image from "next/image"
 import { useMutation } from "@tanstack/react-query"
 import { loginMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+import { useToast } from "@/hooks/use-toast"
 
 export default function HomePage() {
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const { toast } = useToast()
   const { mutate: login, isPending } = useMutation({
     ...loginMutation({client: apiClient}),
     onSuccess: (result) => {
-      setError(null)
       const payload = getJWTTokenPayload(result.token!)
       if (payload.role && result.token) {
         localStorage.setItem("userRole", getRoleName(payload.role))
@@ -34,13 +33,17 @@ export default function HomePage() {
     },
     onError: (error) => {
       console.error("Erro no login:", error)
-      setError("E-mail ou senha incorretos!")
+      toast({
+        title: "Erro",
+        description: "E-mail ou senha incorretos!",
+        variant: "destructive",
+        duration: 5000
+      })
     }
   });
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
-  setError(null)
     login({ body: { email, password }, client: apiClient })
   }
 
@@ -74,12 +77,6 @@ export default function HomePage() {
           </div>
         </CardHeader>
         <CardContent>
-          {error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertTitle>Erro</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
