@@ -7,9 +7,7 @@ import {
 // Create a custom client with query serializer for nested objects
 export const apiClient = createClient(
   createConfig<ClientOptions>({
-    baseUrl:
-      process.env.NEXT_PUBLIC_API_URL ||
-      "https://eagwj8dp9p.us-east-2.awsapprunner.com",
+    baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080",
     auth: () => localStorage.getItem("token") ?? undefined,
     querySerializer: (params: Record<string, unknown>) => {
       const searchParams = new URLSearchParams();
