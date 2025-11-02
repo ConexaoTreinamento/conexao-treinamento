@@ -205,7 +205,7 @@ export default function EvaluationForm({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="w-5 h-5" />
-              Dados Básicos
+              Dados básicos
             </CardTitle>
             <CardDescription>
               Peso, altura e índice de massa corporal
@@ -273,7 +273,7 @@ export default function EvaluationForm({
               <h3 className="text-lg font-semibold mb-3">Braços</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Braço Direito Relaxado (cm)</Label>
+                  <Label>Braço direito relaxado (cm)</Label>
                   <Input
                     type="number"
                     step="0.1"
@@ -293,7 +293,7 @@ export default function EvaluationForm({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Braço Direito Flexionado (cm)</Label>
+                  <Label>Braço direito flexionado (cm)</Label>
                   <Input
                     type="number"
                     step="0.1"
@@ -303,7 +303,7 @@ export default function EvaluationForm({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Braço Esquerdo Flexionado (cm)</Label>
+                  <Label>Braço esquerdo flexionado (cm)</Label>
                   <Input
                     type="number"
                     step="0.1"
@@ -357,7 +357,7 @@ export default function EvaluationForm({
               <h3 className="text-lg font-semibold mb-3">Pernas</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Coxa Direita (cm)</Label>
+                  <Label>Coxa direita (cm)</Label>
                   <Input
                     type="number"
                     step="0.1"
@@ -377,7 +377,7 @@ export default function EvaluationForm({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Panturrilha Direita (cm)</Label>
+                  <Label>Panturrilha direita (cm)</Label>
                   <Input
                     type="number"
                     step="0.1"
@@ -387,7 +387,7 @@ export default function EvaluationForm({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Panturrilha Esquerda (cm)</Label>
+                  <Label>Panturrilha esquerda (cm)</Label>
                   <Input
                     type="number"
                     step="0.1"
@@ -404,7 +404,7 @@ export default function EvaluationForm({
         {/* Dobras Subcutâneas */}
         <Card>
           <CardHeader>
-            <CardTitle>Dobras Subcutâneas</CardTitle>
+            <CardTitle>Dobras subcutâneas</CardTitle>
             <CardDescription>
               Medidas das dobras cutâneas em milímetros
             </CardDescription>
@@ -526,7 +526,7 @@ export default function EvaluationForm({
           </Button>
           <Button type="submit" disabled={isLoading} className="flex items-center gap-2">
             <Save className="w-4 h-4" />
-            {isLoading ? "Salvando..." : isEdit ? "Atualizar Avaliação" : "Salvar Avaliação"}
+            {isLoading ? "Salvando..." : isEdit ? "Atualizar avaliação" : "Salvar avaliação"}
           </Button>
         </div>
       </form>

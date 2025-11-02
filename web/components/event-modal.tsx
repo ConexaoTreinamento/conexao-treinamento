@@ -208,10 +208,10 @@ export default function EventModal({
           <div className="space-y-6">
             <div className="w-full">
               <div className="space-y-2">
-                <Label htmlFor="eventName">Nome do Evento *</Label>
+                <Label htmlFor="eventName">Nome do evento *</Label>
                 <Input
                   id="eventName"
-                  placeholder="Ex: Corrida no Parque"
+                  placeholder="Ex: Corrida no parque"
                   {...register("name", { required: true })}
                 />
               </div>
@@ -227,7 +227,7 @@ export default function EventModal({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="eventStartTime">Horário de Início *</Label>
+                <Label htmlFor="eventStartTime">Horário de início *</Label>
                 <Controller
                   control={control}
                   name="startTime"
@@ -243,7 +243,7 @@ export default function EventModal({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="eventEndTime">Horário de Fim *</Label>
+                <Label htmlFor="eventEndTime">Horário de fim *</Label>
                 <Controller
                   control={control}
                   name="endTime"
@@ -313,7 +313,7 @@ export default function EventModal({
                   </p>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => setIsAddParticipantDialogOpen(true)}>
-                  Adicionar Aluno
+                  Adicionar aluno
                 </Button>
               </div>
 
@@ -395,7 +395,7 @@ export default function EventModal({
                   Carregando...
                 </>
               ) : (
-                mode === "create" ? "Criar Evento" : "Salvar Alterações"
+                mode === "create" ? "Criar evento" : "Salvar alterações"
               )}
             </Button>
           </DialogFooter>

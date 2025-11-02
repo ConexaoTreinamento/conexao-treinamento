@@ -65,7 +65,7 @@ export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansMod
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
             <AlertTriangle className="w-5 h-5" />
-            Planos Próximos ao Vencimento
+            Planos próximos ao vencimento
           </DialogTitle>
           <DialogDescription>
             Alunos com planos que vencem nos próximos 7 dias ou já vencidos
@@ -152,7 +152,7 @@ export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansMod
           </Button>
           <Button asChild>
             <Link href="/students" onClick={onClose}>
-              Ver Todos os Alunos
+              Ver todos os alunos
             </Link>
           </Button>
         </div>
