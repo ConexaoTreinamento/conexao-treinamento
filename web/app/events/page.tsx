@@ -1,10 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Plus, Calendar, Clock, MapPin, Users, Trophy } from "lucide-react"
+import { useMemo, useState } from "react"
+import { Trophy } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import EventModal from "@/components/event-modal"
@@ -15,6 +12,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/use-debounce"
 import type { EventResponseDto } from "@/lib/api-client/types.gen"
 import { PageHeader } from "@/components/base/page-header"
+import { EventsGrid, EventsSkeletonGrid, EventsSearchBar, type EventCardData } from "@/components/events/events-view"
+import { EmptyState } from "@/components/base/empty-state"
+import { Button } from "@/components/ui/button"
 
 export default function EventsPage() {
   const router = useRouter()
@@ -30,7 +30,7 @@ export default function EventsPage() {
     }),
   )
 
-  const events: EventResponseDto[] = eventsQuery.data ?? []
+  const events = useMemo<EventResponseDto[]>(() => eventsQuery.data ?? [], [eventsQuery.data])
   const { isLoading, error } = eventsQuery
 
   const queryClient = useQueryClient()
@@ -68,11 +68,8 @@ export default function EventsPage() {
     }
   }
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) {
-      return "Data não informada"
-    }
-
+  const formatDateLabel = (dateString?: string) => {
+    if (!dateString) return "Data não informada"
     const date = new Date(dateString)
     return date.toLocaleDateString("pt-BR", {
       weekday: "short",
@@ -81,141 +78,82 @@ export default function EventsPage() {
     })
   }
 
-  const filteredEvents = events
+  const normalizeEvents = useMemo<EventCardData[]>(() => {
+    const eventsWithId = events.filter((event): event is EventResponseDto & { id: string } => Boolean(event.id))
+
+    return eventsWithId.map((event) => ({
+      id: event.id,
+      name: event.name ?? "Evento",
+      dateLabel: formatDateLabel(event.date),
+      timeLabel: `${event.startTime ?? "--:--"} - ${event.endTime ?? "--:--"}`,
+      location: event.location ?? "Local não informado",
+      participantsLabel: `${event.participants?.length ?? 0} participantes`,
+      description: event.description ?? undefined,
+      instructorLabel: event.instructor ? `Instrutor: ${event.instructor}` : undefined,
+    }))
+  }, [events])
 
   return (
     <Layout>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <PageHeader 
-            title="Eventos" 
-            description="Gerencie eventos, workshops e atividades especiais" 
-          />
-          <Button onClick={() => setIsCreateModalOpen(true)} className="bg-green-600 hover:bg-green-700">
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Evento
-          </Button>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <PageHeader title="Eventos" description="Gerencie workshops, aulas especiais e atividades coletivas." />
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <Input
-              placeholder="Buscar eventos..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-sm"
-            />
-          </div>
-        </div>
-
-        {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <Card key={i} className="animate-pulse">
-                <CardHeader className="pb-3">
-                  <div className="h-4 bg-gray-200 rounded w-3/4" />
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="h-3 bg-gray-200 rounded" />
-                    <div className="h-3 bg-gray-200 rounded w-5/6" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {error && (
-          <div className="text-center py-12">
-            <p className="text-red-600">
-              Erro ao carregar eventos: {error instanceof Error ? error.message : "Erro desconhecido"}
-            </p>
-          </div>
-        )}
-
-        {!isLoading && !error && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredEvents.map((event) => (
-              <Card
-                key={event.id}
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => router.push(`/events/${event.id}`)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg truncate">{event.name}</CardTitle>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Calendar className="w-4 h-4 text-muted-foreground" />
-                      <span>{formatDate(event.date)}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      <span>
-                        {event.startTime} - {event.endTime}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <MapPin className="w-4 h-4 text-muted-foreground" />
-                      <span className="truncate">{event.location}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Users className="w-4 h-4 text-muted-foreground" />
-                      <span>{event.participants?.length ?? 0} participantes</span>
-                    </div>
-                  </div>
-
-                  <div className="pt-3 border-t">
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {event.description}
-                    </p>
-                  </div>
-
-                  <div className="pt-3 border-t">
-                    <p className="text-sm font-medium">{event.instructor || "Instrutor não informado"}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {!isLoading && !error && (filteredEvents.length === 0) && (
-          <div className="text-center py-12">
-            <Trophy className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-            <h3 className="text-lg font-semibold mb-2">
-              {searchTerm ? "Nenhum evento encontrado" : "Nenhum evento cadastrado"}
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              {searchTerm
-                ? "Tente buscar por outro termo ou limpe o filtro para ver todos os eventos."
-                : "Comece criando seu primeiro evento para organizar atividades especiais."}
-            </p>
-            {searchTerm ? (
-              <Button variant="outline" onClick={() => setSearchTerm("")}>
-                Limpar filtro
-              </Button>
-            ) : (
-              <Button onClick={() => setIsCreateModalOpen(true)} className="bg-green-600 hover:bg-green-700">
-                <Plus className="w-4 h-4 mr-2" />
-                Criar Primeiro Evento
-              </Button>
-            )}
-          </div>
-        )}
-
-        <EventModal
-          open={isCreateModalOpen}
-          mode="create"
-          onClose={() => setIsCreateModalOpen(false)}
-          onSubmit={handleCreateEvent}
+        <EventsSearchBar
+          value={searchTerm}
+          onValueChange={setSearchTerm}
+          onReset={() => setSearchTerm("")}
+          actionLabel="Novo evento"
+          onAction={() => setIsCreateModalOpen(true)}
         />
+
+        {isLoading ? <EventsSkeletonGrid /> : null}
+
+        {error ? (
+          <EmptyState
+            title="Não foi possível carregar os eventos"
+            description={error instanceof Error ? error.message : "Tente novamente em instantes."}
+            action={
+              <Button variant="outline" onClick={() => eventsQuery.refetch()}>
+                Tentar novamente
+              </Button>
+            }
+          />
+        ) : null}
+
+        {!isLoading && !error ? (
+          normalizeEvents.length ? (
+            <EventsGrid
+              events={normalizeEvents}
+              onSelect={(id) => router.push(`/events/${id}`)}
+              emptyIllustration={<Trophy className="h-10 w-10" aria-hidden="true" />}
+            />
+          ) : (
+            <EmptyState
+              icon={<Trophy className="h-10 w-10" aria-hidden="true" />}
+              title={searchTerm ? "Nenhum evento encontrado" : "Nenhum evento cadastrado"}
+              description={
+                searchTerm
+                  ? "Tente buscar por outro termo ou limpe o filtro para ver todos os eventos."
+                  : "Comece criando seu primeiro evento para organizar atividades especiais."
+              }
+              action={
+                searchTerm ? (
+                  <Button variant="outline" onClick={() => setSearchTerm("")}>
+                    Limpar filtro
+                  </Button>
+                ) : (
+                  <Button className="bg-green-600 hover:bg-green-700" onClick={() => setIsCreateModalOpen(true)}>
+                    Novo evento
+                  </Button>
+                )
+              }
+            />
+          )
+        ) : null}
+
+        <EventModal open={isCreateModalOpen} mode="create" onClose={() => setIsCreateModalOpen(false)} onSubmit={handleCreateEvent} />
       </div>
     </Layout>
   )
