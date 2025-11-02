@@ -15,12 +15,16 @@ const normalizeFieldErrors = (raw: Record<string, unknown>): FieldErrors | undef
   const entries = Object.entries(raw).reduce<FieldErrors>((acc, [key, value]) => {
     if (typeof value === "string" && value.trim().length > 0) {
       acc[key] = value
+
       return acc
     }
 
     if (Array.isArray(value)) {
       const first = value.find((item): item is string => typeof item === "string" && item.trim().length > 0)
-      if (first) acc[key] = first
+      if (first) {
+        acc[key] = first
+      }
+
       return acc
     }
 
