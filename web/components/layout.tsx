@@ -100,7 +100,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 						</SheetTrigger>
 						<SheetContent side="right" className="w-64">
 							<VisuallyHidden>
-								<SheetTitle>Menu de Navegação</SheetTitle>
+								<SheetTitle>Menu de navegação</SheetTitle>
 							</VisuallyHidden>
 							<div className="flex flex-col h-full">
 								<div className="p-4 border-b">
