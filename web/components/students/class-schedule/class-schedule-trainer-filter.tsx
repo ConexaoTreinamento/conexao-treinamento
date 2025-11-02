@@ -1,7 +1,7 @@
 "use client"
 
 import { Label } from "@/components/ui/label"
-import { TrainerSelect } from "@/components/trainer-select"
+import { TrainerSelect } from "@/components/trainers/trainer-select"
 import type { TrainerLookupDto } from "@/lib/api-client/types.gen"
 
 interface ClassScheduleTrainerFilterProps {

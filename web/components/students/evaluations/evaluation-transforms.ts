@@ -1,4 +1,4 @@
-import type { EvaluationData } from "@/components/evaluation-form"
+import type { EvaluationData } from "@/components/students/evaluation-form"
 import type { PhysicalEvaluationResponse } from "@/lib/hooks/evaluation-queries"
 import type { PhysicalEvaluationRequest } from "@/lib/hooks/evaluation-mutations"
 

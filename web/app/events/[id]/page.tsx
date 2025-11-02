@@ -8,7 +8,7 @@ import { ArrowLeft, Calendar, CheckCircle, Clock, Edit, MapPin, Trophy, Users, X
 import { Input } from "@/components/ui/input"
 import { useParams, useRouter } from "next/navigation"
 import Layout from "@/components/layout"
-import EventModal from "@/components/event-modal"
+import EventModal from "@/components/events/event-modal"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   findEventByIdOptions,
@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { apiClient } from "@/lib/client"
 import type { EventResponseDto, EventParticipantResponseDto } from "@/lib/api-client/types.gen"
-import type { EventFormData } from "@/components/event-modal"
+import type { EventFormData } from "@/components/events/event-modal"
 import type { StudentSummary } from "@/components/students/student-picker"
 
 export default function EventDetailPage() {

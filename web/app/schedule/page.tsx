@@ -9,7 +9,7 @@ import { Calendar, Clock, Plus, User, CheckCircle, XCircle, CalendarDays, Chevro
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import Layout from "@/components/layout"
-import ClassModal from "@/components/class-modal"
+import ClassModal from "@/components/schedule/class-modal"
 import { apiClient } from "@/lib/client"
 import { getScheduleOptions, findAllTrainersOptions, getSessionOptions, getScheduleQueryKey, createOneOffSessionMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { SessionResponseDto, StudentCommitmentResponseDto } from "@/lib/api-client"
