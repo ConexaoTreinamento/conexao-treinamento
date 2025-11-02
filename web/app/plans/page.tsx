@@ -2,7 +2,7 @@
 
 import {useState, useMemo} from 'react'
 import Layout from '@/components/layout'
-import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query'
+import {useQuery, useMutation, useQueryClient, type DefaultError} from '@tanstack/react-query'
 import {apiClient} from '@/lib/client'
 import {getAllPlansOptions, createPlanMutation, deletePlanMutation} from '@/lib/api-client/@tanstack/react-query.gen'
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
@@ -17,6 +17,7 @@ import {z} from 'zod'
 import {zodResolver} from '@hookform/resolvers/zod'
 import {useToast} from '@/hooks/use-toast'
 import { PageHeader } from '@/components/base/page-header'
+import type { StudentPlanResponseDto, Options, DeletePlanData, CreatePlanData } from '@/lib/api-client'
 
 const planSchema = z.object({
   name: z.string().min(2,'Nome obrigatório'),
@@ -26,13 +27,31 @@ const planSchema = z.object({
 
 type PlanForm = z.infer<typeof planSchema>
 
+type DeletePlanContext = {
+  prev?: StudentPlanResponseDto[]
+}
+
+type RawPlan = StudentPlanResponseDto & {
+  planId?: string
+  planName?: string
+  planMaxDays?: number
+  planDurationDays?: number
+}
+
+type NormalizedPlan = {
+  id: string
+  name: string
+  maxDays: number
+  durationDays: number
+}
+
 export default function PlansPage(){
   const qc = useQueryClient()
   const {toast} = useToast()
   const plansQueryOptions = getAllPlansOptions({client: apiClient})
   const {data, isLoading, error} = useQuery(plansQueryOptions)
 
-  const createPlan = useMutation({
+  const createPlan = useMutation<StudentPlanResponseDto, DefaultError, Options<CreatePlanData>>({
     ...createPlanMutation({client: apiClient}),
     onSuccess: async () => {
       // invalidate after successful create
@@ -44,19 +63,22 @@ export default function PlansPage(){
     onError: () => toast({title:'Erro ao criar plano', variant:'destructive'})
   })
 
-  const deletePlan = useMutation({
+  const deletePlan = useMutation<unknown, DefaultError, Options<DeletePlanData>, DeletePlanContext>({
     ...deletePlanMutation({client: apiClient}),
     // optimistic update
     onMutate: async (vars) => {
       await qc.cancelQueries({queryKey: plansQueryOptions.queryKey})
-      const prev = qc.getQueryData(plansQueryOptions.queryKey)
+      const prev = qc.getQueryData<StudentPlanResponseDto[]>(plansQueryOptions.queryKey)
       if(prev){
-        qc.setQueryData(plansQueryOptions.queryKey, prev.filter(p=> p.id !== vars.path.planId))
+        const filtered = prev.filter(plan => plan?.id !== vars.path.planId)
+        qc.setQueryData<StudentPlanResponseDto[]>(plansQueryOptions.queryKey, filtered)
       }
       return {prev}
     },
-    onError: (_err: Error, context: { prev?: unknown[] }) => {
-      if(context?.prev) qc.setQueryData(plansQueryOptions.queryKey, context.prev)
+    onError: (_err, _vars, context) => {
+      if(context?.prev){
+        qc.setQueryData<StudentPlanResponseDto[] | undefined>(plansQueryOptions.queryKey, context.prev)
+      }
       toast({title:'Erro ao excluir plano', variant:'destructive'})
     },
     onSuccess: () => toast({title:'Plano excluído'}),
@@ -65,14 +87,21 @@ export default function PlansPage(){
 
   // Normalize plans: support both API field naming variants (planId/planName or id/name)
   const plans = useMemo(()=> {
-    const list = (data||[]) as Array<{ planId?: string; id?: string; planName?: string; name?: string; planMaxDays?: number; maxDays?: number; planDurationDays?: number; durationDays?: number }>
-    const normalized = list.map(p => ({
-      _raw: p,
-      id: p.planId ?? p.id,
-      name: p.planName ?? p.name ?? '',
-      maxDays: p.planMaxDays ?? p.maxDays,
-      durationDays: p.planDurationDays ?? p.durationDays
-    })).filter(p=> !!p.id)
+    const list = Array.isArray(data) ? (data as RawPlan[]) : []
+
+    const normalized = list.reduce<NormalizedPlan[]>((acc, plan) => {
+      const id = plan.planId ?? plan.id
+      if(!id) return acc
+
+      acc.push({
+        id,
+        name: plan.planName ?? plan.name ?? '',
+        maxDays: plan.planMaxDays ?? plan.maxDays ?? 0,
+        durationDays: plan.planDurationDays ?? plan.durationDays ?? 0
+      })
+      return acc
+    }, [])
+
     normalized.sort((a,b)=> a.name.localeCompare(b.name))
     return normalized
   },[data])
@@ -156,7 +185,11 @@ export default function PlansPage(){
               </Card>
             )
           })}
-          {!isLoading && (data||[]).length===0 && <Card><CardContent className="p-6 text-sm text-muted-foreground">Nenhum plano cadastrado.</CardContent></Card>}
+          {!isLoading && plans.length === 0 && (
+            <Card>
+              <CardContent className="p-6 text-sm text-muted-foreground">Nenhum plano cadastrado.</CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </Layout>

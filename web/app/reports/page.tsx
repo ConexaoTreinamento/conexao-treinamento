@@ -124,6 +124,8 @@ export default function ReportsPage() {
 
   const selectedPeriod = (watch("period") ?? "month") as PeriodKey
   const watchedCustomRange = useMemo(() => watch("customRange") ?? { start: "", end: "" }, [watch])
+  const customRangeStart = watchedCustomRange.start ?? ""
+  const customRangeEnd = watchedCustomRange.end ?? ""
   const selectedTrainer = watch("trainerId") ?? "all"
   const searchTerm = watch("searchTerm") ?? ""
   const router = useRouter()
