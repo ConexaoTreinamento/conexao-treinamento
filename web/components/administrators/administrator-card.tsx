@@ -1,4 +1,4 @@
-import { Calendar, Mail } from "lucide-react"
+import { Mail } from "lucide-react"
 import { EntityCard, type EntityCardMetadataItem } from "@/components/base/entity-card"
 import { StatusBadge } from "@/components/base/status-badge"
 import { Badge } from "@/components/ui/badge"
