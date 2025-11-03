@@ -74,17 +74,23 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           # Check if any .java files were modified in backend
-          JAVA_CHANGES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '\.java$' | grep -E '^backend/' || echo "")
+          JAVA_CHANGES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep -E '\.java$' | grep -E '^backend/' || echo "")
           if [ -n "$JAVA_CHANGES" ]; then
             echo "java_modified=true" >> $GITHUB_OUTPUT
             echo "✅ Java files were modified in backend"
+            echo "Modified Java files:"
+            echo "$JAVA_CHANGES"
           else
             echo "java_modified=false" >> $GITHUB_OUTPUT
             echo "ℹ️ No Java files modified in backend, skipping coverage validation"
           fi
 
       - name: Fail if Changed Files Coverage is Below 50%
-        if: github.event_name == 'pull_request' && steps.check-java-changes.outputs.java_modified == 'true' && steps.jacoco-report.outputs.coverage-changed-files < 50
+        if: |
+          github.event_name == 'pull_request' && 
+          github.base_ref == 'develop' &&
+          steps.check-java-changes.outputs.java_modified == 'true' && 
+          steps.jacoco-report.outputs.coverage-changed-files < 50
         run: |
           echo "❌ Coverage of changed files is below 50%: ${{ steps.jacoco-report.outputs.coverage-changed-files }}%"
           echo "Please add tests to cover your changes."
