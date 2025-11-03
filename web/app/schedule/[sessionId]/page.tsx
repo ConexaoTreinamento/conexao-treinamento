@@ -10,34 +10,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { ArrowLeft, Activity, Calendar, CheckCircle, Edit, Save, X, XCircle, Plus } from "lucide-react"
+import { Activity, CheckCircle, Save, X, XCircle, Plus } from "lucide-react"
 import { apiClient } from "@/lib/client"
 import { Checkbox } from "@/components/ui/checkbox"
 import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updatePresenceMutation, getScheduleQueryKey, findAllExercisesOptions, updateRegisteredParticipantExerciseMutation, addRegisteredParticipantExerciseMutation, removeRegisteredParticipantExerciseMutation, updateSessionTrainerMutation, removeSessionParticipantMutation, addSessionParticipantMutation, cancelOrRestoreSessionMutation, createExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen"
-import { Badge } from "@/components/ui/badge"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { ExerciseResponseDto, PageExerciseResponseDto, SessionResponseDto, StudentCommitmentResponseDto } from "@/lib/api-client"
 import { useForm } from "react-hook-form"
 import { StudentPicker, type StudentSummary } from "@/components/students/student-picker"
-
-const formatSessionDate = (isoString?: string) => {
-  if (!isoString) {
-    return "Data não informada"
-  }
-
-  const datePart = isoString.slice(0, 10)
-  if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
-    const [year, month, day] = datePart.split("-")
-    return `${day}/${month}/${year}`
-  }
-
-  const parsed = new Date(isoString)
-  if (Number.isNaN(parsed.getTime())) {
-    return isoString
-  }
-
-  return parsed.toLocaleDateString("pt-BR")
-}
+import { formatISODateToDisplay } from "@/lib/formatters/time"
+import { SessionHeader } from "@/components/schedule/session-header"
+import { SessionInfoCard } from "@/components/schedule/session-info-card"
 
 export default function ClassDetailPage() {
   return (
@@ -345,6 +327,12 @@ function ClassDetailPageContent() {
     present: s.present ?? (s.commitmentStatus === 'ATTENDING'),
     participantExercises: s.participantExercises ?? []
   }))
+  const sessionTitle = session.seriesName || "Aula"
+  const sessionDateLabel = formatISODateToDisplay(session.startTime)
+  const startTimeLabel = session.startTime?.slice(11, 16) ?? "--:--"
+  const endTimeLabel = session.endTime ? session.endTime.slice(11, 16) : ""
+  const sessionTimeLabel = endTimeLabel ? `${startTimeLabel} - ${endTimeLabel}` : startTimeLabel
+  const studentCount = students.length
   const filteredStudents = students.filter(s => ((s.studentName || s.studentId || '').toLowerCase()).includes(participantSearchTerm.toLowerCase()))
   const excludedIds = new Set((students||[]).map(p => p.studentId).filter(Boolean) as string[])
   const handleStudentSelect = (student: StudentSummary) => {
@@ -357,99 +345,25 @@ function ClassDetailPageContent() {
   return (
     <Layout>
       <div className="space-y-4">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold truncate">{session.seriesName}</h1>
-            <p className="text-sm text-muted-foreground">
-              {formatSessionDate(session.startTime)} • {session.startTime?.slice(11,16)}{session.endTime? ` - ${session.endTime.slice(11,16)}`:''}
-            </p>
-          </div>
-        </div>
+        <SessionHeader
+          title={sessionTitle}
+          dateLabel={sessionDateLabel}
+          timeLabel={sessionTimeLabel}
+          onBack={() => router.back()}
+        />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Class Info */}
-          <Card>
-            <CardHeader className="pb-4 sm:pb-5">
-              <div className="space-y-2">
-                <CardTitle className="text-base sm:text-lg flex items-center gap-2 min-w-0">
-                  <Activity className="w-5 h-5 flex-shrink-0" />
-                  <span className="truncate">Informações da Aula</span>
-                </CardTitle>
-                <div className="flex items-center gap-2 flex-wrap">
-                  {session.canceled && (
-                    <TooltipProvider delayDuration={300}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Badge variant="destructive" className="text-[10px] flex-shrink-0 cursor-help">Cancelada</Badge>
-                        </TooltipTrigger>
-                        <TooltipContent>Esta aula foi cancelada</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setIsEditClassOpen(true)}
-                    className="h-8 px-2"
-                    aria-label="Editar aula"
-                    title="Editar"
-                  >
-                    <Edit className="w-3 h-3 mr-1" />
-                    <span>Editar</span>
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={session.canceled ? "default" : "destructive"}
-                    onClick={toggleCancel}
-                    disabled={mCancelRestore.isPending}
-                    className="h-8 px-2"
-                    aria-label={session.canceled ? "Restaurar aula" : "Cancelar aula"}
-                    title={session.canceled ? "Restaurar" : "Cancelar"}
-                  >
-                    {session.canceled ? (
-                      <>
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        <span>Restaurar</span>
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="w-3 h-3 mr-1" />
-                        <span>Cancelar</span>
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span>{formatSessionDate(session.startTime)} • {session.startTime?.slice(11,16)}{session.endTime? ` - ${session.endTime.slice(11,16)}`:''}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="w-4 h-4 inline-flex items-center justify-center rounded-full bg-muted text-[10px]">P</span>
-                  <span>
-                    {(students||[]).length} aluno{(students||[]).length === 1 ? '' : 's'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="w-4 h-4 inline-flex items-center justify-center rounded-full bg-muted text-[10px]">I</span>
-                  <span>{session.trainerName || '—'}</span>
-                </div>
-              </div>
-
-              {session.notes && (
-                <div className="pt-3 border-t">
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{session.notes}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <SessionInfoCard
+            dateLabel={sessionDateLabel}
+            timeLabel={sessionTimeLabel}
+            studentCount={studentCount}
+            trainerName={session.trainerName}
+            notes={session.notes}
+            isCanceled={Boolean(session.canceled)}
+            onEdit={() => setIsEditClassOpen(true)}
+            onToggleCancel={toggleCancel}
+            isTogglingCancel={mCancelRestore.isPending}
+          />
 
           {/* Students List */}
           <Card className="lg:col-span-2">

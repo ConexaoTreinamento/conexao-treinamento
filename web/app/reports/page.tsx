@@ -16,6 +16,7 @@ import { getReportsOptions, getTrainersForLookupOptions } from "@/lib/api-client
 import type { AgeDistributionDto, TrainerLookupDto, TrainerReportDto } from "@/lib/api-client/types.gen"
 import { TrainerSelect } from "@/components/trainers/trainer-select"
 import { PageHeader } from "@/components/base/page-header"
+import { formatDurationHours } from "@/lib/formatters/time"
 
 type PeriodKey = "week" | "month" | "quarter" | "year" | "custom"
 
@@ -109,25 +110,6 @@ const formatCompensation = (value?: "HOURLY" | "MONTHLY") => {
 
 const formatNumber = (value: number, maximumFractionDigits = 0) =>
   new Intl.NumberFormat("pt-BR", { maximumFractionDigits }).format(value)
-
-const formatDurationHours = (value: number) => {
-  if (!Number.isFinite(value)) {
-    return "00h"
-  }
-
-  const totalMinutes = Math.round(value * 60)
-  const hours = Math.floor(totalMinutes / 60)
-  const minutes = Math.abs(totalMinutes % 60)
-
-  const hoursLabel = String(hours)
-
-  if (minutes === 0) {
-    return `${hoursLabel}h`
-  }
-
-  const minutesLabel = String(minutes).padStart(2, "0")
-  return `${hoursLabel}h${minutesLabel}m`
-}
 
 export default function ReportsPage() {
   const [userRole, setUserRole] = useState<string>("")
