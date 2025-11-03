@@ -34,16 +34,37 @@ class CalculatorServiceTest {
         assertEquals(-2, calculatorService.subtract(-1, 1));
     }
 
-    // NOTE: The following methods are NOT tested, causing LOW COVERAGE:
-    // - multiply()
+    @Test
+    void testMultiply() {
+        // Test basic multiplication
+        assertEquals(6, calculatorService.multiply(2, 3));
+        assertEquals(-6, calculatorService.multiply(-2, 3));
+        assertEquals(0, calculatorService.multiply(5, 0));
+    }
+
+    @Test
+    void testIsPositive() {
+        // Test positive number check
+        assertTrue(calculatorService.isPositive(5));
+        assertFalse(calculatorService.isPositive(-5));
+        assertFalse(calculatorService.isPositive(0));
+    }
+
+    @Test
+    void testMax() {
+        // Test finding maximum
+        assertEquals(5, calculatorService.max(3, 5));
+        assertEquals(10, calculatorService.max(10, -5));
+        assertEquals(0, calculatorService.max(0, 0));
+    }
+
+    // NOTE: The following methods are NOT tested, causing ~40% COVERAGE:
     // - divide()
-    // - isPositive()
     // - isNegative()
     // - isEven()
     // - isOdd()
     // - factorial()
     // - power()
-    // - max()
     // - min()
     // - abs()
 }
