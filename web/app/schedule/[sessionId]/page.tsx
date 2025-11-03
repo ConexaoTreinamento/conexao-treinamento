@@ -73,7 +73,7 @@ function ClassDetailPageContent() {
   const trainersQuery = useQuery({ ...findAllTrainersOptions({ client: apiClient }) })
 
   // Students (for Add Student dialog) with pagination similar to Students page
-  const [participantSearchTerm, setParticipantSearchTerm] = useState("")
+  const participantSearchTerm = ""
 
   // Exercises catalog (for exercise selection)
   const exercisesQuery = useQuery({ ...findAllExercisesOptions({ client: apiClient, query: { pageable: { page:0, size: 200 } } }) })
