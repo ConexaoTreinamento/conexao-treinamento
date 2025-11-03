@@ -10,8 +10,11 @@ import { PageHeader } from "@/components/base/page-header"
 import { Section } from "@/components/base/section"
 import { EmptyState } from "@/components/base/empty-state"
 import { Button } from "@/components/ui/button"
-import { apiClient } from "@/lib/client"
-import { getScheduleOptions, findAllTrainersOptions, getScheduleQueryKey, createOneOffSessionMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import {
+  scheduleByDateQueryOptions,
+  trainersLookupQueryOptions,
+} from "@/lib/schedule/hooks/session-queries"
+import { createOneOffSessionMutationOptions } from "@/lib/schedule/hooks/session-mutations"
 import { ScheduleToolbar } from "@/components/schedule/schedule-toolbar"
 import { ScheduleMonthNavigation } from "@/components/schedule/schedule-month-navigation"
 import { ScheduleDayPicker } from "@/components/schedule/schedule-day-picker"
@@ -113,8 +116,12 @@ function SchedulePageContent() {
   const monthStartIso = useMemo(()=> formatLocalDate(monthStart), [monthStart])
   const monthEndIso = useMemo(()=> formatLocalDate(monthEnd), [monthEnd])
   // Fetch entire visible month once; reuse locally for per-day filtering
+  const monthScheduleOptions = useMemo(
+    () => scheduleByDateQueryOptions({ startDate: monthStartIso, endDate: monthEndIso }),
+    [monthEndIso, monthStartIso],
+  )
   const scheduleQuery = useQuery({
-    ...getScheduleOptions({ client: apiClient, query: { startDate: monthStartIso, endDate: monthEndIso } }),
+    ...monthScheduleOptions,
     refetchInterval: 60_000,
   })
   const apiSessions = useMemo(() => scheduleQuery.data?.sessions || [], [scheduleQuery.data?.sessions])
@@ -152,9 +159,7 @@ function SchedulePageContent() {
   ), [backendClasses, selectedIso])
 
   // Trainers (real backend)
-  const trainersQuery = useQuery({
-    ...findAllTrainersOptions({ client: apiClient })
-  })
+  const trainersQuery = useQuery(trainersLookupQueryOptions())
   const trainersById = useMemo(() => {
     const map: Record<string, string> = {}
     const list = Array.isArray(trainersQuery.data) ? trainersQuery.data : []
@@ -165,7 +170,7 @@ function SchedulePageContent() {
   }, [trainersQuery.data])
 
   // Create one-off session (backend)
-  const mCreateOneOff = useMutation(createOneOffSessionMutation({ client: apiClient }))
+  const mCreateOneOff = useMutation(createOneOffSessionMutationOptions())
 
   // Build all days for selected month
   const monthDays = useMemo(()=> {
@@ -224,19 +229,21 @@ function SchedulePageContent() {
     const start = `${selectedIso}T${formData.startTime}:00`
     const end = `${selectedIso}T${formData.endTime}:00`
     try {
-      await mCreateOneOff.mutateAsync({ client: apiClient, body: {
+      await mCreateOneOff.mutateAsync({ body: {
         seriesName: formData.name,
         trainerId: formData.trainerId || undefined,
         startTime: start,
         endTime: end,
       } })
       // Invalidate schedule for the current month range
-      await qc.invalidateQueries({ queryKey: getScheduleOptions({ client: apiClient, query: { startDate: monthStartIso, endDate: monthEndIso } }).queryKey })
+      await qc.invalidateQueries({ queryKey: monthScheduleOptions.queryKey })
       // Also invalidate the recent 7-day schedule window (used by Student > Recent Classes)
       const today = new Date()
       const recentEnd = formatLocalDate(today)
       const recentStart = formatLocalDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7))
-      await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: recentStart, endDate: recentEnd } }) })
+      await qc.invalidateQueries({
+        queryKey: scheduleByDateQueryOptions({ startDate: recentStart, endDate: recentEnd }).queryKey,
+      })
       invalidateReportsQueries()
       setIsNewClassOpen(false)
     } catch {

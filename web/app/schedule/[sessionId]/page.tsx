@@ -4,22 +4,38 @@ import { Suspense, useEffect, useMemo, useState } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Layout from "@/components/layout"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Activity, CheckCircle, Save, X, XCircle, Plus } from "lucide-react"
-import { apiClient } from "@/lib/client"
-import { Checkbox } from "@/components/ui/checkbox"
-import { getScheduleOptions, getSessionOptions, findAllTrainersOptions, updatePresenceMutation, getScheduleQueryKey, findAllExercisesOptions, updateRegisteredParticipantExerciseMutation, addRegisteredParticipantExerciseMutation, removeRegisteredParticipantExerciseMutation, updateSessionTrainerMutation, removeSessionParticipantMutation, addSessionParticipantMutation, cancelOrRestoreSessionMutation, createExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen"
-import type { ExerciseResponseDto, PageExerciseResponseDto, SessionResponseDto, StudentCommitmentResponseDto } from "@/lib/api-client"
+import type { StudentCommitmentResponseDto } from "@/lib/api-client"
 import { useForm } from "react-hook-form"
-import { StudentPicker, type StudentSummary } from "@/components/students/student-picker"
+import type { StudentSummary } from "@/components/students/student-picker"
 import { formatISODateToDisplay } from "@/lib/formatters/time"
 import { SessionHeader } from "@/components/schedule/session-header"
 import { SessionInfoCard } from "@/components/schedule/session-info-card"
+import { SessionParticipantsCard } from "@/components/schedule/session/session-participants-card"
+import { SessionAddParticipantDialog } from "@/components/schedule/session/session-add-participant-dialog"
+import { SessionExerciseDialog } from "@/components/schedule/session/session-exercise-dialog"
+import { SessionCreateExerciseDialog } from "@/components/schedule/session/session-create-exercise-dialog"
+import { SessionTrainerDialog } from "@/components/schedule/session/session-trainer-dialog"
+import {
+  sessionQueryOptions,
+  scheduleByDateQueryOptions,
+  trainersLookupQueryOptions,
+  exercisesQueryOptions,
+  type PageExerciseResponseDto,
+  type SessionResponseDto,
+  type TrainerResponseDto,
+} from "@/lib/schedule/hooks/session-queries"
+import {
+  addRegisteredParticipantExerciseMutationOptions,
+  addSessionParticipantMutationOptions,
+  cancelOrRestoreSessionMutationOptions,
+  createExerciseMutationOptions,
+  removeRegisteredParticipantExerciseMutationOptions,
+  removeSessionParticipantMutationOptions,
+  updatePresenceMutationOptions,
+  updateRegisteredParticipantExerciseMutationOptions,
+  updateSessionTrainerMutationOptions,
+} from "@/lib/schedule/hooks/session-mutations"
+import type { ExerciseResponseDto } from "@/lib/schedule/hooks/session-mutations"
 
 export default function ClassDetailPage() {
   return (
@@ -59,27 +75,28 @@ function ClassDetailPageContent() {
   // Query session (with hint for trainer if provided)
   const hintedDate = searchParams.get('date') || undefined
   const hintedTrainer = searchParams.get('trainer') || undefined
-  const sessionOptions = getSessionOptions({ client: apiClient, path:{ sessionId }, query:{ trainerId: hintedTrainer } })
-  const sessionQuery = useQuery({ ...sessionOptions })
+  const sessionOptions = sessionQueryOptions({ sessionId, trainerId: hintedTrainer || undefined })
+  const sessionQuery = useQuery(sessionOptions)
   const session = sessionQuery.data as SessionResponseDto | undefined
 
   // Fallback lookup by day (when deep-linking with only date hints)
   const needFallback = !!hintedDate && (!!sessionQuery.error || !sessionQuery.data)
   useQuery({
-    ...getScheduleOptions({ client: apiClient, query:{ startDate: hintedDate || '', endDate: hintedDate || '' } }),
-    enabled: needFallback
+    ...scheduleByDateQueryOptions({ startDate: hintedDate || "", endDate: hintedDate || "" }),
+    enabled: needFallback,
   })
 
   // Trainers
-  const trainersQuery = useQuery({ ...findAllTrainersOptions({ client: apiClient }) })
+  const trainersQuery = useQuery(trainersLookupQueryOptions())
 
   // Students (for Add Student dialog) with pagination similar to Students page
   const [participantSearchTerm, setParticipantSearchTerm] = useState("")
 
   // Exercises catalog (for exercise selection)
-  const exercisesQuery = useQuery({ ...findAllExercisesOptions({ client: apiClient, query: { pageable: { page:0, size: 200 } } }) })
+  const exercisesQuery = useQuery(exercisesQueryOptions())
   const allExercises: ExerciseResponseDto[] = useMemo(() => {
-    return ((exercisesQuery.data as PageExerciseResponseDto | undefined)?.content) ?? []
+    const page = exercisesQuery.data as PageExerciseResponseDto | undefined
+    return page?.content ?? []
   }, [exercisesQuery.data])
 
   // Local UI state derived from session
@@ -113,15 +130,15 @@ function ClassDetailPageContent() {
   }, [isExerciseOpen])
 
   // Mutations
-  const mUpdateTrainer = useMutation(updateSessionTrainerMutation({ client: apiClient }))
-  const mPresence = useMutation(updatePresenceMutation({ client: apiClient }))
-  const mRemoveParticipant = useMutation(removeSessionParticipantMutation({ client: apiClient }))
-  const mAddParticipant = useMutation(addSessionParticipantMutation({ client: apiClient }))
-  const mAddExercise = useMutation(addRegisteredParticipantExerciseMutation({client: apiClient}))
-  const mUpdateExercise = useMutation(updateRegisteredParticipantExerciseMutation({client: apiClient}))
-  const mRemoveExercise = useMutation(removeRegisteredParticipantExerciseMutation({client: apiClient}))
-  const mCancelRestore = useMutation(cancelOrRestoreSessionMutation({ client: apiClient }))
-  const mCreateExercise = useMutation(createExerciseMutation({ client: apiClient }))
+  const mUpdateTrainer = useMutation(updateSessionTrainerMutationOptions())
+  const mPresence = useMutation(updatePresenceMutationOptions())
+  const mRemoveParticipant = useMutation(removeSessionParticipantMutationOptions())
+  const mAddParticipant = useMutation(addSessionParticipantMutationOptions())
+  const mAddExercise = useMutation(addRegisteredParticipantExerciseMutationOptions())
+  const mUpdateExercise = useMutation(updateRegisteredParticipantExerciseMutationOptions())
+  const mRemoveExercise = useMutation(removeRegisteredParticipantExerciseMutationOptions())
+  const mCancelRestore = useMutation(cancelOrRestoreSessionMutationOptions())
+  const mCreateExercise = useMutation(createExerciseMutationOptions())
 
   // Invalidate this session and also the schedule listing for the month containing this session's date
   const invalidateScheduleForSessionMonth = () => {
@@ -133,7 +150,7 @@ function ClassDetailPageContent() {
     const monthEnd = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth()+1, 0))
     const monthStartIso = monthStart.toISOString().slice(0,10)
     const monthEndIso = monthEnd.toISOString().slice(0,10)
-    qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: monthStartIso, endDate: monthEndIso } }) })
+  qc.invalidateQueries({ queryKey: scheduleByDateQueryOptions({ startDate: monthStartIso, endDate: monthEndIso }).queryKey })
     // Also invalidate the recent 7-day schedule window (Student > Recent Classes)
     const today = new Date()
     const formatLocalDate = (dt: Date) => {
@@ -144,7 +161,7 @@ function ClassDetailPageContent() {
     }
     const recentEnd = formatLocalDate(today)
     const recentStart = formatLocalDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7))
-    qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: recentStart, endDate: recentEnd } }) })
+  qc.invalidateQueries({ queryKey: scheduleByDateQueryOptions({ startDate: recentStart, endDate: recentEnd }).queryKey })
     // Fallback: broadly invalidate all schedule queries regardless of date ranges to avoid key mismatches due to timezone/date formatting differences
     qc.invalidateQueries({
       predicate: (q) => {
@@ -179,7 +196,7 @@ function ClassDetailPageContent() {
       return { ...old, students }
     })
     const current = (session.students ?? []).find(p=> p.studentId===sid)?.present ?? true
-    await mPresence.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId!, studentId: sid }, body:{ present: !current } })
+  await mPresence.mutateAsync({ path: { sessionId: session.sessionId!, studentId: sid }, body: { present: !current } })
     invalidate()
   }
 
@@ -190,7 +207,7 @@ function ClassDetailPageContent() {
       if (!old) return old
       return { ...old, students: (old.students ?? []).filter(s => s.studentId !== sid) }
     })
-  await mRemoveParticipant.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId!, studentId: sid } })
+  await mRemoveParticipant.mutateAsync({ path: { sessionId: session.sessionId!, studentId: sid } })
     invalidate()
   }
 
@@ -206,9 +223,9 @@ function ClassDetailPageContent() {
       const newEntry: StudentCommitmentResponseDto = { studentId, studentName, present: true, commitmentStatus: 'ATTENDING', participantExercises: [] }
       return { ...old, students: [...(old.students ?? []), newEntry] }
     })
-    await mAddParticipant.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId! }, body:{ studentId } })
+  await mAddParticipant.mutateAsync({ path: { sessionId: session.sessionId! }, body: { studentId } })
     // Ensure presence true also persisted (if backend doesn't default);
-    try { await mPresence.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId!, studentId }, body:{ present: true } }) } catch {}
+  try { await mPresence.mutateAsync({ path: { sessionId: session.sessionId!, studentId }, body: { present: true } }) } catch {}
     invalidate()
   }
 
@@ -226,7 +243,7 @@ function ClassDetailPageContent() {
   }
 
   const addToExercisesCaches = (ex: ExerciseResponseDto) => {
-    const entries = qc.getQueriesData<import("@/lib/api-client").PageExerciseResponseDto>({
+    const entries = qc.getQueriesData<PageExerciseResponseDto>({
       predicate: (q) => {
         const k0 = (q.queryKey as unknown[])?.[0] as { _id?: string } | undefined
         return !!(k0 && typeof k0 === 'object' && k0._id === 'findAllExercises')
@@ -244,27 +261,26 @@ function ClassDetailPageContent() {
     const name = values.name.trim()
     if (!name) return
     const description = values.description?.trim() || undefined
-    const created = await mCreateExercise.mutateAsync({ client: apiClient, body: { name, description } })
+  const created = await mCreateExercise.mutateAsync({ body: { name, description } })
     // Update local caches so it appears in the list
     addToExercisesCaches(created)
     // Select it in the register exercise modal
     registerExerciseForm.setValue("exerciseId", created.id || "")
     setExerciseSearchTerm("")
     setIsExerciseListOpen(false)
-    setIsCreateExerciseOpen(false)
+    closeCreateExerciseDialog()
   })
 
   const submitExercise = registerExerciseForm.handleSubmit(async (values) => {
     if (!session || !selectedStudentId || !values.exerciseId) return
-    await mAddExercise.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId!, studentId: selectedStudentId! }, body:{
+    await mAddExercise.mutateAsync({ path: { sessionId: session.sessionId!, studentId: selectedStudentId! }, body: {
       exerciseId: values.exerciseId,
       setsCompleted: values.sets ? parseInt(values.sets) : undefined,
       repsCompleted: values.reps ? parseInt(values.reps) : undefined,
       weightCompleted: values.weight ? parseFloat(values.weight) : undefined,
       exerciseNotes: values.notes || undefined
     } })
-    setIsExerciseOpen(false)
-    setSelectedStudentId(null)
+    closeExerciseDialog()
     invalidate()
   })
 
@@ -279,7 +295,7 @@ function ClassDetailPageContent() {
       }))
       return { ...old, students }
     })
-    await mRemoveExercise.mutateAsync({ client: apiClient, path:{ exerciseRecordId } })
+  await mRemoveExercise.mutateAsync({ path: { exerciseRecordId } })
     invalidate()
   }
 
@@ -293,21 +309,21 @@ function ClassDetailPageContent() {
       }) : p)
       return { ...old, students }
     })
-    await mUpdateExercise.mutateAsync({ client: apiClient, path:{ exerciseRecordId }, body:{ done: !currentDone } })
+  await mUpdateExercise.mutateAsync({ path: { exerciseRecordId }, body: { done: !currentDone } })
     invalidate()
   }
 
   const saveTrainer = async () => {
     if (!session) return
     const mapped = editTrainer === 'none' ? undefined : editTrainer
-  await mUpdateTrainer.mutateAsync({ client: apiClient, path:{ sessionId: session.sessionId! }, body:{ trainerId: mapped } })
+  await mUpdateTrainer.mutateAsync({ path: { sessionId: session.sessionId! }, body: { trainerId: mapped } })
     setIsEditClassOpen(false)
     invalidate()
   }
 
   const toggleCancel = async () => {
     if (!session) return
-  await mCancelRestore.mutateAsync({ client: apiClient, path: { sessionId: session.sessionId! }, body: { cancel: !session.canceled } })
+  await mCancelRestore.mutateAsync({ path: { sessionId: session.sessionId! }, body: { cancel: !session.canceled } })
     invalidate()
   }
 
@@ -317,6 +333,20 @@ function ClassDetailPageContent() {
     if (!selectedExerciseId) return null
     return (allExercises || []).find((ex) => ex.id === selectedExerciseId) ?? null
   }, [allExercises, selectedExerciseId])
+  const trainers = useMemo(() => (trainersQuery.data as TrainerResponseDto[] | undefined) ?? [], [trainersQuery.data])
+
+  const closeExerciseDialog = () => {
+    setIsExerciseOpen(false)
+    setSelectedStudentId(null)
+    setExerciseSearchTerm("")
+    setIsExerciseListOpen(false)
+    registerExerciseForm.reset({ exerciseId: "", sets: "", reps: "", weight: "", notes: "" })
+  }
+
+  const closeCreateExerciseDialog = () => {
+    setIsCreateExerciseOpen(false)
+    createExerciseForm.reset({ name: "", description: "" })
+  }
 
   if (sessionQuery.isLoading) return <Layout><div className="p-6 text-sm">Carregando...</div></Layout>
   if (sessionQuery.error || !session) return <Layout><div className="p-6 text-sm text-red-600">Sessão não encontrada.</div></Layout>
@@ -327,6 +357,9 @@ function ClassDetailPageContent() {
     present: s.present ?? (s.commitmentStatus === 'ATTENDING'),
     participantExercises: s.participantExercises ?? []
   }))
+  const selectedStudentName = selectedStudentId
+    ? students.find((s) => s.studentId === selectedStudentId)?.studentName || ""
+    : ""
   const sessionTitle = session.seriesName || "Aula"
   const sessionDateLabel = formatISODateToDisplay(session.startTime)
   const startTimeLabel = session.startTime?.slice(11, 16) ?? "--:--"
@@ -337,6 +370,7 @@ function ClassDetailPageContent() {
   const excludedIds = new Set((students||[]).map(p => p.studentId).filter(Boolean) as string[])
   const handleStudentSelect = (student: StudentSummary) => {
     void addStudent(student)
+    setAddDialogOpen(false)
   }
   const normalizedExerciseSearch = exerciseSearchTerm.trim().toLowerCase()
   const filteredExercises = (allExercises||[]).filter(e => (e.name || '').toLowerCase().includes(normalizedExerciseSearch))
@@ -365,275 +399,59 @@ function ClassDetailPageContent() {
             isTogglingCancel={mCancelRestore.isPending}
           />
 
-          {/* Students List */}
-          <Card className="lg:col-span-2">
-            <CardHeader className="pb-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Activity className="w-5 h-5" />
-                  Alunos da aula
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setAddDialogOpen(true)}>
-                    Adicionar aluno
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {/* Search Input */}
-                <div>
-                  <Label htmlFor="studentSearch">Buscar aluno</Label>
-                  <Input id="studentSearch" placeholder="Digite o nome do aluno..." value={participantSearchTerm} onChange={(e)=> setParticipantSearchTerm(e.target.value)} />
-                </div>
-
-                {filteredStudents.map((student) => (
-                  <div key={student.studentId} className="p-3 rounded-lg border bg-card">
-                    <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${student.participantExercises?.length ? 'mb-3' : ''}`}>
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
-                          <span className="text-green-700 dark:text-green-300 font-semibold text-sm select-none">
-                            {(student.studentName||'')
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{student.studentName || student.studentId}</p>
-                        </div>
-                        {/* Remove on small screens next to the name */}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => student.studentId && removeStudent(student.studentId)}
-                          className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 flex-shrink-0 sm:hidden"
-                          aria-label="Remover aluno da aula"
-                          title="Remover"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
-                        <div className="flex gap-2 w-full sm:w-auto">
-                          <Button size="sm" variant={student.present ? "default" : "outline"} onClick={() => student.studentId && togglePresence(student.studentId)} className={`w-full sm:w-28 h-8 text-xs ${student.present? 'bg-green-600 hover:bg-green-700' : 'border-red-300 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950'}`}>
-                            {student.present ? (<><CheckCircle className="w-3 h-3 mr-1" />Presente</>) : (<><XCircle className="w-3 h-3 mr-1" />Ausente</>)}
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => student.studentId && openExerciseDialog(student.studentId)} className="w-full sm:w-28 h-8 text-xs">
-                            <Activity className="w-3 h-3 mr-1" />Exercícios
-                          </Button>
-                        </div>
-                        <Button size="sm" variant="ghost" onClick={() => student.studentId && removeStudent(student.studentId)} className="hidden sm:flex h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 flex-shrink-0" aria-label="Remover aluno da aula" title="Remover">
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Student Exercises */}
-                    {(student.participantExercises||[]).length > 0 && (
-                      <div className="space-y-2 pt-2 border-t">
-                        <p className="text-sm font-medium">Exercícios registrados:</p>
-                        <div className="space-y-1">
-                          {[...((student.participantExercises||[]))].sort((a,b)=> (a.exerciseName||'').localeCompare(b.exerciseName||'')).map((ex) => (
-                            <div key={ex.id} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm gap-2">
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <Checkbox checked={!!ex.done} onCheckedChange={()=> ex.id && student.studentId && toggleExerciseDone(student.studentId, ex.id, !!ex.done)} aria-label="Marcar como concluído" />
-                                <span className={`flex-1 min-w-0 truncate ${ex.done? 'line-through opacity-70':''}`}>
-                                  {ex.exerciseName || ex.exerciseId} {ex.setsCompleted!=null && `- ${ex.setsCompleted}x${ex.repsCompleted ?? ''}`} {ex.weightCompleted!=null && `- ${ex.weightCompleted}kg`}
-                                </span>
-                              </div>
-                              <Button size="sm" variant="ghost" onClick={() => ex.id && deleteExercise(ex.id)} className="h-6 w-6 p-0 flex-shrink-0 ml-2 text-red-500">
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-
-                {filteredStudents.length === 0 && (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <p className="text-sm">Nenhum aluno encontrado.</p>
-                    <Button variant="outline" size="sm" onClick={() => setParticipantSearchTerm("") } className="mt-2">Limpar filtro</Button>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <SessionParticipantsCard
+            filteredParticipants={filteredStudents}
+            searchTerm={participantSearchTerm}
+            onSearchTermChange={setParticipantSearchTerm}
+            onAddParticipant={() => setAddDialogOpen(true)}
+            onTogglePresence={togglePresence}
+            onOpenExercises={openExerciseDialog}
+            onRemoveParticipant={removeStudent}
+            onToggleExerciseDone={toggleExerciseDone}
+            onDeleteExercise={deleteExercise}
+          />
         </div>
 
-        {/* Add Student Dialog */}
-        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Adicionar Aluno</DialogTitle>
-              <DialogDescription>Selecione um aluno para adicionar à aula</DialogDescription>
-            </DialogHeader>
-            <StudentPicker
-              excludedStudentIds={excludedIds}
-              onSelect={handleStudentSelect}
-              pageSize={10}
-            />
-            <DialogFooter>
-              <Button variant="outline" onClick={()=> setAddDialogOpen(false)}>Fechar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <SessionAddParticipantDialog
+          open={addDialogOpen}
+          onOpenChange={setAddDialogOpen}
+          onClose={() => setAddDialogOpen(false)}
+          excludedStudentIds={excludedIds}
+          onSelect={handleStudentSelect}
+        />
 
-        {/* Exercise Dialog */}
-        <Dialog open={isExerciseOpen} onOpenChange={setIsExerciseOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                Registrar Exercício{selectedStudentId ? ` - ${(students.find(s=> s.studentId===selectedStudentId)?.studentName)||''}`: ''}
-              </DialogTitle>
-              <DialogDescription>Adicione um exercício realizado pelo aluno</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Label>Exercício</Label>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <Input
-                        placeholder="Buscar exercício..."
-                        value={exerciseSearchTerm}
-                        onFocus={() => setIsExerciseListOpen(exerciseSearchTerm.trim().length > 0)}
-                        onChange={(e) => {
-                          const value = e.target.value
-                          setExerciseSearchTerm(value)
-                          setIsExerciseListOpen(value.trim().length > 0)
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Escape") {
-                            setIsExerciseListOpen(false)
-                          }
-                        }}
-                        className="w-full"
-                      />
-                      {shouldShowExerciseList && (
-                        <div className="absolute left-0 right-0 top-full z-20 mt-2 max-h-60 overflow-y-auto rounded border bg-background shadow-md">
-                          {(filteredExercises || []).map((ex) => {
-                            const selected = selectedExerciseId === ex.id
-                            return (
-                              <button
-                                key={ex.id}
-                                type="button"
-                                className={`w-full text-left px-3 py-2 text-sm cursor-pointer ${selected ? 'bg-green-600 text-white hover:bg-green-700' : 'hover:bg-muted'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-600`}
-                                aria-pressed={selected}
-                                onMouseDown={(e) => e.preventDefault()}
-                                onClick={(e) => {
-                                  e.preventDefault()
-                                  registerExerciseForm.setValue('exerciseId', ex.id || '')
-                                  setIsExerciseListOpen(false)
-                                  setExerciseSearchTerm('')
-                                }}
-                              >
-                                {ex.name || ex.id}
-                              </button>
-                            )
-                          })}
-                          {filteredExercises.length === 0 && (
-                            <div className="px-3 py-4 text-center text-sm text-muted-foreground">
-                              Nenhum exercício encontrado
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    <Button type="button" size="icon" variant="outline" onClick={openCreateExercise} aria-label="Novo exercício" title="Novo exercício">
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  {selectedExerciseId && (
-                    <p className="text-xs text-muted-foreground">
-                      Exercício selecionado: {selectedExercise?.name || selectedExerciseId}
-                    </p>
-                  )}
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="space-y-1">
-                  <Label>Séries</Label>
-                  <Input type="number" placeholder="3" {...registerExerciseForm.register('sets')} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Repetições</Label>
-                  <Input type="number" placeholder="10 ou 30s" {...registerExerciseForm.register('reps')} />
-                </div>
-                <div className="space-y-1">
-                  <Label>Carga (kg)</Label>
-                  <Input type="number" step="0.5" placeholder="20" {...registerExerciseForm.register('weight')} />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label>Notas</Label>
-                <Input placeholder="Observações do exercício..." {...registerExerciseForm.register('notes')} />
-              </div>
-            </div>
-            <DialogFooter className="gap-y-2">
-              <Button variant="outline" onClick={()=> setIsExerciseOpen(false)}>Cancelar</Button>
-              <Button onClick={submitExercise} className="bg-green-600 hover:bg-green-700"><Save className="w-4 h-4 mr-2" />Registrar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <SessionExerciseDialog
+          open={isExerciseOpen}
+          selectedStudentName={selectedStudentName}
+          form={registerExerciseForm}
+          searchTerm={exerciseSearchTerm}
+          onSearchTermChange={setExerciseSearchTerm}
+          filteredExercises={filteredExercises}
+          shouldShowExerciseList={shouldShowExerciseList}
+          selectedExerciseId={selectedExerciseId}
+          selectedExerciseLabel={selectedExercise?.name}
+          onSelectExercise={(exerciseId) => registerExerciseForm.setValue("exerciseId", exerciseId)}
+          onToggleExerciseList={setIsExerciseListOpen}
+          onSubmit={submitExercise}
+          onRequestCreateExercise={openCreateExercise}
+          onClose={closeExerciseDialog}
+        />
 
-        {/* Create Exercise Dialog */}
-        <Dialog open={isCreateExerciseOpen} onOpenChange={setIsCreateExerciseOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Novo Exercício</DialogTitle>
-              <DialogDescription>Crie um novo exercício</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Label>Nome do Exercício</Label>
-                <Input placeholder="Ex: Supino Inclinado" {...createExerciseForm.register('name', { required: true })} />
-              </div>
-              <div className="space-y-1">
-                <Label>Descrição</Label>
-                <Input placeholder="Descrição do exercício..." {...createExerciseForm.register('description')} />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={()=> setIsCreateExerciseOpen(false)}>Cancelar</Button>
-              <Button onClick={createExerciseAndUse} disabled={!createExerciseForm.watch('name')?.trim()} className="bg-green-600 hover:bg-green-700">
-                <Save className="w-4 h-4 mr-2" />Criar e Usar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <SessionCreateExerciseDialog
+          open={isCreateExerciseOpen}
+          form={createExerciseForm}
+          onSubmit={createExerciseAndUse}
+          onClose={closeCreateExerciseDialog}
+        />
 
-        {/* Edit Class Dialog (Trainer) */}
-        <Dialog open={isEditClassOpen} onOpenChange={setIsEditClassOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Editar aula</DialogTitle>
-              <DialogDescription>Atualize o instrutor desta instância da aula</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Label>Instrutor</Label>
-                <Select value={editTrainer} onValueChange={setEditTrainer}>
-                  <SelectTrigger className="w-full h-9"><SelectValue placeholder="Selecione"/></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">(Sem instrutor)</SelectItem>
-                    {(trainersQuery.data||[])
-                      .filter((t) => !!t?.id)
-                      .map((t) => <SelectItem key={t.id!} value={t.id!}>{t.name || ''}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={()=> setIsEditClassOpen(false)}>Cancelar</Button>
-              <Button onClick={saveTrainer} className="bg-green-600 hover:bg-green-700"><Save className="w-4 h-4 mr-2" />Salvar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <SessionTrainerDialog
+          open={isEditClassOpen}
+          trainers={trainers}
+          value={editTrainer}
+          onValueChange={setEditTrainer}
+          onSubmit={saveTrainer}
+          onClose={() => setIsEditClassOpen(false)}
+        />
 
       </div>
     </Layout>
