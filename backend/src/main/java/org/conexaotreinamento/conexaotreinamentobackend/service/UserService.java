@@ -19,21 +19,29 @@ import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
     public UserResponseDTO createUser(CreateUserRequestDTO request) {
+        log.debug("Attempting to create user with email: {}", request.email());
+        
         if (userRepository.findByEmail(request.email()).isPresent()) {
+            log.warn("User creation failed - Email already in use: {}", request.email());
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já está em uso");
         }
 
         User user = new User(request.email(), passwordEncoder.encode(request.password()), request.role());
         User savedUser = userRepository.save(user);
+        
+        log.info("User created successfully [ID: {}] - Email: {}, Role: {}", 
+                savedUser.getId(), savedUser.getEmail(), savedUser.getRole());
 
         return UserResponseDTO.fromEntity(savedUser);
     }
@@ -50,9 +58,13 @@ public class UserService {
 
     @Transactional
     public void delete(UUID id) {
+        log.debug("Attempting to delete user [ID: {}]", id);
+        
         User user = userRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        
         user.deactivate();
+        log.info("User deactivated successfully [ID: {}] - Email: {}", id, user.getEmail());
     }
 
     @Transactional
@@ -77,11 +89,17 @@ public class UserService {
 
     @Transactional
     public UserResponseDTO patch(UUID id, PatchUserRoleRequestDTO request) {
+        log.debug("Attempting to patch user [ID: {}] with role: {}", id, request.role());
+        
         User user = userRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        
+        Role oldRole = user.getRole();
         if (request.role() != null) {
             user.setRole(request.role());
+            log.info("User role updated [ID: {}] - From: {} to: {}", id, oldRole, request.role());
         }
+        
         return UserResponseDTO.fromEntity(user);
     }
 
@@ -127,7 +145,10 @@ public class UserService {
 
     @Transactional
     public UserResponseDTO changeOwnPassword(UUID currentUserId, ChangePasswordRequestDTO request) {
+        log.debug("Password change attempt for user [ID: {}]", currentUserId);
+        
         if (!request.newPassword().equals(request.confirmPassword())) {
+            log.warn("Password change failed - Password confirmation mismatch for user [ID: {}]", currentUserId);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The new password and confirm password do not match.");
         }
 
@@ -135,10 +156,12 @@ public class UserService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
 
         if (!passwordEncoder.matches(request.oldPassword(), user.getPassword())) {
+            log.warn("Password change failed - Incorrect old password for user [ID: {}]", currentUserId);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The old password is incorrect.");
         }
 
         user.setPassword(passwordEncoder.encode(request.newPassword()));
+        log.info("Password changed successfully for user [ID: {}]", currentUserId);
 
         return UserResponseDTO.fromEntity(user);
     }

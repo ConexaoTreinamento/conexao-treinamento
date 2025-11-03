@@ -2,6 +2,7 @@ package org.conexaotreinamento.conexaotreinamentobackend.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.EventRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchEventRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.EventResponseDTO;
@@ -23,6 +24,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class EventService {
 
     private final EventRepository repository;
@@ -32,6 +34,8 @@ public class EventService {
 
     @Transactional
     public EventResponseDTO createEvent(EventRequestDTO request) {
+        log.debug("Creating event - Name: {}, Date: {}, Trainer ID: {}", request.name(), request.date(), request.trainerId());
+        
         Event e = new Event(request.name(), request.date());
         e.setStartTime(request.startTime());
         e.setEndTime(request.endTime());
@@ -40,9 +44,11 @@ public class EventService {
         e.setTrainer(findTrainer(request.trainerId()));
 
         Event saved = repository.save(e);
+        log.info("Event created successfully [ID: {}] - Name: {}", saved.getId(), saved.getName());
 
         // Add participants if provided
         if (request.participantIds() != null && !request.participantIds().isEmpty()) {
+            log.debug("Adding {} participants to event [ID: {}]", request.participantIds().size(), saved.getId());
             addParticipantsToEvent(saved, request.participantIds());
         }
 
@@ -50,12 +56,15 @@ public class EventService {
     }
 
     public EventResponseDTO findEventById(UUID id) {
+        log.debug("Finding event by ID: {}", id);
         Event e = repository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found"));
         return EventResponseDTO.fromEntity(e);
     }
 
     public List<EventResponseDTO> findAllEvents(String search, boolean includeInactive) {
+        log.debug("Finding all events - Search: {}, Include inactive: {}", search, includeInactive);
+        
         List<Event> events;
         if (search == null || search.isBlank()) {
             events = includeInactive ? repository.findAllByOrderByCreatedAtDesc() : repository.findByDeletedAtIsNullOrderByCreatedAtDesc();
@@ -66,11 +75,14 @@ public class EventService {
                     repository.findBySearchTermAndDeletedAtIsNullOrderByCreatedAtDesc(term);
         }
 
+        log.debug("Found {} events", events.size());
         return events.stream().map(EventResponseDTO::fromEntity).toList();
     }
 
     @Transactional
     public EventResponseDTO updateEvent(UUID id, EventRequestDTO request) {
+        log.debug("Updating event [ID: {}] - Name: {}", id, request.name());
+        
         Event e = repository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found"));
 
@@ -84,14 +96,18 @@ public class EventService {
 
         // Update participants if provided
         if (request.participantIds() != null) {
+            log.debug("Updating participants for event [ID: {}] - {} participants", id, request.participantIds().size());
             updateEventParticipants(e, request.participantIds());
         }
 
+        log.info("Event updated successfully [ID: {}] - Name: {}", id, e.getName());
         return EventResponseDTO.fromEntity(e);
     }
 
     @Transactional
     public EventResponseDTO patchEvent(UUID id, PatchEventRequestDTO request) {
+        log.debug("Patching event [ID: {}]", id);
+        
         Event e = repository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found"));
 
@@ -104,28 +120,39 @@ public class EventService {
         if (request.trainerId() != null) e.setTrainer(findTrainer(request.trainerId()));
         if (request.participantIds() != null) updateEventParticipants(e, request.participantIds());
 
+        log.info("Event patched successfully [ID: {}] - Name: {}", id, e.getName());
         return EventResponseDTO.fromEntity(e);
     }
 
     @Transactional
     public void deleteEvent(UUID id) {
+        log.debug("Deleting event [ID: {}]", id);
+        
         Event e = repository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found"));
+        
+        log.info("Deactivating event [ID: {}] - Name: {}", id, e.getName());
         e.deactivate();
         repository.save(e);
+        log.info("Event deleted successfully [ID: {}]", id);
     }
 
     @Transactional
     public EventResponseDTO restoreEvent(UUID id) {
+        log.debug("Restoring event [ID: {}]", id);
+        
         Event e = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found"));
 
         if (e.isActive()) {
+            log.warn("Attempted to restore already active event [ID: {}]", id);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Event is already active");
         }
 
+        log.info("Activating event [ID: {}] - Name: {}", id, e.getName());
         e.activate();
         repository.save(e);
+        log.info("Event restored successfully [ID: {}]", id);
         return EventResponseDTO.fromEntity(e);
     }
 
@@ -168,6 +195,8 @@ public class EventService {
 
     @Transactional
     public EventResponseDTO addParticipant(UUID eventId, UUID studentId) {
+        log.debug("Adding participant [Student ID: {}] to event [ID: {}]", studentId, eventId);
+        
         Event event = repository.findByIdAndDeletedAtIsNull(eventId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found"));
 
@@ -175,35 +204,48 @@ public class EventService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
 
         if (participantRepository.existsByEventIdAndStudentId(eventId, studentId)) {
+            log.warn("Student [ID: {}] already enrolled in event [ID: {}]", studentId, eventId);
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Student already enrolled in this event");
         }
 
         EventParticipant participant = new EventParticipant(event, student);
         participantRepository.save(participant);
-
+        
+        log.info("Participant added successfully - Student: {} to Event [ID: {}]", student.getName(), eventId);
         return EventResponseDTO.fromEntity(repository.findById(eventId).orElseThrow());
     }
 
     @Transactional
     public void removeParticipant(UUID eventId, UUID studentId) {
+        log.debug("Removing participant [Student ID: {}] from event [ID: {}]", studentId, eventId);
+        
         if (!repository.existsByIdAndDeletedAtIsNull(eventId)) {
+            log.warn("Attempted to remove participant from non-existent event [ID: {}]", eventId);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found");
         }
 
         if (!participantRepository.existsByEventIdAndStudentId(eventId, studentId)) {
+            log.warn("Attempted to remove non-enrolled student [ID: {}] from event [ID: {}]", studentId, eventId);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not enrolled in this event");
         }
 
         participantRepository.deleteByEventIdAndStudentId(eventId, studentId);
+        log.info("Participant removed successfully - Student [ID: {}] from Event [ID: {}]", studentId, eventId);
     }
 
     @Transactional
     public EventResponseDTO toggleAttendance(UUID eventId, UUID studentId) {
+        log.debug("Toggling attendance for participant [Student ID: {}] in event [ID: {}]", studentId, eventId);
+        
         EventParticipant participant = participantRepository.findByEventIdAndStudentId(eventId, studentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Participant not found"));
 
-        participant.setPresent(!participant.getPresent());
+        boolean newAttendanceStatus = !participant.getPresent();
+        participant.setPresent(newAttendanceStatus);
         participantRepository.save(participant);
+        
+        log.info("Attendance toggled successfully - Student [ID: {}] in Event [ID: {}] - Present: {}", 
+                studentId, eventId, newAttendanceStatus);
 
         return EventResponseDTO.fromEntity(repository.findById(eventId).orElseThrow());
     }

@@ -26,7 +26,9 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.persistence.EntityListeners;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RestController
 @RequestMapping("/users")
 @EntityListeners(AuditingEntityListener.class)
@@ -38,19 +40,26 @@ public class UserController {
     // Delete and create task
     @PostMapping
     public ResponseEntity<UserResponseDTO> createUser(@RequestBody CreateUserRequestDTO createUserRequest) {
+        log.info("Creating new user with email: {}", createUserRequest.email());
         UserResponseDTO userResponse = userService.createUser(createUserRequest);
+        log.info("User created successfully [ID: {}] - Email: {}", userResponse.id(), userResponse.email());
         return ResponseEntity.status(HttpStatus.CREATED).body(userResponse);
     }
 
     @GetMapping
     public ResponseEntity<Page<UserResponseDTO>> getAllUsersSimple(Pageable pageable) {
+        log.debug("Fetching all users - Page: {}, Size: {}", pageable.getPageNumber(), pageable.getPageSize());
         Page<UserResponseDTO> users = userService.findAll(pageable);
+        log.debug("Retrieved {} users", users.getTotalElements());
         return ResponseEntity.ok(users);
     }
 
     @PatchMapping("/{id}")
     public ResponseEntity<UserResponseDTO> patch(@PathVariable UUID id, @RequestBody @Valid PatchUserRoleRequestDTO request) {
-        return ResponseEntity.ok(userService.patch(id, request));
+        log.info("Updating user role [ID: {}] to role: {}", id, request.role());
+        UserResponseDTO response = userService.patch(id, request);
+        log.info("User role updated successfully [ID: {}] - New role: {}", id, response.role());
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/me/change-password")
@@ -60,16 +69,20 @@ public class UserController {
 
         String userEmail = authentication != null ? authentication.getName() : null;
         if (userEmail == null) {
+            log.warn("Password change attempt without authentication");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         var userOpt = userService.getUserByEmail(userEmail);
         if (userOpt.isEmpty()) {
+            log.warn("Password change attempt for non-existent user: {}", userEmail);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
         UUID currentUserId = userOpt.get().id();
 
+        log.info("Password change request for user: {} [ID: {}]", userEmail, currentUserId);
         userService.changeOwnPassword(currentUserId, request);
+        log.info("Password changed successfully for user: {} [ID: {}]", userEmail, currentUserId);
 
         return ResponseEntity.noContent().build();
     }
