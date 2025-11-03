@@ -65,7 +65,7 @@ jobs:
             ${{ github.workspace }}/backend/target/site/jacoco/jacoco.xml
           token: ${{ secrets.GITHUB_TOKEN }}
           min-coverage-overall: 0
-          min-coverage-changed-files: 50
+          min-coverage-changed-files: 70
           title: 'JaCoCo Coverage Report'
           update-comment: true
           pass-emoji: '✅'
@@ -92,14 +92,14 @@ jobs:
             echo "ℹ️ No Java files modified in backend, skipping coverage validation"
           fi
 
-      - name: Fail if Changed Files Coverage is Below 50%
+      - name: Fail if Changed Files Coverage is Below 70%
         if: |
           github.event_name == 'pull_request' && 
           github.base_ref == 'develop' &&
           steps.check-java-changes.outputs.java_modified == 'true' && 
-          steps.jacoco-report.outputs.coverage-changed-files < 50
+          steps.jacoco-report.outputs.coverage-changed-files < 70
         run: |
-          echo "❌ Coverage of changed files is below 50%: ${{ steps.jacoco-report.outputs.coverage-changed-files }}%"
+          echo "❌ Coverage of changed files is below 70%: ${{ steps.jacoco-report.outputs.coverage-changed-files }}%"
           echo "Please add tests to cover your changes."
           exit 1
 
