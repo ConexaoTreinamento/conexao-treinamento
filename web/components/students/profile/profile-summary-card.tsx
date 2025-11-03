@@ -1,8 +1,8 @@
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import ConfirmDeleteButton from "@/components/base/confirm-delete-button"
 import { EntityProfile, type EntityProfileMetadataItem } from "@/components/base/entity-profile"
 import { PlanAssignmentStatusBadge, getAssignmentDaysRemaining, getAssignmentEndDate } from "@/components/plans/expiring-plans"
+import { PrimaryActionButton, SecondaryActionButton } from "@/components/base/action-buttons"
 import type { StudentPlanAssignmentResponseDto, StudentResponseDto } from "@/lib/api-client/types.gen"
 import { Activity, Calendar, CalendarDays, Edit, MapPin, Phone, PlusCircle, Trash2, User } from "lucide-react"
 import { Mail } from "lucide-react"
@@ -141,47 +141,38 @@ export function StudentProfileSummaryCard({
   const planActionLabel = currentAssignment ? "Renovar plano" : "Atribuir plano"
 
   const actions: ReactNode[] = [
-    <Button key="edit" size="sm" className="h-9 bg-green-600 hover:bg-green-700" onClick={onEdit}>
+    <PrimaryActionButton key="edit" onClick={onEdit}>
       <Edit className="mr-2 h-4 w-4" aria-hidden="true" />
       Editar
-    </Button>,
-    <Button key="evaluate" size="sm" variant="outline" className="h-9" onClick={onCreateEvaluation}>
+    </PrimaryActionButton>,
+    <SecondaryActionButton key="evaluate" onClick={onCreateEvaluation}>
       <Activity className="mr-2 h-4 w-4" aria-hidden="true" />
       Avaliar
-    </Button>,
-    <Button
+    </SecondaryActionButton>,
+    <SecondaryActionButton
       key="schedule"
-      size="sm"
-      variant="outline"
-      className="h-9"
       onClick={onOpenSchedule}
       disabled={!canAccessSchedule}
     >
       <CalendarDays className="mr-2 h-4 w-4" aria-hidden="true" />
       {canAccessSchedule ? "Cronograma" : "Cronograma indisponível"}
-    </Button>,
-    <Button
+    </SecondaryActionButton>,
+    <SecondaryActionButton
       key="assign-plan"
-      size="sm"
-      variant="outline"
-      className="h-9"
       onClick={onOpenAssignPlan}
     >
       <PlusCircle className="mr-2 h-4 w-4" aria-hidden="true" />
       {planActionLabel}
-    </Button>,
+    </SecondaryActionButton>,
     isInactive ? (
-      <Button
+      <SecondaryActionButton
         key="restore"
-        size="sm"
-        variant="outline"
-        className="h-9"
         onClick={onRestore}
         disabled={isRestoring}
       >
         <RotateCcw className="mr-2 h-4 w-4" aria-hidden="true" />
         Reativar
-      </Button>
+      </SecondaryActionButton>
     ) : (
       <ConfirmDeleteButton
         key="delete"
@@ -191,7 +182,6 @@ export function StudentProfileSummaryCard({
         description="Tem certeza que deseja excluir este aluno? Ele será marcado como inativo e poderá ser restaurado."
         size="sm"
         variant="outline"
-        className="h-9"
       >
         <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
         Excluir

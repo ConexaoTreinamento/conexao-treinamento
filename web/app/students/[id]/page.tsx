@@ -10,8 +10,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   assignPlanToStudentMutation,
   getAllPlansOptions,
+  getAllSchedulesOptions,
   getCurrentStudentPlanOptions,
   getCurrentStudentPlanQueryKey,
+  findAllTrainersOptions,
   getScheduleOptions,
   getStudentCommitmentsOptions,
   getStudentCommitmentsQueryKey,
@@ -19,9 +21,11 @@ import {
   getStudentPlanHistoryQueryKey,
 } from "@/lib/api-client/@tanstack/react-query.gen"
 import type {
+  ListTrainersDto,
   ScheduleResponseDto,
   StudentCommitmentResponseDto,
   StudentPlanAssignmentResponseDto,
+  TrainerScheduleResponseDto,
 } from "@/lib/api-client/types.gen"
 import { apiClient } from "@/lib/client"
 import { useStudent } from "@/lib/students/hooks/student-queries"
@@ -105,8 +109,59 @@ const formatCommitmentTimeRange = (startRaw: unknown, endRaw: unknown): string |
   return undefined
 }
 
+const parseTimeToMinutes = (value: unknown): number | undefined => {
+  if (typeof value !== "string") {
+    return undefined
+  }
+
+  const trimmed = value.trim()
+  const match = trimmed.match(/^(\d{2}):(\d{2})(?::(\d{2}))?$/)
+  if (!match) {
+    return undefined
+  }
+
+  const hours = Number(match[1])
+  const minutes = Number(match[2])
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+    return undefined
+  }
+
+  return hours * 60 + minutes
+}
+
+const formatMinutesToTime = (totalMinutes: number): string => {
+  const minutesPerDay = 24 * 60
+  const normalized = ((totalMinutes % minutesPerDay) + minutesPerDay) % minutesPerDay
+  const hours = Math.floor(normalized / 60)
+  const minutes = normalized % 60
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
+}
+
+const getScheduleTimeLabel = (schedule?: TrainerScheduleResponseDto): string | undefined => {
+  if (!schedule?.startTime) {
+    return undefined
+  }
+
+  const startMinutes = parseTimeToMinutes(schedule.startTime)
+  if (typeof startMinutes !== "number") {
+    return undefined
+  }
+
+  const startLabel = formatMinutesToTime(startMinutes)
+  const duration = typeof schedule.intervalDuration === "number" ? schedule.intervalDuration : undefined
+
+  if (duration && duration > 0) {
+    const endLabel = formatMinutesToTime(startMinutes + duration)
+    return `${startLabel} - ${endLabel}`
+  }
+
+  return startLabel
+}
+
 const toCommitmentSummaries = (
-  commitments?: StudentCommitmentResponseDto[]
+  commitments?: StudentCommitmentResponseDto[],
+  scheduleLookup?: Map<string, TrainerScheduleResponseDto>,
+  trainerLookup?: Map<string, string>,
 ): CommitmentSummary[] => {
   if (!commitments) {
     return []
@@ -114,19 +169,39 @@ const toCommitmentSummaries = (
 
   return commitments.map((commitment, index) => {
     const record = commitment as Record<string, unknown>
-    const rawId = record.id ?? record.sessionSeriesId ?? record.seriesId ?? `commitment-${index}`
+    const rawId = record.id ?? `commitment-${index}`
     const rawSeriesName = record.seriesName ?? record.sessionSeriesName ?? record.name ?? "Série"
     const start = record.seriesStartTime ?? record.startTime ?? record.beginTime ?? record.start
     const end = record.seriesEndTime ?? record.endTime ?? record.finishTime ?? record.end
     const instructor = record.trainerName ?? record.instructorName ?? record.seriesTrainer ?? record.instructor
-    const timeLabel = formatCommitmentTimeRange(start, end)
+    const sessionSeriesRecord = typeof record.sessionSeries === "object" && record.sessionSeries !== null
+      ? (record.sessionSeries as Record<string, unknown>)
+      : undefined
+    const seriesRecord = typeof record.series === "object" && record.series !== null
+      ? (record.series as Record<string, unknown>)
+      : undefined
+
+    const sessionSeriesIdRaw = record.sessionSeriesId
+      ?? record.seriesId
+      ?? sessionSeriesRecord?.id
+      ?? seriesRecord?.id
+
+    const sessionSeriesId = sessionSeriesIdRaw ? String(sessionSeriesIdRaw) : undefined
+    const schedule = sessionSeriesId ? scheduleLookup?.get(sessionSeriesId) : undefined
+    const scheduleTimeLabel = getScheduleTimeLabel(schedule)
+    const fallbackTimeLabel = formatCommitmentTimeRange(start, end)
+    const timeLabel = scheduleTimeLabel ?? fallbackTimeLabel
+
+    const scheduleTrainerName = schedule?.trainerId ? trainerLookup?.get(String(schedule.trainerId)) : undefined
+    const fallbackTrainer = typeof instructor === "string" && instructor.trim().length > 0 ? instructor.trim() : undefined
+    const trainerName = scheduleTrainerName ?? fallbackTrainer
 
     return {
       id: String(rawId),
-      seriesName: String(rawSeriesName),
+      seriesName: String(schedule?.seriesName ?? rawSeriesName ?? "Série"),
       status: normalizeCommitmentStatus(commitment.commitmentStatus),
       timeLabel,
-      trainerName: typeof instructor === "string" && instructor.trim().length > 0 ? instructor : undefined,
+      trainerName,
     }
   })
 }
@@ -316,6 +391,14 @@ export default function StudentProfilePage() {
   const allPlansQuery = useQuery({
     ...getAllPlansOptions({ client: apiClient }),
   })
+  const trainerSchedulesQuery = useQuery({
+    ...getAllSchedulesOptions({ client: apiClient }),
+    enabled: hasStudentId,
+  })
+  const trainersQuery = useQuery({
+    ...findAllTrainersOptions({ client: apiClient }),
+    enabled: hasStudentId,
+  })
 
   const now = useMemo(() => new Date(), [])
   const endDateIso = formatLocalDate(now)
@@ -348,10 +431,42 @@ export default function StudentProfilePage() {
   const recentSchedule = recentScheduleQuery.data as ScheduleResponseDto | undefined
   const exercisesSchedule = exercisesScheduleQuery.data as ScheduleResponseDto | undefined
   const planHistoryData = planHistoryQuery.data as StudentPlanAssignmentResponseDto[] | undefined
+  const trainerSchedulesData = trainerSchedulesQuery.data as TrainerScheduleResponseDto[] | undefined
+  const trainersData = trainersQuery.data as ListTrainersDto[] | undefined
+
+  const scheduleLookup = useMemo(() => {
+    if (!trainerSchedulesData?.length) {
+      return new Map<string, TrainerScheduleResponseDto>()
+    }
+
+    const map = new Map<string, TrainerScheduleResponseDto>()
+    for (const schedule of trainerSchedulesData) {
+      if (!schedule?.id) {
+        continue
+      }
+      map.set(String(schedule.id), schedule)
+    }
+    return map
+  }, [trainerSchedulesData])
+
+  const trainerLookup = useMemo(() => {
+    if (!trainersData?.length) {
+      return new Map<string, string>()
+    }
+
+    const map = new Map<string, string>()
+    for (const trainer of trainersData) {
+      if (!trainer?.id) {
+        continue
+      }
+      map.set(String(trainer.id), trainer.name ?? "Treinador")
+    }
+    return map
+  }, [trainersData])
 
   const commitmentSummaries = useMemo(
-    () => toCommitmentSummaries(commitmentsData),
-    [commitmentsData]
+    () => toCommitmentSummaries(commitmentsData, scheduleLookup, trainerLookup),
+    [commitmentsData, scheduleLookup, trainerLookup]
   )
   const recentClasses = useMemo(
     () => toRecentClassEntries(recentSchedule, studentId),
@@ -513,20 +628,20 @@ export default function StudentProfilePage() {
           />
 
           <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-5 h-auto">
-              <TabsTrigger value="overview" className="text-xs px-2 py-2">
+            <TabsList className="grid h-auto w-full max-w-xl grid-cols-2 gap-2 mx-auto sm:grid-cols-3 lg:max-w-none lg:grid-cols-5">
+              <TabsTrigger value="overview" className="w-full px-2 py-2 text-xs">
                 Geral
               </TabsTrigger>
-              <TabsTrigger value="evaluations" className="text-xs px-2 py-2">
+              <TabsTrigger value="evaluations" className="w-full px-2 py-2 text-xs">
                 Avaliações
               </TabsTrigger>
-              <TabsTrigger value="exercises" className="text-xs px-2 py-2">
+              <TabsTrigger value="exercises" className="w-full px-2 py-2 text-xs">
                 Exercícios
               </TabsTrigger>
-              <TabsTrigger value="details" className="text-xs px-2 py-2">
+              <TabsTrigger value="details" className="w-full px-2 py-2 text-xs">
                 Detalhes
               </TabsTrigger>
-              <TabsTrigger value="plans" className="text-xs px-2 py-2">
+              <TabsTrigger value="plans" className="w-full px-2 py-2 text-xs">
                 Planos
               </TabsTrigger>
             </TabsList>
@@ -536,7 +651,11 @@ export default function StudentProfilePage() {
                 planName={currentAssignment?.planName}
                 planMaxDays={currentAssignment?.planMaxDays}
                 commitments={commitmentSummaries}
-                commitmentsLoading={commitmentsQuery.isLoading}
+                commitmentsLoading={
+                  commitmentsQuery.isLoading ||
+                  trainerSchedulesQuery.isLoading ||
+                  trainersQuery.isLoading
+                }
                 recentClasses={recentClasses}
                 recentClassesLoading={recentScheduleQuery.isLoading}
               />

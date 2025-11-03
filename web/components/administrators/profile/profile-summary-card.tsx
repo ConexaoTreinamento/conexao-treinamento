@@ -25,7 +25,7 @@ const formatDate = (value?: string | null) => {
 
   try {
     return new Date(value).toLocaleDateString("pt-BR")
-  } catch (error) {
+  } catch {
     return null
   }
 }

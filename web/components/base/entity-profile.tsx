@@ -81,6 +81,8 @@ export function EntityProfile({
   const hasAvatar = Boolean(avatar)
   const avatarNode = avatar ? getAvatarNode(avatar) : null
 
+  const actionNodes = actions?.filter(Boolean) ?? []
+
   return (
     <div className={cn("space-y-6", className)}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -145,11 +147,13 @@ export function EntityProfile({
             </div>
           </div>
 
-          {actions?.length ? (
-            <div className="flex flex-wrap items-center gap-2">
-              {actions.map((action, index) => (
-                <span key={index} className="inline-flex">{action}</span>
-              ))}
+          {actionNodes.length ? (
+            <div className="flex justify-center">
+              <div className="grid w-full max-w-xl grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {actionNodes.map((action, index) => (
+                  <div key={index} className="w-full">{action}</div>
+                ))}
+              </div>
             </div>
           ) : null}
 

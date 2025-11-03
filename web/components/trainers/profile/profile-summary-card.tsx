@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { EntityProfile, type EntityProfileMetadataItem } from "@/components/base/entity-profile"
 import { StatusBadge } from "@/components/base/status-badge"
+import { PrimaryActionButton, SecondaryActionButton } from "@/components/base/action-buttons"
 import type { TrainerResponseDto } from "@/lib/api-client/types.gen"
 import { Calendar, CalendarDays, Clock, Edit, Mail, MapPin, Phone } from "lucide-react"
 import type { ReactNode } from "react"
@@ -61,7 +61,7 @@ const formatJoinDate = (joinDate?: string | null) => {
 
   try {
     return new Date(joinDate).toLocaleDateString("pt-BR")
-  } catch (error) {
+  } catch {
     return null
   }
 }
@@ -160,14 +160,14 @@ export function TrainerProfileSummaryCard({
   ]
 
   const actions: ReactNode[] = [
-    <Button key="schedule" size="sm" variant="outline" className="h-9" onClick={onOpenSchedule}>
+    <SecondaryActionButton key="schedule" onClick={onOpenSchedule}>
       <CalendarDays className="mr-2 h-4 w-4" aria-hidden="true" />
       Horários
-    </Button>,
-    <Button key="edit" size="sm" className="h-9 bg-green-600 hover:bg-green-700" onClick={onEdit}>
+    </SecondaryActionButton>,
+    <PrimaryActionButton key="edit" onClick={onEdit}>
       <Edit className="mr-2 h-4 w-4" aria-hidden="true" />
       Editar
-    </Button>,
+    </PrimaryActionButton>,
   ]
 
   const specialtiesSection = getSpecialtiesSection(trainer.specialties)

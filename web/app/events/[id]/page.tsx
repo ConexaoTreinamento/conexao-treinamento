@@ -3,8 +3,9 @@
 import { useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { DangerActionButton, SecondaryActionButton } from "@/components/base/action-buttons"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { ArrowLeft, Calendar, CheckCircle, Clock, Edit, MapPin, Trophy, Users, X, XCircle, Loader2, Trash2, AlertTriangle} from "lucide-react"
+import { ArrowLeft, Calendar, CheckCircle, Clock, Edit, MapPin, Trophy, Users, X, XCircle, Loader2, Trash2, AlertTriangle } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useParams, useRouter } from "next/navigation"
 import Layout from "@/components/layout"
@@ -265,16 +266,19 @@ export default function EventDetailPage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2 sm:justify-end">
-            <Button variant="outline" size="sm" className="h-9" onClick={() => setIsEditOpen(true)}>
+            <SecondaryActionButton
+              size="sm"
+              className="h-9 w-full sm:w-auto sm:max-w-[200px]"
+              onClick={() => setIsEditOpen(true)}
+            >
               <Edit className="mr-2 h-4 w-4" aria-hidden="true" />
               <span className="hidden sm:inline">Editar</span>
-            </Button>
-            <Button
-              variant="outline"
+            </SecondaryActionButton>
+            <DangerActionButton
               size="sm"
               onClick={() => setIsDeleteDialogOpen(true)}
               disabled={deleteEventMutation.isPending}
-              className="h-9 border-destructive/30 text-destructive hover:border-destructive hover:bg-destructive/5"
+              className="h-9 w-full sm:w-auto sm:max-w-[200px]"
             >
               {deleteEventMutation.isPending ? (
                 <>
@@ -288,7 +292,7 @@ export default function EventDetailPage() {
                 </>
               )}
               <span className="sr-only">Excluir evento</span>
-            </Button>
+            </DangerActionButton>
           </div>
         </div>
 
@@ -394,7 +398,17 @@ export default function EventDetailPage() {
                   return (
                       <div
                           key={participantId}
-                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border gap-3"
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Ver perfil de ${participant.name ?? "aluno"}`}
+                          onClick={() => router.push(`/students/${participantId}`)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " " || event.key === "Space") {
+                              event.preventDefault()
+                              router.push(`/students/${participantId}`)
+                            }
+                          }}
+                          className="group flex cursor-pointer flex-col gap-3 rounded-lg border p-4 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:bg-muted/70 sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           <Avatar className="flex-shrink-0">
@@ -414,12 +428,15 @@ export default function EventDetailPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <Button
-                              size="sm"
-                              variant={participant.present ? "default" : "outline"}
-                              onClick={() => handleToggleAttendance(participantId)}
-                              disabled={toggleAttendanceMutation.isPending}
-                              className={`h-8 text-xs flex-1 sm:flex-none min-w-0 ${
+              <Button
+                size="sm"
+                variant={participant.present ? "default" : "outline"}
+                onClick={(event) => {
+                event.stopPropagation()
+                void handleToggleAttendance(participantId)
+                }}
+                disabled={toggleAttendanceMutation.isPending}
+                className={`h-8 text-xs flex-1 sm:flex-none min-w-0 ${
                                   participant.present
                                       ? "bg-green-600 hover:bg-green-700 text-white"
                                       : "border-red-600 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
@@ -442,9 +459,12 @@ export default function EventDetailPage() {
                           <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => handleRemoveParticipant(participantId)}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                void handleRemoveParticipant(participantId)
+                              }}
                               disabled={removeParticipantMutation.isPending}
-                              className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
+                              className="h-8 w-8 flex-shrink-0 p-0 text-red-500 hover:bg-red-50 hover:text-red-700"
                           >
                             {removeParticipantMutation.isPending ? (
                                 <Loader2 className="w-3 h-3 animate-spin"/>

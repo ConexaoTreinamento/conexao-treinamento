@@ -2,7 +2,7 @@
 
 import React from "react"
 import { Trash2 } from "lucide-react"
-import { Button, type ButtonProps } from "@/components/ui/button"
+import type { ButtonProps } from "@/components/ui/button"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { DangerActionButton } from "@/components/base/action-buttons"
 
 type ConfirmDeleteButtonProps = {
   title?: string
@@ -35,8 +36,8 @@ export default function ConfirmDeleteButton({
   disabled,
   className,
   children,
-  variant = "ghost",
-  size = "icon",
+  variant = "outline",
+  size = "sm",
 }: ConfirmDeleteButtonProps) {
   const [open, setOpen] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
@@ -54,7 +55,7 @@ export default function ConfirmDeleteButton({
   return (
     <AlertDialog open={open} onOpenChange={v => !loading && setOpen(v)}>
       <AlertDialogTrigger asChild>
-        <Button
+        <DangerActionButton
           variant={variant}
           size={size}
           className={className}
@@ -62,7 +63,7 @@ export default function ConfirmDeleteButton({
           onClick={e => e.stopPropagation()}
         >
           {children ?? <Trash2 className="w-4 h-4" />}
-        </Button>
+        </DangerActionButton>
       </AlertDialogTrigger>
       <AlertDialogContent onClick={e => e.stopPropagation()}>
         <AlertDialogHeader>
