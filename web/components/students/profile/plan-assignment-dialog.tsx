@@ -40,7 +40,7 @@ export function PlanAssignmentDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{hasActivePlan ? "Renovar / Trocar Plano" : "Atribuir Plano"}</DialogTitle>
+          <DialogTitle>{hasActivePlan ? "Renovar plano" : "Atribuir plano"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">

@@ -129,7 +129,7 @@ export const StudentCard = ({
         className="h-8 px-2 text-xs"
       >
         <Activity className="mr-1 h-3 w-3" aria-hidden="true" />
-        Avaliação
+        Avaliar
       </Button>
       {student.deletedAt ? (
         <Button
@@ -167,7 +167,7 @@ export const StudentCard = ({
         className="h-8 px-3 text-sm"
       >
         <Activity className="mr-1 h-3 w-3" aria-hidden="true" />
-        Avaliação
+        Avaliar
       </Button>
       {student.deletedAt ? (
         <Button

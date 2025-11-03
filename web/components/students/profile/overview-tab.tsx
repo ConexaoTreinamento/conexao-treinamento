@@ -14,6 +14,8 @@ export interface CommitmentSummary {
   id: string
   seriesName: string
   status: "ATTENDING" | "NOT_ATTENDING" | "TENTATIVE"
+  timeLabel?: string
+  trainerName?: string
 }
 
 interface StudentOverviewTabProps {
@@ -73,12 +75,18 @@ export function StudentOverviewTab({
                 <p className="text-xs text-muted-foreground">Nenhuma série selecionada.</p>
               )}
               {attendingCommitments.map((commitment) => (
-                  <div key={commitment.id} className="flex items-center justify-between p-2 rounded border bg-muted/50 text-xs">
-                    <span className="font-medium truncate" title={commitment.seriesName}>
-                      {commitment.seriesName}
-                  </span>
-                  <Badge variant="secondary">Ativo</Badge>
-                </div>
+                  <div key={commitment.id} className="flex items-center justify-between gap-3 rounded border bg-muted/50 p-2 text-xs">
+                    <div className="min-w-0">
+                      <span className="block font-medium truncate" title={commitment.seriesName}>
+                        {commitment.seriesName}
+                      </span>
+                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                        {commitment.timeLabel ? <span>{commitment.timeLabel}</span> : null}
+                        {commitment.trainerName ? <span>{commitment.trainerName}</span> : null}
+                      </div>
+                    </div>
+                    <Badge variant="secondary">Ativo</Badge>
+                  </div>
               ))}
             </div>
           </div>

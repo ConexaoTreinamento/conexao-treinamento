@@ -252,71 +252,80 @@ export default function EventDetailPage() {
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="w-4 h-4"/>
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">{eventData.name}</h1>
-            <p className="text-muted-foreground">
-              {formatDate(eventData.date)} • {eventData.startTime} - {eventData.endTime}
-            </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Voltar">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold leading-tight">{eventData.name}</h1>
+              <p className="text-sm text-muted-foreground">
+                {formatDate(eventData.date)} • {eventData.startTime} - {eventData.endTime}
+              </p>
+            </div>
           </div>
-          <Button variant="outline" size="icon" onClick={() => setIsEditOpen(true)}>
-            <Edit className="w-4 h-4"/>
-          </Button>
-          <Button
+          <div className="flex flex-wrap gap-2 sm:justify-end">
+            <Button variant="outline" size="sm" className="h-9" onClick={() => setIsEditOpen(true)}>
+              <Edit className="mr-2 h-4 w-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Editar</span>
+            </Button>
+            <Button
               variant="outline"
-              size="icon"
+              size="sm"
               onClick={() => setIsDeleteDialogOpen(true)}
               disabled={deleteEventMutation.isPending}
-              className="text-destructive hover:text-destructive"
-          >
-            {deleteEventMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin"/>
-            ) : (
-                <Trash2 className="w-4 h-4"/>
-            )}
-          </Button>
-
-          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle className="flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-destructive" />
-                  Confirmar exclusão do evento
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  Esta ação não pode ser desfeita. O evento será marcado como excluído
-                  e não aparecerá mais na lista de eventos ativos.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={deleteEventMutation.isPending}>
-                  Cancelar
-                </AlertDialogCancel>
-                <AlertDialogAction
-                    onClick={() => {
-                      handleDeleteEvent()
-                      setIsDeleteDialogOpen(false)
-                    }}
-                    disabled={deleteEventMutation.isPending}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {deleteEventMutation.isPending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Excluindo...
-                      </>
-                  ) : (
-                      "Excluir evento"
-                  )}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+              className="h-9 border-destructive/30 text-destructive hover:border-destructive hover:bg-destructive/5"
+            >
+              {deleteEventMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                  <span className="hidden sm:inline">Excluindo...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+                  <span className="hidden sm:inline">Excluir</span>
+                </>
+              )}
+              <span className="sr-only">Excluir evento</span>
+            </Button>
+          </div>
         </div>
+
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                Confirmar exclusão do evento
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação não pode ser desfeita. O evento será marcado como excluído
+                e não aparecerá mais na lista de eventos ativos.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={deleteEventMutation.isPending}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  handleDeleteEvent()
+                  setIsDeleteDialogOpen(false)
+                }}
+                disabled={deleteEventMutation.isPending}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleteEventMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Excluindo...
+                  </>
+                ) : (
+                  "Excluir evento"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Event Info */}

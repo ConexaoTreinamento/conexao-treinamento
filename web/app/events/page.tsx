@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Trophy } from "lucide-react"
+import { PlusCircle, Trophy } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import EventModal from "@/components/events/event-modal"
@@ -120,6 +120,7 @@ export default function EventsPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <PageHeader title="Eventos" description="Gerencie workshops, aulas especiais e atividades coletivas." />
           <Button className="h-9 bg-green-600 hover:bg-green-700" onClick={() => setIsCreateModalOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" aria-hidden="true" />
             Novo evento
           </Button>
         </div>
@@ -169,6 +170,7 @@ export default function EventsPage() {
                   </Button>
                 ) : (
                   <Button className="bg-green-600 hover:bg-green-700" onClick={() => setIsCreateModalOpen(true)}>
+                    <PlusCircle className="mr-2 h-4 w-4" aria-hidden="true" />
                     Novo evento
                   </Button>
                 )

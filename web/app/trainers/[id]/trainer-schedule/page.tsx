@@ -319,51 +319,61 @@ export default function TrainerSchedulePage(){
 
   const handleSaveWeek = async () => {
     setSaving(true)
+
     try {
-      for(const row of weekConfig){
-        // Compute desired slots for this day
+      for (const row of weekConfig) {
         const desired = row.enabled ? new Set(genSlots(row)) : new Set<string>()
-        // Existing active slots
         const existingActive = row.existingActive
-        // 1) Deletions: remove if not desired OR user deselected it
-        for(const [start,id] of existingActive){
+
+        for (const [start, id] of existingActive) {
           const isSelected = row.selectedStarts.has(start)
-          if(!desired.has(start) || !isSelected){
-            await deleteMutation.mutateAsync({path:{id}})
+          if (!desired.has(start) || !isSelected) {
+            await deleteMutation.mutateAsync({ path: { id } })
           }
         }
-        // 2) Creations: desired starts not existing and selected by user
-        for(const start of desired){
+
+        for (const start of desired) {
           const isSelected = row.selectedStarts.has(start)
-          if(!existingActive.has(start) && isSelected){
+          if (!existingActive.has(start) && isSelected) {
             const payload: TrainerScheduleRequestDto = {
               trainerId,
               weekday: row.weekday,
               startTime: `${start}:00`,
               intervalDuration: classDuration,
-              seriesName: row.seriesName || 'Treino'
+              seriesName: row.seriesName || "Treino",
             }
-            await createMutation.mutateAsync({body: payload})
+            await createMutation.mutateAsync({ body: payload })
           }
         }
       }
-      // Invalidate impacted queries so UI reflects new availability
-      await qc.invalidateQueries({queryKey: getSchedulesByTrainerQueryKey({path:{trainerId}, client: apiClient})})
-      await qc.invalidateQueries({queryKey: getAvailableSessionSeriesQueryKey({client: apiClient})})
+
+      await qc.invalidateQueries({ queryKey: getSchedulesByTrainerQueryKey({ path: { trainerId }, client: apiClient }) })
+      await qc.invalidateQueries({ queryKey: getAvailableSessionSeriesQueryKey({ client: apiClient }) })
       await invalidateTrainersQueries()
-      // Also refresh the monthly schedule view
+
       const today = new Date()
       const monthStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1))
-      const monthEnd = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth()+1, 0))
-      const monthStartIso = monthStart.toISOString().slice(0,10)
-      const monthEndIso = monthEnd.toISOString().slice(0,10)
-      await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: monthStartIso, endDate: monthEndIso } }) })
-      // Invalidate recent 7-day window as well (Student > Recent Classes)
-      const formatLocalDate = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`
+      const monthEnd = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 0))
+      const monthStartIso = monthStart.toISOString().slice(0, 10)
+      const monthEndIso = monthEnd.toISOString().slice(0, 10)
+      await qc.invalidateQueries({
+        queryKey: getScheduleQueryKey({
+          client: apiClient,
+          query: { startDate: monthStartIso, endDate: monthEndIso },
+        }),
+      })
+
+      const formatLocalDate = (dt: Date) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`
       const recentEnd = formatLocalDate(new Date())
       const anchor = new Date()
-      const recentStart = formatLocalDate(new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate()-7))
-      await qc.invalidateQueries({ queryKey: getScheduleQueryKey({ client: apiClient, query: { startDate: recentStart, endDate: recentEnd } }) })
+      const recentStart = formatLocalDate(new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() - 7))
+      await qc.invalidateQueries({
+        queryKey: getScheduleQueryKey({
+          client: apiClient,
+          query: { startDate: recentStart, endDate: recentEnd },
+        }),
+      })
+
       invalidateReportsQueries()
       toast({
         title: "Agenda atualizada",
@@ -386,17 +396,23 @@ export default function TrainerSchedulePage(){
   return (
     <Layout>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Voltar" title="Voltar">
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
-              <h1 className="text-2xl font-bold">Agenda do Instrutor</h1>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.back()}
+              aria-label="Voltar"
+              title="Voltar"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold leading-tight">Agenda do Professor</h1>
+              <p className="text-sm text-muted-foreground">Configure os horários semanais e séries geradas</p>
             </div>
-            <p className="text-muted-foreground text-sm">Configure os horários semanais e séries geradas</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2 sm:justify-end">
             <Dialog open={bulkOpen} onOpenChange={(o)=>{setBulkOpen(o)}}>
               <DialogTrigger asChild>
                 <Button className="bg-green-600 hover:bg-green-700" aria-label="Configurar semana do instrutor">

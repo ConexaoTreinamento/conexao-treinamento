@@ -34,7 +34,6 @@ import {
 } from "@/components/plans/expiring-plans"
 import { hasInsomniaTypes, impairmentTypes } from "@/lib/students/student-types"
 import { handleHttpError } from "@/lib/error-utils"
-import { StudentProfileHeader } from "@/components/students/profile/profile-header"
 import { StudentProfileSummaryCard } from "@/components/students/profile/profile-summary-card"
 import {
   CommitmentSummary,
@@ -76,6 +75,36 @@ const normalizeCommitmentStatus = (
   return "TENTATIVE"
 }
 
+const formatCommitmentTimeRange = (startRaw: unknown, endRaw: unknown): string | undefined => {
+  const normalize = (value: unknown): string | undefined => {
+    if (typeof value !== "string" || value.trim().length === 0) {
+      return undefined
+    }
+
+    // Expecting HH:mm or HH:mm:ss; fallback to trimmed value
+    const time = value.trim()
+    if (/^\d{2}:\d{2}(:\d{2})?$/.test(time)) {
+      return time.slice(0, 5)
+    }
+
+    return time
+  }
+
+  const start = normalize(startRaw)
+  const end = normalize(endRaw)
+
+  if (start && end) {
+    return `${start} - ${end}`
+  }
+  if (start) {
+    return start
+  }
+  if (end) {
+    return end
+  }
+  return undefined
+}
+
 const toCommitmentSummaries = (
   commitments?: StudentCommitmentResponseDto[]
 ): CommitmentSummary[] => {
@@ -87,11 +116,17 @@ const toCommitmentSummaries = (
     const record = commitment as Record<string, unknown>
     const rawId = record.id ?? record.sessionSeriesId ?? record.seriesId ?? `commitment-${index}`
     const rawSeriesName = record.seriesName ?? record.sessionSeriesName ?? record.name ?? "Série"
+    const start = record.seriesStartTime ?? record.startTime ?? record.beginTime ?? record.start
+    const end = record.seriesEndTime ?? record.endTime ?? record.finishTime ?? record.end
+    const instructor = record.trainerName ?? record.instructorName ?? record.seriesTrainer ?? record.instructor
+    const timeLabel = formatCommitmentTimeRange(start, end)
 
     return {
       id: String(rawId),
       seriesName: String(rawSeriesName),
       status: normalizeCommitmentStatus(commitment.commitmentStatus),
+      timeLabel,
+      trainerName: typeof instructor === "string" && instructor.trim().length > 0 ? instructor : undefined,
     }
   })
 }
@@ -459,9 +494,10 @@ export default function StudentProfilePage() {
     <>
       <Layout>
         <div className="space-y-4">
-          <StudentProfileHeader onBack={() => router.back()} />
-
           <StudentProfileSummaryCard
+            heading="Perfil do Aluno"
+            description="Informações completas e histórico"
+            onBack={() => router.back()}
             student={studentData}
             currentAssignment={currentAssignment}
             onEdit={() => router.push(`/students/${studentId}/edit`)}

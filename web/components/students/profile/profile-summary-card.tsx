@@ -1,15 +1,18 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import ConfirmDeleteButton from "@/components/base/confirm-delete-button"
+import { EntityProfile, type EntityProfileMetadataItem } from "@/components/base/entity-profile"
 import { PlanAssignmentStatusBadge, getAssignmentDaysRemaining, getAssignmentEndDate } from "@/components/plans/expiring-plans"
 import type { StudentPlanAssignmentResponseDto, StudentResponseDto } from "@/lib/api-client/types.gen"
 import { Activity, Calendar, CalendarDays, Edit, MapPin, Phone, PlusCircle, Trash2, User } from "lucide-react"
 import { Mail } from "lucide-react"
 import { RotateCcw } from "lucide-react"
+import type { ReactNode } from "react"
 
 interface StudentProfileSummaryCardProps {
+  heading: string
+  description?: string
+  onBack: () => void
   student: StudentResponseDto
   currentAssignment: StudentPlanAssignmentResponseDto | null
   onEdit: () => void
@@ -64,6 +67,9 @@ const calculateAge = (birthDate: string | undefined) => {
 }
 
 export function StudentProfileSummaryCard({
+  heading,
+  description,
+  onBack,
   student,
   currentAssignment,
   onEdit,
@@ -89,115 +95,123 @@ export function StudentProfileSummaryCard({
   const currentPlanEndDate = currentAssignment ? getAssignmentEndDate(currentAssignment) : undefined
   const currentPlanDaysRemaining = currentAssignment ? getAssignmentDaysRemaining(currentAssignment) : undefined
 
+  const planBadges: ReactNode[] = currentAssignment
+    ? [
+        <PlanAssignmentStatusBadge key="status" assignment={currentAssignment} />,
+        currentAssignment.planName ? (
+          <Badge key="plan-name" variant="outline">{currentAssignment.planName}</Badge>
+        ) : null,
+        currentPlanEndDate ? (
+          <Badge key="plan-end" variant="secondary">
+            Fim: {new Date(currentPlanEndDate).toLocaleDateString("pt-BR")}
+          </Badge>
+        ) : null,
+        typeof currentPlanDaysRemaining === "number" && currentPlanDaysRemaining >= 0 ? (
+          <Badge key="plan-remaining" variant="outline">{currentPlanDaysRemaining} dias restantes</Badge>
+        ) : null,
+      ].filter(Boolean) as ReactNode[]
+    : [<Badge key="no-plan" variant="secondary">Sem plano</Badge>]
+
+  const metadata: EntityProfileMetadataItem[] = [
+    {
+      icon: <Mail className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />,
+      content: student.email || "Sem e-mail",
+    },
+    {
+      icon: <Phone className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />,
+      content: student.phone || "Sem telefone",
+    },
+    {
+      icon: <Calendar className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />,
+      content: `${calculateAge(student.birthDate)} anos`,
+    },
+    {
+      icon: <User className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />,
+      content: student.profession ?? "Sem profissão",
+    },
+  ]
+
+  const infoRows: ReactNode[] = [
+    <span key="address" className="flex items-start gap-2 text-sm text-muted-foreground">
+      <MapPin className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+      <span className="text-xs leading-relaxed">{formatAddress(student)}</span>
+    </span>,
+  ]
+
+  const planActionLabel = currentAssignment ? "Renovar plano" : "Atribuir plano"
+
+  const actions: ReactNode[] = [
+    <Button key="edit" size="sm" className="h-9 bg-green-600 hover:bg-green-700" onClick={onEdit}>
+      <Edit className="mr-2 h-4 w-4" aria-hidden="true" />
+      Editar
+    </Button>,
+    <Button key="evaluate" size="sm" variant="outline" className="h-9" onClick={onCreateEvaluation}>
+      <Activity className="mr-2 h-4 w-4" aria-hidden="true" />
+      Avaliar
+    </Button>,
+    <Button
+      key="schedule"
+      size="sm"
+      variant="outline"
+      className="h-9"
+      onClick={onOpenSchedule}
+      disabled={!canAccessSchedule}
+    >
+      <CalendarDays className="mr-2 h-4 w-4" aria-hidden="true" />
+      {canAccessSchedule ? "Cronograma" : "Cronograma indisponível"}
+    </Button>,
+    <Button
+      key="assign-plan"
+      size="sm"
+      variant="outline"
+      className="h-9"
+      onClick={onOpenAssignPlan}
+    >
+      <PlusCircle className="mr-2 h-4 w-4" aria-hidden="true" />
+      {planActionLabel}
+    </Button>,
+    isInactive ? (
+      <Button
+        key="restore"
+        size="sm"
+        variant="outline"
+        className="h-9"
+        onClick={onRestore}
+        disabled={isRestoring}
+      >
+        <RotateCcw className="mr-2 h-4 w-4" aria-hidden="true" />
+        Reativar
+      </Button>
+    ) : (
+      <ConfirmDeleteButton
+        key="delete"
+        onConfirm={onDelete}
+        disabled={isDeleting}
+        title="Excluir aluno"
+        description="Tem certeza que deseja excluir este aluno? Ele será marcado como inativo e poderá ser restaurado."
+        size="sm"
+        variant="outline"
+        className="h-9"
+      >
+        <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
+        Excluir
+      </ConfirmDeleteButton>
+    ),
+  ]
+
   return (
-    <Card>
-      <CardHeader className="text-center pb-4">
-        <Avatar className="w-20 h-20 mx-auto">
-          <AvatarFallback className="text-xl select-none">
-            {initials || "?"}
-          </AvatarFallback>
-        </Avatar>
-        <div className="space-y-2">
-          <CardTitle className="text-lg">{fullName || "Aluno"}</CardTitle>
-          <div className="flex flex-wrap justify-center gap-2">
-            {currentAssignment && (
-              <>
-                <PlanAssignmentStatusBadge assignment={currentAssignment} />
-                {currentAssignment.planName && (
-                  <Badge variant="outline">{currentAssignment.planName}</Badge>
-                )}
-                {currentPlanEndDate && (
-                  <Badge variant="secondary">
-                    Fim: {new Date(currentPlanEndDate).toLocaleDateString("pt-BR")}
-                  </Badge>
-                )}
-                {typeof currentPlanDaysRemaining === "number" && currentPlanDaysRemaining >= 0 && (
-                  <Badge variant="outline">{currentPlanDaysRemaining} dias restantes</Badge>
-                )}
-              </>
-            )}
-            {!currentAssignment && <Badge variant="secondary">Sem Plano</Badge>}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div className="flex items-center gap-2">
-            <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <span className="truncate">{student.email || "sem e-mail"}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Phone className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <span>{student.phone || "sem telefone"}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <span>{calculateAge(student.birthDate)} anos</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <User className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <span>{student.profession ?? "Sem profissão"}</span>
-          </div>
-        </div>
-
-        <div className="flex items-start gap-2 text-sm">
-          <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-          <span className="text-xs leading-relaxed">{formatAddress(student)}</span>
-        </div>
-
-        <div className="pt-4 border-t">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4">
-            <Button size="sm" className="bg-green-600 hover:bg-green-700 w-full" onClick={onEdit}>
-              <Edit className="w-4 h-4 mr-2" />
-              Editar
-            </Button>
-            <Button size="sm" variant="outline" className="w-full" onClick={onCreateEvaluation}>
-              <Activity className="w-4 h-4 mr-2" />
-              Avaliação
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full"
-              onClick={onOpenSchedule}
-              disabled={!canAccessSchedule}
-            >
-              <CalendarDays className="w-4 h-4 mr-2" />
-              {canAccessSchedule ? "Cronograma" : "Cronograma (Precisa de plano ativo)"}
-            </Button>
-            <Button size="sm" variant="outline" className="w-full" onClick={onOpenAssignPlan}>
-              <PlusCircle className="w-4 h-4 mr-2" />
-              {canAccessSchedule ? "Renovar/Atribuir Plano" : "Atribuir Plano"}
-            </Button>
-
-            {isInactive ? (
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full"
-                onClick={onRestore}
-                disabled={isRestoring}
-              >
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Reativar
-              </Button>
-            ) : (
-              <ConfirmDeleteButton
-                onConfirm={onDelete}
-                disabled={isDeleting}
-                title="Excluir Aluno"
-                description="Tem certeza que deseja excluir este aluno? Ele será marcado como inativo e poderá ser restaurado."
-                size="sm"
-                variant="outline"
-                className="w-full"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Excluir
-              </ConfirmDeleteButton>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <EntityProfile
+      heading={heading}
+      description={description}
+      title={fullName || "Aluno"}
+      subtitle={student.email || undefined}
+      avatar={{ label: initials || "?" }}
+      badges={planBadges}
+      metadata={metadata}
+      infoRows={infoRows}
+      actions={actions}
+      onBack={onBack}
+      muted={isInactive}
+    />
   )
 }
