@@ -99,7 +99,7 @@ public class StudentCommitmentService {
             throw new RuntimeException("Student has no active plan");
         }
         // Fetch plan without touching lazy relation on assignment
-        int maxDays = studentPlanRepository.findByIdAndActiveTrue(currentPlan.get().getPlanId())
+        int maxDays = studentPlanRepository.findById(currentPlan.get().getPlanId())
             .map(org.conexaotreinamento.conexaotreinamentobackend.entity.StudentPlan::getMaxDays)
             .orElseThrow(() -> new RuntimeException("Plano associado não encontrado ou inativo"));
         Instant now = Instant.now();
@@ -148,7 +148,7 @@ public class StudentCommitmentService {
         if (currentPlan.isEmpty()) {
             throw new RuntimeException("Student has no active plan");
         }
-        int maxDays = studentPlanRepository.findByIdAndActiveTrue(currentPlan.get().getPlanId())
+        int maxDays = studentPlanRepository.findById(currentPlan.get().getPlanId())
             .map(org.conexaotreinamento.conexaotreinamentobackend.entity.StudentPlan::getMaxDays)
             .orElseThrow(() -> new RuntimeException("Plano associado não encontrado ou inativo"));
         Instant now = Instant.now();
