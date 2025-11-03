@@ -107,7 +107,7 @@ class ScheduleServiceTest {
         assertEquals(LocalDateTime.of(date, end), dto.getEndTime());
         assertEquals("Yoga Basics", dto.getSeriesName());
         assertEquals("John Trainer", dto.getTrainerName());
-        assertFalse(dto.isInstanceOverride());
+        assertFalse(dto.getIsInstanceOverride());
         assertNotNull(dto.getSessionId());
         // Expected canonical format including trainerId: "yoga-basics__YYYY-MM-DD__HH:MM__{trainerId}"
         String expectedCanonical = "yoga-basics__" + date + "__09:00__" + trainerId;
@@ -147,7 +147,7 @@ class ScheduleServiceTest {
     String expectedCanonical = "yoga-basics__" + date + "__09:00__" + trainerId;
     assertEquals(expectedCanonical, dto.getSessionId());
         assertEquals("Bring water bottle", dto.getNotes());
-        assertTrue(dto.isInstanceOverride());
+        assertTrue(dto.getIsInstanceOverride());
     }
 
     @Test

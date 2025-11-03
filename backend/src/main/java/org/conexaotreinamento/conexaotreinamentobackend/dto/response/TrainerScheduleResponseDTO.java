@@ -1,6 +1,6 @@
 package org.conexaotreinamento.conexaotreinamentobackend.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,8 +23,13 @@ public class TrainerScheduleResponseDTO {
     private Instant effectiveFromTimestamp;
     private Instant createdAt;
     private Instant updatedAt;
-    @JsonProperty("isActive")
-    private boolean isActive;
+    private Boolean isActive;
+    
+    // Explicit getter to ensure proper JSON serialization
+    @JsonGetter("isActive")
+    public Boolean getIsActive() {
+        return isActive;
+    }
     
     // Helper method for weekday display
     public String getWeekdayName() {

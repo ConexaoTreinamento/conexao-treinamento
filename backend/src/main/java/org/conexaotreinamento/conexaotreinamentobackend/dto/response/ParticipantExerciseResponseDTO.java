@@ -1,6 +1,6 @@
 package org.conexaotreinamento.conexaotreinamentobackend.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,6 +18,11 @@ public class ParticipantExerciseResponseDTO {
     private Integer repsCompleted;
     private Double weightCompleted;
     private String exerciseNotes;
-    @JsonProperty("isDone")
     private Boolean isDone;
+    
+    // Explicit getter to ensure proper JSON serialization
+    @JsonGetter("isDone")
+    public Boolean getIsDone() {
+        return isDone;
+    }
 }

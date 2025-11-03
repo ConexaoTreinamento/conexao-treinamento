@@ -287,7 +287,7 @@ class StudentPlanServiceTest {
 
         // Assert
         assertEquals(studentId, dto.getStudentId());
-        assertTrue(dto.isActive());
+        assertTrue(dto.getIsActive());
     }
 
     @Test

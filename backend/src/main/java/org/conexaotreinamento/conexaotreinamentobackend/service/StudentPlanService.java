@@ -290,9 +290,9 @@ public class StudentPlanService {
         }
 
         // Set computed fields
-        dto.setActive(assignment.isActive());
-        dto.setExpired(assignment.isExpired());
-        dto.setExpiringSoon(assignment.isExpiringSoon(7));
+        dto.setIsActive(assignment.isActive());
+        dto.setIsExpired(assignment.isExpired());
+        dto.setIsExpiringSoon(assignment.isExpiringSoon(7));
         
         // Calculate days remaining
         if (assignment.isActive()) {

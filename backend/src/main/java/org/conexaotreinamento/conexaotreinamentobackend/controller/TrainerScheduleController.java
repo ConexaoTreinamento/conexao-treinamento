@@ -93,7 +93,7 @@ public class TrainerScheduleController {
         dto.setEffectiveFromTimestamp(schedule.getEffectiveFromTimestamp());
         dto.setCreatedAt(schedule.getCreatedAt());
         dto.setUpdatedAt(schedule.getUpdatedAt());
-        dto.setActive(schedule.isActive());
+        dto.setIsActive(schedule.isActive());
         return dto;
     }
 }

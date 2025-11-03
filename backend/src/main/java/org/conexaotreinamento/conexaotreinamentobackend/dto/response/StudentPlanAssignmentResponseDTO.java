@@ -1,6 +1,6 @@
 package org.conexaotreinamento.conexaotreinamentobackend.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -28,11 +28,24 @@ public class StudentPlanAssignmentResponseDTO {
     private Instant createdAt;
     
     // Computed fields
-    @JsonProperty("isActive")
-    private boolean isActive;
-    @JsonProperty("isExpired")
-    private boolean isExpired;
-    @JsonProperty("isExpiringSoon")
-    private boolean isExpiringSoon; // Within 7 days
+    private Boolean isActive;
+    private Boolean isExpired;
+    private Boolean isExpiringSoon; // Within 7 days
     private long daysRemaining;
+    
+    // Explicit getters to ensure proper JSON serialization
+    @JsonGetter("isActive")
+    public Boolean getIsActive() {
+        return isActive;
+    }
+    
+    @JsonGetter("isExpired")
+    public Boolean getIsExpired() {
+        return isExpired;
+    }
+    
+    @JsonGetter("isExpiringSoon")
+    public Boolean getIsExpiringSoon() {
+        return isExpiringSoon;
+    }
 }

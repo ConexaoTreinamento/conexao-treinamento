@@ -84,7 +84,7 @@ class StudentPlanControllerTest {
         dto.setAssignedByUserEmail(assignedByEmail);
         dto.setStartDate(LocalDate.now());
         dto.setDurationDays(10);
-        dto.setActive(true);
+        dto.setIsActive(true);
         dto.setDaysRemaining(10);
         return dto;
     }
