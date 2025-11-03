@@ -269,11 +269,10 @@ function TrainerCard({ trainer, onOpen, onEdit, onDelete, canManage }: TrainerCa
               event.stopPropagation()
               onEdit()
             }}
+            fullWidthOnDesktop={false}
           />
           <ConfirmDeleteButton
             size="icon"
-            variant="outline"
-            className="h-8 w-8"
             aria-label="Excluir professor"
             onConfirm={() => onDelete()}
             confirmText="Excluir"
@@ -298,14 +297,14 @@ function TrainerCard({ trainer, onOpen, onEdit, onDelete, canManage }: TrainerCa
               event.stopPropagation()
               onEdit()
             }}
+            fullWidthOnDesktop={false}
           />
           <ConfirmDeleteButton
             size="sm"
-            variant="outline"
-            className="h-8 px-3 text-sm gap-2"
             onConfirm={() => onDelete()}
             title="Excluir professor"
             description="Tem certeza que deseja excluir este professor?"
+            className="h-8 px-3 text-sm gap-2"
           >
             <Trash2 className="h-4 w-4" aria-hidden="true" />
             <span>Excluir</span>

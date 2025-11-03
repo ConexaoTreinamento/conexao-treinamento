@@ -7,10 +7,9 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import Layout from "@/components/layout"
 import CreateExerciseModal from "@/components/exercises/create-exercise-modal"
 import EditExerciseModal from "@/components/exercises/edit-exercise-modal"
-import { DeleteExerciseDialog } from "@/components/exercises/delete-exercise-dialog"
 import { useToast } from "@/hooks/use-toast"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { findAllExercisesOptions, restoreExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { deleteExerciseMutation, findAllExercisesOptions, restoreExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { ExerciseResponseDto } from "@/lib/api-client"
 import { PageHeader } from "@/components/base/page-header"
@@ -32,8 +31,7 @@ export default function ExercisesPage() {
   const [isNewExerciseOpen, setIsNewExerciseOpen] = useState(false)
   const [isEditExerciseOpen, setIsEditExerciseOpen] = useState(false)
   const [editingExercise, setEditingExercise] = useState<ExerciseResponseDto | null>(null)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [exerciseToDelete, setExerciseToDelete] = useState<ExerciseResponseDto | null>(null)
+  const [pendingDeleteExerciseId, setPendingDeleteExerciseId] = useState<string | null>(null)
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false)
   const [selectedExercise, setSelectedExercise] = useState<ExerciseResponseDto | null>(null)
   const [showInactive, setShowInactive] = useState(false)
@@ -56,6 +54,7 @@ export default function ExercisesPage() {
 
   const { data: exercisesData, isLoading, error, refetch } = exercisesQuery
   const { mutateAsync: restoreExercise } = useMutation(restoreExerciseMutation({ client: apiClient }))
+  const deleteExerciseMutationInstance = useMutation(deleteExerciseMutation({ client: apiClient }))
 
   const exercises = useMemo(() => exercisesData?.content ?? [], [exercisesData?.content])
 
@@ -113,14 +112,36 @@ export default function ExercisesPage() {
   )
 
   const handleDeleteExercise = useCallback(
-    (exerciseId: string) => {
-      const exercise = exerciseMap.get(exerciseId)
-      if (exercise) {
-        setExerciseToDelete(exercise)
-        setIsDeleteDialogOpen(true)
+    async (exerciseId: string) => {
+      if (!exerciseId) return
+
+      try {
+        setPendingDeleteExerciseId(exerciseId)
+        await deleteExerciseMutationInstance.mutateAsync({
+          path: { id: exerciseId },
+        })
+
+        toast({
+          title: "Exercício excluído",
+          description: "O exercício foi excluído com sucesso.",
+          variant: "success",
+        })
+
+        await queryClient.invalidateQueries({
+          predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0]?._id === "findAllExercises",
+        })
+      } catch (deleteError) {
+        console.error("Erro ao excluir exercício:", deleteError)
+        toast({
+          title: "Erro",
+          description: "Erro ao excluir exercício. Tente novamente.",
+          variant: "destructive",
+        })
+      } finally {
+        setPendingDeleteExerciseId(null)
       }
     },
-    [exerciseMap],
+    [deleteExerciseMutationInstance, queryClient, toast],
   )
 
   const handleRestoreExercise = useCallback(
@@ -230,6 +251,7 @@ export default function ExercisesPage() {
                 onEdit={handleEditExercise}
                 onDelete={handleDeleteExercise}
                 onRestore={handleRestoreExercise}
+                deletingExerciseId={deleteExerciseMutationInstance.isPending ? pendingDeleteExerciseId : null}
               />
               <ExercisesPagination
                 currentPage={currentPage}
@@ -316,17 +338,6 @@ export default function ExercisesPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Delete Exercise Dialog */}
-        <DeleteExerciseDialog
-          open={isDeleteDialogOpen}
-          onOpenChange={(open) => {
-            setIsDeleteDialogOpen(open)
-            if (!open) {
-              setExerciseToDelete(null)
-            }
-          }}
-          exercise={exerciseToDelete}
-        />
       </div>
     </Layout>
   )

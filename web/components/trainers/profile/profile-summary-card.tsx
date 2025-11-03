@@ -182,7 +182,7 @@ export function TrainerProfileSummaryCard({
         disabled={isDeleting}
         title="Excluir professor"
         description="Tem certeza que deseja excluir este professor? Ele será marcado como inativo."
-        fullWidth
+        fullWidthOnDesktop
       >
         <Trash2 className="h-4 w-4" aria-hidden="true" />
         <span>Excluir</span>

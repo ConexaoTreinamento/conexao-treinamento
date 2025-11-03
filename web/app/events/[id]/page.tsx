@@ -25,6 +25,15 @@ import type { EventResponseDto, EventParticipantResponseDto } from "@/lib/api-cl
 import type { EventFormData } from "@/components/events/event-modal"
 import type { StudentSummary } from "@/components/students/student-picker"
 
+const formatTimeValue = (time?: string) => {
+  if (!time) return "--:--"
+  const [hours, minutes] = time.split(":")
+  if (hours === undefined || minutes === undefined) {
+    return time
+  }
+  return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`
+}
+
 export default function EventDetailPage() {
   const router = useRouter()
   const params = useParams()
@@ -251,7 +260,7 @@ export default function EventDetailPage() {
             <div>
               <h1 className="text-2xl font-bold leading-tight">{eventData.name}</h1>
               <p className="text-sm text-muted-foreground">
-                {formatDate(eventData.date)} • {eventData.startTime} - {eventData.endTime}
+                {formatDate(eventData.date)} • {formatTimeValue(eventData.startTime)} - {formatTimeValue(eventData.endTime)}
               </p>
             </div>
           </div>
@@ -260,6 +269,7 @@ export default function EventDetailPage() {
               variant="outline"
               hideLabelBelow="sm"
               onClick={() => setIsEditOpen(true)}
+              fullWidthOnDesktop={false}
             />
             <ConfirmDeleteButton
               onConfirm={handleDeleteEvent}
@@ -267,7 +277,7 @@ export default function EventDetailPage() {
               title="Excluir evento"
               description="Esta ação não pode ser desfeita. O evento será marcado como excluído e não aparecerá mais na lista de eventos ativos."
               confirmText={deleteEventMutation.isPending ? "Excluindo..." : "Excluir evento"}
-              fullWidth
+              fullWidthOnDesktop={false}
             >
               {deleteEventMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -300,7 +310,7 @@ export default function EventDetailPage() {
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="w-4 h-4 text-muted-foreground"/>
                   <span>
-                    {eventData.startTime} - {eventData.endTime}
+                    {formatTimeValue(eventData.startTime)} - {formatTimeValue(eventData.endTime)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">

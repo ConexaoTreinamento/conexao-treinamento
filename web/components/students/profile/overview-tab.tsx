@@ -2,6 +2,16 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Activity, CalendarDays } from "lucide-react"
 
+const WEEKDAY_LABELS = [
+  "Domingo",
+  "Segunda-feira",
+  "Terça-feira",
+  "Quarta-feira",
+  "Quinta-feira",
+  "Sexta-feira",
+  "Sábado",
+]
+
 export interface RecentClassEntry {
   id: string
   title: string
@@ -16,6 +26,8 @@ export interface CommitmentSummary {
   status: "ATTENDING" | "NOT_ATTENDING" | "TENTATIVE"
   timeLabel?: string
   trainerName?: string
+  weekday?: number
+  weekdayLabel?: string
 }
 
 interface StudentOverviewTabProps {
@@ -74,20 +86,56 @@ export function StudentOverviewTab({
               {!commitmentsLoading && attendingCommitments.length === 0 && (
                 <p className="text-xs text-muted-foreground">Nenhuma série selecionada.</p>
               )}
-              {attendingCommitments.map((commitment) => (
-                  <div key={commitment.id} className="flex items-center justify-between gap-3 rounded border bg-muted/50 p-2 text-xs">
-                    <div className="min-w-0">
-                      <span className="block font-medium truncate" title={commitment.seriesName}>
-                        {commitment.seriesName}
-                      </span>
-                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                        {commitment.timeLabel ? <span>{commitment.timeLabel}</span> : null}
-                        {commitment.trainerName ? <span>{commitment.trainerName}</span> : null}
+              {(() => {
+                const grouped = new Map<number | "unassigned", CommitmentSummary[]>()
+                attendingCommitments.forEach((commitment) => {
+                  const key = typeof commitment.weekday === "number" ? commitment.weekday : "unassigned"
+                  const bucket = grouped.get(key) ?? []
+                  bucket.push(commitment)
+                  grouped.set(key, bucket)
+                })
+
+                const orderedKeys = Array.from(grouped.keys()).sort((a, b) => {
+                  if (a === "unassigned") return 1
+                  if (b === "unassigned") return -1
+                  return a - b
+                })
+
+                return orderedKeys.map((key) => {
+                  const entries = grouped.get(key) ?? []
+                  const sample = entries[0]
+                  const weekdayLabel = key === "unassigned"
+                    ? "Dia não definido"
+                    : sample?.weekdayLabel ?? WEEKDAY_LABELS[key] ?? "Dia não definido"
+
+                  return (
+                    <div key={key as string | number} className="space-y-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        {weekdayLabel}
+                      </p>
+                      <div className="space-y-2">
+                        {entries.map((commitment) => (
+                          <div
+                            key={commitment.id}
+                            className="flex items-center justify-between gap-3 rounded border bg-muted/50 p-2 text-xs"
+                          >
+                            <div className="min-w-0">
+                              <span className="block truncate font-medium" title={commitment.seriesName}>
+                                {commitment.seriesName}
+                              </span>
+                              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                                {commitment.timeLabel ? <span>{commitment.timeLabel}</span> : null}
+                                {commitment.trainerName ? <span>{commitment.trainerName}</span> : null}
+                              </div>
+                            </div>
+                            <Badge variant="secondary">Ativo</Badge>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    <Badge variant="secondary">Ativo</Badge>
-                  </div>
-              ))}
+                  )
+                })
+              })()}
             </div>
           </div>
         </CardContent>

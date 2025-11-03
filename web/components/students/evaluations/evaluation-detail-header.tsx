@@ -1,8 +1,9 @@
 "use client"
 
-import { ArrowLeft, Calendar, Edit } from "lucide-react"
+import { ArrowLeft, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { EditButton } from "@/components/base/edit-button"
 
 interface EvaluationDetailHeaderProps {
   studentName: string
@@ -51,10 +52,12 @@ export function EvaluationDetailHeader({
           </Badge>
         ) : null}
         {onEdit ? (
-          <Button size="sm" variant="outline" onClick={onEdit}>
-            <Edit className="mr-2 h-4 w-4" />
-            Editar
-          </Button>
+          <EditButton
+            size="sm"
+            variant="outline"
+            onClick={onEdit}
+            fullWidthOnDesktop={false}
+          />
         ) : null}
       </div>
     </div>

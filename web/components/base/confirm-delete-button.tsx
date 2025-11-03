@@ -2,8 +2,8 @@
 
 import React from "react"
 import { Trash2 } from "lucide-react"
-import { Button, buttonVariants, type ButtonProps } from "@/components/ui/button"
-import { PROFILE_ACTION_BUTTON_BASE_CLASSES } from "@/components/base/profile-action-button"
+import { buttonVariants, type ButtonProps } from "@/components/ui/button"
+import { ProfileActionButton } from "@/components/base/profile-action-button"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +24,7 @@ type ConfirmDeleteButtonProps = {
   onConfirm: () => Promise<void> | void
   confirmVariant?: ButtonProps["variant"]
   children?: React.ReactNode
-  fullWidth?: boolean
+  fullWidthOnDesktop?: boolean
 } & Omit<ButtonProps, "onClick">
 
 export default function ConfirmDeleteButton({
@@ -39,7 +39,7 @@ export default function ConfirmDeleteButton({
   size = "default",
   disabled,
   type = "button",
-  fullWidth = false,
+  fullWidthOnDesktop = false,
   ...buttonProps
 }: ConfirmDeleteButtonProps) {
   const [open, setOpen] = React.useState(false)
@@ -58,20 +58,18 @@ export default function ConfirmDeleteButton({
   return (
     <AlertDialog open={open} onOpenChange={v => !loading && setOpen(v)}>
       <AlertDialogTrigger asChild>
-        <Button
+        <ProfileActionButton
           variant={variant}
           size={size}
-          className={cn(
-            size === "icon" ? undefined : fullWidth ? PROFILE_ACTION_BUTTON_BASE_CLASSES : "w-full sm:w-auto",
-            className,
-          )}
+          className={className}
           disabled={disabled || loading}
           onClick={(event) => event.stopPropagation()}
           type={type}
+          fullWidthOnDesktop={fullWidthOnDesktop}
           {...buttonProps}
         >
           {children ?? <Trash2 className="w-4 h-4" />}
-        </Button>
+        </ProfileActionButton>
       </AlertDialogTrigger>
       <AlertDialogContent onClick={e => e.stopPropagation()}>
         <AlertDialogHeader>

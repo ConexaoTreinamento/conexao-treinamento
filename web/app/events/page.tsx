@@ -111,6 +111,15 @@ export default function EventsPage() {
     })
   }
 
+  const formatTimeValue = (time?: string) => {
+    if (!time) return "--:--"
+    const [hours, minutes] = time.split(":")
+    if (hours === undefined || minutes === undefined) {
+      return time
+    }
+    return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`
+  }
+
   const normalizeEvents = useMemo<EventCardData[]>(() => {
     const eventsWithId = events.filter((event): event is EventResponseDto & { id: string } => Boolean(event.id))
 
@@ -118,7 +127,7 @@ export default function EventsPage() {
       id: event.id,
       name: event.name ?? "Evento",
       dateLabel: formatDateLabel(event.date),
-      timeLabel: `${event.startTime ?? "--:--"} - ${event.endTime ?? "--:--"}`,
+      timeLabel: `${formatTimeValue(event.startTime)} - ${formatTimeValue(event.endTime)}`,
       location: event.location ?? "Local não informado",
       participantsLabel: `${event.participants?.length ?? 0} participantes`,
       description: event.description ?? undefined,

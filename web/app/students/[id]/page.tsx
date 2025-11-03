@@ -38,6 +38,16 @@ import {
 } from "@/components/plans/expiring-plans"
 import { hasInsomniaTypes, impairmentTypes } from "@/lib/students/student-types"
 import { handleHttpError } from "@/lib/error-utils"
+
+const WEEKDAY_LABELS = [
+  "Domingo",
+  "Segunda-feira",
+  "Terça-feira",
+  "Quarta-feira",
+  "Quinta-feira",
+  "Sexta-feira",
+  "Sábado",
+]
 import { StudentProfileSummaryCard } from "@/components/students/profile/profile-summary-card"
 import {
   CommitmentSummary,
@@ -195,6 +205,8 @@ const toCommitmentSummaries = (
     const scheduleTrainerName = schedule?.trainerId ? trainerLookup?.get(String(schedule.trainerId)) : undefined
     const fallbackTrainer = typeof instructor === "string" && instructor.trim().length > 0 ? instructor.trim() : undefined
     const trainerName = scheduleTrainerName ?? fallbackTrainer
+    const weekday = typeof schedule?.weekday === "number" ? schedule.weekday : undefined
+    const weekdayLabel = schedule?.weekdayName ?? (typeof weekday === "number" ? WEEKDAY_LABELS[weekday] : undefined)
 
     return {
       id: String(rawId),
@@ -202,6 +214,8 @@ const toCommitmentSummaries = (
       status: normalizeCommitmentStatus(commitment.commitmentStatus),
       timeLabel,
       trainerName,
+      weekday,
+      weekdayLabel,
     }
   })
 }

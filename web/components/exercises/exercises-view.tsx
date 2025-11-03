@@ -1,5 +1,5 @@
 import type { MouseEvent } from "react"
-import { Activity, Edit, RotateCcw, Trash2 } from "lucide-react"
+import { Activity, RotateCcw, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { EmptyState } from "@/components/base/empty-state"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -11,6 +11,8 @@ import { FilterToolbar } from "@/components/base/filter-toolbar"
 import { EntityCard } from "@/components/base/entity-card"
 import { EntityList } from "@/components/base/entity-list"
 import { StatusBadge } from "@/components/base/status-badge"
+import ConfirmDeleteButton from "@/components/base/confirm-delete-button"
+import { EditButton } from "@/components/base/edit-button"
 
 export interface ExerciseCardData {
   id: string
@@ -23,11 +25,12 @@ interface ExercisesListProps {
   exercises: ExerciseCardData[]
   onSelect: (exerciseId: string) => void
   onEdit: (exerciseId: string) => void
-  onDelete: (exerciseId: string) => void
+  onDelete: (exerciseId: string) => Promise<void> | void
   onRestore: (exerciseId: string) => void
+  deletingExerciseId?: string | null
 }
 
-export function ExercisesList({ exercises, onSelect, onEdit, onDelete, onRestore }: ExercisesListProps) {
+export function ExercisesList({ exercises, onSelect, onEdit, onDelete, onRestore, deletingExerciseId }: ExercisesListProps) {
   if (!exercises.length) {
     return null
   }
@@ -42,11 +45,6 @@ export function ExercisesList({ exercises, onSelect, onEdit, onDelete, onRestore
         const handleEdit = (event: MouseEvent<HTMLButtonElement>) => {
           event.stopPropagation()
           onEdit(exercise.id)
-        }
-
-        const handleDelete = (event: MouseEvent<HTMLButtonElement>) => {
-          event.stopPropagation()
-          onDelete(exercise.id)
         }
 
         const handleRestore = (event: MouseEvent<HTMLButtonElement>) => {
@@ -64,6 +62,8 @@ export function ExercisesList({ exercises, onSelect, onEdit, onDelete, onRestore
           </p>
         )
 
+        const isDeleting = deletingExerciseId === exercise.id
+
         const mobileActions = isDeleted ? (
           <Button
             size="icon"
@@ -76,24 +76,25 @@ export function ExercisesList({ exercises, onSelect, onEdit, onDelete, onRestore
           </Button>
         ) : (
           <>
-            <Button
+            <EditButton
               size="icon"
               variant="outline"
               className="h-8 w-8"
               onClick={handleEdit}
               aria-label="Editar exercício"
-            >
-              <Edit className="h-3 w-3" aria-hidden="true" />
-            </Button>
-            <Button
+              fullWidthOnDesktop={false}
+            />
+            <ConfirmDeleteButton
               size="icon"
-              variant="outline"
               className="h-8 w-8"
-              onClick={handleDelete}
-              aria-label="Excluir exercício"
+              onConfirm={() => onDelete(exercise.id)}
+              title="Excluir exercício"
+              description={`Tem certeza que deseja excluir ${exercise.name}? Esta ação não pode ser desfeita.`}
+              disabled={isDeleting}
             >
               <Trash2 className="h-3 w-3" aria-hidden="true" />
-            </Button>
+              <span className="sr-only">Excluir exercício</span>
+            </ConfirmDeleteButton>
           </>
         )
 
@@ -103,12 +104,23 @@ export function ExercisesList({ exercises, onSelect, onEdit, onDelete, onRestore
           </Button>
         ) : (
           <>
-            <Button size="sm" variant="outline" className="h-8 px-3 text-sm" onClick={handleEdit}>
-              <Edit className="mr-1 h-3 w-3" aria-hidden="true" /> Editar
-            </Button>
-            <Button size="sm" variant="outline" className="h-8 px-3 text-sm" onClick={handleDelete}>
+            <EditButton
+              size="sm"
+              variant="outline"
+              className="h-8 px-3 text-sm"
+              onClick={handleEdit}
+              fullWidthOnDesktop={false}
+            />
+            <ConfirmDeleteButton
+              size="sm"
+              className="h-8 px-3 text-sm gap-2"
+              onConfirm={() => onDelete(exercise.id)}
+              title="Excluir exercício"
+              description={`Tem certeza que deseja excluir ${exercise.name}? Esta ação não pode ser desfeita.`}
+              disabled={isDeleting}
+            >
               <Trash2 className="mr-1 h-3 w-3" aria-hidden="true" /> Excluir
-            </Button>
+            </ConfirmDeleteButton>
           </>
         )
 

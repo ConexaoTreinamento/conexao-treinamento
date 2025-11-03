@@ -149,7 +149,6 @@ export const StudentCard = ({
           title="Excluir Aluno"
           description={`Tem certeza que deseja excluir ${fullName}? Ele será marcado como inativo e poderá ser restaurado.`}
           size="icon"
-          variant="outline"
           className="h-8 w-8"
         >
           <Trash2 className="h-3 w-3" aria-hidden="true" />
@@ -186,7 +185,6 @@ export const StudentCard = ({
           title="Excluir Aluno"
           description={`Tem certeza que deseja excluir ${fullName}? Ele será marcado como inativo e poderá ser restaurado.`}
           size="sm"
-          variant="outline"
           className="h-8"
         >
           <Trash2 className="mr-1 h-3 w-3" aria-hidden="true" /> Excluir

@@ -231,11 +231,6 @@ export default function TrainersPage() {
 
   const handleDeleteTrainer = useCallback(
     async (trainerId: string) => {
-      const confirmDelete = confirm("Tem certeza que deseja excluir este professor?")
-      if (!confirmDelete) {
-        return
-      }
-
       try {
         await deleteTrainer({ client: apiClient, path: { id: String(trainerId) } })
         toast({
