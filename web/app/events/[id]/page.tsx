@@ -86,7 +86,8 @@ export default function EventDetailPage() {
 
   const deleteEventMutation = useMutation({
     ...deleteEventMutationFactory({ client: apiClient }),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await invalidateEventQueries()
       router.push('/events')
     },
   })

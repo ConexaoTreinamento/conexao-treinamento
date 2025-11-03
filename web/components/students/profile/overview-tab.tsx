@@ -106,7 +106,9 @@ export function StudentOverviewTab({
                   const sample = entries[0]
                   const weekdayLabel = key === "unassigned"
                     ? "Dia não definido"
-                    : sample?.weekdayLabel ?? WEEKDAY_LABELS[key] ?? "Dia não definido"
+                    : (typeof key === "number" ? WEEKDAY_LABELS[key] : undefined)
+                        ?? sample?.weekdayLabel
+                        ?? "Dia não definido"
 
                   return (
                     <div key={key as string | number} className="space-y-2">

@@ -236,7 +236,7 @@ export default function TrainersPage() {
         toast({
           title: "Professor excluído",
           description: "O professor foi marcado como inativo.",
-          variant: "destructive",
+          variant: "success",
           duration: 3000,
         })
         await invalidateTrainersQueries()

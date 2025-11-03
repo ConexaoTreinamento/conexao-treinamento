@@ -50,7 +50,6 @@ export default function PlanCard(props: PlanCardProps){
   const mobileActions = active ? (
     <ConfirmDeleteButton
       size="icon"
-      variant="outline"
       className="h-8 w-8"
       title="Excluir Plano"
       description={`Tem certeza que deseja excluir o plano "${name}"? Ele será desativado e poderá ser restaurado.`}
@@ -75,7 +74,6 @@ export default function PlanCard(props: PlanCardProps){
   const desktopActions = active ? (
     <ConfirmDeleteButton
       size="sm"
-      variant="outline"
       className="h-8"
       title="Excluir Plano"
       description={`Tem certeza que deseja excluir o plano "${name}"? Ele será desativado e poderá ser restaurado.`}

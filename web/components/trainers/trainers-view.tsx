@@ -224,10 +224,6 @@ function TrainerCard({ trainer, onOpen, onEdit, onDelete, canManage }: TrainerCa
 
   const infoRows: ReactNode[] = []
 
-  if (compensationLabel) {
-    infoRows.push(<span key="compensation">Compensação: {compensationLabel}</span>)
-  }
-
   if (trainer.specialties.length) {
     const total = trainer.specialties.length
     infoRows.push(
