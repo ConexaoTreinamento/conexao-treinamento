@@ -50,9 +50,37 @@ jobs:
           chmod +x ./mvnw
           ./mvnw verify -Dspring.profiles.active=test
 
+      - name: Add Coverage Comment to PR
+        if: github.event_name == 'pull_request'
+        uses: madrapps/jacoco-report@v1.7.1
+        with:
+          paths: |
+            ${{ github.workspace }}/backend/target/site/jacoco/jacoco.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 50
+          min-coverage-changed-files: 50
+          title: 'JaCoCo Coverage Report'
+          update-comment: true
+
+      - name: Upload JaCoCo Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: backend/target/site/jacoco/
+          retention-days: 30
+
       - name: Run Mutation Tests (PITest)
         working-directory: ./backend
         run: ./mvnw clean test-compile org.pitest:pitest-maven:mutationCoverage
+
+      - name: Upload PITest Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pitest-report
+          path: backend/target/pit-reports/
+          retention-days: 30
 
   docker-build-scan:
     name: Docker Build
