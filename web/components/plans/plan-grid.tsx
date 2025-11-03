@@ -1,74 +1,30 @@
 "use client"
 
-import PlanCard from '@/components/plans/plan-card'
-import { Card, CardContent } from '@/components/ui/card'
-import type { PlanStatusValue, PlanWithId } from './plan-types'
-import { PLAN_STATUS_EMPTY_MESSAGES } from './plan-types'
+import { EntityList } from "@/components/base/entity-list"
+import { Skeleton } from "@/components/ui/skeleton"
+import PlanCard from "@/components/plans/plan-card"
+import type { PlanWithId } from "./plan-types"
 
-type PlanGridProps = {
+type PlanListProps = {
   plans: PlanWithId[]
-  statusFilter: PlanStatusValue
-  isLoading: boolean
-  error: unknown
   onDeletePlan: (planId: string) => void
   onRestorePlan: (planId: string) => void
   isDeleting: boolean
   isRestoring: boolean
 }
 
-const LOADING_PLACEHOLDERS = Array.from({ length: 3 })
-
-export function PlanGrid(props: PlanGridProps) {
-  const {
-    plans,
-    statusFilter,
-    isLoading,
-    error,
-    onDeletePlan,
-    onRestorePlan,
-    isDeleting,
-    isRestoring
-  } = props
-
-  if (error) {
-    return (
-      <Card>
-        <CardContent className="p-6 text-sm text-red-600">
-          Erro ao carregar planos.
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (isLoading) {
-    return (
-      <div className="space-y-2">
-        {LOADING_PLACEHOLDERS.map((_, index) => (
-          <Card key={index} className="animate-pulse">
-            <CardContent className="h-16" />
-          </Card>
-        ))}
-      </div>
-    )
-  }
-
-  if (plans.length === 0) {
-    return (
-      <Card>
-        <CardContent className="p-6 text-sm text-muted-foreground">
-          {PLAN_STATUS_EMPTY_MESSAGES[statusFilter]}
-        </CardContent>
-      </Card>
-    )
+export function PlanList({ plans, onDeletePlan, onRestorePlan, isDeleting, isRestoring }: PlanListProps) {
+  if (!plans.length) {
+    return null
   }
 
   return (
-    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+    <EntityList>
       {plans.map(({ id, name, maxDays, durationDays, active, description }) => (
         <PlanCard
           key={id}
           id={id}
-          name={name ?? 'Plano sem nome'}
+          name={name ?? "Plano sem nome"}
           maxDays={maxDays ?? 0}
           durationDays={durationDays ?? 0}
           active={Boolean(active)}
@@ -79,6 +35,28 @@ export function PlanGrid(props: PlanGridProps) {
           restoring={isRestoring}
         />
       ))}
-    </div>
+    </EntityList>
   )
 }
+
+export function PlanListSkeleton() {
+  return (
+    <EntityList>
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div key={index} className="rounded-lg border bg-card p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+          <div className="mt-4 grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
+            <Skeleton className="h-3 w-32" />
+            <Skeleton className="h-3 w-28" />
+          </div>
+          <Skeleton className="mt-4 h-3 w-full" />
+        </div>
+      ))}
+    </EntityList>
+  )
+}
+
+export { PlanList as PlanGrid }

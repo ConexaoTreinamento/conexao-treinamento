@@ -24,6 +24,7 @@ import { FilterToolbar } from "@/components/base/filter-toolbar"
 import { AdministratorCard } from "@/components/administrators/administrator-card"
 import { EmptyState } from "@/components/base/empty-state"
 import { Section } from "@/components/base/section"
+import { EntityList } from "@/components/base/entity-list"
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface FormData {
@@ -429,7 +430,7 @@ export default function AdministratorsPage() {
           ) : null}
 
           {!isLoading && !error && filteredAdministrators.length ? (
-            <div className="space-y-3">
+            <EntityList>
               {filteredAdministrators.map((admin, index) => {
                 const key = admin.id ?? admin.email ?? admin.fullName ?? `administrator-${index}`
                 return (
@@ -444,7 +445,7 @@ export default function AdministratorsPage() {
                   />
                 )
               })}
-            </div>
+            </EntityList>
           ) : null}
 
           {!isLoading && !error && !filteredAdministrators.length ? (

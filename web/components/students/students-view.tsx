@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { EmptyState } from "@/components/base/empty-state"
 import { StudentCard } from "@/components/students/student-card"
 import type { StudentPlanAssignmentResponseDto, StudentResponseDto } from "@/lib/api-client/types.gen"
+import { EntityList } from "@/components/base/entity-list"
 
 interface StudentsListProps {
   students: StudentResponseDto[]
@@ -31,7 +32,7 @@ export function StudentsList({
   }
 
   return (
-    <div className="space-y-3">
+    <EntityList>
       {students.map((student) => {
         const studentId = student.id
         if (!studentId) {
@@ -54,13 +55,13 @@ export function StudentsList({
           />
         )
       })}
-    </div>
+    </EntityList>
   )
 }
 
 export function StudentsLoadingList() {
   return (
-    <div className="space-y-3">
+    <EntityList>
       {Array.from({ length: 3 }).map((_, index) => (
         <div key={index} className="rounded-lg border bg-card">
           <div className="flex items-center gap-4 p-4">
@@ -72,7 +73,7 @@ export function StudentsLoadingList() {
           </div>
         </div>
       ))}
-    </div>
+    </EntityList>
   )
 }
 

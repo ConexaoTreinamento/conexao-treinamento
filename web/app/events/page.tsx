@@ -12,9 +12,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/use-debounce"
 import type { EventResponseDto } from "@/lib/api-client/types.gen"
 import { PageHeader } from "@/components/base/page-header"
-import { EventsGrid, EventsSkeletonGrid, EventsSearchBar, type EventCardData } from "@/components/events/events-view"
+import { EventsList, EventsSkeletonList, EventsToolbar, type EventCardData } from "@/components/events/events-view"
 import { EmptyState } from "@/components/base/empty-state"
 import { Button } from "@/components/ui/button"
+import { Section } from "@/components/base/section"
 
 export default function EventsPage() {
   const router = useRouter()
@@ -93,43 +94,66 @@ export default function EventsPage() {
     }))
   }, [events])
 
+  const resultsSummary = useMemo(() => {
+    if (isLoading) {
+      return "Carregando eventos..."
+    }
+
+    if (error) {
+      return "Não foi possível carregar os eventos."
+    }
+
+    if (!normalizeEvents.length) {
+      return searchTerm
+        ? "Nenhum evento encontrado para o termo buscado."
+        : "Nenhum evento cadastrado ainda."
+    }
+
+    const total = normalizeEvents.length
+    const label = total === 1 ? "evento encontrado" : "eventos encontrados"
+    return `${total} ${label}`
+  }, [error, isLoading, normalizeEvents.length, searchTerm])
+
   return (
     <Layout>
       <div className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <PageHeader title="Eventos" description="Gerencie workshops, aulas especiais e atividades coletivas." />
+          <Button className="h-9 bg-green-600 hover:bg-green-700" onClick={() => setIsCreateModalOpen(true)}>
+            Novo evento
+          </Button>
         </div>
 
-        <EventsSearchBar
+        <EventsToolbar
           value={searchTerm}
           onValueChange={setSearchTerm}
           onReset={() => setSearchTerm("")}
-          actionLabel="Novo evento"
-          onAction={() => setIsCreateModalOpen(true)}
         />
 
-        {isLoading ? <EventsSkeletonGrid /> : null}
+        <Section title="Resultados" description={resultsSummary}>
+          {isLoading ? <EventsSkeletonList /> : null}
 
-        {error ? (
-          <EmptyState
-            title="Não foi possível carregar os eventos"
-            description={error instanceof Error ? error.message : "Tente novamente em instantes."}
-            action={
-              <Button variant="outline" onClick={() => eventsQuery.refetch()}>
-                Tentar novamente
-              </Button>
-            }
-          />
-        ) : null}
+          {error ? (
+            <EmptyState
+              title="Não foi possível carregar os eventos"
+              description={error instanceof Error ? error.message : "Tente novamente em instantes."}
+              action={
+                <Button variant="outline" onClick={() => eventsQuery.refetch()}>
+                  Tentar novamente
+                </Button>
+              }
+            />
+          ) : null}
 
-        {!isLoading && !error ? (
-          normalizeEvents.length ? (
-            <EventsGrid
+          {!isLoading && !error && normalizeEvents.length > 0 ? (
+            <EventsList
               events={normalizeEvents}
               onSelect={(id) => router.push(`/events/${id}`)}
               emptyIllustration={<Trophy className="h-10 w-10" aria-hidden="true" />}
             />
-          ) : (
+          ) : null}
+
+          {!isLoading && !error && normalizeEvents.length === 0 ? (
             <EmptyState
               icon={<Trophy className="h-10 w-10" aria-hidden="true" />}
               title={searchTerm ? "Nenhum evento encontrado" : "Nenhum evento cadastrado"}
@@ -150,8 +174,8 @@ export default function EventsPage() {
                 )
               }
             />
-          )
-        ) : null}
+          ) : null}
+        </Section>
 
         <EventModal open={isCreateModalOpen} mode="create" onClose={() => setIsCreateModalOpen(false)} onSubmit={handleCreateEvent} />
       </div>

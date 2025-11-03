@@ -27,14 +27,6 @@ interface ExercisesListProps {
   onRestore: (exerciseId: string) => void
 }
 
-const getInitials = (name: string) =>
-  name
-    .split(" ")
-    .filter(Boolean)
-    .map((token) => token[0]?.toUpperCase() ?? "")
-    .join("")
-    .slice(0, 2) || "EX"
-
 export function ExercisesList({ exercises, onSelect, onEdit, onDelete, onRestore }: ExercisesListProps) {
   if (!exercises.length) {
     return null
@@ -124,7 +116,6 @@ export function ExercisesList({ exercises, onSelect, onEdit, onDelete, onRestore
           <EntityCard
             key={exercise.id}
             title={exercise.name}
-            avatar={{ label: getInitials(exercise.name) }}
             badges={badges}
             body={descriptionBody}
             onClick={handleCardClick}
@@ -154,12 +145,6 @@ export function ExercisesToolbar({ searchValue, onSearchChange, onClearSearch, s
           Limpar busca
         </Button>
       ) : null}
-      <div className="flex items-center gap-2">
-        <Switch id="show-inactive-exercises" checked={showInactive} onCheckedChange={onToggleInactive} />
-        <Label htmlFor="show-inactive-exercises" className="text-sm">
-          Mostrar excluídos
-        </Label>
-      </div>
     </div>
   )
 
@@ -170,6 +155,24 @@ export function ExercisesToolbar({ searchValue, onSearchChange, onClearSearch, s
       searchPlaceholder="Buscar exercícios por nome ou descrição..."
       searchLabel="Buscar exercícios"
       toolbarActions={toolbarActions}
+      filterTitle="Filtrar exercícios"
+      renderFilters={() => (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <Label htmlFor="show-inactive-exercises" className="text-sm font-medium">
+                Mostrar exercícios excluídos
+              </Label>
+              <p className="text-xs text-muted-foreground">Inclui exercícios restauráveis na lista.</p>
+            </div>
+            <Switch
+              id="show-inactive-exercises"
+              checked={showInactive}
+              onCheckedChange={onToggleInactive}
+            />
+          </div>
+        </div>
+      )}
       className="gap-3"
     />
   )

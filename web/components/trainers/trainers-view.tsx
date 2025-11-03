@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { EntityCard, type EntityCardMetadataItem } from "@/components/base/entity-card"
 import { StatusBadge } from "@/components/base/status-badge"
+import { EntityList } from "@/components/base/entity-list"
 
 export interface TrainerCardData {
   id: string
@@ -147,7 +148,7 @@ export function TrainersGrid({ trainers, onOpen, onEdit, onDelete, canManage }: 
   }
 
   return (
-    <div className="space-y-3">
+    <EntityList>
       {trainers.map((trainer) => (
         <TrainerCard
           key={trainer.id}
@@ -158,7 +159,7 @@ export function TrainersGrid({ trainers, onOpen, onEdit, onDelete, canManage }: 
           onDelete={() => onDelete(trainer.id)}
         />
       ))}
-    </div>
+    </EntityList>
   )
 }
 
@@ -311,7 +312,7 @@ function TrainerCard({ trainer, onOpen, onEdit, onDelete, canManage }: TrainerCa
 
 export function TrainersSkeletonGrid() {
   return (
-    <div className="space-y-3">
+    <EntityList>
       {Array.from({ length: 3 }).map((_, index) => (
         <div key={index} className="rounded-lg border border-dashed bg-card p-4">
           <div className="flex gap-3">
@@ -332,7 +333,7 @@ export function TrainersSkeletonGrid() {
           </div>
         </div>
       ))}
-    </div>
+    </EntityList>
   )
 }
 

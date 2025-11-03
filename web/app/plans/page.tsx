@@ -11,9 +11,13 @@ import { PageHeader } from '@/components/base/page-header'
 import { handleHttpError } from '@/lib/error-utils'
 import { PlanStatusFilter } from '@/components/plans/plan-status-filter'
 import { PlanCreateDialog, type PlanFormValues } from '@/components/plans/plan-create-dialog'
-import { PlanGrid } from '@/components/plans/plan-grid'
+import { PlanList, PlanListSkeleton } from '@/components/plans/plan-grid'
 import type { PlanStatusValue, PlanWithId } from '@/components/plans/plan-types'
+import { PLAN_STATUS_EMPTY_MESSAGES } from '@/components/plans/plan-types'
 import { Section } from '@/components/base/section'
+import { EmptyState } from '@/components/base/empty-state'
+import { Button } from '@/components/ui/button'
+import { Calendar } from 'lucide-react'
 
 const PLAN_STATUS_TO_INVALIDATE: PlanStatusValue[] = ['active', 'inactive', 'all']
 
@@ -180,16 +184,43 @@ export default function PlansPage(){
         </div>
 
         <Section title="Resultados" description={resultsSummary}>
-          <PlanGrid
-            plans={plans}
-            statusFilter={statusFilter}
-            isLoading={isLoading}
-            error={error}
-            onDeletePlan={handleDeletePlan}
-            onRestorePlan={handleRestorePlan}
-            isDeleting={deletePlan.isPending}
-            isRestoring={restorePlan.isPending}
-          />
+          {isLoading ? <PlanListSkeleton /> : null}
+
+          {error ? (
+            <EmptyState
+              icon={<Calendar className="h-10 w-10" aria-hidden="true" />}
+              title="Não foi possível carregar os planos"
+              description={error instanceof Error ? error.message : 'Tente novamente em instantes.'}
+              action={
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    void qc.invalidateQueries({ queryKey: plansQueryOptions.queryKey })
+                  }}
+                >
+                  Tentar novamente
+                </Button>
+              }
+            />
+          ) : null}
+
+          {!isLoading && !error && plans.length > 0 ? (
+            <PlanList
+              plans={plans}
+              onDeletePlan={handleDeletePlan}
+              onRestorePlan={handleRestorePlan}
+              isDeleting={deletePlan.isPending}
+              isRestoring={restorePlan.isPending}
+            />
+          ) : null}
+
+          {!isLoading && !error && plans.length === 0 ? (
+            <EmptyState
+              icon={<Calendar className="h-10 w-10" aria-hidden="true" />}
+              title={statusFilter === 'all' ? 'Nenhum plano cadastrado' : 'Nenhum plano encontrado'}
+              description={PLAN_STATUS_EMPTY_MESSAGES[statusFilter]}
+            />
+          ) : null}
         </Section>
       </div>
     </Layout>
