@@ -135,7 +135,7 @@ export default function ExercisesPage() {
 
   const handleRestoreExercise = async (exercise: ExerciseResponseDto) => {
     try {
-      restoreExercise({ path: { id: String(exercise?.id) }, client: apiClient })
+      restoreExercise({ path: { exerciseId: String(exercise?.id) }, client: apiClient })
 
       toast({
         title: "Sucesso",

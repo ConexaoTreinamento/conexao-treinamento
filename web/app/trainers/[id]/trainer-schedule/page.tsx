@@ -327,7 +327,7 @@ export default function TrainerSchedulePage(){
         for(const [start,id] of existingActive){
           const isSelected = row.selectedStarts.has(start)
           if(!desired.has(start) || !isSelected){
-            await deleteMutation.mutateAsync({path:{id}})
+            await deleteMutation.mutateAsync({path:{scheduleId: id}})
           }
         }
         // 2) Creations: desired starts not existing and selected by user

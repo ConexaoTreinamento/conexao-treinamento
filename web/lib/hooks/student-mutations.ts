@@ -56,7 +56,7 @@ export const useUpdateStudent = (options: UseMutationOptions<StudentResponseDto,
       }),
         // Invalidate the specific cached student (findById) so the details refresh
         queryClient.invalidateQueries({
-          queryKey: findStudentByIdOptions({path: {id: args[1].path.id ?? ""}, client: apiClient}).queryKey
+          queryKey: findStudentByIdOptions({path: {studentId: args[1].path.studentId ?? ""}, client: apiClient}).queryKey
         })])
     }
   });

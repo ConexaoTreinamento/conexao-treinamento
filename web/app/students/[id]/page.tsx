@@ -145,17 +145,17 @@ export default function StudentProfilePage() {
   const { mutateAsync: restoreStudent, isPending: isRestoring } = useRestoreStudent()
 
   const handleDelete = async () => {
-    await deleteStudent({ path: { id: String(params.id) }, client: apiClient })
+    await deleteStudent({ path: { studentId: String(params.id) }, client: apiClient })
     toast({ title: "Aluno excluído", description: "O aluno foi marcado como inativo.", duration: 3000 })
     router.back()
   }
 
   const handleRestore = async () => {
-    await restoreStudent({ path: { id: String(params.id) }, client: apiClient })
+    await restoreStudent({ path: { studentId: String(params.id) }, client: apiClient })
     toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000, variant: 'success' })
   }
 
-  const { data: studentData, isLoading, error } = useStudent({path: {id: String(params.id)}}, {enabled: Boolean(params.id)})
+  const { data: studentData, isLoading, error } = useStudent({path: {studentId: String(params.id)}}, {enabled: Boolean(params.id)})
 
   const handleAssignPlan = async () => {
     if(!assignPlanId) {

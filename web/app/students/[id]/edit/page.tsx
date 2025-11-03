@@ -31,7 +31,7 @@ export default function EditStudentPage() {
 
   const { data: studentData, isLoading: isStudentLoading } = useStudent(
     {
-      path: { id: id ?? "" },
+      path: { studentId: id ?? "" },
     },
     {
       enabled: Boolean(id)
@@ -209,7 +209,7 @@ export default function EditStudentPage() {
           }))
       } as StudentRequestDto
 
-      await updateStudent({ path: { id }, body: requestBody, client: apiClient })
+      await updateStudent({ path: { studentId: id }, body: requestBody, client: apiClient })
     } catch (e: any) {
       handleHttpError(e, "atualizar aluno", "Não foi possível salvar as alterações. Tente novamente.")
     }

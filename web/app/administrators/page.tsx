@@ -19,7 +19,7 @@ import { Mail, Plus, Search, Shield, AlertCircle, CheckCircle, Eye, EyeOff } fro
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { findAllAdministratorsOptions, createAdministratorAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { findAllAdministratorsOptions, createAdministratorMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import type { ListAdministratorsDto, CreateAdministratorAndUserData } from "@/lib/api-client/types.gen"
 import { apiClient } from "@/lib/client";
 
@@ -76,7 +76,7 @@ export default function AdministratorsPage() {
 
   // Mutation para criar administrador
   const createAdministrator = useMutation({
-    ...createAdministratorAndUserMutation({client: apiClient}),
+    ...createAdministratorMutation({client: apiClient}),
     onSuccess: () => {
       setShowSuccess(true)
       resetForm()

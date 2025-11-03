@@ -9,7 +9,7 @@ import { useRouter, useParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import Layout from "@/components/layout"
 import TrainerModal from "@/components/trainer-modal"
-import { findTrainerByIdOptions, findTrainerByIdQueryKey, updateTrainerAndUserMutation, resetPasswordMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { findTrainerByIdOptions, findTrainerByIdQueryKey, updateTrainerMutation, resetPasswordMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useToast } from "@/hooks/use-toast"
@@ -20,7 +20,7 @@ export default function TrainerProfilePage() {
   const router = useRouter()
   const params = useParams()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerAndUserMutation({ client: apiClient }));
+  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerMutation({ client: apiClient }));
   const { toast } = useToast()
 
   const queryClient = useQueryClient();
@@ -36,7 +36,7 @@ export default function TrainerProfilePage() {
 
   const { data: trainerData, isLoading, error } = useQuery({
     ...findTrainerByIdOptions({
-      path: { id: params.id as string },
+      path: { trainerId: params.id as string },
       client: apiClient,
     })
   })
@@ -90,13 +90,13 @@ export default function TrainerProfilePage() {
         const updatedTrainer = { ...trainerData, ...formData }
 
         await updateTrainer({
-          path: { id: String(updatedTrainer?.id) },
+          path: { trainerId: String(updatedTrainer?.id) },
           body: updatedTrainer,
           client: apiClient,
         })
         await invalidateTrainersQueries()
         await queryClient.invalidateQueries({
-          queryKey: findTrainerByIdQueryKey({ path: { id: params.id as string }, client: apiClient })
+          queryKey: findTrainerByIdQueryKey({ path: { trainerId: params.id as string }, client: apiClient })
         })
       }
       setIsModalOpen(false)

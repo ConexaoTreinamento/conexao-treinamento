@@ -12,7 +12,7 @@ import { Search, Filter, Phone, Mail, Calendar, Clock, Edit, Trash2, UserPlus } 
 import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import TrainerModal from "@/components/trainer-modal"
-import { createTrainerAndUserMutation, findAllTrainersOptions, softDeleteTrainerUserMutation, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { createTrainerMutation, findAllTrainersOptions, deleteTrainerMutation, updateTrainerMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { TrainerResponseDto } from "@/lib/api-client"
 import { apiClient } from "@/lib/client"
@@ -35,9 +35,9 @@ export default function TrainersPage() {
     specialty: "",
   })
   const router = useRouter()
-  const { mutateAsync: deleteTrainer, isPending: isDeleting } = useMutation(softDeleteTrainerUserMutation({ client: apiClient }))
-  const { mutateAsync: createTrainer, isPending: isCreating } = useMutation(createTrainerAndUserMutation({ client: apiClient }))
-  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerAndUserMutation({ client: apiClient }))
+  const { mutateAsync: deleteTrainer, isPending: isDeleting } = useMutation(deleteTrainerMutation({ client: apiClient }))
+  const { mutateAsync: createTrainer, isPending: isCreating } = useMutation(createTrainerMutation({ client: apiClient }))
+  const { mutateAsync: updateTrainer, isPending: isUpdating } = useMutation(updateTrainerMutation({ client: apiClient }))
 
   const queryClient = useQueryClient();
 
@@ -88,7 +88,7 @@ export default function TrainersPage() {
       } else {
         // Update existing trainer
         await updateTrainer({
-          path: { id: String(editingTrainer?.id) },
+          path: { trainerId: String(editingTrainer?.id) },
           body: formData,
           client: apiClient,
         })
@@ -108,7 +108,7 @@ export default function TrainersPage() {
     if (confirm("Tem certeza que deseja excluir este professor?")) {
       try {
         await deleteTrainer({
-          path: { id: String(trainerId) }, client: apiClient
+          path: { trainerId: String(trainerId) }, client: apiClient
         });
         toast({ title: "Professor excluído", description: "O professor foi marcado como inativo.", variant: 'destructive', duration: 3000 })
         await invalidateTrainersQueries()

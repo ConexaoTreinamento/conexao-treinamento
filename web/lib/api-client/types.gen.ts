@@ -2104,6 +2104,24 @@ export type GetStudentPlanHistoryResponses = {
 
 export type GetStudentPlanHistoryResponse = GetStudentPlanHistoryResponses[keyof GetStudentPlanHistoryResponses];
 
+export type AssignPlanToStudentData = {
+    body: AssignPlanRequestDto;
+    path: {
+        studentId: string;
+    };
+    query?: never;
+    url: '/students/{studentId}/plans/assignments';
+};
+
+export type AssignPlanToStudentResponses = {
+    /**
+     * Created
+     */
+    201: StudentPlanAssignmentResponseDto;
+};
+
+export type AssignPlanToStudentResponse = AssignPlanToStudentResponses[keyof AssignPlanToStudentResponses];
+
 export type GetCurrentStudentPlanData = {
     body?: never;
     path: {

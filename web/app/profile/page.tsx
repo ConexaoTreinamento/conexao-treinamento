@@ -14,7 +14,7 @@ import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Clock, Award, Eye, E
 import Layout from "@/components/layout"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
-import { findTrainerByUserIdOptions, findTrainerByIdOptions, updateTrainerAndUserMutation, findAdministratorByUserIdOptions, patchAdministratorMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { findTrainerByUserIdOptions, findTrainerByIdOptions, updateTrainerMutation as updateTrainerMutationFn, findAdministratorByUserIdOptions, patchAdministratorMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { changeOwnPasswordMutation } from "@/lib/api-client/@tanstack/react-query.gen";
 
@@ -79,7 +79,7 @@ export default function ProfilePage() {
   // Admin integration
   const { data: adminDataByUser, isLoading: isLoadingAdminId } = useQuery({
     ...findAdministratorByUserIdOptions({
-      path: { id: userId },
+      path: { userId: userId },
       client: apiClient,
     }),
     enabled: !!userId && !!token && userRole === "admin",
@@ -107,7 +107,7 @@ export default function ProfilePage() {
   // Trainer integration
   const { data: trainerDataByUser, isLoading: isLoadingTrainerId } = useQuery({
     ...findTrainerByUserIdOptions({
-      path: { id: userId },
+      path: { userId: userId },
       client: apiClient,
     }),
     enabled: !!userId && !!token && userRole !== "admin",
@@ -117,14 +117,14 @@ export default function ProfilePage() {
 
   const { data: trainerData, isLoading: isLoadingTrainer } = useQuery({
     ...findTrainerByIdOptions({
-      path: { id: String(trainerId) },
+      path: { trainerId: String(trainerId) },
       client: apiClient,
     }),
     enabled: !!trainerId && userRole !== "admin",
   })
 
   const updateTrainerMutation = useMutation({
-    ...updateTrainerAndUserMutation({
+    ...updateTrainerMutationFn({
       client: apiClient,
     }),
     onSuccess: () => {
@@ -220,7 +220,7 @@ export default function ProfilePage() {
       const [firstName = "", ...rest] = (profileData.name ?? "").split(" ")
       const lastName = rest.join(" ")
       updateAdminMutation.mutate({
-        path: { id: String(adminId) },
+        path: { administratorId: String(adminId) },
         body: {
           firstName,
           lastName,
@@ -231,7 +231,7 @@ export default function ProfilePage() {
     }
     if (!trainerId) return
     updateTrainerMutation.mutate({
-      path: { id: String(trainerId) },
+      path: { trainerId: String(trainerId) },
       body: { ...profileData },
     })
   }
@@ -250,7 +250,7 @@ export default function ProfilePage() {
       const [firstName = "", ...rest] = (profileData.name ?? "").split(" ")
       const lastName = rest.join(" ")
       updateAdminMutation.mutate({
-        path: { id: String(adminId) },
+        path: { administratorId: String(adminId) },
         body: {
           firstName,
           lastName,
@@ -271,7 +271,7 @@ export default function ProfilePage() {
       return
     }
     updateTrainerMutation.mutate({
-      path: { id: String(trainerId) },
+      path: { trainerId: String(trainerId) },
       body: { ...profileData, password: newPassword },
     })
     setNewPassword("")

@@ -13,7 +13,7 @@ export default function StudentEvaluationPage() {
   const studentId = params.id as string
 
   // Get student data
-  const { data: student, isLoading: isLoadingStudent } = useStudent({ path: { id: studentId } })
+  const { data: student, isLoading: isLoadingStudent } = useStudent({ path: { studentId: studentId } })
 
   // Create evaluation mutation
   const createEvaluation = useCreateEvaluation()

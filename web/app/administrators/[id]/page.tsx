@@ -30,7 +30,7 @@ export default function AdministratorProfilePage() {
   const { data: administratorData, isLoading, error } = useQuery({
     ...findAdministratorByIdOptions({
       client: apiClient,
-      path: { id: params.id as string }
+      path: { administratorId: params.id as string }
     }),
     enabled: !!params.id && userRole === "admin"
   })

@@ -15,7 +15,7 @@ export default function EditEvaluationPage() {
   const evaluationId = params.evaluationId as string
 
   // Get student and evaluation data
-  const { data: student, isLoading: isLoadingStudent } = useStudent({ path: { id: studentId } })
+  const { data: student, isLoading: isLoadingStudent } = useStudent({ path: { studentId: studentId } })
   const { data: evaluation, isLoading: isLoadingEvaluation } = useEvaluation(studentId, evaluationId)
 
   // Update evaluation mutation

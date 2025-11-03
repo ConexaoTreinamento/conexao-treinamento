@@ -45,7 +45,7 @@ export default function EventDetailPage() {
   // React Query hooks
   const eventId = params.id as string
   const eventQuery = useQuery({
-    ...findEventByIdOptions({ client: apiClient, path: { id: eventId } }),
+    ...findEventByIdOptions({ client: apiClient, path: { eventId: eventId } }),
     enabled: Boolean(eventId),
   })
 
@@ -57,7 +57,7 @@ export default function EventDetailPage() {
     if (!eventId) return
 
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: findEventByIdQueryKey({ client: apiClient, path: { id: eventId } }) }),
+      queryClient.invalidateQueries({ queryKey: findEventByIdQueryKey({ client: apiClient, path: { eventId: eventId } }) }),
       queryClient.invalidateQueries({
         predicate: (query) =>
           Array.isArray(query.queryKey) && query.queryKey[0]?._id === "findAllEvents",
@@ -95,7 +95,7 @@ export default function EventDetailPage() {
   const handleToggleAttendance = async (participantId: string) => {
     try {
       await toggleAttendanceMutation.mutateAsync({
-        path: { id: eventId, studentId: participantId },
+        path: { eventId: eventId, studentId: participantId },
       })
     } catch (error) {
       console.error('Failed to toggle attendance:', error)
@@ -105,7 +105,7 @@ export default function EventDetailPage() {
   const handleRemoveParticipant = async (participantId: string) => {
     try {
       await removeParticipantMutation.mutateAsync({
-        path: { id: eventId, studentId: participantId },
+        path: { eventId: eventId, studentId: participantId },
       })
     } catch (error) {
       console.error('Failed to remove participant:', error)
@@ -128,7 +128,7 @@ export default function EventDetailPage() {
 
     try {
       await updateEventMutation.mutateAsync({
-        path: { id: eventId },
+        path: { eventId: eventId },
         body: {
           name: formData.name,
           date: formData.date,
@@ -144,7 +144,7 @@ export default function EventDetailPage() {
       for (const [studentId] of attendanceChanges) {
         try {
           await toggleAttendanceMutation.mutateAsync({
-            path: { id: eventId, studentId },
+            path: { eventId: eventId, studentId },
           })
         } catch (toggleError) {
           console.error(`Failed to toggle attendance for participant ${studentId}:`, toggleError)
@@ -160,7 +160,7 @@ export default function EventDetailPage() {
   const handleDeleteEvent = async () => {
     try {
       await deleteEventMutation.mutateAsync({
-        path: { id: eventId },
+        path: { eventId: eventId },
       })
     } catch (error) {
       console.error('Failed to delete event:', error)
