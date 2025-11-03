@@ -1,5 +1,6 @@
 package org.conexaotreinamento.conexaotreinamentobackend.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -16,6 +17,7 @@ public class StudentPlanResponseDTO {
     private Integer maxDays;
     private Integer durationDays;
     private String description;
+    @JsonProperty("isActive")
     private Boolean isActive;
     private Instant createdAt;
 }

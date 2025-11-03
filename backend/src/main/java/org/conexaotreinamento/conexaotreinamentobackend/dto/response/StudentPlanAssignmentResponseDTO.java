@@ -1,5 +1,6 @@
 package org.conexaotreinamento.conexaotreinamentobackend.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,8 +28,11 @@ public class StudentPlanAssignmentResponseDTO {
     private Instant createdAt;
     
     // Computed fields
+    @JsonProperty("isActive")
     private boolean isActive;
+    @JsonProperty("isExpired")
     private boolean isExpired;
+    @JsonProperty("isExpiringSoon")
     private boolean isExpiringSoon; // Within 7 days
     private long daysRemaining;
 }

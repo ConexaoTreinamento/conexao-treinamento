@@ -1,5 +1,6 @@
 package org.conexaotreinamento.conexaotreinamentobackend.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -19,8 +20,10 @@ public class SessionResponseDTO {
     private LocalDateTime endTime;
     private String seriesName;
     private String notes;
+    @JsonProperty("isInstanceOverride")
     private boolean isInstanceOverride;
     private List<StudentCommitmentResponseDTO> students;
+    @JsonProperty("isCanceled")
     private boolean isCanceled;
     private Integer presentCount;
 }

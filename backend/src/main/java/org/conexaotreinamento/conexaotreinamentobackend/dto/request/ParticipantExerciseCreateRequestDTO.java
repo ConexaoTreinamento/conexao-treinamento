@@ -1,5 +1,6 @@
 package org.conexaotreinamento.conexaotreinamentobackend.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,5 +15,6 @@ public class ParticipantExerciseCreateRequestDTO {
     private Integer repsCompleted;
     private Double weightCompleted;
     private String exerciseNotes;
+    @JsonProperty("isDone")
     private Boolean isDone;
 }
