@@ -1,5 +1,5 @@
-import type { ChangeEvent, MouseEvent, ReactNode } from "react"
-import { Mail, Phone, Calendar, Clock, Edit, Trash2, Users, TriangleAlert, X } from "lucide-react"
+import type { ChangeEvent, ReactNode } from "react"
+import { Mail, Phone, Calendar, Clock, Users, TriangleAlert, X, Trash2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EntityCard, type EntityCardMetadataItem } from "@/components/base/entity-card"
 import { StatusBadge } from "@/components/base/status-badge"
 import { EntityList } from "@/components/base/entity-list"
+import { EditButton } from "@/components/base/edit-button"
+import ConfirmDeleteButton from "@/components/base/confirm-delete-button"
 
 export interface TrainerCardData {
   id: string
@@ -255,25 +257,32 @@ function TrainerCard({ trainer, onOpen, onEdit, onDelete, canManage }: TrainerCa
       )
     : undefined
 
-  const handleEdit = (event: MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation()
-    onEdit()
-  }
-
-  const handleDelete = (event: MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation()
-    onDelete()
-  }
-
   const mobileActions = canManage && trainer.active
     ? (
         <>
-          <Button size="icon" variant="outline" className="h-8 w-8" onClick={handleEdit} aria-label="Editar professor">
-            <Edit className="h-3 w-3" aria-hidden="true" />
-          </Button>
-          <Button size="icon" variant="outline" className="h-8 w-8" onClick={handleDelete} aria-label="Excluir professor">
+          <EditButton
+            size="icon"
+            variant="outline"
+            className="h-8 w-8"
+            aria-label="Editar professor"
+            onClick={(event) => {
+              event.stopPropagation()
+              onEdit()
+            }}
+          />
+          <ConfirmDeleteButton
+            size="icon"
+            variant="outline"
+            className="h-8 w-8"
+            aria-label="Excluir professor"
+            onConfirm={() => onDelete()}
+            confirmText="Excluir"
+            title="Excluir professor"
+            description="Tem certeza que deseja excluir este professor?"
+          >
             <Trash2 className="h-3 w-3" aria-hidden="true" />
-          </Button>
+            <span className="sr-only">Excluir professor</span>
+          </ConfirmDeleteButton>
         </>
       )
     : null
@@ -281,14 +290,26 @@ function TrainerCard({ trainer, onOpen, onEdit, onDelete, canManage }: TrainerCa
   const desktopActions = canManage && trainer.active
     ? (
         <>
-          <Button size="sm" variant="outline" onClick={handleEdit} className="h-8 px-3 text-sm">
-            <Edit className="mr-1 h-4 w-4" aria-hidden="true" />
-            Editar
-          </Button>
-          <Button size="sm" variant="outline" onClick={handleDelete} className="h-8 px-3 text-sm">
-            <Trash2 className="mr-1 h-4 w-4" aria-hidden="true" />
-            Excluir
-          </Button>
+          <EditButton
+            size="sm"
+            variant="outline"
+            className="h-8 px-3 text-sm"
+            onClick={(event) => {
+              event.stopPropagation()
+              onEdit()
+            }}
+          />
+          <ConfirmDeleteButton
+            size="sm"
+            variant="outline"
+            className="h-8 px-3 text-sm gap-2"
+            onConfirm={() => onDelete()}
+            title="Excluir professor"
+            description="Tem certeza que deseja excluir este professor?"
+          >
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+            <span>Excluir</span>
+          </ConfirmDeleteButton>
         </>
       )
     : null

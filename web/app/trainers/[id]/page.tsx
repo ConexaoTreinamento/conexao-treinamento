@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { handleHttpError } from "@/lib/error-utils"
 import { apiClient } from "@/lib/client"
-import { findTrainerByIdOptions, findTrainerByIdQueryKey, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { findTrainerByIdOptions, findTrainerByIdQueryKey, softDeleteTrainerUserMutation, updateTrainerAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 
 export default function TrainerProfilePage() {
   const router = useRouter()
@@ -21,6 +21,7 @@ export default function TrainerProfilePage() {
 
   const queryClient = useQueryClient()
   const { mutateAsync: updateTrainer } = useMutation(updateTrainerAndUserMutation({ client: apiClient }))
+  const deleteTrainerMutation = useMutation(softDeleteTrainerUserMutation({ client: apiClient }))
 
   const invalidateTrainersQueries = () =>
     queryClient.invalidateQueries({
@@ -41,6 +42,31 @@ export default function TrainerProfilePage() {
 
   const handleEditTrainer = () => {
     setIsModalOpen(true)
+  }
+
+  const handleDeleteTrainer = async () => {
+    if (!trainerData?.id) {
+      return
+    }
+
+    try {
+      await deleteTrainerMutation.mutateAsync({
+        path: { id: String(trainerData.id) },
+        client: apiClient,
+      })
+
+      await invalidateTrainersQueries()
+      toast({
+        title: "Professor excluído",
+        description: "O professor foi marcado como inativo.",
+        variant: "destructive",
+        duration: 3000,
+      })
+
+      router.push("/trainers")
+    } catch (error: unknown) {
+      handleHttpError(error, "excluir treinador", "Não foi possível excluir o professor. Tente novamente.")
+    }
   }
 
   const handleModalSubmit = async (formData: Record<string, unknown>) => {
@@ -109,6 +135,8 @@ export default function TrainerProfilePage() {
           trainer={trainerData}
           onEdit={handleEditTrainer}
           onOpenSchedule={() => router.push(`/trainers/${trainerId}/trainer-schedule`)}
+          onDelete={handleDeleteTrainer}
+          isDeleting={deleteTrainerMutation.isPending}
         />
       </div>
 

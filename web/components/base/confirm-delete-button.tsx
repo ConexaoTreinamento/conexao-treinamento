@@ -2,7 +2,7 @@
 
 import React from "react"
 import { Trash2 } from "lucide-react"
-import type { ButtonProps } from "@/components/ui/button"
+import { Button, buttonVariants, type ButtonProps } from "@/components/ui/button"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,30 +14,30 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { DangerActionButton } from "@/components/base/action-buttons"
+import { cn } from "@/lib/utils"
 
 type ConfirmDeleteButtonProps = {
   title?: string
   description?: string
   confirmText?: string
   onConfirm: () => Promise<void> | void
-  disabled?: boolean
-  className?: string
+  confirmVariant?: ButtonProps["variant"]
   children?: React.ReactNode
-  variant?: ButtonProps["variant"]
-  size?: ButtonProps["size"]
-}
+} & Omit<ButtonProps, "onClick">
 
 export default function ConfirmDeleteButton({
   title = "Excluir Registro",
   description = "Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.",
   confirmText = "Excluir",
   onConfirm,
-  disabled,
+  confirmVariant = "destructive",
   className,
   children,
-  variant = "outline",
-  size = "sm",
+  variant = "destructive",
+  size = "default",
+  disabled,
+  type = "button",
+  ...buttonProps
 }: ConfirmDeleteButtonProps) {
   const [open, setOpen] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
@@ -55,15 +55,17 @@ export default function ConfirmDeleteButton({
   return (
     <AlertDialog open={open} onOpenChange={v => !loading && setOpen(v)}>
       <AlertDialogTrigger asChild>
-        <DangerActionButton
+        <Button
           variant={variant}
           size={size}
-          className={className}
+          className={cn(size === "icon" ? undefined : "w-full sm:w-auto", className)}
           disabled={disabled || loading}
-          onClick={e => e.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+          type={type}
+          {...buttonProps}
         >
           {children ?? <Trash2 className="w-4 h-4" />}
-        </DangerActionButton>
+        </Button>
       </AlertDialogTrigger>
       <AlertDialogContent onClick={e => e.stopPropagation()}>
         <AlertDialogHeader>
@@ -73,8 +75,14 @@ export default function ConfirmDeleteButton({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading} onClick={e => e.stopPropagation()} >Cancelar</AlertDialogCancel>
           <AlertDialogAction
-            onClick={e => {e.stopPropagation(); void handleConfirm()}}
-            className="bg-red-600 hover:bg-red-700"
+            onClick={(event) => {
+              event.stopPropagation()
+              void handleConfirm()
+            }}
+            className={cn(
+              buttonVariants({ variant: confirmVariant }),
+              "justify-center",
+            )}
             disabled={loading}
           >
             {confirmText}

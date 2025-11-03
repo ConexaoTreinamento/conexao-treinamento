@@ -1,10 +1,13 @@
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import ConfirmDeleteButton from "@/components/base/confirm-delete-button"
+import { EditButton } from "@/components/base/edit-button"
 import { EntityProfile, type EntityProfileMetadataItem } from "@/components/base/entity-profile"
 import { StatusBadge } from "@/components/base/status-badge"
-import { PrimaryActionButton, SecondaryActionButton } from "@/components/base/action-buttons"
 import type { TrainerResponseDto } from "@/lib/api-client/types.gen"
-import { Calendar, CalendarDays, Clock, Edit, Mail, MapPin, Phone } from "lucide-react"
+import { Calendar, CalendarDays, Clock, Mail, MapPin, Phone, Trash2 } from "lucide-react"
 import type { ReactNode } from "react"
+import { cn } from "@/lib/utils"
 
 interface TrainerProfileSummaryCardProps {
   heading: string
@@ -13,6 +16,8 @@ interface TrainerProfileSummaryCardProps {
   trainer: TrainerResponseDto & { active?: boolean }
   onEdit: () => void
   onOpenSchedule: () => void
+  onDelete?: () => void | Promise<void>
+  isDeleting?: boolean
 }
 
 const getInitials = (name?: string | null) => {
@@ -112,9 +117,12 @@ export function TrainerProfileSummaryCard({
   trainer,
   onEdit,
   onOpenSchedule,
+  onDelete,
+  isDeleting,
 }: TrainerProfileSummaryCardProps) {
   const initials = getInitials(trainer.name)
   const isActive = trainer.active ?? true
+  const hasDeleteAction = Boolean(onDelete)
 
   const metadata: EntityProfileMetadataItem[] = [
     {
@@ -159,16 +167,32 @@ export function TrainerProfileSummaryCard({
     </Badge>,
   ]
 
+  const responsiveButtonClass = "w-full sm:w-auto"
   const actions: ReactNode[] = [
-    <SecondaryActionButton key="schedule" onClick={onOpenSchedule}>
-      <CalendarDays className="mr-2 h-4 w-4" aria-hidden="true" />
-      Horários
-    </SecondaryActionButton>,
-    <PrimaryActionButton key="edit" onClick={onEdit}>
-      <Edit className="mr-2 h-4 w-4" aria-hidden="true" />
-      Editar
-    </PrimaryActionButton>,
-  ]
+    <Button
+      key="schedule"
+      variant="outline"
+      onClick={onOpenSchedule}
+      className={cn(responsiveButtonClass, "gap-2")}
+    >
+      <CalendarDays className="h-4 w-4" aria-hidden="true" />
+      <span>Horários</span>
+    </Button>,
+    <EditButton key="edit" onClick={onEdit} className={responsiveButtonClass} />,
+    hasDeleteAction ? (
+      <ConfirmDeleteButton
+        key="delete"
+        onConfirm={onDelete!}
+        disabled={isDeleting}
+        title="Excluir professor"
+        description="Tem certeza que deseja excluir este professor? Ele será marcado como inativo."
+        className={cn(responsiveButtonClass, "gap-2")}
+      >
+        <Trash2 className="h-4 w-4" aria-hidden="true" />
+        <span>Excluir</span>
+      </ConfirmDeleteButton>
+    ) : null,
+  ].filter(Boolean) as ReactNode[]
 
   const specialtiesSection = getSpecialtiesSection(trainer.specialties)
 

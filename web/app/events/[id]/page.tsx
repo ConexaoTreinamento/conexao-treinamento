@@ -3,9 +3,10 @@
 import { useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { DangerActionButton, SecondaryActionButton } from "@/components/base/action-buttons"
+import ConfirmDeleteButton from "@/components/base/confirm-delete-button"
+import { EditButton } from "@/components/base/edit-button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { ArrowLeft, Calendar, CheckCircle, Clock, Edit, MapPin, Trophy, Users, X, XCircle, Loader2, Trash2, AlertTriangle } from "lucide-react"
+import { ArrowLeft, Calendar, CheckCircle, Clock, MapPin, Trophy, Users, X, XCircle, Loader2, Trash2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useParams, useRouter } from "next/navigation"
 import Layout from "@/components/layout"
@@ -19,16 +20,6 @@ import {
   removeParticipantMutation as removeParticipantMutationFactory,
   deleteEventMutation as deleteEventMutationFactory,
 } from "@/lib/api-client/@tanstack/react-query.gen"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { apiClient } from "@/lib/client"
 import type { EventResponseDto, EventParticipantResponseDto } from "@/lib/api-client/types.gen"
 import type { EventFormData } from "@/components/events/event-modal"
@@ -39,7 +30,6 @@ export default function EventDetailPage() {
   const params = useParams()
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [participantSearchTerm, setParticipantSearchTerm] = useState("")
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 
   const queryClient = useQueryClient()
 
@@ -266,70 +256,32 @@ export default function EventDetailPage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2 sm:justify-end">
-            <SecondaryActionButton
-              size="sm"
+            <EditButton
+              variant="outline"
               className="h-9 w-full sm:w-auto sm:max-w-[200px]"
+              hideLabelBelow="sm"
               onClick={() => setIsEditOpen(true)}
-            >
-              <Edit className="mr-2 h-4 w-4" aria-hidden="true" />
-              <span className="hidden sm:inline">Editar</span>
-            </SecondaryActionButton>
-            <DangerActionButton
-              size="sm"
-              onClick={() => setIsDeleteDialogOpen(true)}
+            />
+            <ConfirmDeleteButton
+              className="h-9 w-full gap-2 sm:w-auto sm:max-w-[200px]"
+              onConfirm={handleDeleteEvent}
               disabled={deleteEventMutation.isPending}
-              className="h-9 w-full sm:w-auto sm:max-w-[200px]"
+              title="Excluir evento"
+              description="Esta ação não pode ser desfeita. O evento será marcado como excluído e não aparecerá mais na lista de eventos ativos."
+              confirmText={deleteEventMutation.isPending ? "Excluindo..." : "Excluir evento"}
             >
               {deleteEventMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-                  <span className="hidden sm:inline">Excluindo...</span>
-                </>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               ) : (
-                <>
-                  <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
-                  <span className="hidden sm:inline">Excluir</span>
-                </>
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
               )}
+              <span className="hidden sm:inline">
+                {deleteEventMutation.isPending ? "Excluindo..." : "Excluir"}
+              </span>
               <span className="sr-only">Excluir evento</span>
-            </DangerActionButton>
+            </ConfirmDeleteButton>
           </div>
         </div>
-
-        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
-                Confirmar exclusão do evento
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta ação não pode ser desfeita. O evento será marcado como excluído
-                e não aparecerá mais na lista de eventos ativos.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={deleteEventMutation.isPending}>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  handleDeleteEvent()
-                  setIsDeleteDialogOpen(false)
-                }}
-                disabled={deleteEventMutation.isPending}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                {deleteEventMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Excluindo...
-                  </>
-                ) : (
-                  "Excluir evento"
-                )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Event Info */}
