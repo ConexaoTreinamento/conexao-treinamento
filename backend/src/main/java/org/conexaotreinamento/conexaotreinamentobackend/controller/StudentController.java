@@ -36,11 +36,6 @@ public class StudentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(studentService.create(request));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<StudentResponseDTO> findStudentById(@PathVariable UUID id) {
-        return ResponseEntity.ok(studentService.findById(id));
-    }
-
     @GetMapping
     public ResponseEntity<Page<StudentResponseDTO>> findAllStudents(
             @RequestParam(required = false) String search,
@@ -93,19 +88,24 @@ public class StudentController {
                 registrationPeriodMinDate, registrationPeriodMaxDate, includeInactive, pageable));
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<StudentResponseDTO> updateStudent(@PathVariable UUID id, @RequestBody @Valid StudentRequestDTO request) {
-        return ResponseEntity.ok(studentService.update(id, request));
+    @GetMapping("/{studentId}")
+    public ResponseEntity<StudentResponseDTO> findStudentById(@PathVariable UUID studentId) {
+        return ResponseEntity.ok(studentService.findById(studentId));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteStudent(@PathVariable UUID id) {
-        studentService.delete(id);
+    @PutMapping("/{studentId}")
+    public ResponseEntity<StudentResponseDTO> updateStudent(@PathVariable UUID studentId, @RequestBody @Valid StudentRequestDTO request) {
+        return ResponseEntity.ok(studentService.update(studentId, request));
+    }
+
+    @DeleteMapping("/{studentId}")
+    public ResponseEntity<Void> deleteStudent(@PathVariable UUID studentId) {
+        studentService.delete(studentId);
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{id}/restore")
-    public ResponseEntity<StudentResponseDTO> restoreStudent(@PathVariable UUID id) {
-        return ResponseEntity.ok(studentService.restore(id));
+    @PatchMapping("/{studentId}/restore")
+    public ResponseEntity<StudentResponseDTO> restoreStudent(@PathVariable UUID studentId) {
+        return ResponseEntity.ok(studentService.restore(studentId));
     }
 }

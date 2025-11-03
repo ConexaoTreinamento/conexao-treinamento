@@ -942,139 +942,6 @@ paths:
             '*/*':
               schema:
                 $ref: '#/components/schemas/EventResponseDTO'
-  /administrators/{administratorId}:
-    get:
-      tags:
-      - people
-      operationId: findAdministratorById
-      parameters:
-      - name: administratorId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/ListAdministratorsDTO'
-    put:
-      tags:
-      - people
-      operationId: updateAdministrator
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateAdministratorDTO'
-        required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/AdministratorResponseDTO'
-    delete:
-      tags:
-      - people
-      operationId: deleteAdministrator
-      parameters:
-      - name: administratorId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '200':
-          description: OK
-    patch:
-      tags:
-      - people
-      operationId: patchAdministrator
-      parameters:
-      - name: id
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchAdministratorRequestDTO'
-        required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/AdministratorResponseDTO'
-  # ============================================
-  # Users Management Domain
-  # ============================================
-  /users:
-    get:
-      tags:
-      - users
-      operationId: getAllUsersSimple
-      parameters:
-      - name: pageable
-        in: query
-        required: true
-        schema:
-          $ref: '#/components/schemas/Pageable'
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/PageUserResponseDTO'
-    post:
-      tags:
-      - users
-      operationId: createUser
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateUserRequestDTO'
-        required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/UserResponseDTO'
-  /users/me/change-password:
-    post:
-      tags:
-      - users
-      operationId: changeOwnPassword
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ChangePasswordRequestDTO'
-        required: true
-      responses:
-        '200':
-          description: OK
   /schedules:
     get:
       tags:
@@ -1089,51 +956,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TrainerScheduleResponseDTO'
-  /trainers/{trainerId}/schedules:
-    get:
-      tags:
-      - scheduling
-      operationId: getSchedulesByTrainer
-      parameters:
-      - name: trainerId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TrainerScheduleResponseDTO'
-    post:
-      tags:
-      - scheduling
-      operationId: createSchedule
-      parameters:
-      - name: trainerId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TrainerScheduleRequestDTO'
-        required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/TrainerScheduleResponseDTO'
   /students:
     get:
       tags:
@@ -1420,6 +1242,49 @@ paths:
               schema:
                 type: string
                 format: uuid
+  /sessions/participants/exercises/{exerciseRecordId}:
+    patch:
+      tags:
+      - scheduling
+      operationId: updateRegisteredParticipantExercise
+      parameters:
+      - name: exerciseRecordId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipantExerciseUpdateRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/MessageResponseDTO'
+    delete:
+      tags:
+      - scheduling
+      operationId: removeRegisteredParticipantExercise
+      parameters:
+      - name: exerciseRecordId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/MessageResponseDTO'
   /sessions/{sessionId}/cancel:
     patch:
       tags:
@@ -1436,48 +1301,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/SessionCancelRequestDTO'
-        required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: string
-  /sessions:
-    get:
-      tags:
-      - scheduling
-      operationId: getSchedule
-      parameters:
-      - name: startDate
-        in: query
-        required: true
-        schema:
-          type: string
-          format: date
-      - name: endDate
-        in: query
-        required: true
-        schema:
-          type: string
-          format: date
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/ScheduleResponseDTO'
-    post:
-      tags:
-      - scheduling
-      operationId: createOneOffSession
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/OneOffSessionCreateRequestDTO'
         required: true
       responses:
         '200':
@@ -1520,94 +1343,52 @@ paths:
             '*/*':
               schema:
                 $ref: '#/components/schemas/StudentPlanResponseDTO'
-  /students/{studentId}/plans/assignments:
-    post:
+  /plans/{planId}:
+    get:
       tags:
       - plans
-      operationId: assignPlanToStudent
+      operationId: getPlanById
       parameters:
-      - name: studentId
+      - name: planId
         in: path
         required: true
         schema:
           type: string
           format: uuid
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AssignPlanRequestDTO'
-        required: true
       responses:
         '200':
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/StudentPlanAssignmentResponseDTO'
-  /exercises:
-    get:
+                $ref: '#/components/schemas/StudentPlanResponseDTO'
+    delete:
       tags:
-      - training
-      operationId: findAllExercises
+      - plans
+      operationId: deletePlan
       parameters:
-      - name: search
-        in: query
-        required: false
+      - name: planId
+        in: path
+        required: true
         schema:
           type: string
-      - name: includeInactive
-        in: query
-        required: false
-        schema:
-          type: boolean
-          default: false
-      - name: pageable
-        in: query
-        required: true
-        schema:
-          $ref: '#/components/schemas/Pageable'
+          format: uuid
       responses:
         '200':
           description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/PageExerciseResponseDTO'
-    post:
-      tags:
-      - training
-      operationId: createExercise
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ExerciseRequestDTO'
-        required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/ExerciseResponseDTO'
-  /events:
+  /plans/assignments/expiring-soon:
     get:
       tags:
-      - events
-      operationId: findAllEvents
+      - analytics
+      operationId: getExpiringSoonAssignments
       parameters:
-      - name: search
+      - name: days
         in: query
         required: false
         schema:
-          type: string
-      - name: includeInactive
-        in: query
-        required: false
-        schema:
-          type: boolean
-          default: false
+          type: integer
+          format: int32
+          default: 7
       responses:
         '200':
           description: OK
@@ -1616,24 +1397,21 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/EventResponseDTO'
-    post:
+                  $ref: '#/components/schemas/StudentPlanAssignmentResponseDTO'
+  /plans/assignments/active:
+    get:
       tags:
-      - events
-      operationId: createEvent
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EventRequestDTO'
-        required: true
+      - analytics
+      operationId: getAllActiveAssignments
       responses:
         '200':
           description: OK
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/EventResponseDTO'
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentPlanAssignmentResponseDTO'
   /events/{eventId}/participants/{studentId}:
     post:
       tags:
@@ -1737,66 +1515,10 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/CommitmentDetailResponseDTO'
-  /administrators:
-    get:
-      tags:
-      - people
-      operationId: findAllAdministrators
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ListAdministratorsDTO'
-    post:
-      tags:
-      - people
-      operationId: createAdministrator
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateAdministratorDTO'
-        required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/ListAdministratorsDTO'
-  /users/{userId}:
-    patch:
-      tags:
-      - users
-      operationId: patchUser
-      parameters:
-      - name: userId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchUserRoleRequestDTO'
-        required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/UserResponseDTO'
   /trainers/{trainerId}/reset-password:
     patch:
       tags:
-      - trainer-controller
+      - people
       operationId: resetPassword
       parameters:
       - name: trainerId
@@ -1814,68 +1536,6 @@ paths:
       responses:
         '200':
           description: OK
-  /students/{studentId}/restore:
-    patch:
-      tags:
-      - people
-      operationId: restoreStudent
-      parameters:
-      - name: studentId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/StudentResponseDTO'
-  /sessions/participants/exercises/{exerciseRecordId}:
-    delete:
-      tags:
-      - scheduling
-      operationId: removeRegisteredParticipantExercise
-      parameters:
-      - name: exerciseRecordId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/MessageResponseDTO'
-    patch:
-      tags:
-      - scheduling
-      operationId: updateRegisteredParticipantExercise
-      parameters:
-      - name: exerciseRecordId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ParticipantExerciseUpdateRequestDTO'
-        required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/MessageResponseDTO'
   /exercises/{exerciseId}/restore:
     patch:
       tags:
@@ -1939,29 +1599,10 @@ paths:
             '*/*':
               schema:
                 $ref: '#/components/schemas/EventResponseDTO'
-  /administrators/{administratorId}/restore:
-    patch:
-      tags:
-      - people
-      operationId: restoreAdministrator
-      parameters:
-      - name: administratorId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/AdministratorResponseDTO'
   /trainers/user-profile/{userId}:
     get:
       tags:
-      - trainer-controller
+      - people
       operationId: findTrainerByUserId
       parameters:
       - name: userId
@@ -2011,39 +1652,6 @@ paths:
             '*/*':
               schema:
                 $ref: '#/components/schemas/ReportsResponseDTO'
-  /plans/{planId}:
-    get:
-      tags:
-      - plans
-      operationId: getPlanById
-      parameters:
-      - name: planId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/StudentPlanResponseDTO'
-    delete:
-      tags:
-      - plans
-      operationId: deletePlan
-      parameters:
-      - name: planId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '200':
-          description: OK
   /students/{studentId}/plans/assignments:
     get:
       tags:
@@ -2083,42 +1691,6 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/StudentPlanAssignmentResponseDTO'
-  /plans/assignments/expiring-soon:
-    get:
-      tags:
-      - plans
-      operationId: getExpiringSoonAssignments
-      parameters:
-      - name: days
-        in: query
-        required: false
-        schema:
-          type: integer
-          format: int32
-          default: 7
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/StudentPlanAssignmentResponseDTO'
-  /plans/assignments/active:
-    get:
-      tags:
-      - plans
-      operationId: getAllActiveAssignments
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: array
-                items:
                   $ref: '#/components/schemas/StudentPlanAssignmentResponseDTO'
   /events/lookup/trainers:
     get:
@@ -2293,66 +1865,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TrainerSchedule'
-  /administrators/user-profile/{userId}:
-    get:
-      tags:
-      - people
-      operationId: findAdministratorByUserId
-      parameters:
-      - name: userId
-        in: path
-        required: true
-        schema:
-          type: string
-          format: uuid
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/ListAdministratorsDTO'
-  /administrators/test:
-    get:
-      tags:
-      - people
-      operationId: testEndpoint
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                type: string
-  /administrators/paginated:
-    get:
-      tags:
-      - people
-      operationId: findAllPaginated
-      parameters:
-      - name: search
-        in: query
-        required: false
-        schema:
-          type: string
-      - name: includeInactive
-        in: query
-        required: false
-        schema:
-          type: boolean
-          default: false
-      - name: pageable
-        in: query
-        required: true
-        schema:
-          $ref: '#/components/schemas/Pageable'
-      responses:
-        '200':
-          description: OK
-          content:
-            '*/*':
-              schema:
-                $ref: '#/components/schemas/PageListAdministratorsDTO'
   /sessions/{sessionId}/participants/{studentId}:
     delete:
       tags:

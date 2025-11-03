@@ -34,14 +34,14 @@ public class TrainerController {
         return ResponseEntity.status(HttpStatus.CREATED).body(trainerService.create(request));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ListTrainersDTO> findTrainerById(@PathVariable UUID id) {
-        return ResponseEntity.ok(trainerService.findById(id));
+    @GetMapping("/{trainerId}")
+    public ResponseEntity<ListTrainersDTO> findTrainerById(@PathVariable UUID trainerId) {
+        return ResponseEntity.ok(trainerService.findById(trainerId));
     }
 
-    @GetMapping("/user-profile/{id}")
-    public ResponseEntity<ListTrainersDTO> findTrainerByUserId(@PathVariable UUID id) {
-        return ResponseEntity.ok(trainerService.findByUserId(id));
+    @GetMapping("/user-profile/{userId}")
+    public ResponseEntity<ListTrainersDTO> findTrainerByUserId(@PathVariable UUID userId) {
+        return ResponseEntity.ok(trainerService.findByUserId(userId));
     }
 
     @GetMapping
@@ -50,23 +50,23 @@ public class TrainerController {
     }
 
 
-    @PutMapping("/{id}")
-    public ResponseEntity<TrainerResponseDTO> updateTrainerAndUser(@PathVariable UUID id, @RequestBody @Valid CreateTrainerDTO request) {
-        return ResponseEntity.ok(trainerService.put(id, request));
+    @PutMapping("/{trainerId}")
+    public ResponseEntity<TrainerResponseDTO> updateTrainer(@PathVariable UUID trainerId, @RequestBody @Valid CreateTrainerDTO request) {
+        return ResponseEntity.ok(trainerService.put(trainerId, request));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> softDeleteTrainerUser(@PathVariable UUID id) {
-        trainerService.delete(id);
+    @DeleteMapping("/{trainerId}")
+    public ResponseEntity<Void> deleteTrainer(@PathVariable UUID trainerId) {
+        trainerService.delete(trainerId);
         return ResponseEntity.noContent().build();
     }
 
-        @PatchMapping("/{id}/reset-password")
+    @PatchMapping("/{trainerId}/reset-password")
     public ResponseEntity<Void> resetPassword(
-            @PathVariable UUID id,
+            @PathVariable UUID trainerId,
             @RequestBody @Valid ResetTrainerPasswordDTO request
     ) {
-        trainerService.resetPassword(id, request.newPassword());
+        trainerService.resetPassword(trainerId, request.newPassword());
         return ResponseEntity.noContent().build();
     }
 }

@@ -54,7 +54,7 @@ public class StudentPlanController {
     }
     
     // Student plan assignment endpoints
-    @PostMapping("/students/{studentId}/assign")
+    @PostMapping("/students/{studentId}/plans/assignments")
     public ResponseEntity<StudentPlanAssignmentResponseDTO> assignPlanToStudent(
             @PathVariable UUID studentId, 
             @Valid @RequestBody AssignPlanRequestDTO requestDTO) {
@@ -75,13 +75,13 @@ public class StudentPlanController {
         return ResponseEntity.status(HttpStatus.CREATED).body(assignedPlan);
     }
     
-    @GetMapping("/students/{studentId}/history")
+    @GetMapping("/students/{studentId}/plans/assignments")
     public ResponseEntity<List<StudentPlanAssignmentResponseDTO>> getStudentPlanHistory(@PathVariable UUID studentId) {
         List<StudentPlanAssignmentResponseDTO> history = studentPlanService.getStudentPlanHistory(studentId);
         return ResponseEntity.ok(history);
     }
     
-    @GetMapping("/students/{studentId}/current")
+    @GetMapping("/students/{studentId}/plans/assignments/current")
     public ResponseEntity<StudentPlanAssignmentResponseDTO> getCurrentStudentPlan(@PathVariable UUID studentId) {
         StudentPlanAssignmentResponseDTO currentPlan = studentPlanService.getCurrentStudentPlan(studentId);
         return ResponseEntity.ok(currentPlan);

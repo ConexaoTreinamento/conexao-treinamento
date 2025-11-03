@@ -5,7 +5,6 @@ import java.util.UUID;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.ChangePasswordRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchUserRoleRequestDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.ResetTrainerPasswordDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.service.UserService;
 import org.springframework.data.domain.Page;
@@ -48,9 +47,9 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
-    @PatchMapping("/{id}")
-    public ResponseEntity<UserResponseDTO> patch(@PathVariable UUID id, @RequestBody @Valid PatchUserRoleRequestDTO request) {
-        return ResponseEntity.ok(userService.patch(id, request));
+    @PatchMapping("/{userId}")
+    public ResponseEntity<UserResponseDTO> patchUser(@PathVariable UUID userId, @RequestBody @Valid PatchUserRoleRequestDTO request) {
+        return ResponseEntity.ok(userService.patch(userId, request));
     }
 
     @PostMapping("/me/change-password")

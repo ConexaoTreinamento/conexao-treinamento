@@ -39,23 +39,23 @@ public class AdministratorController {
         return ResponseEntity.status(HttpStatus.CREATED).body(administratorService.create(request));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ListAdministratorsDTO> findAdministratorById(@PathVariable UUID id) {
-        return ResponseEntity.ok(administratorService.findById(id));
-    }
-
-    @GetMapping("/user-profile/{id}")
-    public ResponseEntity<ListAdministratorsDTO> findAdministratorByUserId(@PathVariable UUID id) {
-        return ResponseEntity.ok(administratorService.findByUserId(id));
-    }
-
     @GetMapping
     public ResponseEntity<List<ListAdministratorsDTO>> findAllAdministrators() {
         return ResponseEntity.ok(administratorService.findAll());
     }
 
+    @GetMapping("/{administratorId}")
+    public ResponseEntity<ListAdministratorsDTO> findAdministratorById(@PathVariable UUID administratorId) {
+        return ResponseEntity.ok(administratorService.findById(administratorId));
+    }
+
+    @GetMapping("/user-profile/{userId}")
+    public ResponseEntity<ListAdministratorsDTO> findAdministratorByUserId(@PathVariable UUID userId) {
+        return ResponseEntity.ok(administratorService.findByUserId(userId));
+    }
+
     @GetMapping("/test")
-    public ResponseEntity<String> test() {
+    public ResponseEntity<String> testEndpoint() {
         return ResponseEntity.ok("Endpoint funcionando sem autenticação!");
     }
 
@@ -67,24 +67,24 @@ public class AdministratorController {
         return ResponseEntity.ok(administratorService.findAll(search, pageable, includeInactive));
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<AdministratorResponseDTO> updateAdministratorAndUser(@PathVariable UUID id, @RequestBody @Valid CreateAdministratorDTO request) {
-        return ResponseEntity.ok(administratorService.put(id, request));
+    @PutMapping("/{administratorId}")
+    public ResponseEntity<AdministratorResponseDTO> updateAdministrator(@PathVariable UUID administratorId, @RequestBody @Valid CreateAdministratorDTO request) {
+        return ResponseEntity.ok(administratorService.put(administratorId, request));
     }
 
-    @PatchMapping("/{id}")
-    public ResponseEntity<AdministratorResponseDTO> patchAdministrator(@PathVariable UUID id, @RequestBody @Valid PatchAdministratorRequestDTO request) {
-        return ResponseEntity.ok(administratorService.patch(id, request));
+    @PatchMapping("/{administratorId}")
+    public ResponseEntity<AdministratorResponseDTO> patchAdministrator(@PathVariable UUID administratorId, @RequestBody @Valid PatchAdministratorRequestDTO request) {
+        return ResponseEntity.ok(administratorService.patch(administratorId, request));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> softDeleteAdministratorUser(@PathVariable UUID id) {
-        administratorService.delete(id);
+    @DeleteMapping("/{administratorId}")
+    public ResponseEntity<Void> deleteAdministrator(@PathVariable UUID administratorId) {
+        administratorService.delete(administratorId);
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{id}/restore")
-    public ResponseEntity<AdministratorResponseDTO> restoreAdministrator(@PathVariable UUID id) {
-        return ResponseEntity.ok(administratorService.restore(id));
+    @PatchMapping("/{administratorId}/restore")
+    public ResponseEntity<AdministratorResponseDTO> restoreAdministrator(@PathVariable UUID administratorId) {
+        return ResponseEntity.ok(administratorService.restore(administratorId));
     }
 }

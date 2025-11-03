@@ -15,13 +15,12 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/trainer-schedules")
 public class TrainerScheduleController {
     
     @Autowired
     private TrainerScheduleService trainerScheduleService;
     
-    @GetMapping
+    @GetMapping("/schedules")
     public ResponseEntity<List<TrainerScheduleResponseDTO>> getAllSchedules() {
         List<TrainerSchedule> schedules = trainerScheduleService.getAllActiveSchedules();
         List<TrainerScheduleResponseDTO> response = schedules.stream()
@@ -30,7 +29,7 @@ public class TrainerScheduleController {
         return ResponseEntity.ok(response);
     }
     
-    @GetMapping("/trainer/{trainerId}")
+    @GetMapping("/trainers/{trainerId}/schedules")
     public ResponseEntity<List<TrainerScheduleResponseDTO>> getSchedulesByTrainer(@PathVariable UUID trainerId) {
         List<TrainerSchedule> schedules = trainerScheduleService.getSchedulesByTrainer(trainerId);
         List<TrainerScheduleResponseDTO> response = schedules.stream()
@@ -39,36 +38,38 @@ public class TrainerScheduleController {
         return ResponseEntity.ok(response);
     }
     
-    @GetMapping("/{id}")
-    public ResponseEntity<TrainerScheduleResponseDTO> getScheduleById(@PathVariable UUID id) {
-        return trainerScheduleService.getScheduleById(id)
+    @GetMapping("/schedules/{scheduleId}")
+    public ResponseEntity<TrainerScheduleResponseDTO> getScheduleById(@PathVariable UUID scheduleId) {
+        return trainerScheduleService.getScheduleById(scheduleId)
             .map(schedule -> ResponseEntity.ok(convertToResponseDTO(schedule)))
             .orElse(ResponseEntity.notFound().build());
     }
     
-    @PostMapping
-    public ResponseEntity<TrainerScheduleResponseDTO> createSchedule(@Valid @RequestBody TrainerScheduleRequestDTO request) {
+    @PostMapping("/trainers/{trainerId}/schedules")
+    public ResponseEntity<TrainerScheduleResponseDTO> createSchedule(
+            @PathVariable UUID trainerId,
+            @Valid @RequestBody TrainerScheduleRequestDTO request) {
         TrainerSchedule schedule = convertToEntity(request);
         TrainerSchedule created = trainerScheduleService.createSchedule(schedule);
         return ResponseEntity.status(HttpStatus.CREATED).body(convertToResponseDTO(created));
     }
     
-    @PutMapping("/{id}")
+    @PutMapping("/schedules/{scheduleId}")
     public ResponseEntity<TrainerScheduleResponseDTO> updateSchedule(
-            @PathVariable UUID id, 
+            @PathVariable UUID scheduleId, 
             @Valid @RequestBody TrainerScheduleRequestDTO request) {
         try {
             TrainerSchedule updatedSchedule = convertToEntity(request);
-            TrainerSchedule result = trainerScheduleService.updateSchedule(id, updatedSchedule);
+            TrainerSchedule result = trainerScheduleService.updateSchedule(scheduleId, updatedSchedule);
             return ResponseEntity.ok(convertToResponseDTO(result));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
     }
     
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSchedule(@PathVariable UUID id) {
-        trainerScheduleService.deleteSchedule(id);
+    @DeleteMapping("/schedules/{scheduleId}")
+    public ResponseEntity<Void> deleteSchedule(@PathVariable UUID scheduleId) {
+        trainerScheduleService.deleteSchedule(scheduleId);
         return ResponseEntity.noContent().build();
     }
     

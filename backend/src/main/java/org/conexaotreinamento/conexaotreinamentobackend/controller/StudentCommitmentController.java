@@ -26,7 +26,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/commitments")
 public class StudentCommitmentController {
     
     @Autowired
@@ -39,7 +38,7 @@ public class StudentCommitmentController {
     private StudentRepository studentRepository;
     
     // Update single commitment
-    @PostMapping("/students/{studentId}/sessions/{sessionSeriesId}")
+    @PostMapping("/students/{studentId}/commitments/sessions/{sessionSeriesId}")
     public ResponseEntity<CommitmentDetailResponseDTO> updateCommitment(
             @PathVariable UUID studentId,
             @PathVariable UUID sessionSeriesId,
@@ -51,7 +50,7 @@ public class StudentCommitmentController {
     }
     
     // Get current commitment status for a student and session at a specific time
-    @GetMapping("/students/{studentId}/sessions/{sessionSeriesId}/status")
+    @GetMapping("/students/{studentId}/commitments/sessions/{sessionSeriesId}/status")
     public ResponseEntity<CommitmentStatus> getCurrentCommitmentStatus(
             @PathVariable UUID studentId,
             @PathVariable UUID sessionSeriesId,
@@ -65,7 +64,7 @@ public class StudentCommitmentController {
     }
     
     // Get all commitments for a student
-    @GetMapping("/students/{studentId}")
+    @GetMapping("/students/{studentId}/commitments")
     public ResponseEntity<List<CommitmentDetailResponseDTO>> getStudentCommitments(
             @PathVariable UUID studentId) {
         
@@ -78,7 +77,7 @@ public class StudentCommitmentController {
     }
     
     // Get all commitments for a session series
-    @GetMapping("/sessions/{sessionSeriesId}")
+    @GetMapping("/schedules/{sessionSeriesId}/commitments")
     public ResponseEntity<List<CommitmentDetailResponseDTO>> getSessionSeriesCommitments(
             @PathVariable UUID sessionSeriesId) {
         
@@ -91,7 +90,7 @@ public class StudentCommitmentController {
     }
     
     // Get current active commitments for a student (ATTENDING status)
-    @GetMapping("/students/{studentId}/active")
+    @GetMapping("/students/{studentId}/commitments/active")
     public ResponseEntity<List<CommitmentDetailResponseDTO>> getCurrentActiveCommitments(
             @PathVariable UUID studentId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime timestamp) {
@@ -106,7 +105,7 @@ public class StudentCommitmentController {
     }
     
     // Get commitment history for a student and session series
-    @GetMapping("/students/{studentId}/sessions/{sessionSeriesId}/history")
+    @GetMapping("/students/{studentId}/commitments/sessions/{sessionSeriesId}/history")
     public ResponseEntity<List<CommitmentDetailResponseDTO>> getCommitmentHistory(
             @PathVariable UUID studentId,
             @PathVariable UUID sessionSeriesId) {
@@ -120,7 +119,7 @@ public class StudentCommitmentController {
     }
     
     // Bulk update commitments (e.g., "book all sessions", "this and following")
-    @PostMapping("/students/{studentId}/bulk")
+    @PostMapping("/students/{studentId}/commitments/bulk")
     public ResponseEntity<List<CommitmentDetailResponseDTO>> bulkUpdateCommitments(
             @PathVariable UUID studentId,
             @Valid @RequestBody BulkCommitmentRequestDTO request) {
@@ -133,7 +132,7 @@ public class StudentCommitmentController {
     }
     
     // Utility endpoint: Get all available session series (for booking UI)
-    @GetMapping("/available-sessions")
+    @GetMapping("/commitments/available-sessions")
     public ResponseEntity<List<TrainerSchedule>> getAvailableSessionSeries() {
         List<TrainerSchedule> activeSeries = trainerScheduleRepository.findByActiveTrue();
         return ResponseEntity.ok(activeSeries);

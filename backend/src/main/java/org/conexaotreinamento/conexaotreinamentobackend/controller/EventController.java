@@ -1,7 +1,8 @@
 package org.conexaotreinamento.conexaotreinamentobackend.controller;
 
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.UUID;
+
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.EventRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchEventRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.EventResponseDTO;
@@ -12,10 +13,19 @@ import org.conexaotreinamento.conexaotreinamentobackend.service.StudentService;
 import org.conexaotreinamento.conexaotreinamentobackend.service.TrainerService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.UUID;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/events")
@@ -31,11 +41,6 @@ public class EventController {
         return ResponseEntity.status(HttpStatus.CREATED).body(eventService.createEvent(request));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<EventResponseDTO> findEventById(@PathVariable UUID id) {
-        return ResponseEntity.ok(eventService.findEventById(id));
-    }
-
     @GetMapping
     public ResponseEntity<List<EventResponseDTO>> findAllEvents(
             @RequestParam(required = false) String search,
@@ -43,41 +48,46 @@ public class EventController {
         return ResponseEntity.ok(eventService.findAllEvents(search, includeInactive));
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<EventResponseDTO> updateEvent(@PathVariable UUID id, @RequestBody @Valid EventRequestDTO request) {
-        return ResponseEntity.ok(eventService.updateEvent(id, request));
+    @GetMapping("/{eventId}")
+    public ResponseEntity<EventResponseDTO> findEventById(@PathVariable UUID eventId) {
+        return ResponseEntity.ok(eventService.findEventById(eventId));
     }
 
-    @PatchMapping("/{id}")
-    public ResponseEntity<EventResponseDTO> patchEvent(@PathVariable UUID id, @RequestBody @Valid PatchEventRequestDTO request) {
-        return ResponseEntity.ok(eventService.patchEvent(id, request));
+    @PutMapping("/{eventId}")
+    public ResponseEntity<EventResponseDTO> updateEvent(@PathVariable UUID eventId, @RequestBody @Valid EventRequestDTO request) {
+        return ResponseEntity.ok(eventService.updateEvent(eventId, request));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteEvent(@PathVariable UUID id) {
-        eventService.deleteEvent(id);
+    @PatchMapping("/{eventId}")
+    public ResponseEntity<EventResponseDTO> patchEvent(@PathVariable UUID eventId, @RequestBody @Valid PatchEventRequestDTO request) {
+        return ResponseEntity.ok(eventService.patchEvent(eventId, request));
+    }
+
+    @DeleteMapping("/{eventId}")
+    public ResponseEntity<Void> deleteEvent(@PathVariable UUID eventId) {
+        eventService.deleteEvent(eventId);
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{id}/restore")
-    public ResponseEntity<EventResponseDTO> restoreEvent(@PathVariable UUID id) {
-        return ResponseEntity.ok(eventService.restoreEvent(id));
+    @PatchMapping("/{eventId}/restore")
+    public ResponseEntity<EventResponseDTO> restoreEvent(@PathVariable UUID eventId) {
+        return ResponseEntity.ok(eventService.restoreEvent(eventId));
     }
 
-    @PostMapping("/{id}/participants/{studentId}")
-    public ResponseEntity<EventResponseDTO> addParticipant(@PathVariable UUID id, @PathVariable UUID studentId) {
-        return ResponseEntity.ok(eventService.addParticipant(id, studentId));
+    @PostMapping("/{eventId}/participants/{studentId}")
+    public ResponseEntity<EventResponseDTO> addParticipant(@PathVariable UUID eventId, @PathVariable UUID studentId) {
+        return ResponseEntity.ok(eventService.addParticipant(eventId, studentId));
     }
 
-    @DeleteMapping("/{id}/participants/{studentId}")
-    public ResponseEntity<Void> removeParticipant(@PathVariable UUID id, @PathVariable UUID studentId) {
-        eventService.removeParticipant(id, studentId);
+    @DeleteMapping("/{eventId}/participants/{studentId}")
+    public ResponseEntity<Void> removeParticipant(@PathVariable UUID eventId, @PathVariable UUID studentId) {
+        eventService.removeParticipant(eventId, studentId);
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{id}/participants/{studentId}/attendance")
-    public ResponseEntity<EventResponseDTO> toggleAttendance(@PathVariable UUID id, @PathVariable UUID studentId) {
-        return ResponseEntity.ok(eventService.toggleAttendance(id, studentId));
+    @PatchMapping("/{eventId}/participants/{studentId}/attendance")
+    public ResponseEntity<EventResponseDTO> toggleAttendance(@PathVariable UUID eventId, @PathVariable UUID studentId) {
+        return ResponseEntity.ok(eventService.toggleAttendance(eventId, studentId));
     }
 
     @GetMapping("/lookup/students")

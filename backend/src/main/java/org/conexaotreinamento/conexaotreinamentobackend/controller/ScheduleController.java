@@ -1,6 +1,7 @@
 package org.conexaotreinamento.conexaotreinamentobackend.controller;
 
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.*;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.MessageResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.SessionResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ScheduleResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.service.ScheduleService;
@@ -14,13 +15,12 @@ import java.util.UUID;
 import java.util.List;
 
 @RestController
-@RequestMapping("/schedule")
 public class ScheduleController {
     
     @Autowired
     private ScheduleService scheduleService;
     
-    @GetMapping
+    @GetMapping("/sessions")
     public ResponseEntity<ScheduleResponseDTO> getSchedule(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
@@ -30,8 +30,18 @@ public class ScheduleController {
         return ResponseEntity.ok(new ScheduleResponseDTO(sessions));
     }
     
-    @PostMapping("/sessions/{sessionId}")
-    public ResponseEntity<String> updateSession(
+    @PostMapping("/sessions")
+    public ResponseEntity<SessionResponseDTO> createOneOffSession(@RequestBody OneOffSessionCreateRequestDTO req) {
+        return ResponseEntity.ok(scheduleService.createOneOffSession(req));
+    }
+    
+    @GetMapping("/sessions/{sessionId}")
+    public ResponseEntity<SessionResponseDTO> getSession(@PathVariable String sessionId, @RequestParam(required = false) UUID trainerId) {
+        return ResponseEntity.ok(scheduleService.getSessionById(sessionId, trainerId));
+    }
+    
+    @PatchMapping("/sessions/{sessionId}")
+    public ResponseEntity<SessionResponseDTO> updateSession(
             @PathVariable String sessionId,
             @RequestBody SessionUpdateRequestDTO request) {
         
@@ -43,63 +53,53 @@ public class ScheduleController {
             scheduleService.updateSessionNotes(sessionId, request.getNotes());
         }
         
-        return ResponseEntity.ok("Session updated successfully");
+        return ResponseEntity.ok(scheduleService.getSessionById(sessionId));
     }
 
-    @GetMapping("/sessions/{sessionId}")
-    public ResponseEntity<SessionResponseDTO> getSession(@PathVariable String sessionId, @RequestParam(required = false) UUID trainerId) {
-        return ResponseEntity.ok(scheduleService.getSessionById(sessionId, trainerId));
-    }
-
-    @PostMapping("/sessions/{sessionId}/trainer")
-    public ResponseEntity<String> updateSessionTrainer(@PathVariable String sessionId, @RequestBody SessionTrainerUpdateRequestDTO req) {
+    @PatchMapping("/sessions/{sessionId}/trainer")
+    public ResponseEntity<SessionResponseDTO> updateSessionTrainer(@PathVariable String sessionId, @RequestBody SessionTrainerUpdateRequestDTO req) {
         scheduleService.updateSessionTrainer(sessionId, req.getTrainerId());
-        return ResponseEntity.ok("Trainer updated");
+        return ResponseEntity.ok(scheduleService.getSessionById(sessionId));
     }
 
-    @PostMapping("/sessions/{sessionId}/cancel")
-    public ResponseEntity<String> cancelOrRestoreSession(@PathVariable String sessionId, @RequestBody SessionCancelRequestDTO req) {
+    @PatchMapping("/sessions/{sessionId}/cancel")
+    public ResponseEntity<SessionResponseDTO> cancelOrRestoreSession(@PathVariable String sessionId, @RequestBody SessionCancelRequestDTO req) {
         scheduleService.cancelOrRestoreSession(sessionId, req.isCancel());
-        return ResponseEntity.ok("Session status updated");
+        return ResponseEntity.ok(scheduleService.getSessionById(sessionId));
     }
 
     @PostMapping("/sessions/{sessionId}/participants")
-    public ResponseEntity<String> addSessionParticipant(@PathVariable String sessionId, @RequestBody SessionParticipantAddRequestDTO req) {
+    public ResponseEntity<MessageResponseDTO> addSessionParticipant(@PathVariable String sessionId, @RequestBody SessionParticipantAddRequestDTO req) {
         scheduleService.addParticipant(sessionId, req.getStudentId());
-        return ResponseEntity.ok("Participant added");
+        return ResponseEntity.ok(new MessageResponseDTO("Participant added", true));
     }
 
     @DeleteMapping("/sessions/{sessionId}/participants/{studentId}")
-    public ResponseEntity<String> removeSessionParticipant(@PathVariable String sessionId, @PathVariable java.util.UUID studentId) {
+    public ResponseEntity<Void> removeSessionParticipant(@PathVariable String sessionId, @PathVariable UUID studentId) {
         scheduleService.removeParticipant(sessionId, studentId);
-        return ResponseEntity.ok("Participant removed");
+        return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/sessions/{sessionId}/participants/{studentId}/presence")
-    public ResponseEntity<String> updatePresence(@PathVariable String sessionId, @PathVariable java.util.UUID studentId, @RequestBody SessionParticipantPresenceRequestDTO req) {
+    @PatchMapping("/sessions/{sessionId}/participants/{studentId}/presence")
+    public ResponseEntity<MessageResponseDTO> updatePresence(@PathVariable String sessionId, @PathVariable UUID studentId, @RequestBody SessionParticipantPresenceRequestDTO req) {
         scheduleService.updateParticipantPresence(sessionId, studentId, req.isPresent(), req.getNotes());
-        return ResponseEntity.ok("Presence updated");
+        return ResponseEntity.ok(new MessageResponseDTO("Presence updated", true));
     }
 
     @PostMapping("/sessions/{sessionId}/participants/{studentId}/exercises")
-    public ResponseEntity<java.util.UUID> addRegisteredParticipantExercise(@PathVariable String sessionId, @PathVariable java.util.UUID studentId, @RequestBody ParticipantExerciseCreateRequestDTO req) {
+    public ResponseEntity<UUID> addRegisteredParticipantExercise(@PathVariable String sessionId, @PathVariable UUID studentId, @RequestBody ParticipantExerciseCreateRequestDTO req) {
         return ResponseEntity.ok(scheduleService.addParticipantExercise(sessionId, studentId, req).getId());
     }
 
     @PatchMapping("/sessions/participants/exercises/{exerciseRecordId}")
-    public ResponseEntity<String> updateRegisteredParticipantExercise(@PathVariable java.util.UUID exerciseRecordId, @RequestBody ParticipantExerciseUpdateRequestDTO req) {
+    public ResponseEntity<MessageResponseDTO> updateRegisteredParticipantExercise(@PathVariable UUID exerciseRecordId, @RequestBody ParticipantExerciseUpdateRequestDTO req) {
         scheduleService.updateParticipantExercise(exerciseRecordId, req);
-        return ResponseEntity.ok("Exercise updated");
+        return ResponseEntity.ok(new MessageResponseDTO("Exercise updated", true));
     }
 
     @DeleteMapping("/sessions/participants/exercises/{exerciseRecordId}")
-    public ResponseEntity<String> removeRegisteredParticipantExercise(@PathVariable java.util.UUID exerciseRecordId) {
+    public ResponseEntity<MessageResponseDTO> removeRegisteredParticipantExercise(@PathVariable UUID exerciseRecordId) {
         scheduleService.removeParticipantExercise(exerciseRecordId);
-        return ResponseEntity.ok("Exercise removed");
-    }
-
-    @PostMapping("/sessions/one-off")
-    public ResponseEntity<SessionResponseDTO> createOneOffSession(@RequestBody OneOffSessionCreateRequestDTO req) {
-        return ResponseEntity.ok(scheduleService.createOneOffSession(req));
+        return ResponseEntity.ok(new MessageResponseDTO("Exercise removed", true));
     }
 }

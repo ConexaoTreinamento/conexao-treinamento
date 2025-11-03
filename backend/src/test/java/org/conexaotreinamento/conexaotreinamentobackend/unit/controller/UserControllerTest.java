@@ -1,17 +1,24 @@
 package org.conexaotreinamento.conexaotreinamentobackend.unit.controller;
 
+import java.util.List;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.conexaotreinamento.conexaotreinamentobackend.controller.UserController;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchUserRoleRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.service.UserService;
-import org.conexaotreinamento.conexaotreinamentobackend.controller.UserController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -19,13 +26,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
-import java.util.List;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserController Unit Tests")
@@ -162,7 +162,7 @@ class UserControllerTest {
         when(userService.patch(userId, patchUserRoleRequestDTO)).thenReturn(updatedUser);
 
         // When
-        ResponseEntity<UserResponseDTO> response = userController.patch(userId, patchUserRoleRequestDTO);
+        ResponseEntity<UserResponseDTO> response = userController.patchUser(userId, patchUserRoleRequestDTO);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -181,7 +181,7 @@ class UserControllerTest {
         when(userService.patch(userId, changeToAdmin)).thenReturn(adminUser);
 
         // When
-        ResponseEntity<UserResponseDTO> response = userController.patch(userId, changeToAdmin);
+        ResponseEntity<UserResponseDTO> response = userController.patchUser(userId, changeToAdmin);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -198,7 +198,7 @@ class UserControllerTest {
         when(userService.patch(userId, nullRoleRequest)).thenReturn(userResponseDTO);
 
         // When
-        ResponseEntity<UserResponseDTO> response = userController.patch(userId, nullRoleRequest);
+        ResponseEntity<UserResponseDTO> response = userController.patchUser(userId, nullRoleRequest);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -243,7 +243,7 @@ class UserControllerTest {
         when(userService.patch(userId, patchUserRoleRequestDTO)).thenThrow(new RuntimeException("User not found"));
 
         // When & Then
-        assertThatThrownBy(() -> userController.patch(userId, patchUserRoleRequestDTO))
+        assertThatThrownBy(() -> userController.patchUser(userId, patchUserRoleRequestDTO))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("User not found");
 
@@ -322,6 +322,6 @@ class UserControllerTest {
         // Verify createUser method exists and is tested
         assertThat(UserController.class.getDeclaredMethods())
                 .extracting("name")
-                .contains("createUser", "getAllUsersSimple", "patch");
+                .contains("createUser", "getAllUsersSimple", "patchUser");
     }
 }
