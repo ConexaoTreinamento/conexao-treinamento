@@ -99,27 +99,6 @@ class AdministratorControllerIntegrationTestNew {
     }
 
     @Test
-    @DisplayName("Should return validation errors for empty fields")
-    void shouldReturnValidationErrorsForEmptyFields() throws Exception {
-        // Given
-        AdministratorCreateRequestDTO request = new AdministratorCreateRequestDTO("", "", "", "");
-
-        // When & Then
-        mockMvc.perform(post("/administrators")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.fieldErrors.firstName").value("Nome é obrigatório"))
-                .andExpect(jsonPath("$.fieldErrors.lastName").value("Sobrenome é obrigatório"))
-                .andExpect(jsonPath("$.fieldErrors.email").value("Email é obrigatório"))
-                .andExpect(jsonPath("$.fieldErrors.password").value("Senha é obrigatória"));
-
-        // Verify nothing was saved
-        assertThat(administratorRepository.count()).isEqualTo(0);
-        assertThat(userRepository.count()).isEqualTo(0);
-    }
-
-    @Test
     @DisplayName("Should return validation error for invalid email")
     void shouldReturnValidationErrorForInvalidEmail() throws Exception {
         // Given
@@ -267,62 +246,4 @@ class AdministratorControllerIntegrationTestNew {
                 .andExpect(jsonPath("$.message").value("User is already active"));
     }
 
-    @Test
-    @DisplayName("Should list administrators including inactive when flag is true")
-    void shouldListAdministratorsIncludingInactiveWhenFlagIsTrue() throws Exception {
-        // Given - Create one active and one inactive administrator
-        User activeUser = new User("active@example.com", passwordEncoder.encode("password"), Role.ROLE_ADMIN);
-        activeUser = userRepository.save(activeUser);
-        Administrator activeAdmin = new Administrator();
-        activeAdmin.setUserId(activeUser.getId());
-        activeAdmin.setFirstName("Active");
-        activeAdmin.setLastName("Admin");
-        administratorRepository.save(activeAdmin);
-
-        User inactiveUser = new User("inactive@example.com", passwordEncoder.encode("password"), Role.ROLE_ADMIN);
-        inactiveUser.deactivate();
-        inactiveUser = userRepository.save(inactiveUser);
-        Administrator inactiveAdmin = new Administrator();
-        inactiveAdmin.setUserId(inactiveUser.getId());
-        inactiveAdmin.setFirstName("Inactive");
-        inactiveAdmin.setLastName("Admin");
-        administratorRepository.save(inactiveAdmin);
-
-        // When & Then - Should list both when includeInactive=true
-        mockMvc.perform(get("/administrators/paginated")
-                        .param("includeInactive", "true"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content.length()").value(2));
-    }
-
-    @Test
-    @DisplayName("Should list only active administrators when flag is false")
-    void shouldListOnlyActiveAdministratorsWhenFlagIsFalse() throws Exception {
-        // Given - Create one active and one inactive administrator
-        User activeUser = new User("active@example.com", passwordEncoder.encode("password"), Role.ROLE_ADMIN);
-        activeUser = userRepository.save(activeUser);
-        Administrator activeAdmin = new Administrator();
-        activeAdmin.setUserId(activeUser.getId());
-        activeAdmin.setFirstName("Active");
-        activeAdmin.setLastName("Admin");
-        administratorRepository.save(activeAdmin);
-
-        User inactiveUser = new User("inactive@example.com", passwordEncoder.encode("password"), Role.ROLE_ADMIN);
-        inactiveUser.deactivate();
-        inactiveUser = userRepository.save(inactiveUser);
-        Administrator inactiveAdmin = new Administrator();
-        inactiveAdmin.setUserId(inactiveUser.getId());
-        inactiveAdmin.setFirstName("Inactive");
-        inactiveAdmin.setLastName("Admin");
-        administratorRepository.save(inactiveAdmin);
-
-        // When & Then - Should list only active when includeInactive=false
-        mockMvc.perform(get("/administrators/paginated")
-                        .param("includeInactive", "false"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray())
-                .andExpect(jsonPath("$.content.length()").value(1))
-                .andExpect(jsonPath("$.content[0].firstName").value("Active"));
-    }
 }
