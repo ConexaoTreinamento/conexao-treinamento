@@ -18,7 +18,7 @@ export const decodeJwtPayload = <T = unknown>(token: string): T => {
   const decoded = atob(base64UrlToBase64(payload))
   try {
     return JSON.parse(decoded) as T
-  } catch (error) {
+  } catch {
     throw new Error("Token inválido: payload não é JSON válido")
   }
 }
