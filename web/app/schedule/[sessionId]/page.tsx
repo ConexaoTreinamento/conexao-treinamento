@@ -20,6 +20,25 @@ import type { ExerciseResponseDto, PageExerciseResponseDto, SessionResponseDto, 
 import { useForm } from "react-hook-form"
 import { StudentPicker, type StudentSummary } from "@/components/students/student-picker"
 
+const formatSessionDate = (isoString?: string) => {
+  if (!isoString) {
+    return "Data não informada"
+  }
+
+  const datePart = isoString.slice(0, 10)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+    const [year, month, day] = datePart.split("-")
+    return `${day}/${month}/${year}`
+  }
+
+  const parsed = new Date(isoString)
+  if (Number.isNaN(parsed.getTime())) {
+    return isoString
+  }
+
+  return parsed.toLocaleDateString("pt-BR")
+}
+
 export default function ClassDetailPage() {
   return (
     <Suspense
@@ -346,7 +365,7 @@ function ClassDetailPageContent() {
           <div className="flex-1 min-w-0">
             <h1 className="text-xl font-bold truncate">{session.seriesName}</h1>
             <p className="text-sm text-muted-foreground">
-              {session.startTime?.slice(0,10)} • {session.startTime?.slice(11,16)}{session.endTime? ` - ${session.endTime.slice(11,16)}`:''}
+              {formatSessionDate(session.startTime)} • {session.startTime?.slice(11,16)}{session.endTime? ` - ${session.endTime.slice(11,16)}`:''}
             </p>
           </div>
         </div>
@@ -410,7 +429,7 @@ function ClassDetailPageContent() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="w-4 h-4 text-muted-foreground" />
-                  <span>{session.startTime?.slice(0,10)} • {session.startTime?.slice(11,16)}{session.endTime? ` - ${session.endTime.slice(11,16)}`:''}</span>
+                  <span>{formatSessionDate(session.startTime)} • {session.startTime?.slice(11,16)}{session.endTime? ` - ${session.endTime.slice(11,16)}`:''}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <span className="w-4 h-4 inline-flex items-center justify-center rounded-full bg-muted text-[10px]">P</span>

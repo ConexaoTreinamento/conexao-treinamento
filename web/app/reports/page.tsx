@@ -110,6 +110,25 @@ const formatCompensation = (value?: "HOURLY" | "MONTHLY") => {
 const formatNumber = (value: number, maximumFractionDigits = 0) =>
   new Intl.NumberFormat("pt-BR", { maximumFractionDigits }).format(value)
 
+const formatDurationHours = (value: number) => {
+  if (!Number.isFinite(value)) {
+    return "00h"
+  }
+
+  const totalMinutes = Math.round(value * 60)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = Math.abs(totalMinutes % 60)
+
+  const hoursLabel = String(hours)
+
+  if (minutes === 0) {
+    return `${hoursLabel}h`
+  }
+
+  const minutesLabel = String(minutes).padStart(2, "0")
+  return `${hoursLabel}h${minutesLabel}m`
+}
+
 export default function ReportsPage() {
   const [userRole, setUserRole] = useState<string>("")
   const { control, watch, setValue, getValues } = useForm<ReportsFiltersForm>({
@@ -477,7 +496,7 @@ export default function ReportsPage() {
                                 <span className="font-medium">{name}</span>
                               </div>
                             </td>
-                            <td className="p-3 font-medium">{formatNumber(trainer?.hoursWorked ?? 0, 1)}h</td>
+                            <td className="p-3 font-medium">{formatDurationHours(trainer?.hoursWorked ?? 0)}</td>
                             <td className="p-3 font-medium">{formatNumber(trainer?.classesGiven ?? 0)}</td>
                             <td className="p-3 font-medium">{formatNumber(trainer?.studentsManaged ?? 0)}</td>
                             <td className="p-3">
@@ -537,7 +556,7 @@ export default function ReportsPage() {
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div className="space-y-1">
                             <p className="text-muted-foreground">Horas</p>
-                            <p className="font-semibold">{formatNumber(trainer?.hoursWorked ?? 0, 1)}h</p>
+                            <p className="font-semibold">{formatDurationHours(trainer?.hoursWorked ?? 0)}</p>
                           </div>
                           <div className="space-y-1">
                             <p className="text-muted-foreground">Aulas</p>
