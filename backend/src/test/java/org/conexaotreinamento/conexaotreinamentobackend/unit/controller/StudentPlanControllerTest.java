@@ -63,14 +63,14 @@ class StudentPlanControllerTest {
         SecurityContextHolder.clearContext();
     }
 
-    private StudentPlanResponseDTO planDto(UUID id, String name, int maxDays, int durationDays, boolean active) {
+    private StudentPlanResponseDTO planDto(UUID id, String name, int maxDays, int durationDays, boolean isActive) {
         StudentPlanResponseDTO dto = new StudentPlanResponseDTO();
         dto.setId(id);
         dto.setName(name);
         dto.setMaxDays(maxDays);
         dto.setDurationDays(durationDays);
         dto.setDescription("desc");
-        dto.setIsActive(active);
+        dto.setIsActive(isActive);
         return dto;
     }
 
@@ -116,7 +116,7 @@ class StudentPlanControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(planId.toString()))
                 .andExpect(jsonPath("$.name").value("Prime"))
-                .andExpect(jsonPath("$.active").value(true));
+                .andExpect(jsonPath("$.isActive").value(true));
     }
 
     @Test
@@ -159,7 +159,7 @@ class StudentPlanControllerTest {
         mockMvc.perform(post("/plans/{planId}/restore", planId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(planId.toString()))
-                .andExpect(jsonPath("$.active").value(true));
+                .andExpect(jsonPath("$.isActive").value(true));
 
         verify(studentPlanService).restorePlan(planId);
     }
@@ -224,7 +224,7 @@ class StudentPlanControllerTest {
         mockMvc.perform(get("/plans/students/{studentId}/current", studentId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.planId").value(planId.toString()))
-                .andExpect(jsonPath("$.active").value(true));
+                .andExpect(jsonPath("$.isActive").value(true));
     }
 
     @Test

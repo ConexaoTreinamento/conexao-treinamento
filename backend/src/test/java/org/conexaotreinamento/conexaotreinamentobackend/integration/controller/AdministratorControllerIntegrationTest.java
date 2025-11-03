@@ -79,7 +79,7 @@ class AdministratorControllerIntegrationTestNew {
                 .andExpect(jsonPath("$.lastName").value("Silva"))
                 .andExpect(jsonPath("$.email").value("joao.silva@example.com"))
                 .andExpect(jsonPath("$.fullName").value("João Silva"))
-                .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.isActive").value(true))
                 .andExpect(jsonPath("$.joinDate").exists());
 
         // Verify in database
@@ -229,7 +229,7 @@ class AdministratorControllerIntegrationTestNew {
                 .andExpect(jsonPath("$.firstName").value("João"))
                 .andExpect(jsonPath("$.lastName").value("Silva"))
                 .andExpect(jsonPath("$.email").value("admin@example.com"))
-                .andExpect(jsonPath("$.active").value(true));
+                .andExpect(jsonPath("$.isActive").value(true));
 
         // Verify the user is restored
         User restoredUser = userRepository.findById(user.getId()).orElseThrow();
