@@ -3,6 +3,7 @@
 import React from "react"
 import { Trash2 } from "lucide-react"
 import { Button, buttonVariants, type ButtonProps } from "@/components/ui/button"
+import { PROFILE_ACTION_BUTTON_BASE_CLASSES } from "@/components/base/profile-action-button"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +24,7 @@ type ConfirmDeleteButtonProps = {
   onConfirm: () => Promise<void> | void
   confirmVariant?: ButtonProps["variant"]
   children?: React.ReactNode
+  fullWidth?: boolean
 } & Omit<ButtonProps, "onClick">
 
 export default function ConfirmDeleteButton({
@@ -37,6 +39,7 @@ export default function ConfirmDeleteButton({
   size = "default",
   disabled,
   type = "button",
+  fullWidth = false,
   ...buttonProps
 }: ConfirmDeleteButtonProps) {
   const [open, setOpen] = React.useState(false)
@@ -58,7 +61,10 @@ export default function ConfirmDeleteButton({
         <Button
           variant={variant}
           size={size}
-          className={cn(size === "icon" ? undefined : "w-full sm:w-auto", className)}
+          className={cn(
+            size === "icon" ? undefined : fullWidth ? PROFILE_ACTION_BUTTON_BASE_CLASSES : "w-full sm:w-auto",
+            className,
+          )}
           disabled={disabled || loading}
           onClick={(event) => event.stopPropagation()}
           type={type}

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import EventModal from "@/components/events/event-modal"
 import type { EventFormData } from "@/components/events/event-modal"
-import { findAllEventsOptions, createEventMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { findAllEventsOptions, createEventMutation, deleteEventMutation as deleteEventMutationFactory } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useDebounce } from "@/hooks/use-debounce"
@@ -21,6 +21,7 @@ export default function EventsPage() {
   const router = useRouter()
   const [searchTerm, setSearchTerm] = useState("")
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   const debouncedSearchTerm = useDebounce(searchTerm, 300)
 
@@ -37,6 +38,20 @@ export default function EventsPage() {
   const queryClient = useQueryClient()
   const createEvent = useMutation({
     ...createEventMutation({ client: apiClient }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0]?._id === "findAllEvents",
+        }),
+        queryClient.invalidateQueries({
+          predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0]?._id === "getReports",
+        }),
+      ])
+    },
+  })
+
+  const deleteEvent = useMutation({
+    ...deleteEventMutationFactory({ client: apiClient }),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({
@@ -66,6 +81,23 @@ export default function EventsPage() {
       setIsCreateModalOpen(false)
     } catch (err) {
       console.error("Failed to create event:", err)
+    }
+  }
+
+  const handleEditEvent = (eventId: string) => {
+    router.push(`/events/${eventId}`)
+  }
+
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      setPendingDeleteId(eventId)
+      await deleteEvent.mutateAsync({
+        path: { id: eventId },
+      })
+    } catch (err) {
+      console.error("Failed to delete event:", err)
+    } finally {
+      setPendingDeleteId(null)
     }
   }
 
@@ -150,6 +182,9 @@ export default function EventsPage() {
             <EventsList
               events={normalizeEvents}
               onSelect={(id) => router.push(`/events/${id}`)}
+              onEdit={handleEditEvent}
+              onDelete={handleDeleteEvent}
+              deletingEventId={deleteEvent.isPending ? pendingDeleteId : null}
               emptyIllustration={<Trophy className="h-10 w-10" aria-hidden="true" />}
             />
           ) : null}

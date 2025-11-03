@@ -258,17 +258,16 @@ export default function EventDetailPage() {
           <div className="flex flex-wrap gap-2 sm:justify-end">
             <EditButton
               variant="outline"
-              className="h-9 w-full sm:w-auto sm:max-w-[200px]"
               hideLabelBelow="sm"
               onClick={() => setIsEditOpen(true)}
             />
             <ConfirmDeleteButton
-              className="h-9 w-full gap-2 sm:w-auto sm:max-w-[200px]"
               onConfirm={handleDeleteEvent}
               disabled={deleteEventMutation.isPending}
               title="Excluir evento"
               description="Esta ação não pode ser desfeita. O evento será marcado como excluído e não aparecerá mais na lista de eventos ativos."
               confirmText={deleteEventMutation.isPending ? "Excluindo..." : "Excluir evento"}
+              fullWidth
             >
               {deleteEventMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

@@ -1,13 +1,12 @@
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import ConfirmDeleteButton from "@/components/base/confirm-delete-button"
 import { EditButton } from "@/components/base/edit-button"
+import { ProfileActionButton } from "@/components/base/profile-action-button"
 import { EntityProfile, type EntityProfileMetadataItem } from "@/components/base/entity-profile"
 import { StatusBadge } from "@/components/base/status-badge"
 import type { TrainerResponseDto } from "@/lib/api-client/types.gen"
 import { Calendar, CalendarDays, Clock, Mail, MapPin, Phone, Trash2 } from "lucide-react"
 import type { ReactNode } from "react"
-import { cn } from "@/lib/utils"
 
 interface TrainerProfileSummaryCardProps {
   heading: string
@@ -167,18 +166,15 @@ export function TrainerProfileSummaryCard({
     </Badge>,
   ]
 
-  const responsiveButtonClass = "w-full sm:w-auto"
   const actions: ReactNode[] = [
-    <Button
+    <ProfileActionButton
       key="schedule"
-      variant="outline"
       onClick={onOpenSchedule}
-      className={cn(responsiveButtonClass, "gap-2")}
     >
       <CalendarDays className="h-4 w-4" aria-hidden="true" />
       <span>Horários</span>
-    </Button>,
-    <EditButton key="edit" onClick={onEdit} className={responsiveButtonClass} />,
+    </ProfileActionButton>,
+    <EditButton key="edit" onClick={onEdit} />,
     hasDeleteAction ? (
       <ConfirmDeleteButton
         key="delete"
@@ -186,7 +182,7 @@ export function TrainerProfileSummaryCard({
         disabled={isDeleting}
         title="Excluir professor"
         description="Tem certeza que deseja excluir este professor? Ele será marcado como inativo."
-        className={cn(responsiveButtonClass, "gap-2")}
+        fullWidth
       >
         <Trash2 className="h-4 w-4" aria-hidden="true" />
         <span>Excluir</span>

@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import ConfirmDeleteButton from "@/components/base/confirm-delete-button"
 import { EditButton } from "@/components/base/edit-button"
+import { ProfileActionButton } from "@/components/base/profile-action-button"
 import { EntityProfile, type EntityProfileMetadataItem } from "@/components/base/entity-profile"
 import { PlanAssignmentStatusBadge, getAssignmentDaysRemaining, getAssignmentEndDate } from "@/components/plans/expiring-plans"
 import type { StudentPlanAssignmentResponseDto, StudentResponseDto } from "@/lib/api-client/types.gen"
@@ -9,7 +9,6 @@ import { Activity, Calendar, CalendarDays, MapPin, Phone, PlusCircle, Trash2, Us
 import { Mail } from "lucide-react"
 import { RotateCcw } from "lucide-react"
 import type { ReactNode } from "react"
-import { cn } from "@/lib/utils"
 
 interface StudentProfileSummaryCardProps {
   heading: string
@@ -142,48 +141,40 @@ export function StudentProfileSummaryCard({
 
   const planActionLabel = currentAssignment ? "Renovar plano" : "Atribuir plano"
 
-  const responsiveButtonClass = "w-full sm:w-auto"
   const actions: ReactNode[] = [
-    <EditButton key="edit" onClick={onEdit} className={responsiveButtonClass} />,
-    <Button
+    <EditButton key="edit" onClick={onEdit} />,
+    <ProfileActionButton
       key="evaluate"
-      variant="secondary"
       onClick={onCreateEvaluation}
-      className={cn(responsiveButtonClass, "gap-2")}
     >
       <Activity className="h-4 w-4" aria-hidden="true" />
       <span>Avaliar</span>
-    </Button>,
-    <Button
+    </ProfileActionButton>,
+    <ProfileActionButton
       key="schedule"
-      variant="outline"
       onClick={onOpenSchedule}
       disabled={!canAccessSchedule}
-      className={cn(responsiveButtonClass, "gap-2")}
     >
       <CalendarDays className="h-4 w-4" aria-hidden="true" />
       <span>{canAccessSchedule ? "Cronograma" : "Cronograma indisponível"}</span>
-    </Button>,
-    <Button
+    </ProfileActionButton>,
+    <ProfileActionButton
       key="assign-plan"
-      variant="outline"
       onClick={onOpenAssignPlan}
-      className={cn(responsiveButtonClass, "gap-2")}
     >
       <PlusCircle className="h-4 w-4" aria-hidden="true" />
       <span>{planActionLabel}</span>
-    </Button>,
+    </ProfileActionButton>,
     isInactive ? (
-      <Button
+      <ProfileActionButton
         key="restore"
         variant="secondary"
         onClick={onRestore}
         disabled={isRestoring}
-        className={cn(responsiveButtonClass, "gap-2")}
       >
         <RotateCcw className="h-4 w-4" aria-hidden="true" />
         <span>Reativar</span>
-      </Button>
+      </ProfileActionButton>
     ) : (
       <ConfirmDeleteButton
         key="delete"
@@ -191,7 +182,7 @@ export function StudentProfileSummaryCard({
         disabled={isDeleting}
         title="Excluir aluno"
         description="Tem certeza que deseja excluir este aluno? Ele será marcado como inativo e poderá ser restaurado."
-        className={cn(responsiveButtonClass, "gap-2")}
+        fullWidth
       >
         <Trash2 className="h-4 w-4" aria-hidden="true" />
         <span>Excluir</span>
