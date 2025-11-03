@@ -8,6 +8,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SessionParticipantPresenceRequestDTO {
-    private boolean present;
+    private boolean isPresent;
     private String notes; // optional attendance notes
 }

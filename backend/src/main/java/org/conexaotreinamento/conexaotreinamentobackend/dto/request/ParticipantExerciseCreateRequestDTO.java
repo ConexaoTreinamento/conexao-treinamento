@@ -14,5 +14,5 @@ public class ParticipantExerciseCreateRequestDTO {
     private Integer repsCompleted;
     private Double weightCompleted;
     private String exerciseNotes;
-    private Boolean done;
+    private Boolean isDone;
 }

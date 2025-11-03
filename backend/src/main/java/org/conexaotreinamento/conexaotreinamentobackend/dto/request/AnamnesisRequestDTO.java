@@ -19,6 +19,6 @@ public record AnamnesisRequestDTO(
         String spinalDiscProblems,
         String diabetes,
         String smokingDuration,
-        boolean alteredCholesterol,
+        boolean hasAlteredCholesterol,
         String osteoporosisLocation
 ) {}

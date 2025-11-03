@@ -35,7 +35,7 @@ class EventParticipantResponseDTOTest {
         assertThat(dto.name()).isEqualTo(name);
         assertThat(dto.avatar()).isEqualTo(avatar);
         assertThat(dto.enrolledAt()).isEqualTo(enrolledAt);
-        assertThat(dto.present()).isEqualTo(present);
+        assertThat(dto.isPresent()).isEqualTo(present);
     }
 
     @Test
@@ -49,7 +49,7 @@ class EventParticipantResponseDTOTest {
         assertThat(dto.name()).isNull();
         assertThat(dto.avatar()).isNull();
         assertThat(dto.enrolledAt()).isNull();
-        assertThat(dto.present()).isNull();
+        assertThat(dto.isPresent()).isNull();
     }
 
     @Test
@@ -64,7 +64,7 @@ class EventParticipantResponseDTOTest {
         EventParticipantResponseDTO dto = new EventParticipantResponseDTO(id, name, null, null, present);
 
         // Then
-        assertThat(dto.present()).isFalse();
+        assertThat(dto.isPresent()).isFalse();
         assertThat(dto.id()).isEqualTo(id);
         assertThat(dto.name()).isEqualTo(name);
     }
@@ -81,7 +81,7 @@ class EventParticipantResponseDTOTest {
         EventParticipantResponseDTO dto = new EventParticipantResponseDTO(id, name, null, null, present);
 
         // Then
-        assertThat(dto.present()).isTrue();
+        assertThat(dto.isPresent()).isTrue();
         assertThat(dto.id()).isEqualTo(id);
         assertThat(dto.name()).isEqualTo(name);
     }
@@ -101,7 +101,7 @@ class EventParticipantResponseDTOTest {
         assertThat(dto.name()).isEqualTo("Alice Doe");
         assertThat(dto.avatar()).isNull(); // Avatar not implemented yet
         assertThat(dto.enrolledAt()).isEqualTo(participant.getEnrolledAt());
-        assertThat(dto.present()).isEqualTo(participant.getPresent());
+        assertThat(dto.isPresent()).isEqualTo(participant.getIsPresent());
     }
 
     @Test
@@ -160,13 +160,13 @@ class EventParticipantResponseDTOTest {
     void shouldConvertFromEntityWithDifferentPresentValues() {
         // Given
         EventParticipant participantPresent = createEventParticipantWithAllFields();
-        participantPresent.setPresent(true);
+        participantPresent.setIsPresent(true);
 
         EventParticipant participantAbsent = createEventParticipantWithAllFields();
-        participantAbsent.setPresent(false);
+        participantAbsent.setIsPresent(false);
 
         EventParticipant participantNull = createEventParticipantWithAllFields();
-        participantNull.setPresent(null);
+        participantNull.setIsPresent(null);
 
         // When
         EventParticipantResponseDTO dtoPresent = EventParticipantResponseDTO.fromEntity(participantPresent);
@@ -174,9 +174,9 @@ class EventParticipantResponseDTOTest {
         EventParticipantResponseDTO dtoNull = EventParticipantResponseDTO.fromEntity(participantNull);
 
         // Then
-        assertThat(dtoPresent.present()).isTrue();
-        assertThat(dtoAbsent.present()).isFalse();
-        assertThat(dtoNull.present()).isNull();
+        assertThat(dtoPresent.isPresent()).isTrue();
+        assertThat(dtoAbsent.isPresent()).isFalse();
+        assertThat(dtoNull.isPresent()).isNull();
     }
 
     @Test
@@ -216,7 +216,7 @@ class EventParticipantResponseDTOTest {
 
         EventParticipant participant = new EventParticipant(event, student);
         setIdViaReflection(participant, UUID.randomUUID());
-        participant.setPresent(false);
+        participant.setIsPresent(false);
         participant.setEnrolledAt(Instant.now());
 
         return participant;

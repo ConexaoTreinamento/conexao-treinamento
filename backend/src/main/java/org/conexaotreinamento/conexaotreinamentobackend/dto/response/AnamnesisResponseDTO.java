@@ -19,7 +19,7 @@ public record AnamnesisResponseDTO(
         String spinalDiscProblems,
         String diabetes,
         String smokingDuration,
-        boolean alteredCholesterol,
+        boolean hasAlteredCholesterol,
         String osteoporosisLocation
 ) {
     public static AnamnesisResponseDTO fromEntity(Anamnesis anamnesis) {
@@ -42,7 +42,7 @@ public record AnamnesisResponseDTO(
                 anamnesis.getSpinalDiscProblems(),
                 anamnesis.getDiabetes(),
                 anamnesis.getSmokingDuration(),
-                anamnesis.isAlteredCholesterol(),
+                anamnesis.isHasAlteredCholesterol(),
                 anamnesis.getOsteoporosisLocation()
         );
     }

@@ -133,7 +133,7 @@ class AdministratorServiceTest {
         assertThat(result.lastName()).isEqualTo("Santos");
         assertThat(result.email()).isEqualTo("joao@test.com");
         assertThat(result.fullName()).isEqualTo("João Silva Santos");
-        assertThat(result.active()).isTrue();
+        assertThat(result.isActive()).isTrue();
         assertThat(result.joinDate()).isNotNull();
 
         verify(administratorRepository).existsByEmailIgnoreCase("joao@test.com");
@@ -174,7 +174,7 @@ class AdministratorServiceTest {
         assertThat(result.firstName()).isEqualTo("João");
         assertThat(result.lastName()).isEqualTo("Silva");
         assertThat(result.email()).isEqualTo("joao@example.com");
-        assertThat(result.active()).isTrue();
+        assertThat(result.isActive()).isTrue();
 
         verify(administratorRepository).findActiveAdministratorProfileById(administratorId);
     }
@@ -331,7 +331,7 @@ class AdministratorServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.id()).isEqualTo(administratorId);
         assertThat(result.email()).isEqualTo("joao@example.com");
-        assertThat(result.active()).isTrue();
+        assertThat(result.isActive()).isTrue();
         
         verify(administratorRepository).findById(administratorId);
         verify(userService).restore(userId);

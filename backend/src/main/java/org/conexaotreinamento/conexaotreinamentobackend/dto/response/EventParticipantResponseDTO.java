@@ -10,7 +10,7 @@ public record EventParticipantResponseDTO(
         String name,
         String avatar, // Will be null for now
         Instant enrolledAt,
-        Boolean present
+        Boolean isPresent
 ) {
     public static EventParticipantResponseDTO fromEntity(EventParticipant participant) {
         if (participant == null || participant.getStudent() == null) return null;
@@ -22,7 +22,7 @@ public record EventParticipantResponseDTO(
                 fullName,
                 null, // Avatar not implemented yet
                 participant.getEnrolledAt(),
-                participant.getPresent()
+                participant.getIsPresent()
         );
     }
 }

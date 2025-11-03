@@ -19,8 +19,8 @@ public class SessionResponseDTO {
     private LocalDateTime endTime;
     private String seriesName;
     private String notes;
-    private boolean instanceOverride;
+    private boolean isInstanceOverride;
     private List<StudentCommitmentResponseDTO> students;
-    private boolean canceled;
+    private boolean isCanceled;
     private Integer presentCount;
 }

@@ -202,7 +202,7 @@ public class EventService {
         EventParticipant participant = participantRepository.findByEventIdAndStudentId(eventId, studentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Participant not found"));
 
-        participant.setPresent(!participant.getPresent());
+        participant.setIsPresent(!participant.getIsPresent());
         participantRepository.save(participant);
 
         return EventResponseDTO.fromEntity(repository.findById(eventId).orElseThrow());

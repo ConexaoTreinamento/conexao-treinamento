@@ -54,20 +54,20 @@ public class SessionParticipant {
     private Instant deletedAt;
     
     @Column(name = "active", nullable = false)
-    private boolean active = true;
+    private boolean isActive = true;
     
     @OneToMany(mappedBy = "sessionParticipant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ParticipantExercise> exercises;
     
     // Soft delete methods
     public void softDelete() {
-        this.active = false;
+        this.isActive = false;
         this.deletedAt = Instant.now();
         this.updatedAt = Instant.now();
     }
     
     public void restore() {
-        this.active = true;
+        this.isActive = true;
         this.deletedAt = null;
         this.updatedAt = Instant.now();
     }

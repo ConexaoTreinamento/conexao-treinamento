@@ -17,7 +17,7 @@ public record ListTrainersDTO(
         LocalDate birthDate,
         List<String> specialties,
         CompensationType compensationType,
-        Boolean active,
+        Boolean isActive,
         Instant joinDate,
         Integer hoursWorked
 ){}

@@ -33,7 +33,7 @@ public class StudentPlan {
     private String description;
     
     @Column(name = "active", nullable = false)
-    private boolean active = true;
+    private boolean isActive = true;
     
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -42,12 +42,12 @@ public class StudentPlan {
     // Immutable plan template - no edit functionality after creation
     // Plans are soft-deleted for historical integrity
     public void softDelete() {
-        this.active = false;
+        this.isActive = false;
     }
 
     // Restore a previously soft-deleted plan
     public void restore() {
-        this.active = true;
+        this.isActive = true;
     }
 
 }

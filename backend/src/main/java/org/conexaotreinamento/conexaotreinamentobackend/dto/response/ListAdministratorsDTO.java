@@ -9,7 +9,7 @@ public record ListAdministratorsDTO(
         String lastName,
         String email,
         String fullName,
-        boolean active,
+        boolean isActive,
         Instant joinDate
 ) {
 }

@@ -42,7 +42,7 @@ public class ScheduledSession {
     private LocalDateTime endTime;
 
     @Column(name = "canceled", nullable = false)
-    private boolean canceled = false; // explicit cancellation separate from soft delete
+    private boolean isCanceled = false; // explicit cancellation separate from soft delete
     
     @Column(name = "series_name", nullable = false)
     private String seriesName;
@@ -51,7 +51,7 @@ public class ScheduledSession {
     private String notes;
     
     @Column(name = "instance_override", nullable = false)
-    private boolean instanceOverride = false; // True when session has instance-specific data
+    private boolean isInstanceOverride = false; // True when session has instance-specific data
     
     @Column(name = "effective_from_timestamp", nullable = false)
     private Instant effectiveFromTimestamp;
@@ -68,20 +68,20 @@ public class ScheduledSession {
     private Instant deletedAt;
     
     @Column(name = "active", nullable = false)
-    private boolean active = true;
+    private boolean isActive = true;
     
     @OneToMany(mappedBy = "scheduledSession", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<SessionParticipant> participants;
     
     // Soft delete methods
     public void softDelete() {
-        this.active = false;
+        this.isActive = false;
         this.deletedAt = Instant.now();
         this.updatedAt = Instant.now();
     }
     
     public void restore() {
-        this.active = true;
+        this.isActive = true;
         this.deletedAt = null;
         this.updatedAt = Instant.now();
     }

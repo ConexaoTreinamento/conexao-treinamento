@@ -27,7 +27,7 @@ class EventParticipantTest {
         assertThat(participant.getEvent()).isEqualTo(event);
         assertThat(participant.getStudent()).isEqualTo(student);
         assertThat(participant.getEnrolledAt()).isNotNull();
-        assertThat(participant.getPresent()).isFalse();
+        assertThat(participant.getIsPresent()).isFalse();
         assertThat(participant.getCreatedAt()).isNull();
         assertThat(participant.getUpdatedAt()).isNull();
     }
@@ -60,7 +60,7 @@ class EventParticipantTest {
         EventParticipant participant = new EventParticipant(event, student);
 
         // Then
-        assertThat(participant.getPresent()).isFalse();
+        assertThat(participant.getIsPresent()).isFalse();
     }
 
     @Test
@@ -80,13 +80,13 @@ class EventParticipantTest {
         participant.setEvent(newEvent);
         participant.setStudent(newStudent);
         participant.setEnrolledAt(enrolledAt);
-        participant.setPresent(present);
+        participant.setIsPresent(present);
 
         // Then
         assertThat(participant.getEvent()).isEqualTo(newEvent);
         assertThat(participant.getStudent()).isEqualTo(newStudent);
         assertThat(participant.getEnrolledAt()).isEqualTo(enrolledAt);
-        assertThat(participant.getPresent()).isEqualTo(present);
+        assertThat(participant.getIsPresent()).isEqualTo(present);
     }
 
     @Test
@@ -101,13 +101,13 @@ class EventParticipantTest {
         participant.setEvent(null);
         participant.setStudent(null);
         participant.setEnrolledAt(null);
-        participant.setPresent(null);
+        participant.setIsPresent(null);
 
         // Then
         assertThat(participant.getEvent()).isNull();
         assertThat(participant.getStudent()).isNull();
         assertThat(participant.getEnrolledAt()).isNull();
-        assertThat(participant.getPresent()).isNull();
+        assertThat(participant.getIsPresent()).isNull();
     }
 
     @Test
@@ -119,14 +119,14 @@ class EventParticipantTest {
         EventParticipant participant = new EventParticipant(event, student);
 
         // When & Then
-        participant.setPresent(true);
-        assertThat(participant.getPresent()).isTrue();
+        participant.setIsPresent(true);
+        assertThat(participant.getIsPresent()).isTrue();
 
-        participant.setPresent(false);
-        assertThat(participant.getPresent()).isFalse();
+        participant.setIsPresent(false);
+        assertThat(participant.getIsPresent()).isFalse();
 
-        participant.setPresent(null);
-        assertThat(participant.getPresent()).isNull();
+        participant.setIsPresent(null);
+        assertThat(participant.getIsPresent()).isNull();
     }
 
     @Test
@@ -267,14 +267,14 @@ class EventParticipantTest {
         EventParticipant participant = new EventParticipant(event, student);
 
         // When
-        participant.setPresent(true);
-        participant.setPresent(false);
-        participant.setPresent(true);
-        participant.setPresent(null);
-        participant.setPresent(false);
+        participant.setIsPresent(true);
+        participant.setIsPresent(false);
+        participant.setIsPresent(true);
+        participant.setIsPresent(null);
+        participant.setIsPresent(false);
 
         // Then
-        assertThat(participant.getPresent()).isFalse();
+        assertThat(participant.getIsPresent()).isFalse();
     }
 
     @Test
@@ -289,7 +289,7 @@ class EventParticipantTest {
         // When
         participant.setEvent(event);
         participant.setStudent(student);
-        participant.setPresent(true);
+        participant.setIsPresent(true);
 
         // Then
         assertThat(participant.getEnrolledAt()).isEqualTo(originalEnrolledAt);

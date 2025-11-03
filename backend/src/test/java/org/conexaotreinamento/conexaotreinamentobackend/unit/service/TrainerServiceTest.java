@@ -166,7 +166,7 @@ class TrainerServiceTest {
         assertThat(result.birthDate()).isEqualTo(LocalDate.of(1985, 3, 20));
         assertThat(result.specialties()).containsExactlyInAnyOrder("Musculação", "Crossfit");
         assertThat(result.compensationType()).isEqualTo(CompensationType.HOURLY);
-        assertThat(result.active()).isTrue();
+        assertThat(result.isActive()).isTrue();
         assertThat(result.joinDate()).isNotNull();
         assertThat(result.hoursWorked()).isEqualTo(120);
 
@@ -207,7 +207,7 @@ class TrainerServiceTest {
         assertThat(result.id()).isEqualTo(trainerId);
         assertThat(result.name()).isEqualTo("John Trainer");
         assertThat(result.email()).isEqualTo("john@example.com");
-        assertThat(result.active()).isTrue();
+        assertThat(result.isActive()).isTrue();
 
         verify(trainerRepository).findActiveTrainerProfileById(trainerId);
     }

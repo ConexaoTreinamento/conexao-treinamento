@@ -22,7 +22,7 @@ public class TrainerScheduleResponseDTO {
     private Instant effectiveFromTimestamp;
     private Instant createdAt;
     private Instant updatedAt;
-    private boolean active;
+    private boolean isActive;
     
     // Helper method for weekday display
     public String getWeekdayName() {

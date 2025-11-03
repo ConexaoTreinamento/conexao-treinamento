@@ -429,7 +429,7 @@ public class ScheduleService {
         pe.setRepsCompleted(req.getRepsCompleted());
         pe.setWeightCompleted(req.getWeightCompleted());
         pe.setExerciseNotes(req.getExerciseNotes());
-    if (req.getDone() != null) pe.setDone(req.getDone());
+    if (req.getIsDone() != null) pe.setDone(req.getIsDone());
         participantExerciseRepository.save(pe);
         session.setInstanceOverride(true);
         scheduledSessionRepository.save(session);
@@ -442,7 +442,7 @@ public class ScheduleService {
             if (req.getRepsCompleted() != null) pe.setRepsCompleted(req.getRepsCompleted());
             if (req.getWeightCompleted() != null) pe.setWeightCompleted(req.getWeightCompleted());
             if (req.getExerciseNotes() != null) pe.setExerciseNotes(req.getExerciseNotes());
-            if (req.getDone() != null) pe.setDone(req.getDone());
+            if (req.getIsDone() != null) pe.setDone(req.getIsDone());
             pe.updateTimestamp();
             participantExerciseRepository.save(pe);
         });
@@ -656,7 +656,7 @@ public class ScheduleService {
                 // If included/overridden, use that participant record
                 SessionParticipant participant = includedInInstance.get(commitment.getStudentId());
                 if (participant != null) {
-                    dto.setPresent(participant.isPresent());
+                    dto.setIsPresent(participant.isPresent());
                     if (participant.getAttendanceNotes() != null) {
                         dto.setAttendanceNotes(participant.getAttendanceNotes());
                     }
@@ -682,7 +682,7 @@ public class ScheduleService {
                     // No persisted participant override yet.
                     // Only include students whose series commitment is ATTENDING at the session time
                     if (commitment.getCommitmentStatus() == CommitmentStatus.ATTENDING) {
-                        dto.setPresent(true);
+                        dto.setIsPresent(true);
                     } else {
                         // Skip NOT_ATTENDING (or other non-attending) commitments so they don't appear as absent
                         continue;
@@ -691,7 +691,7 @@ public class ScheduleService {
             } else {
                 // Virtual (non-materialized) session: include only ATTENDING commitments
                 if (commitment.getCommitmentStatus() == CommitmentStatus.ATTENDING) {
-                    dto.setPresent(true);
+                    dto.setIsPresent(true);
                 } else {
                     continue;
                 }
@@ -712,7 +712,7 @@ public class ScheduleService {
                     dto.setStudentId(sp.getStudentId());
                     studentRepository.findById(sp.getStudentId()).ifPresent(st -> dto.setStudentName(st.getName()));
                     dto.setCommitmentStatus(CommitmentStatus.ATTENDING); // treat included as attending for this instance
-                    dto.setPresent(sp.isPresent());
+                    dto.setIsPresent(sp.isPresent());
                     dto.setAttendanceNotes(sp.getAttendanceNotes());
                     List<ParticipantExercise> pes = participantExerciseRepository
                             .findActiveWithExerciseBySessionParticipantId(sp.getId());

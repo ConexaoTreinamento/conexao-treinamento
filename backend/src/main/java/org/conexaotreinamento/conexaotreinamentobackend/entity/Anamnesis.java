@@ -92,7 +92,7 @@ public class Anamnesis {
 
     @Column(name = "altered_cholesterol")
     @Setter
-    private boolean alteredCholesterol;
+    private boolean hasAlteredCholesterol;
 
     @Column(name = "osteoporosis_location", length = 255)
     @Setter

@@ -226,7 +226,7 @@ public class StudentService {
         anamnesis.setSpinalDiscProblems(dto.spinalDiscProblems());
         anamnesis.setDiabetes(dto.diabetes());
         anamnesis.setSmokingDuration(dto.smokingDuration());
-        anamnesis.setAlteredCholesterol(dto.alteredCholesterol());
+        anamnesis.setHasAlteredCholesterol(dto.hasAlteredCholesterol());
         anamnesis.setOsteoporosisLocation(dto.osteoporosisLocation());
     }
 

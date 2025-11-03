@@ -92,7 +92,7 @@ class StudentPlanServiceTest {
         assertEquals("Gold", dto.getName());
         assertEquals(3, dto.getMaxDays());
         assertEquals(30, dto.getDurationDays());
-        assertTrue(dto.getActive());
+        assertTrue(dto.getIsActive());
         verify(studentPlanRepository).save(any(StudentPlan.class));
     }
 
@@ -158,7 +158,7 @@ class StudentPlanServiceTest {
         StudentPlanResponseDTO dto = studentPlanService.restorePlan(planId);
 
         // Assert
-        assertTrue(dto.getActive());
+        assertTrue(dto.getIsActive());
         verify(studentPlanRepository).save(inactive);
     }
 
@@ -212,7 +212,7 @@ class StudentPlanServiceTest {
         // Assert
         assertEquals(planId, dto.getId());
         assertEquals("Prime", dto.getName());
-        assertTrue(dto.getActive());
+        assertTrue(dto.getIsActive());
     }
 
     @Test

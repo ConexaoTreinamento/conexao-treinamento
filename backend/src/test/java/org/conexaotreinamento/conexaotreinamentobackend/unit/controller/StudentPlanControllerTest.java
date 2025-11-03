@@ -70,7 +70,7 @@ class StudentPlanControllerTest {
         dto.setMaxDays(maxDays);
         dto.setDurationDays(durationDays);
         dto.setDescription("desc");
-        dto.setActive(active);
+        dto.setIsActive(active);
         return dto;
     }
 

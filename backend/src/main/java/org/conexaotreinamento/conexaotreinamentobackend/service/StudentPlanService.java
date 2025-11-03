@@ -253,7 +253,7 @@ public class StudentPlanService {
         dto.setMaxDays(plan.getMaxDays());
         dto.setDurationDays(plan.getDurationDays());
         dto.setDescription(plan.getDescription());
-        dto.setActive(plan.isActive());
+        dto.setIsActive(plan.isActive());
         dto.setCreatedAt(plan.getCreatedAt());
         return dto;
     }

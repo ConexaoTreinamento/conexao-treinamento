@@ -27,8 +27,8 @@ public class StudentPlanAssignmentResponseDTO {
     private Instant createdAt;
     
     // Computed fields
-    private boolean active;
-    private boolean expired;
-    private boolean expiringSoon; // Within 7 days
+    private boolean isActive;
+    private boolean isExpired;
+    private boolean isExpiringSoon; // Within 7 days
     private long daysRemaining;
 }

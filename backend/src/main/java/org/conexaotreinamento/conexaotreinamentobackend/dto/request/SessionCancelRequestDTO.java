@@ -8,6 +8,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SessionCancelRequestDTO {
-    private boolean cancel; // true = cancel, false = restore
+    private boolean isCancel; // true = cancel, false = restore
     private String reason;  // optional reason (future use)
 }
