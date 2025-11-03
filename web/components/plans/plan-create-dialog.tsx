@@ -62,7 +62,7 @@ export function PlanCreateDialog(props: PlanCreateDialogProps) {
       }}
     >
       <DialogTrigger asChild>
-        <Button className="bg-green-600 hover:bg-green-700">
+        <Button className="h-9 bg-green-600 hover:bg-green-700">
           <Plus className="h-4 w-4 sm:mr-2" />
           <span className="hidden sm:inline">Novo plano</span>
         </Button>

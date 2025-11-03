@@ -22,7 +22,7 @@ interface EntityCardProps {
   metadataColumns?: 1 | 2 | 3
   infoRows?: ReactNode[]
   body?: ReactNode
-  avatar: EntityCardAvatar
+  avatar?: EntityCardAvatar
   mobileActions?: ReactNode
   desktopActions?: ReactNode
   onClick?: () => void
@@ -87,6 +87,10 @@ export function EntityCard({
   className,
 }: EntityCardProps) {
   const isClickable = Boolean(onClick) && !disabled
+  const avatarConfig = avatar ?? null
+  const hasAvatar = Boolean(avatarConfig)
+  const avatarSmall = avatarConfig ? getAvatarNode({ ...avatarConfig, size: "sm" }) : null
+  const avatarLarge = avatarConfig ? getAvatarNode({ ...avatarConfig, size: "md" }) : null
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (!isClickable) {
@@ -114,10 +118,15 @@ export function EntityCard({
     >
       <CardContent className="p-4">
         <div className="flex flex-col gap-3 sm:hidden">
-          <div className="flex flex-wrap items-start gap-3">
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              {getAvatarNode({ ...avatar, size: "sm" })}
-              <div className="min-w-0 space-y-1">
+            <div className={cn("flex flex-wrap items-start", hasAvatar ? "gap-3" : "gap-2")}> 
+              <div
+                className={cn(
+                  "flex min-w-0 flex-1",
+                  hasAvatar ? "items-center gap-3" : "flex-col gap-2"
+                )}
+              >
+                {avatarSmall}
+                <div className="min-w-0 space-y-1">
                 <h3 className="text-base font-semibold leading-tight truncate">{title}</h3>
                 {badges?.length ? (
                   <div className="flex flex-wrap gap-1">
@@ -157,8 +166,8 @@ export function EntityCard({
           {body ? <div className="text-sm text-muted-foreground">{body}</div> : null}
         </div>
 
-        <div className="hidden gap-4 sm:flex">
-          {getAvatarNode({ ...avatar, size: "md" })}
+        <div className={cn("hidden sm:flex", hasAvatar ? "gap-4" : "")}> 
+          {hasAvatar ? avatarLarge : null}
 
           <div className="flex-1 min-w-0">
             <div className="mb-2 flex flex-wrap items-start justify-between gap-3">
