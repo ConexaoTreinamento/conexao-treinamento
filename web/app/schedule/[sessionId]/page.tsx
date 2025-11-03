@@ -535,7 +535,7 @@ function ClassDetailPageContent() {
                                   {ex.exerciseName || ex.exerciseId} {ex.setsCompleted!=null && `- ${ex.setsCompleted}x${ex.repsCompleted ?? ''}`} {ex.weightCompleted!=null && `- ${ex.weightCompleted}kg`}
                                 </span>
                               </div>
-                              <Button size="sm" variant="ghost" onClick={() => ex.id && confirmRemoveExercise(ex.id, ex.exerciseName || ex.exerciseId || '')} className="h-6 w-6 p-0 flex-shrink-0 ml-2 text-red-500">
+                              <Button size="sm" variant="ghost" onClick={() => ex.id && confirmRemoveExercise(ex.id, ex.exerciseName || ex.exerciseId || '')} className="hidden sm:flex h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 flex-shrink-0">
                                 <X className="w-4 h-4" />
                               </Button>
                             </div>
@@ -730,7 +730,7 @@ function ClassDetailPageContent() {
         <AlertDialog open={!!removeStudentConfirm} onOpenChange={(open) => !open && setRemoveStudentConfirm(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Remover Aluno da Aula?</AlertDialogTitle>
+              <AlertDialogTitle>Deseja remover este aluno da aula?</AlertDialogTitle>
               <AlertDialogDescription>
                 Tem certeza que deseja remover <strong>{removeStudentConfirm?.name}</strong> desta aula? 
                 Todos os exercícios registrados para este aluno nesta aula também serão removidos.
@@ -752,7 +752,7 @@ function ClassDetailPageContent() {
 <AlertDialog open={!!removeExerciseConfirm} onOpenChange={(open) => !open && setRemoveExerciseConfirm(null)}>
   <AlertDialogContent>
     <AlertDialogHeader>
-      <AlertDialogTitle>Remover Exercício?</AlertDialogTitle>
+      <AlertDialogTitle>Remover exercício?</AlertDialogTitle>
       <AlertDialogDescription>
         Tem certeza que deseja remover o exercício <strong>{removeExerciseConfirm?.name}</strong>? 
         Esta ação não pode ser desfeita.
