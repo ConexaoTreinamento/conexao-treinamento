@@ -1,8 +1,6 @@
-import { Activity, Edit, Eye, MoreVertical, RotateCcw, Trash2 } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import type { MouseEvent } from "react"
+import { Activity, Edit, RotateCcw, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { EmptyState } from "@/components/base/empty-state"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
@@ -10,6 +8,9 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import type { ReactNode } from "react"
 import { FilterToolbar } from "@/components/base/filter-toolbar"
+import { EntityCard } from "@/components/base/entity-card"
+import { EntityList } from "@/components/base/entity-list"
+import { StatusBadge } from "@/components/base/status-badge"
 
 export interface ExerciseCardData {
   id: string
@@ -18,123 +19,122 @@ export interface ExerciseCardData {
   isDeleted: boolean
 }
 
-interface ExercisesGridProps {
+interface ExercisesListProps {
   exercises: ExerciseCardData[]
   onSelect: (exerciseId: string) => void
   onEdit: (exerciseId: string) => void
   onDelete: (exerciseId: string) => void
   onRestore: (exerciseId: string) => void
-  renderStatusBadge?: (exercise: ExerciseCardData) => ReactNode
 }
 
-export function ExercisesGrid({ exercises, onSelect, onEdit, onDelete, onRestore, renderStatusBadge }: ExercisesGridProps) {
+const getInitials = (name: string) =>
+  name
+    .split(" ")
+    .filter(Boolean)
+    .map((token) => token[0]?.toUpperCase() ?? "")
+    .join("")
+    .slice(0, 2) || "EX"
+
+export function ExercisesList({ exercises, onSelect, onEdit, onDelete, onRestore }: ExercisesListProps) {
   if (!exercises.length) {
     return null
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3">
+    <EntityList>
       {exercises.map((exercise) => {
         const isDeleted = exercise.isDeleted
-        return (
-          <Card
-            key={exercise.id}
-            className={`group flex h-36 cursor-pointer flex-col transition-shadow hover:shadow-md ${
-              isDeleted ? "border-red-200 bg-red-50/30 opacity-75" : ""
-            }`}
-            onClick={() => onSelect(exercise.id)}
+
+        const handleCardClick = () => onSelect(exercise.id)
+
+        const handleEdit = (event: MouseEvent<HTMLButtonElement>) => {
+          event.stopPropagation()
+          onEdit(exercise.id)
+        }
+
+        const handleDelete = (event: MouseEvent<HTMLButtonElement>) => {
+          event.stopPropagation()
+          onDelete(exercise.id)
+        }
+
+        const handleRestore = (event: MouseEvent<HTMLButtonElement>) => {
+          event.stopPropagation()
+          onRestore(exercise.id)
+        }
+
+        const badges: ReactNode[] = [
+          <StatusBadge key="status" active={!isDeleted} activeLabel="Ativo" inactiveLabel="Excluído" />,
+        ]
+
+        const descriptionBody = (
+          <p className={exercise.description ? "text-sm text-muted-foreground line-clamp-2" : "text-sm italic text-muted-foreground"}>
+            {exercise.description ?? "Sem descrição"}
+          </p>
+        )
+
+        const mobileActions = isDeleted ? (
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-8 w-8"
+            onClick={handleRestore}
+            aria-label="Restaurar exercício"
           >
-            <CardHeader className="flex-shrink-0 px-3 pb-3 pt-3">
-              <div className="flex h-full items-start justify-between">
-                <div className="min-w-0 flex-1 overflow-hidden pr-2">
-                  <div className="mb-1 flex items-center gap-2">
-                    <CardTitle className="text-sm font-medium leading-tight">
-                      <span className="line-clamp-2 break-words">{exercise.name}</span>
-                    </CardTitle>
-                    {renderStatusBadge ? (
-                      renderStatusBadge(exercise)
-                    ) : isDeleted ? (
-                      <Badge variant="destructive" className="px-1 py-0 text-xs">
-                        Excluído
-                      </Badge>
-                    ) : null}
-                  </div>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 hover:bg-secondary"
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <MoreVertical className="h-3 w-3" aria-hidden="true" />
-                      <span className="sr-only">Opções do exercício</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem
-                      className="cursor-pointer"
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        onSelect(exercise.id)
-                      }}
-                    >
-                      <Eye className="mr-2 h-4 w-4" aria-hidden="true" />
-                      Ver detalhes
-                    </DropdownMenuItem>
-                    {!isDeleted ? (
-                      <>
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            onEdit(exercise.id)
-                          }}
-                        >
-                          <Edit className="mr-2 h-4 w-4" aria-hidden="true" />
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="cursor-pointer text-red-600 focus:bg-red-600 focus:text-white"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            onDelete(exercise.id)
-                          }}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
-                          Excluir
-                        </DropdownMenuItem>
-                      </>
-                    ) : (
-                      <DropdownMenuItem
-                        className="cursor-pointer text-green-600 focus:bg-green-600 focus:text-white"
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          onRestore(exercise.id)
-                        }}
-                      >
-                        <RotateCcw className="mr-2 h-4 w-4" aria-hidden="true" />
-                        Restaurar
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1 px-3 pb-3">
-              {exercise.description ? (
-                <CardDescription className="line-clamp-3 text-sm leading-relaxed">
-                  {exercise.description}
-                </CardDescription>
-              ) : (
-                <p className="text-xs italic text-muted-foreground">Sem descrição</p>
-              )}
-            </CardContent>
-          </Card>
+            <RotateCcw className="h-3 w-3" aria-hidden="true" />
+          </Button>
+        ) : (
+          <>
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-8 w-8"
+              onClick={handleEdit}
+              aria-label="Editar exercício"
+            >
+              <Edit className="h-3 w-3" aria-hidden="true" />
+            </Button>
+            <Button
+              size="icon"
+              variant="outline"
+              className="h-8 w-8"
+              onClick={handleDelete}
+              aria-label="Excluir exercício"
+            >
+              <Trash2 className="h-3 w-3" aria-hidden="true" />
+            </Button>
+          </>
+        )
+
+        const desktopActions = isDeleted ? (
+          <Button size="sm" variant="outline" className="h-8 px-3 text-sm" onClick={handleRestore}>
+            <RotateCcw className="mr-1 h-3 w-3" aria-hidden="true" /> Restaurar
+          </Button>
+        ) : (
+          <>
+            <Button size="sm" variant="outline" className="h-8 px-3 text-sm" onClick={handleEdit}>
+              <Edit className="mr-1 h-3 w-3" aria-hidden="true" /> Editar
+            </Button>
+            <Button size="sm" variant="outline" className="h-8 px-3 text-sm" onClick={handleDelete}>
+              <Trash2 className="mr-1 h-3 w-3" aria-hidden="true" /> Excluir
+            </Button>
+          </>
+        )
+
+        return (
+          <EntityCard
+            key={exercise.id}
+            title={exercise.name}
+            avatar={{ label: getInitials(exercise.name) }}
+            badges={badges}
+            body={descriptionBody}
+            onClick={handleCardClick}
+            muted={isDeleted}
+            mobileActions={mobileActions}
+            desktopActions={desktopActions}
+          />
         )
       })}
-    </div>
+    </EntityList>
   )
 }
 
@@ -175,21 +175,20 @@ export function ExercisesToolbar({ searchValue, onSearchChange, onClearSearch, s
   )
 }
 
-export function ExercisesSkeletonGrid() {
+export function ExercisesSkeletonList() {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-3">
-      {Array.from({ length: 8 }).map((_, index) => (
-        <Card key={index} className="h-36">
-          <CardHeader className="px-3 pb-3 pt-3">
-            <Skeleton className="h-4 w-3/4" />
-          </CardHeader>
-          <CardContent className="px-3 pb-3">
-            <Skeleton className="mb-2 h-3 w-full" />
-            <Skeleton className="h-3 w-2/3" />
-          </CardContent>
-        </Card>
+    <EntityList>
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div key={index} className="rounded-lg border bg-card p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-6 w-16" />
+          </div>
+          <Skeleton className="mb-2 h-3 w-full" />
+          <Skeleton className="h-3 w-5/6" />
+        </div>
       ))}
-    </div>
+    </EntityList>
   )
 }
 

@@ -18,9 +18,9 @@ import { Section } from "@/components/base/section"
 import {
   ExercisesEmptyState,
   ExercisesErrorState,
-  ExercisesGrid,
+  ExercisesList,
   ExercisesPagination,
-  ExercisesSkeletonGrid,
+  ExercisesSkeletonList,
   ExercisesToolbar,
   type ExerciseCardData,
 } from "@/components/exercises/exercises-view"
@@ -211,7 +211,7 @@ export default function ExercisesPage() {
         />
 
         <Section title="Resultados" description={resultsSummary}>
-          {isLoading ? <ExercisesSkeletonGrid /> : null}
+          {isLoading ? <ExercisesSkeletonList /> : null}
 
           {error ? (
             <ExercisesErrorState
@@ -224,7 +224,7 @@ export default function ExercisesPage() {
 
           {!isLoading && !error && normalizedExercises.length > 0 ? (
             <>
-              <ExercisesGrid
+              <ExercisesList
                 exercises={normalizedExercises}
                 onSelect={handleSelectExercise}
                 onEdit={handleEditExercise}
