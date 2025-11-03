@@ -102,18 +102,18 @@ class ScheduleServiceTest {
         // Assert
         assertEquals(1, sessions.size());
         SessionResponseDTO dto = sessions.get(0);
-        assertEquals(trainerId, dto.getTrainerId());
-        assertEquals(LocalDateTime.of(date, start), dto.getStartTime());
-        assertEquals(LocalDateTime.of(date, end), dto.getEndTime());
-        assertEquals("Yoga Basics", dto.getSeriesName());
-        assertEquals("John Trainer", dto.getTrainerName());
-        assertFalse(dto.isInstanceOverride());
-        assertNotNull(dto.getSessionId());
+        assertEquals(trainerId, dto.trainerId());
+        assertEquals(LocalDateTime.of(date, start), dto.startTime());
+        assertEquals(LocalDateTime.of(date, end), dto.endTime());
+        assertEquals("Yoga Basics", dto.seriesName());
+        assertEquals("John Trainer", dto.trainerName());
+        assertFalse(dto.instanceOverride());
+        assertNotNull(dto.sessionId());
         // Expected canonical format including trainerId: "yoga-basics__YYYY-MM-DD__HH:MM__{trainerId}"
         String expectedCanonical = "yoga-basics__" + date + "__09:00__" + trainerId;
-        assertEquals(expectedCanonical, dto.getSessionId());
-        assertNotNull(dto.getStudents());
-        assertTrue(dto.getStudents().isEmpty());
+        assertEquals(expectedCanonical, dto.sessionId());
+        assertNotNull(dto.students());
+        assertTrue(dto.students().isEmpty());
     }
 
     @Test
@@ -144,10 +144,10 @@ class ScheduleServiceTest {
         assertEquals(1, sessions.size());
         SessionResponseDTO dto = sessions.get(0);
     // Expect canonical 4-part id including trainerId for disambiguation
-    String expectedCanonical = "yoga-basics__" + date + "__09:00__" + trainerId;
-    assertEquals(expectedCanonical, dto.getSessionId());
-        assertEquals("Bring water bottle", dto.getNotes());
-        assertTrue(dto.isInstanceOverride());
+        String expectedCanonical = "yoga-basics__" + date + "__09:00__" + trainerId;
+        assertEquals(expectedCanonical, dto.sessionId());
+        assertEquals("Bring water bottle", dto.notes());
+        assertTrue(dto.instanceOverride());
     }
 
     @Test
@@ -267,6 +267,6 @@ class ScheduleServiceTest {
 
         // Assert: sorted ascending by start time
         assertEquals(2, sessions.size());
-        assertTrue(sessions.get(0).getStartTime().isBefore(sessions.get(1).getStartTime()));
+        assertTrue(sessions.get(0).startTime().isBefore(sessions.get(1).startTime()));
     }
 }

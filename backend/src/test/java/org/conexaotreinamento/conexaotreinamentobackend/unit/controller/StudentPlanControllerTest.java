@@ -22,6 +22,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -64,29 +65,37 @@ class StudentPlanControllerTest {
     }
 
     private StudentPlanResponseDTO planDto(UUID id, String name, int maxDays, int durationDays, boolean active) {
-        StudentPlanResponseDTO dto = new StudentPlanResponseDTO();
-        dto.setId(id);
-        dto.setName(name);
-        dto.setMaxDays(maxDays);
-        dto.setDurationDays(durationDays);
-        dto.setDescription("desc");
-        dto.setActive(active);
-        return dto;
+        return new StudentPlanResponseDTO(
+                id,
+                name,
+                maxDays,
+                durationDays,
+                "desc",
+                active,
+                Instant.now()
+        );
     }
 
     private StudentPlanAssignmentResponseDTO assignDto(UUID assignmentId, UUID studentId, UUID planId, String studentName, String planName, String assignedByEmail) {
-        StudentPlanAssignmentResponseDTO dto = new StudentPlanAssignmentResponseDTO();
-        dto.setId(assignmentId);
-        dto.setStudentId(studentId);
-        dto.setPlanId(planId);
-        dto.setStudentName(studentName);
-        dto.setPlanName(planName);
-        dto.setAssignedByUserEmail(assignedByEmail);
-        dto.setStartDate(LocalDate.now());
-        dto.setDurationDays(10);
-        dto.setActive(true);
-        dto.setDaysRemaining(10);
-        return dto;
+        return new StudentPlanAssignmentResponseDTO(
+                assignmentId,
+                studentId,
+                studentName,
+                planId,
+                planName,
+                null,
+                null,
+                10,
+                LocalDate.now(),
+                null,
+                assignedByEmail,
+                null,
+                Instant.now(),
+                true,
+                false,
+                false,
+                10
+        );
     }
 
     @Test
