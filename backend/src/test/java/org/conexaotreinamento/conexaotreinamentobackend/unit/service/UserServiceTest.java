@@ -7,7 +7,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.UserCreateRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchUserRoleRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.ChangePasswordRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
@@ -49,7 +49,7 @@ class UserServiceTest {
 
     private User user;
     private UUID userId;
-    private CreateUserRequestDTO createUserRequestDTO;
+    private UserCreateRequestDTO createUserRequestDTO;
     private PatchUserRoleRequestDTO patchUserRoleRequestDTO;
 
     @BeforeEach
@@ -58,7 +58,7 @@ class UserServiceTest {
         user = new User("john@example.com", "encodedPassword", Role.ROLE_ADMIN);
         setIdViaReflection(user, userId);
 
-        createUserRequestDTO = new CreateUserRequestDTO("john@example.com", "password123", Role.ROLE_ADMIN);
+        createUserRequestDTO = new UserCreateRequestDTO("john@example.com", "password123", Role.ROLE_ADMIN);
         patchUserRoleRequestDTO = new PatchUserRoleRequestDTO(Role.ROLE_TRAINER);
     }
 

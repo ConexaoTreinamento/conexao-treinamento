@@ -1,9 +1,9 @@
 package org.conexaotreinamento.conexaotreinamentobackend.service;
 
 import lombok.RequiredArgsConstructor;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AgeDistributionDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AgeDistributionResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ReportsResponseDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerReportDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerReportResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.ScheduledSessionRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentRepository;
@@ -23,8 +23,8 @@ public class ReportsService {
     private final StudentRepository studentRepository;
 
     public ReportsResponseDTO generateReports(LocalDateTime startDate, LocalDateTime endDate, UUID trainerId) {
-        List<TrainerReportDTO> trainerReports = generateTrainerReports(startDate, endDate, trainerId);
-        List<AgeDistributionDTO> ageDistribution = calculateAgeDistribution();
+        List<TrainerReportResponseDTO> trainerReports = generateTrainerReports(startDate, endDate, trainerId);
+        List<AgeDistributionResponseDTO> ageDistribution = calculateAgeDistribution();
         return new ReportsResponseDTO(trainerReports, ageDistribution);
     }
     
@@ -32,7 +32,7 @@ public class ReportsService {
      * Generate trainer reports by fetching raw data and mapping to DTOs.
      * Handles PostgreSQL array to List conversion.
      */
-    private List<TrainerReportDTO> generateTrainerReports(LocalDateTime startDate, LocalDateTime endDate, UUID trainerId) {
+    private List<TrainerReportResponseDTO> generateTrainerReports(LocalDateTime startDate, LocalDateTime endDate, UUID trainerId) {
         List<Object[]> rawResults = scheduledSessionRepository.findTrainerReportsRaw(startDate, endDate, trainerId);
         
         return rawResults.stream()
@@ -51,7 +51,7 @@ public class ReportsService {
                         specialties = Arrays.asList(specialtiesArray);
                     }
                     
-                    return new TrainerReportDTO(
+                    return new TrainerReportResponseDTO(
                             id,
                             name,
                             hoursWorked,
@@ -64,7 +64,7 @@ public class ReportsService {
                 .collect(Collectors.toList());
     }
     
-    private List<AgeDistributionDTO> calculateAgeDistribution() {
+    private List<AgeDistributionResponseDTO> calculateAgeDistribution() {
         List<LocalDate> birthDates = studentRepository.findAllBirthDates();
         
         Map<String, Integer> ageGroups = new LinkedHashMap<>();
@@ -94,7 +94,7 @@ public class ReportsService {
                 .map(entry -> {
                     double percentage = totalStudents > 0 ? 
                             (entry.getValue() * 100.0 / totalStudents) : 0.0;
-                    return new AgeDistributionDTO(
+                    return new AgeDistributionResponseDTO(
                             entry.getKey(),
                             entry.getValue(),
                             Math.round(percentage * 100.0) / 100.0

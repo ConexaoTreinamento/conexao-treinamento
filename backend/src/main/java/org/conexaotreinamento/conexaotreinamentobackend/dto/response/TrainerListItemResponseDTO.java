@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-public record ListTrainersDTO(
+public record TrainerListItemResponseDTO(
         UUID id,
         String name,
         String email,

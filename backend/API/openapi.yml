@@ -26,7 +26,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ListTrainersDTO'
+                $ref: '#/components/schemas/TrainerListItemResponseDTO'
     put:
       tags:
       - trainer-controller
@@ -42,7 +42,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateTrainerDTO'
+              $ref: '#/components/schemas/TrainerCreateRequestDTO'
         required: true
       responses:
         '200':
@@ -416,7 +416,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ListAdministratorsDTO'
+                $ref: '#/components/schemas/AdministratorListItemResponseDTO'
     put:
       tags:
       - administrator-controller
@@ -432,7 +432,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateAdministratorDTO'
+              $ref: '#/components/schemas/AdministratorCreateRequestDTO'
         required: true
       responses:
         '200':
@@ -505,7 +505,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateUserRequestDTO'
+              $ref: '#/components/schemas/UserCreateRequestDTO'
         required: true
       responses:
         '200':
@@ -541,7 +541,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ListTrainersDTO'
+                  $ref: '#/components/schemas/TrainerListItemResponseDTO'
     post:
       tags:
       - trainer-controller
@@ -550,7 +550,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateTrainerDTO'
+              $ref: '#/components/schemas/TrainerCreateRequestDTO'
         required: true
       responses:
         '200':
@@ -558,7 +558,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ListTrainersDTO'
+                $ref: '#/components/schemas/TrainerListItemResponseDTO'
   /trainer-schedules:
     get:
       tags:
@@ -1210,7 +1210,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ListAdministratorsDTO'
+                  $ref: '#/components/schemas/AdministratorListItemResponseDTO'
     post:
       tags:
       - administrator-controller
@@ -1219,7 +1219,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateAdministratorDTO'
+              $ref: '#/components/schemas/AdministratorCreateRequestDTO'
         required: true
       responses:
         '200':
@@ -1227,7 +1227,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ListAdministratorsDTO'
+                $ref: '#/components/schemas/AdministratorListItemResponseDTO'
   /users/{id}:
     patch:
       tags:
@@ -1269,7 +1269,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ResetTrainerPasswordDTO'
+              $ref: '#/components/schemas/TrainerPasswordResetRequestDTO'
         required: true
       responses:
         '200':
@@ -1436,7 +1436,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ListTrainersDTO'
+                $ref: '#/components/schemas/TrainerListItemResponseDTO'
   /trainer-schedules/trainer/{trainerId}:
     get:
       tags:
@@ -1636,7 +1636,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/TrainerLookupDTO'
+                  $ref: '#/components/schemas/TrainerLookupResponseDTO'
   /events/lookup/students:
     get:
       tags:
@@ -1650,7 +1650,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/StudentLookupDTO'
+                  $ref: '#/components/schemas/StudentLookupResponseDTO'
   /commitments/students/{studentId}:
     get:
       tags:
@@ -1814,7 +1814,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/ListAdministratorsDTO'
+                $ref: '#/components/schemas/AdministratorListItemResponseDTO'
   /administrators/test:
     get:
       tags:
@@ -1855,7 +1855,7 @@ paths:
           content:
             '*/*':
               schema:
-                $ref: '#/components/schemas/PageListAdministratorsDTO'
+                $ref: '#/components/schemas/PageAdministratorListItemResponseDTO'
   /schedule/sessions/{sessionId}/participants/{studentId}:
     delete:
       tags:
@@ -1882,7 +1882,7 @@ paths:
                 type: string
 components:
   schemas:
-    CreateTrainerDTO:
+    TrainerCreateRequestDTO:
       type: object
       properties:
         name:
@@ -2499,7 +2499,7 @@ components:
         deletedAt:
           type: string
           format: date-time
-    CreateAdministratorDTO:
+    AdministratorCreateRequestDTO:
       type: object
       properties:
         firstName:
@@ -2545,7 +2545,7 @@ components:
         updatedAt:
           type: string
           format: date-time
-    CreateUserRequestDTO:
+    UserCreateRequestDTO:
       type: object
       properties:
         email:
@@ -2596,7 +2596,7 @@ components:
       - confirmPassword
       - newPassword
       - oldPassword
-    ListTrainersDTO:
+    TrainerListItemResponseDTO:
       type: object
       properties:
         id:
@@ -3202,7 +3202,7 @@ components:
           format: uuid
         token:
           type: string
-    ListAdministratorsDTO:
+    AdministratorListItemResponseDTO:
       type: object
       properties:
         id:
@@ -3230,7 +3230,7 @@ components:
           - ROLE_ADMIN
           - ROLE_TRAINER
           - ROLE_STUDENT
-    ResetTrainerPasswordDTO:
+    TrainerPasswordResetRequestDTO:
       type: object
       properties:
         newPassword:
@@ -3420,7 +3420,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SessionResponseDTO'
-    AgeDistributionDTO:
+    AgeDistributionResponseDTO:
       type: object
       properties:
         ageRange:
@@ -3437,12 +3437,12 @@ components:
         trainerReports:
           type: array
           items:
-            $ref: '#/components/schemas/TrainerReportDTO'
+            $ref: '#/components/schemas/TrainerReportResponseDTO'
         ageDistribution:
           type: array
           items:
-            $ref: '#/components/schemas/AgeDistributionDTO'
-    TrainerReportDTO:
+            $ref: '#/components/schemas/AgeDistributionResponseDTO'
+    TrainerReportResponseDTO:
       type: object
       properties:
         id:
@@ -3500,7 +3500,7 @@ components:
           type: boolean
         empty:
           type: boolean
-    TrainerLookupDTO:
+    TrainerLookupResponseDTO:
       type: object
       properties:
         id:
@@ -3508,7 +3508,7 @@ components:
           format: uuid
         name:
           type: string
-    StudentLookupDTO:
+    StudentLookupResponseDTO:
       type: object
       properties:
         id:
@@ -3559,7 +3559,7 @@ components:
           - FRIDAY
           - SATURDAY
           - SUNDAY
-    PageListAdministratorsDTO:
+    PageAdministratorListItemResponseDTO:
       type: object
       properties:
         totalElements:
@@ -3574,7 +3574,7 @@ components:
         content:
           type: array
           items:
-            $ref: '#/components/schemas/ListAdministratorsDTO'
+            $ref: '#/components/schemas/AdministratorListItemResponseDTO'
         number:
           type: integer
           format: int32

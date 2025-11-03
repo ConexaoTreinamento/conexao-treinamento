@@ -4,13 +4,13 @@ import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
 
 import java.util.UUID;
 
-public record TrainerLookupDTO(
+public record TrainerLookupResponseDTO(
         UUID id,
         String name
 ) {
-    public static TrainerLookupDTO fromEntity(Trainer trainer) {
+    public static TrainerLookupResponseDTO fromEntity(Trainer trainer) {
         if (trainer == null) return null;
-        return new TrainerLookupDTO(
+        return new TrainerLookupResponseDTO(
                 trainer.getId(),
                 "Prof. " + trainer.getName()
         );

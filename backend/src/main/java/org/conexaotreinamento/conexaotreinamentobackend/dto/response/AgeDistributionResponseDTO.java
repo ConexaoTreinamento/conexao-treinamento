@@ -1,6 +1,6 @@
 package org.conexaotreinamento.conexaotreinamentobackend.dto.response;
 
-public record AgeDistributionDTO(
+public record AgeDistributionResponseDTO(
         String ageRange,
         Integer count,
         Double percentage

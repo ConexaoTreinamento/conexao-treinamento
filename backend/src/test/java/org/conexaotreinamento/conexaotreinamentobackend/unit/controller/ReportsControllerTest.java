@@ -3,9 +3,9 @@ package org.conexaotreinamento.conexaotreinamentobackend.unit.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AgeDistributionDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AgeDistributionResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ReportsResponseDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerReportDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerReportResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;
 import org.conexaotreinamento.conexaotreinamentobackend.controller.ReportsController;
 import org.conexaotreinamento.conexaotreinamentobackend.service.ReportsService;
@@ -99,7 +99,7 @@ class ReportsControllerTest {
     @DisplayName("GET /reports - Should return reports for specific trainer when trainerId is provided")
     void shouldReturnReportsForSpecificTrainer() throws Exception {
         // Arrange
-        TrainerReportDTO trainerReport = new TrainerReportDTO(
+        TrainerReportResponseDTO trainerReport = new TrainerReportResponseDTO(
                 trainerId,
                 "Prof. Ana Silva",
                 15.5,
@@ -180,7 +180,7 @@ class ReportsControllerTest {
     @DisplayName("GET /reports - Should handle trainers with zero hours")
     void shouldHandleTrainersWithZeroHours() throws Exception {
         // Arrange
-        TrainerReportDTO inactiveTrainer = new TrainerReportDTO(
+        TrainerReportResponseDTO inactiveTrainer = new TrainerReportResponseDTO(
                 UUID.randomUUID(),
                 "Inactive Trainer",
                 0.0,
@@ -215,8 +215,8 @@ class ReportsControllerTest {
     @DisplayName("GET /reports - Should handle trainers with different compensation types")
     void shouldHandleTrainersWithDifferentCompensationTypes() throws Exception {
         // Arrange
-        List<TrainerReportDTO> trainers = Arrays.asList(
-                new TrainerReportDTO(
+        List<TrainerReportResponseDTO> trainers = Arrays.asList(
+                new TrainerReportResponseDTO(
                         UUID.randomUUID(),
                         "Hourly Trainer",
                         10.0,
@@ -225,7 +225,7 @@ class ReportsControllerTest {
                         CompensationType.HOURLY,
                         Arrays.asList("Yoga")
                 ),
-                new TrainerReportDTO(
+                new TrainerReportResponseDTO(
                         UUID.randomUUID(),
                         "Monthly Trainer",
                         40.0,
@@ -288,7 +288,7 @@ class ReportsControllerTest {
     @DisplayName("GET /reports - Should handle trainers with multiple specialties")
     void shouldHandleTrainersWithMultipleSpecialties() throws Exception {
         // Arrange
-        TrainerReportDTO trainer = new TrainerReportDTO(
+        TrainerReportResponseDTO trainer = new TrainerReportResponseDTO(
                 UUID.randomUUID(),
                 "Multi-Specialty Trainer",
                 25.0,
@@ -325,7 +325,7 @@ class ReportsControllerTest {
     @DisplayName("GET /reports - Should handle trainers with no specialties")
     void shouldHandleTrainersWithNoSpecialties() throws Exception {
         // Arrange
-        TrainerReportDTO trainer = new TrainerReportDTO(
+        TrainerReportResponseDTO trainer = new TrainerReportResponseDTO(
                 UUID.randomUUID(),
                 "No Specialty Trainer",
                 10.0,
@@ -357,8 +357,8 @@ class ReportsControllerTest {
     // Helper methods
 
     private ReportsResponseDTO createMockReportsResponse() {
-        List<TrainerReportDTO> trainers = Arrays.asList(
-                new TrainerReportDTO(
+        List<TrainerReportResponseDTO> trainers = Arrays.asList(
+                new TrainerReportResponseDTO(
                         UUID.randomUUID(),
                         "Prof. Ana Silva",
                         15.5,
@@ -367,7 +367,7 @@ class ReportsControllerTest {
                         CompensationType.HOURLY,
                         Arrays.asList("Pilates", "Yoga")
                 ),
-                new TrainerReportDTO(
+                new TrainerReportResponseDTO(
                         UUID.randomUUID(),
                         "Prof. Carlos Santos",
                         20.0,
@@ -381,21 +381,21 @@ class ReportsControllerTest {
         return new ReportsResponseDTO(trainers, createMockAgeDistribution());
     }
 
-    private List<AgeDistributionDTO> createMockAgeDistribution() {
+    private List<AgeDistributionResponseDTO> createMockAgeDistribution() {
         return Arrays.asList(
-                new AgeDistributionDTO("18-25", 3, 30.0),
-                new AgeDistributionDTO("26-35", 4, 40.0),
-                new AgeDistributionDTO("36-45", 2, 20.0),
-                new AgeDistributionDTO("46+", 1, 10.0)
+                new AgeDistributionResponseDTO("18-25", 3, 30.0),
+                new AgeDistributionResponseDTO("26-35", 4, 40.0),
+                new AgeDistributionResponseDTO("36-45", 2, 20.0),
+                new AgeDistributionResponseDTO("46+", 1, 10.0)
         );
     }
 
-    private List<AgeDistributionDTO> createEmptyAgeDistribution() {
+    private List<AgeDistributionResponseDTO> createEmptyAgeDistribution() {
         return Arrays.asList(
-                new AgeDistributionDTO("18-25", 0, 0.0),
-                new AgeDistributionDTO("26-35", 0, 0.0),
-                new AgeDistributionDTO("36-45", 0, 0.0),
-                new AgeDistributionDTO("46+", 0, 0.0)
+                new AgeDistributionResponseDTO("18-25", 0, 0.0),
+                new AgeDistributionResponseDTO("26-35", 0, 0.0),
+                new AgeDistributionResponseDTO("36-45", 0, 0.0),
+                new AgeDistributionResponseDTO("46+", 0, 0.0)
         );
     }
 }

@@ -1,8 +1,8 @@
 package org.conexaotreinamento.conexaotreinamentobackend.unit.service;
 
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AgeDistributionDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AgeDistributionResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ReportsResponseDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerReportDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerReportResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.ScheduledSessionRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentRepository;
@@ -71,7 +71,7 @@ class ReportsServiceTest {
     }
 
     @Test
-    @DisplayName("Should map trainer raw data correctly to TrainerReportDTO")
+    @DisplayName("Should map trainer raw data correctly to TrainerReportResponseDTO")
     void shouldMapTrainerDataCorrectly() {
         // Arrange
         UUID trainer1Id = UUID.randomUUID();
@@ -98,7 +98,7 @@ class ReportsServiceTest {
 
         // Assert
         assertThat(result.trainerReports()).hasSize(1);
-        TrainerReportDTO trainer = result.trainerReports().get(0);
+        TrainerReportResponseDTO trainer = result.trainerReports().get(0);
         
         assertThat(trainer.id()).isEqualTo(trainer1Id);
         assertThat(trainer.name()).isEqualTo("Prof. Ana Silva");
@@ -136,7 +136,7 @@ class ReportsServiceTest {
 
         // Assert
         assertThat(result.trainerReports()).hasSize(1);
-        TrainerReportDTO trainer = result.trainerReports().get(0);
+        TrainerReportResponseDTO trainer = result.trainerReports().get(0);
         assertThat(trainer.specialties()).isEmpty();
     }
 
@@ -167,7 +167,7 @@ class ReportsServiceTest {
 
         // Assert
         assertThat(result.trainerReports()).hasSize(1);
-        TrainerReportDTO trainer = result.trainerReports().get(0);
+        TrainerReportResponseDTO trainer = result.trainerReports().get(0);
         assertThat(trainer.specialties()).isEmpty();
     }
 
@@ -212,7 +212,7 @@ class ReportsServiceTest {
         ReportsResponseDTO result = reportsService.generateReports(startDate, endDate, trainerId);
 
         // Assert
-        List<AgeDistributionDTO> ageDistribution = result.ageDistribution();
+        List<AgeDistributionResponseDTO> ageDistribution = result.ageDistribution();
         assertThat(ageDistribution).hasSize(4);
 
         // Verify counts
@@ -246,7 +246,7 @@ class ReportsServiceTest {
         ReportsResponseDTO result = reportsService.generateReports(startDate, endDate, trainerId);
 
         // Assert
-        List<AgeDistributionDTO> ageDistribution = result.ageDistribution();
+        List<AgeDistributionResponseDTO> ageDistribution = result.ageDistribution();
         assertThat(ageDistribution).hasSize(4);
         
         // All groups should have 0 count and 0% percentage
@@ -275,7 +275,7 @@ class ReportsServiceTest {
         ReportsResponseDTO result = reportsService.generateReports(startDate, endDate, trainerId);
 
         // Assert
-        List<AgeDistributionDTO> ageDistribution = result.ageDistribution();
+        List<AgeDistributionResponseDTO> ageDistribution = result.ageDistribution();
         
         // Each group has 1 student out of 3 = 33.33%
         assertThat(ageDistribution.get(0).percentage()).isEqualTo(33.33);
@@ -303,11 +303,11 @@ class ReportsServiceTest {
         ReportsResponseDTO result = reportsService.generateReports(startDate, endDate, trainerId);
 
         // Assert
-        List<AgeDistributionDTO> ageDistribution = result.ageDistribution();
+        List<AgeDistributionResponseDTO> ageDistribution = result.ageDistribution();
         
         // Total should be 3 (including under 18), but only 2 are counted in groups
         int totalCounted = ageDistribution.stream()
-                .mapToInt(AgeDistributionDTO::count)
+                .mapToInt(AgeDistributionResponseDTO::count)
                 .sum();
         assertThat(totalCounted).isEqualTo(2);
     }
@@ -335,7 +335,7 @@ class ReportsServiceTest {
         ReportsResponseDTO result = reportsService.generateReports(startDate, endDate, trainerId);
 
         // Assert
-        List<AgeDistributionDTO> ageDistribution = result.ageDistribution();
+        List<AgeDistributionResponseDTO> ageDistribution = result.ageDistribution();
         
         assertThat(ageDistribution.get(0).count()).isEqualTo(2); // 18-25
         assertThat(ageDistribution.get(1).count()).isEqualTo(2); // 26-35
@@ -411,7 +411,7 @@ class ReportsServiceTest {
 
         // Assert
         assertThat(result.trainerReports()).hasSize(1);
-        TrainerReportDTO trainer = result.trainerReports().get(0);
+        TrainerReportResponseDTO trainer = result.trainerReports().get(0);
         
         assertThat(trainer.hoursWorked()).isEqualTo(0.0);
         assertThat(trainer.classesGiven()).isEqualTo(0);
