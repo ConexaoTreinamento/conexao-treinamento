@@ -88,7 +88,7 @@ public class StudentPlanService {
 
     @Transactional(readOnly = true)
     public List<StudentPlanResponseDTO> getPlansByStatus(String status) {
-        String normalized = status == null ? "active" : status.trim().toLowerCase();
+        String normalized = status == null ? "isActive" : status.trim().toLowerCase();
         List<StudentPlan> plans;
         switch (normalized) {
             case "all":
@@ -97,7 +97,7 @@ public class StudentPlanService {
             case "inactive":
                 plans = studentPlanRepository.findByActiveFalseOrderByNameAsc();
                 break;
-            case "active":
+            case "isActive":
             default:
                 plans = studentPlanRepository.findByActiveTrueOrderByNameAsc();
         }

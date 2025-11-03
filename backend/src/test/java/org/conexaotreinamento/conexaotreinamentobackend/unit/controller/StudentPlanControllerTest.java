@@ -92,7 +92,7 @@ class StudentPlanControllerTest {
     @Test
     void getAllPlans_returnsOk_listOfPlans() throws Exception {
         // Arrange
-        when(studentPlanService.getPlansByStatus("active")).thenReturn(List.of(
+        when(studentPlanService.getPlansByStatus("isActive")).thenReturn(List.of(
                 planDto(UUID.randomUUID(), "Gold", 3, 30, true),
                 planDto(UUID.randomUUID(), "Silver", 2, 14, true)
         ));
