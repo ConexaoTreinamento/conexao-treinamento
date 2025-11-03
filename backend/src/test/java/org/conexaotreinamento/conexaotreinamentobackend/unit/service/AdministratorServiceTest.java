@@ -7,9 +7,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateAdministratorDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.AdministratorCreateRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AdministratorResponseDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListAdministratorsDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AdministratorListItemResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Administrator;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
@@ -53,8 +53,8 @@ class AdministratorServiceTest {
     private UUID userId;
     private Administrator administrator;
     private User user;
-    private CreateAdministratorDTO createAdministratorDTO;
-    private ListAdministratorsDTO listAdministratorsDTO;
+    private AdministratorCreateRequestDTO createAdministratorDTO;
+    private AdministratorListItemResponseDTO listAdministratorsDTO;
 
     @BeforeEach
     void setUp() {
@@ -69,14 +69,14 @@ class AdministratorServiceTest {
 
         user = new User("joao@example.com", "password123", Role.ROLE_ADMIN);
 
-        createAdministratorDTO = new CreateAdministratorDTO(
+        createAdministratorDTO = new AdministratorCreateRequestDTO(
             "João",
             "Silva", 
             "joao@example.com",
             "password123"
         );
 
-        listAdministratorsDTO = new ListAdministratorsDTO(
+        listAdministratorsDTO = new AdministratorListItemResponseDTO(
             administratorId,
             "João",
             "Silva",
@@ -93,7 +93,7 @@ class AdministratorServiceTest {
         // Given
         UUID newUserId = UUID.randomUUID();
         UUID newAdministratorId = UUID.randomUUID();
-        CreateAdministratorDTO request = new CreateAdministratorDTO(
+        AdministratorCreateRequestDTO request = new AdministratorCreateRequestDTO(
             "João Silva",
             "Santos",
             "joao@test.com",
@@ -108,7 +108,7 @@ class AdministratorServiceTest {
         savedAdministrator.setFirstName("João Silva");
         savedAdministrator.setLastName("Santos");
 
-        ListAdministratorsDTO expectedResult = new ListAdministratorsDTO(
+        AdministratorListItemResponseDTO expectedResult = new AdministratorListItemResponseDTO(
             newAdministratorId,
             "João Silva",
             "Santos",
@@ -124,7 +124,7 @@ class AdministratorServiceTest {
         when(administratorRepository.findActiveAdministratorProfileById(newAdministratorId)).thenReturn(Optional.of(expectedResult));
 
         // When
-        ListAdministratorsDTO result = administratorService.create(request);
+        AdministratorListItemResponseDTO result = administratorService.create(request);
 
         // Then
         assertThat(result).isNotNull();
@@ -166,7 +166,7 @@ class AdministratorServiceTest {
         when(administratorRepository.findActiveAdministratorProfileById(administratorId)).thenReturn(Optional.of(listAdministratorsDTO));
 
         // When
-        ListAdministratorsDTO result = administratorService.findById(administratorId);
+        AdministratorListItemResponseDTO result = administratorService.findById(administratorId);
 
         // Then
         assertThat(result).isNotNull();
@@ -199,11 +199,11 @@ class AdministratorServiceTest {
     @DisplayName("Should find all administrators successfully")
     void shouldFindAllAdministratorsSuccessfully() {
         // Given
-        List<ListAdministratorsDTO> administrators = List.of(listAdministratorsDTO);
+        List<AdministratorListItemResponseDTO> administrators = List.of(listAdministratorsDTO);
         when(administratorRepository.findAllAdministratorProfiles(true)).thenReturn(administrators);
 
         // When
-        List<ListAdministratorsDTO> result = administratorService.findAll();
+        List<AdministratorListItemResponseDTO> result = administratorService.findAll();
 
         // Then
         assertThat(result).isNotNull();
@@ -220,7 +220,7 @@ class AdministratorServiceTest {
         when(administratorRepository.findAllAdministratorProfiles(true)).thenReturn(List.of());
 
         // When
-        List<ListAdministratorsDTO> result = administratorService.findAll();
+        List<AdministratorListItemResponseDTO> result = administratorService.findAll();
 
         // Then
         assertThat(result).isNotNull();
@@ -233,7 +233,7 @@ class AdministratorServiceTest {
     @DisplayName("Should update administrator successfully with password")
     void shouldUpdateAdministratorSuccessfullyWithPassword() {
         // Given
-        CreateAdministratorDTO updateAdministratorDTO = new CreateAdministratorDTO(
+        AdministratorCreateRequestDTO updateAdministratorDTO = new AdministratorCreateRequestDTO(
                 "João Updated",
                 "Silva Updated",
                 "joao@example.com",
@@ -266,7 +266,7 @@ class AdministratorServiceTest {
     @DisplayName("Should update administrator successfully without password")
     void shouldUpdateAdministratorSuccessfullyWithoutPassword() {
         // Given
-        CreateAdministratorDTO updateAdministratorDTO = new CreateAdministratorDTO(
+        AdministratorCreateRequestDTO updateAdministratorDTO = new AdministratorCreateRequestDTO(
                 "João Updated",
                 "Silva Updated",
                 "joao.updated@example.com",

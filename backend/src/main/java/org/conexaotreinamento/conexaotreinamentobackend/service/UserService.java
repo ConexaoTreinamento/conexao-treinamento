@@ -4,7 +4,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.ChangePasswordRequestDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.UserCreateRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchUserRoleRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
@@ -27,7 +27,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserResponseDTO createUser(CreateUserRequestDTO request) {
+    public UserResponseDTO createUser(UserCreateRequestDTO request) {
         if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email já está em uso");
         }

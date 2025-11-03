@@ -1,6 +1,6 @@
 package org.conexaotreinamento.conexaotreinamentobackend.unit.controller;
 
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.UserCreateRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchUserRoleRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
@@ -38,14 +38,14 @@ class UserControllerTest {
     private UserController userController;
 
     private UUID userId;
-    private CreateUserRequestDTO createUserRequestDTO;
+    private UserCreateRequestDTO createUserRequestDTO;
     private PatchUserRoleRequestDTO patchUserRoleRequestDTO;
     private UserResponseDTO userResponseDTO;
 
     @BeforeEach
     void setUp() {
         userId = UUID.randomUUID();
-        createUserRequestDTO = new CreateUserRequestDTO(
+        createUserRequestDTO = new UserCreateRequestDTO(
                 "admin@example.com", 
                 "password123", 
                 Role.ROLE_ADMIN
@@ -73,7 +73,7 @@ class UserControllerTest {
     @DisplayName("Should create trainer user successfully")
     void shouldCreateTrainerUserSuccessfully() {
         // Given
-        CreateUserRequestDTO trainerRequest = new CreateUserRequestDTO(
+        UserCreateRequestDTO trainerRequest = new UserCreateRequestDTO(
                 "trainer@example.com", 
                 "password456", 
                 Role.ROLE_TRAINER
@@ -292,7 +292,7 @@ class UserControllerTest {
     @DisplayName("Should maintain request-response correlation")
     void shouldMaintainRequestResponseCorrelation() {
         // Given
-        CreateUserRequestDTO specificRequest = new CreateUserRequestDTO(
+        UserCreateRequestDTO specificRequest = new UserCreateRequestDTO(
                 "specific@example.com", 
                 "specificPassword", 
                 Role.ROLE_ADMIN

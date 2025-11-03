@@ -2,7 +2,7 @@ package org.conexaotreinamento.conexaotreinamentobackend.integration.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import org.conexaotreinamento.conexaotreinamentobackend.config.TestContainerConfig;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateAdministratorDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.AdministratorCreateRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Administrator;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
@@ -62,7 +62,7 @@ class AdministratorControllerIntegrationTestNew {
     @DisplayName("Should create administrator successfully")
     void shouldCreateAdministratorSuccessfully() throws Exception {
         // Given
-        CreateAdministratorDTO request = new CreateAdministratorDTO(
+        AdministratorCreateRequestDTO request = new AdministratorCreateRequestDTO(
                 "João", 
                 "Silva", 
                 "joao.silva@example.com", 
@@ -102,7 +102,7 @@ class AdministratorControllerIntegrationTestNew {
     @DisplayName("Should return validation errors for empty fields")
     void shouldReturnValidationErrorsForEmptyFields() throws Exception {
         // Given
-        CreateAdministratorDTO request = new CreateAdministratorDTO("", "", "", "");
+        AdministratorCreateRequestDTO request = new AdministratorCreateRequestDTO("", "", "", "");
 
         // When & Then
         mockMvc.perform(post("/administrators")
@@ -123,7 +123,7 @@ class AdministratorControllerIntegrationTestNew {
     @DisplayName("Should return validation error for invalid email")
     void shouldReturnValidationErrorForInvalidEmail() throws Exception {
         // Given
-        CreateAdministratorDTO request = new CreateAdministratorDTO(
+        AdministratorCreateRequestDTO request = new AdministratorCreateRequestDTO(
                 "João", 
                 "Silva", 
                 "email-invalido", 
@@ -142,7 +142,7 @@ class AdministratorControllerIntegrationTestNew {
     @DisplayName("Should return validation error for short password")
     void shouldReturnValidationErrorForShortPassword() throws Exception {
         // Given
-        CreateAdministratorDTO request = new CreateAdministratorDTO(
+        AdministratorCreateRequestDTO request = new AdministratorCreateRequestDTO(
                 "João", 
                 "Silva", 
                 "joao@example.com", 

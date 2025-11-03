@@ -2,7 +2,7 @@ package org.conexaotreinamento.conexaotreinamentobackend.integration.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.conexaotreinamento.conexaotreinamentobackend.config.TestContainerConfig;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateTrainerDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.TrainerCreateRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;
@@ -111,7 +111,7 @@ class TrainerControllerIntegrationTest {
     void shouldReturnNotFoundWhenUpdatingNonExistentTrainer() throws Exception {
         // Given
         UUID nonExistentId = UUID.randomUUID();
-        CreateTrainerDTO updateRequest = new CreateTrainerDTO(
+        TrainerCreateRequestDTO updateRequest = new TrainerCreateRequestDTO(
             "Updated Name",
             "updated@test.com",
             "+5511999999999",
@@ -142,7 +142,7 @@ class TrainerControllerIntegrationTest {
     @DisplayName("Should create trainer with minimal required fields")
     void shouldCreateTrainerWithMinimalRequiredFields() throws Exception {
         // Given
-        CreateTrainerDTO request = new CreateTrainerDTO(
+        TrainerCreateRequestDTO request = new TrainerCreateRequestDTO(
             "Minimal Trainer",
             "minimal@test.com",
             "+5511444444444",
@@ -167,7 +167,7 @@ class TrainerControllerIntegrationTest {
     @DisplayName("Should create trainer with multiple specialties")
     void shouldCreateTrainerWithMultipleSpecialties() throws Exception {
         // Given
-        CreateTrainerDTO request = new CreateTrainerDTO(
+        TrainerCreateRequestDTO request = new TrainerCreateRequestDTO(
             "Multi Specialist",
             "multi@test.com",
             "+5511333333333",
