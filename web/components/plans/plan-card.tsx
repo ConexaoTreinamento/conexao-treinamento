@@ -32,10 +32,13 @@ export default function PlanCard(props: PlanCardProps){
       icon: <Calendar className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />,
       content: `Até ${maxDays}x por semana`,
     },
-    {
-      icon: <CalendarCheck className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />,
-      content: `${durationDays} dias de duração`,
-    },
+  ]
+
+  const infoRows: ReactNode[] = [
+    <span key="duration" className="flex items-center gap-2">
+      <CalendarCheck className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+      <span>{`${durationDays} dias de duração`}</span>
+    </span>,
   ]
 
   const body = description ? (
@@ -101,6 +104,7 @@ export default function PlanCard(props: PlanCardProps){
       badges={badges}
       metadata={metadata}
       metadataColumns={2}
+      infoRows={infoRows}
       body={body}
       mobileActions={mobileActions}
       desktopActions={desktopActions}
