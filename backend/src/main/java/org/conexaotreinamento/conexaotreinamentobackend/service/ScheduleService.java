@@ -96,35 +96,36 @@ public class ScheduleService {
                 String legacyGeneratedId = generateLegacySessionId(schedule, date);
                 if (legacyGeneratedId != null) generatedSessionIds.add(legacyGeneratedId);
                 
-                // Create session DTO
-                SessionResponseDTO session = new SessionResponseDTO();
-                session.setSessionId(sessionId);
-                session.setTrainerId(schedule.getTrainerId());
-                session.setStartTime(sessionStartTime);
-                session.setEndTime(sessionEndTime);
-                session.setSeriesName(schedule.getSeriesName());
-                
-                // Set trainer name
-                trainerRepository.findById(schedule.getTrainerId())
-                    .ifPresent(trainer -> session.setTrainerName(trainer.getName()));
-                
-                // Set instance-specific data if exists
-                if (existingSession != null) {
-                    session.setNotes(existingSession.getNotes());
-                    session.setInstanceOverride(existingSession.isInstanceOverride());
-                    session.setCanceled(existingSession.isCanceled());
-                } else {
-                    session.setInstanceOverride(false);
-                    session.setCanceled(false);
+                UUID trainerId = schedule.getTrainerId();
+                String trainerName = null;
+                if (trainerId != null) {
+                    trainerName = trainerRepository.findById(trainerId)
+                        .map(trainer -> trainer.getName())
+                        .orElse(null);
                 }
-                
-                // Get student commitments for this session series at this point in time
+                String notes = existingSession != null ? existingSession.getNotes() : null;
+                boolean instanceOverride = existingSession != null && existingSession.isInstanceOverride();
+                boolean canceled = existingSession != null && existingSession.isCanceled();
+
                 List<StudentCommitmentResponseDTO> studentCommitments = getStudentCommitmentsForSession(
                     schedule.getId(), sessionInstant, existingSession);
-                session.setStudents(studentCommitments);
-                session.setPresentCount((int) studentCommitments.stream().filter(sc -> sc.getCommitmentStatus() == CommitmentStatus.ATTENDING).count());
-                
-                sessions.add(session);
+                int presentCount = (int) studentCommitments.stream()
+                    .filter(sc -> sc.commitmentStatus() == CommitmentStatus.ATTENDING)
+                    .count();
+
+                sessions.add(new SessionResponseDTO(
+                    sessionId,
+                    trainerId,
+                    trainerName,
+                    sessionStartTime,
+                    sessionEndTime,
+                    schedule.getSeriesName(),
+                    notes,
+                    instanceOverride,
+                    studentCommitments,
+                    canceled,
+                    presentCount
+                ));
             }
         }
         // Also include any standalone persisted sessions that do not correspond to a generated schedule (e.g., one-offs)
@@ -143,28 +144,36 @@ public class ScheduleService {
                     && (altLegacy == null || !generatedSessionIds.contains(altLegacy))) {
                 LocalDate date = ss.getStartTime().toLocalDate();
                 Instant sessionInstant = date.atStartOfDay().toInstant(ZoneOffset.UTC);
-                SessionResponseDTO dto = new SessionResponseDTO();
-                dto.setSessionId(ss.getSessionId());
-                dto.setTrainerId(ss.getTrainerId());
-                if (ss.getTrainerId() != null) {
-                    trainerRepository.findById(ss.getTrainerId()).ifPresent(t -> dto.setTrainerName(t.getName()));
+                UUID trainerId = ss.getTrainerId();
+                String trainerName = null;
+                if (trainerId != null) {
+                    trainerName = trainerRepository.findById(trainerId)
+                        .map(trainer -> trainer.getName())
+                        .orElse(null);
                 }
-                dto.setStartTime(ss.getStartTime());
-                dto.setEndTime(ss.getEndTime());
-                dto.setSeriesName(ss.getSeriesName());
-                dto.setNotes(ss.getNotes());
-                dto.setInstanceOverride(ss.isInstanceOverride());
-                dto.setCanceled(ss.isCanceled());
-                // For standalone one-offs (null series id), commitments come only from instance participants
                 List<StudentCommitmentResponseDTO> students = getStudentCommitmentsForSession(ss.getSessionSeriesId(), sessionInstant, ss);
-                dto.setStudents(students);
-                dto.setPresentCount((int) students.stream().filter(sc -> sc.getCommitmentStatus() == CommitmentStatus.ATTENDING).count());
-                sessions.add(dto);
+                int presentCount = (int) students.stream()
+                    .filter(sc -> sc.commitmentStatus() == CommitmentStatus.ATTENDING)
+                    .count();
+
+                sessions.add(new SessionResponseDTO(
+                    ss.getSessionId(),
+                    trainerId,
+                    trainerName,
+                    ss.getStartTime(),
+                    ss.getEndTime(),
+                    ss.getSeriesName(),
+                    ss.getNotes(),
+                    ss.isInstanceOverride(),
+                    students,
+                    ss.isCanceled(),
+                    presentCount
+                ));
             }
         }
         
         return sessions.stream()
-            .sorted(Comparator.comparing(SessionResponseDTO::getStartTime))
+            .sorted(Comparator.comparing(SessionResponseDTO::startTime))
             .collect(Collectors.toList());
     }
     
@@ -210,22 +219,31 @@ public class ScheduleService {
             ScheduledSession sessionEntity = existingOpt.get();
             LocalDate date = sessionEntity.getStartTime().toLocalDate();
             Instant sessionInstant = date.atStartOfDay().toInstant(ZoneOffset.UTC);
-            SessionResponseDTO dto = new SessionResponseDTO();
-            dto.setSessionId(sessionEntity.getSessionId());
-            dto.setTrainerId(sessionEntity.getTrainerId());
-            if (sessionEntity.getTrainerId() != null) {
-                trainerRepository.findById(sessionEntity.getTrainerId()).ifPresent(t -> dto.setTrainerName(t.getName()));
+            UUID trainerId = sessionEntity.getTrainerId();
+            String trainerName = null;
+            if (trainerId != null) {
+                trainerName = trainerRepository.findById(trainerId)
+                    .map(trainer -> trainer.getName())
+                    .orElse(null);
             }
-            dto.setStartTime(sessionEntity.getStartTime());
-            dto.setEndTime(sessionEntity.getEndTime());
-            dto.setSeriesName(sessionEntity.getSeriesName());
-            dto.setNotes(sessionEntity.getNotes());
-            dto.setInstanceOverride(sessionEntity.isInstanceOverride());
-            dto.setCanceled(sessionEntity.isCanceled());
             List<StudentCommitmentResponseDTO> students = getStudentCommitmentsForSession(sessionEntity.getSessionSeriesId(), sessionInstant, sessionEntity);
-            dto.setStudents(students);
-            dto.setPresentCount((int) students.stream().filter(sc -> sc.getCommitmentStatus() == CommitmentStatus.ATTENDING).count());
-            return dto;
+            int presentCount = (int) students.stream()
+                .filter(sc -> sc.commitmentStatus() == CommitmentStatus.ATTENDING)
+                .count();
+
+            return new SessionResponseDTO(
+                sessionEntity.getSessionId(),
+                trainerId,
+                trainerName,
+                sessionEntity.getStartTime(),
+                sessionEntity.getEndTime(),
+                sessionEntity.getSeriesName(),
+                sessionEntity.getNotes(),
+                sessionEntity.isInstanceOverride(),
+                students,
+                sessionEntity.isCanceled(),
+                presentCount
+            );
         }
 
         // 2) Lazily resolve from schedule without materializing an instance
@@ -317,20 +335,34 @@ public class ScheduleService {
     }
 
     private SessionResponseDTO buildVirtualSessionDTO(TrainerSchedule schedule, LocalDate date, Instant sessionInstant) {
-        SessionResponseDTO dto = new SessionResponseDTO();
-        dto.setSessionId(generateSessionId(schedule, date)); // canonical id
-        dto.setTrainerId(schedule.getTrainerId());
-        trainerRepository.findById(schedule.getTrainerId()).ifPresent(t -> dto.setTrainerName(t.getName()));
-        dto.setStartTime(LocalDateTime.of(date, schedule.getStartTime()));
-        dto.setEndTime(LocalDateTime.of(date, schedule.calculateEndTime()));
-        dto.setSeriesName(schedule.getSeriesName());
-        dto.setNotes(null);
-        dto.setInstanceOverride(false);
-        dto.setCanceled(false);
+        String sessionId = generateSessionId(schedule, date);
+        UUID trainerId = schedule.getTrainerId();
+        String trainerName = null;
+        if (trainerId != null) {
+            trainerName = trainerRepository.findById(trainerId)
+                .map(trainer -> trainer.getName())
+                .orElse(null);
+        }
+        LocalDateTime startTime = LocalDateTime.of(date, schedule.getStartTime());
+        LocalDateTime endTime = LocalDateTime.of(date, schedule.calculateEndTime());
         List<StudentCommitmentResponseDTO> students = getStudentCommitmentsForSession(schedule.getId(), sessionInstant, null);
-        dto.setStudents(students);
-        dto.setPresentCount((int) students.stream().filter(sc -> sc.getCommitmentStatus() == CommitmentStatus.ATTENDING).count());
-        return dto;
+        int presentCount = (int) students.stream()
+            .filter(sc -> sc.commitmentStatus() == CommitmentStatus.ATTENDING)
+            .count();
+
+        return new SessionResponseDTO(
+            sessionId,
+            trainerId,
+            trainerName,
+            startTime,
+            endTime,
+            schedule.getSeriesName(),
+            null,
+            false,
+            students,
+            false,
+            presentCount
+        );
     }
 
     public void updateSessionTrainer(String sessionId, UUID trainerId) {
@@ -424,12 +456,12 @@ public class ScheduleService {
         SessionParticipant participant = participants.get(0);
         ParticipantExercise pe = new ParticipantExercise();
         pe.setSessionParticipant(participant);
-        pe.setExerciseId(req.getExerciseId());
-        pe.setSetsCompleted(req.getSetsCompleted());
-        pe.setRepsCompleted(req.getRepsCompleted());
-        pe.setWeightCompleted(req.getWeightCompleted());
-        pe.setExerciseNotes(req.getExerciseNotes());
-    if (req.getDone() != null) pe.setDone(req.getDone());
+        pe.setExerciseId(req.exerciseId());
+        pe.setSetsCompleted(req.setsCompleted());
+        pe.setRepsCompleted(req.repsCompleted());
+        pe.setWeightCompleted(req.weightCompleted());
+        pe.setExerciseNotes(req.exerciseNotes());
+        if (req.done() != null) pe.setDone(req.done());
         participantExerciseRepository.save(pe);
         session.setInstanceOverride(true);
         scheduledSessionRepository.save(session);
@@ -438,11 +470,11 @@ public class ScheduleService {
 
     public void updateParticipantExercise(UUID exerciseRecordId, ParticipantExerciseUpdateRequestDTO req) {
         participantExerciseRepository.findById(exerciseRecordId).ifPresent(pe -> {
-            if (req.getSetsCompleted() != null) pe.setSetsCompleted(req.getSetsCompleted());
-            if (req.getRepsCompleted() != null) pe.setRepsCompleted(req.getRepsCompleted());
-            if (req.getWeightCompleted() != null) pe.setWeightCompleted(req.getWeightCompleted());
-            if (req.getExerciseNotes() != null) pe.setExerciseNotes(req.getExerciseNotes());
-            if (req.getDone() != null) pe.setDone(req.getDone());
+            if (req.setsCompleted() != null) pe.setSetsCompleted(req.setsCompleted());
+            if (req.repsCompleted() != null) pe.setRepsCompleted(req.repsCompleted());
+            if (req.weightCompleted() != null) pe.setWeightCompleted(req.weightCompleted());
+            if (req.exerciseNotes() != null) pe.setExerciseNotes(req.exerciseNotes());
+            if (req.done() != null) pe.setDone(req.done());
             pe.updateTimestamp();
             participantExerciseRepository.save(pe);
         });
@@ -458,14 +490,14 @@ public class ScheduleService {
     public SessionResponseDTO createOneOffSession(OneOffSessionCreateRequestDTO req) {
         ScheduledSession session = new ScheduledSession();
         session.setSessionSeriesId(null); // standalone series id
-        session.setSessionId(String.format("oneoff__%s__%s", req.getStartTime().toLocalDate(), req.getStartTime().toLocalTime()));
-        session.setTrainerId(req.getTrainerId());
-        session.setStartTime(req.getStartTime());
-        session.setEndTime(req.getEndTime());
-        session.setSeriesName(req.getSeriesName());
+        session.setSessionId(String.format("oneoff__%s__%s", req.startTime().toLocalDate(), req.startTime().toLocalTime()));
+        session.setTrainerId(req.trainerId());
+        session.setStartTime(req.startTime());
+        session.setEndTime(req.endTime());
+        session.setSeriesName(req.seriesName());
         session.setInstanceOverride(true);
         session.setEffectiveFromTimestamp(Instant.now());
-        session.setNotes(req.getNotes());
+        session.setNotes(req.notes());
         scheduledSessionRepository.save(session);
         return getSessionById(session.getSessionId());
     }
@@ -637,85 +669,76 @@ public class ScheduleService {
 
         // Convert to DTOs and include exercise data if available, applying overrides
         for (StudentCommitment commitment : latestCommitmentsPerStudent.values()) {
-            StudentCommitmentResponseDTO dto = new StudentCommitmentResponseDTO();
-            dto.setStudentId(commitment.getStudentId());
-            dto.setCommitmentStatus(commitment.getCommitmentStatus());
-            
-            // Get student name
-            studentRepository.findById(commitment.getStudentId())
-                .ifPresent(student -> dto.setStudentName(student.getName()));
-            
-            // Get exercises if this session has been materialized and student has exercises
+            UUID studentId = commitment.getStudentId();
+            String studentName = studentRepository.findById(studentId)
+                .map(Student::getName)
+                .orElse(null);
+
             List<ExerciseResponseDTO> exercises = new ArrayList<>();
             List<ParticipantExerciseResponseDTO> participantExerciseDtos = new ArrayList<>();
+            Boolean present = null;
+            String attendanceNotes = null;
+
             if (existingSession != null) {
-                // If student explicitly excluded in this instance, skip entirely
-                if (excludedInInstance.contains(commitment.getStudentId())) {
+                if (excludedInInstance.contains(studentId)) {
                     continue;
                 }
-                // If included/overridden, use that participant record
-                SessionParticipant participant = includedInInstance.get(commitment.getStudentId());
+                SessionParticipant participant = includedInInstance.get(studentId);
                 if (participant != null) {
-                    dto.setPresent(participant.isPresent());
-                    if (participant.getAttendanceNotes() != null) {
-                        dto.setAttendanceNotes(participant.getAttendanceNotes());
-                    }
+                    present = participant.isPresent();
+                    attendanceNotes = participant.getAttendanceNotes();
                     List<ParticipantExercise> pes = participantExerciseRepository
                             .findActiveWithExerciseBySessionParticipantId(participant.getId());
                     for (ParticipantExercise participantExercise : pes) {
                         if (participantExercise.getExercise() != null) {
-                            ExerciseResponseDTO exerciseDto = ExerciseResponseDTO.fromEntity(participantExercise.getExercise());
-                            exercises.add(exerciseDto);
+                            exercises.add(ExerciseResponseDTO.fromEntity(participantExercise.getExercise()));
                         }
-            participantExerciseDtos.add(new ParticipantExerciseResponseDTO(
-                                participantExercise.getId(),
-                                participantExercise.getExerciseId(),
-                                participantExercise.getExercise() != null ? participantExercise.getExercise().getName() : null,
-                                participantExercise.getSetsCompleted(),
-                                participantExercise.getRepsCompleted(),
-                                participantExercise.getWeightCompleted(),
-                participantExercise.getExerciseNotes(),
-                participantExercise.isDone()
+                        participantExerciseDtos.add(new ParticipantExerciseResponseDTO(
+                            participantExercise.getId(),
+                            participantExercise.getExerciseId(),
+                            participantExercise.getExercise() != null ? participantExercise.getExercise().getName() : null,
+                            participantExercise.getSetsCompleted(),
+                            participantExercise.getRepsCompleted(),
+                            participantExercise.getWeightCompleted(),
+                            participantExercise.getExerciseNotes(),
+                            participantExercise.isDone()
                         ));
                     }
+                } else if (commitment.getCommitmentStatus() == CommitmentStatus.ATTENDING) {
+                    present = true;
                 } else {
-                    // No persisted participant override yet.
-                    // Only include students whose series commitment is ATTENDING at the session time
-                    if (commitment.getCommitmentStatus() == CommitmentStatus.ATTENDING) {
-                        dto.setPresent(true);
-                    } else {
-                        // Skip NOT_ATTENDING (or other non-attending) commitments so they don't appear as absent
-                        continue;
-                    }
+                    continue;
                 }
             } else {
-                // Virtual (non-materialized) session: include only ATTENDING commitments
                 if (commitment.getCommitmentStatus() == CommitmentStatus.ATTENDING) {
-                    dto.setPresent(true);
+                    present = true;
                 } else {
                     continue;
                 }
             }
-            dto.setExercises(exercises);
-            dto.setParticipantExercises(participantExerciseDtos);
-            
-            studentCommitments.add(dto);
+
+            studentCommitments.add(new StudentCommitmentResponseDTO(
+                studentId,
+                studentName,
+                commitment.getCommitmentStatus(),
+                exercises,
+                participantExerciseDtos,
+                present,
+                attendanceNotes
+            ));
         }
         
         // Also add any participants that were INCLUDED explicitly in the instance but do not have an ATTENDING series commitment entry
         if (existingSession != null) {
             for (SessionParticipant sp : includedInInstance.values()) {
                 // If they were not added above (i.e., either no series commitment or series commitment was non-ATTENDING), include them now
-                boolean alreadyAdded = studentCommitments.stream().anyMatch(sc -> sc.getStudentId().equals(sp.getStudentId()));
+                boolean alreadyAdded = studentCommitments.stream().anyMatch(sc -> sc.studentId().equals(sp.getStudentId()));
                 if (!alreadyAdded) {
-                    StudentCommitmentResponseDTO dto = new StudentCommitmentResponseDTO();
-                    dto.setStudentId(sp.getStudentId());
-                    studentRepository.findById(sp.getStudentId()).ifPresent(st -> dto.setStudentName(st.getName()));
-                    dto.setCommitmentStatus(CommitmentStatus.ATTENDING); // treat included as attending for this instance
-                    dto.setPresent(sp.isPresent());
-                    dto.setAttendanceNotes(sp.getAttendanceNotes());
+                    String studentName = studentRepository.findById(sp.getStudentId())
+                        .map(Student::getName)
+                        .orElse(null);
                     List<ParticipantExercise> pes = participantExerciseRepository
-                            .findActiveWithExerciseBySessionParticipantId(sp.getId());
+                        .findActiveWithExerciseBySessionParticipantId(sp.getId());
                     List<ExerciseResponseDTO> exercises = new ArrayList<>();
                     List<ParticipantExerciseResponseDTO> participantExerciseDtos = new ArrayList<>();
                     for (ParticipantExercise participantExercise : pes) {
@@ -723,19 +746,25 @@ public class ScheduleService {
                             exercises.add(ExerciseResponseDTO.fromEntity(participantExercise.getExercise()));
                         }
                         participantExerciseDtos.add(new ParticipantExerciseResponseDTO(
-                                participantExercise.getId(),
-                                participantExercise.getExerciseId(),
-                                participantExercise.getExercise() != null ? participantExercise.getExercise().getName() : null,
-                                participantExercise.getSetsCompleted(),
-                                participantExercise.getRepsCompleted(),
-                                participantExercise.getWeightCompleted(),
-                                participantExercise.getExerciseNotes(),
-                                participantExercise.isDone()
+                            participantExercise.getId(),
+                            participantExercise.getExerciseId(),
+                            participantExercise.getExercise() != null ? participantExercise.getExercise().getName() : null,
+                            participantExercise.getSetsCompleted(),
+                            participantExercise.getRepsCompleted(),
+                            participantExercise.getWeightCompleted(),
+                            participantExercise.getExerciseNotes(),
+                            participantExercise.isDone()
                         ));
                     }
-                    dto.setExercises(exercises);
-                    dto.setParticipantExercises(participantExerciseDtos);
-                    studentCommitments.add(dto);
+                    studentCommitments.add(new StudentCommitmentResponseDTO(
+                        sp.getStudentId(),
+                        studentName,
+                        CommitmentStatus.ATTENDING,
+                        exercises,
+                        participantExerciseDtos,
+                        sp.isPresent(),
+                        sp.getAttendanceNotes()
+                    ));
                 }
             }
         }

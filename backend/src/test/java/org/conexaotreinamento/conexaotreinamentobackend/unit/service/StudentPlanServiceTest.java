@@ -89,10 +89,10 @@ class StudentPlanServiceTest {
         StudentPlanResponseDTO dto = studentPlanService.createPlan(req);
 
         // Assert
-        assertEquals("Gold", dto.getName());
-        assertEquals(3, dto.getMaxDays());
-        assertEquals(30, dto.getDurationDays());
-        assertTrue(dto.getActive());
+        assertEquals("Gold", dto.name());
+        assertEquals(3, dto.maxDays());
+        assertEquals(30, dto.durationDays());
+        assertTrue(dto.active());
         verify(studentPlanRepository).save(any(StudentPlan.class));
     }
 
@@ -158,7 +158,7 @@ class StudentPlanServiceTest {
         StudentPlanResponseDTO dto = studentPlanService.restorePlan(planId);
 
         // Assert
-        assertTrue(dto.getActive());
+        assertTrue(dto.active());
         verify(studentPlanRepository).save(inactive);
     }
 
@@ -196,8 +196,8 @@ class StudentPlanServiceTest {
 
         // Assert
         assertEquals(2, list.size());
-        assertEquals("A", list.get(0).getName());
-        assertEquals("B", list.get(1).getName());
+        assertEquals("A", list.get(0).name());
+        assertEquals("B", list.get(1).name());
     }
 
     @Test
@@ -210,9 +210,9 @@ class StudentPlanServiceTest {
         StudentPlanResponseDTO dto = studentPlanService.getPlanById(planId);
 
         // Assert
-        assertEquals(planId, dto.getId());
-        assertEquals("Prime", dto.getName());
-        assertTrue(dto.getActive());
+        assertEquals(planId, dto.id());
+        assertEquals("Prime", dto.name());
+        assertTrue(dto.active());
     }
 
     @Test
@@ -262,7 +262,7 @@ class StudentPlanServiceTest {
 
         // Assert
         assertEquals(1, list.size());
-        assertEquals(studentId, list.get(0).getStudentId());
+        assertEquals(studentId, list.get(0).studentId());
     }
 
     @Test
@@ -286,8 +286,8 @@ class StudentPlanServiceTest {
         StudentPlanAssignmentResponseDTO dto = studentPlanService.getCurrentStudentPlan(studentId);
 
         // Assert
-        assertEquals(studentId, dto.getStudentId());
-        assertTrue(dto.isActive());
+        assertEquals(studentId, dto.studentId());
+        assertTrue(dto.active());
     }
 
     @Test
@@ -326,7 +326,7 @@ class StudentPlanServiceTest {
 
         // Assert
         assertEquals(1, list.size());
-        assertEquals(planId, list.get(0).getPlanId());
+        assertEquals(planId, list.get(0).planId());
     }
 
     @Test
@@ -340,7 +340,7 @@ class StudentPlanServiceTest {
 
         // Assert
         assertEquals(1, list.size());
-        assertEquals(studentId, list.get(0).getStudentId());
+        assertEquals(studentId, list.get(0).studentId());
     }
 
     @Test
@@ -371,7 +371,7 @@ class StudentPlanServiceTest {
         StudentPlanAssignmentResponseDTO response = studentPlanService.assignPlanToStudent(studentId, request, userId);
 
         // Assert
-        assertEquals(20, response.getDurationDays());
+        assertEquals(20, response.durationDays());
         assertEquals(10, currentAssignment.getDurationDays());
         assertEquals(newStart, currentAssignment.getEndDateExclusive());
         verify(studentCommitmentService).resetScheduleIfExceedsPlan(studentId, newPlan.getMaxDays());
@@ -404,7 +404,7 @@ class StudentPlanServiceTest {
         StudentPlanAssignmentResponseDTO response = studentPlanService.assignPlanToStudent(studentId, request, userId);
 
         // Assert
-        assertEquals(newPlan.getDurationDays(), response.getDurationDays());
+        assertEquals(newPlan.getDurationDays(), response.durationDays());
         assertEquals(oldPlan.getDurationDays(), currentAssignment.getDurationDays());
         verify(studentCommitmentService).resetScheduleIfExceedsPlan(studentId, newPlan.getMaxDays());
     }
