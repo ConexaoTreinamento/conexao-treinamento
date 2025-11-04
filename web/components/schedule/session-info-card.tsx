@@ -39,7 +39,7 @@ export function SessionInfoCard({
           <div className="space-y-2">
             <CardTitle className="flex min-w-0 items-center gap-2 text-base sm:text-lg">
               <Activity className="h-5 w-5 flex-shrink-0" />
-              <span className="truncate">Informações da Aula</span>
+              <span className="truncate">Informações da aula</span>
             </CardTitle>
             <div className="flex flex-wrap items-center gap-2">
               {isCanceled ? (
@@ -92,9 +92,9 @@ export function SessionInfoCard({
             </Button>
           </div>
         </div>
+      <CardHeader>
+        <CardTitle>Informações da aula</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="space-y-2 text-sm">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <span>

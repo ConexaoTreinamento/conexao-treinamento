@@ -184,10 +184,7 @@ export const SessionParticipantsCard = ({
 
           {filteredParticipants.length === 0 ? (
             <div className="py-12 text-center text-muted-foreground">
-              <p className="text-sm">Nenhum aluno encontrado.</p>
-              <Button variant="outline" size="sm" onClick={() => onSearchTermChange("")} className="mt-2">
-                Limpar filtro
-              </Button>
+              <p className="text-sm">Nenhum aluno inscrito</p>
             </div>
           ) : null}
         </div>

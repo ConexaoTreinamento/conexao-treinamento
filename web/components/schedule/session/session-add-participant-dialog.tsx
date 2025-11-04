@@ -22,7 +22,7 @@ export const SessionAddParticipantDialog = ({
   <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent className="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>Adicionar Aluno</DialogTitle>
+        <DialogTitle>Adicionar aluno</DialogTitle>
         <DialogDescription>Selecione um aluno para adicionar à aula</DialogDescription>
       </DialogHeader>
       <StudentPicker excludedStudentIds={excludedStudentIds} onSelect={onSelect} pageSize={10} />
