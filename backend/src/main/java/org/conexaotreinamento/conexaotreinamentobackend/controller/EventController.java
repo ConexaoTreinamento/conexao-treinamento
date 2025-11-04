@@ -5,8 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.EventRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchEventRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.EventResponseDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentLookupDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerLookupDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentLookupResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerLookupResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.service.EventService;
 import org.conexaotreinamento.conexaotreinamentobackend.service.StudentService;
 import org.conexaotreinamento.conexaotreinamentobackend.service.TrainerService;
@@ -81,19 +81,19 @@ public class EventController {
     }
 
     @GetMapping("/lookup/students")
-    public ResponseEntity<List<StudentLookupDTO>> getStudentsForLookup() {
-        List<StudentLookupDTO> students = studentService.findAllActive()
+    public ResponseEntity<List<StudentLookupResponseDTO>> getStudentsForLookup() {
+        List<StudentLookupResponseDTO> students = studentService.findAllActive()
                 .stream()
-                .map(StudentLookupDTO::fromEntity)
+                .map(StudentLookupResponseDTO::fromEntity)
                 .toList();
         return ResponseEntity.ok(students);
     }
 
     @GetMapping("/lookup/trainers")
-    public ResponseEntity<List<TrainerLookupDTO>> getTrainersForLookup() {
-        List<TrainerLookupDTO> trainers = trainerService.findAll()
+    public ResponseEntity<List<TrainerLookupResponseDTO>> getTrainersForLookup() {
+        List<TrainerLookupResponseDTO> trainers = trainerService.findAll()
                 .stream()
-                .map(dto -> new TrainerLookupDTO(dto.id(), "Prof. " + dto.name()))
+                .map(dto -> new TrainerLookupResponseDTO(dto.id(), "Prof. " + dto.name()))
                 .toList();
         return ResponseEntity.ok(trainers);
     }

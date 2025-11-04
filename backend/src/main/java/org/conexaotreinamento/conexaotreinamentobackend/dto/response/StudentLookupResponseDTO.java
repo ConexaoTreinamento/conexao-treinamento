@@ -4,13 +4,13 @@ import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
 
 import java.util.UUID;
 
-public record StudentLookupDTO(
+public record StudentLookupResponseDTO(
         UUID id,
         String name
 ) {
-    public static StudentLookupDTO fromEntity(Student student) {
+    public static StudentLookupResponseDTO fromEntity(Student student) {
         if (student == null) return null;
-        return new StudentLookupDTO(
+        return new StudentLookupResponseDTO(
                 student.getId(),
                 student.getName() + " " + student.getSurname()
         );

@@ -1,30 +1,21 @@
 package org.conexaotreinamento.conexaotreinamentobackend.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.Instant;
 import java.time.LocalTime;
 import java.util.UUID;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class TrainerScheduleResponseDTO {
-    
-    private UUID id;
-    private UUID trainerId;
-    private Integer weekday;
-    private LocalTime startTime;
-    private Integer intervalDuration;
-    private String seriesName;
-    private Instant effectiveFromTimestamp;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private boolean active;
-    
-    // Helper method for weekday display
+public record TrainerScheduleResponseDTO(
+        UUID id,
+        UUID trainerId,
+        Integer weekday,
+        LocalTime startTime,
+        Integer intervalDuration,
+        String seriesName,
+        Instant effectiveFromTimestamp,
+        Instant createdAt,
+        Instant updatedAt,
+        boolean active
+) {
     public String getWeekdayName() {
         return switch (weekday) {
             case 0 -> "Sunday";

@@ -1,6 +1,6 @@
 package org.conexaotreinamento.conexaotreinamentobackend.unit.dto;
 
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerLookupDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerLookupResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,8 +12,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("TrainerLookupDTO Tests")
-class TrainerLookupDTOTest {
+@DisplayName("TrainerLookupResponseDTO Tests")
+class TrainerLookupResponseDTOTest {
 
     @Test
     @DisplayName("Should create DTO with all fields")
@@ -23,7 +23,7 @@ class TrainerLookupDTOTest {
         String name = "Prof. John Trainer";
 
         // When
-        TrainerLookupDTO dto = new TrainerLookupDTO(id, name);
+        TrainerLookupResponseDTO dto = new TrainerLookupResponseDTO(id, name);
 
         // Then
         assertThat(dto.id()).isEqualTo(id);
@@ -34,7 +34,7 @@ class TrainerLookupDTOTest {
     @DisplayName("Should create DTO with null values")
     void shouldCreateDTOWithNullValues() {
         // When
-        TrainerLookupDTO dto = new TrainerLookupDTO(null, null);
+        TrainerLookupResponseDTO dto = new TrainerLookupResponseDTO(null, null);
 
         // Then
         assertThat(dto.id()).isNull();
@@ -45,7 +45,7 @@ class TrainerLookupDTOTest {
     @DisplayName("Should convert from null entity")
     void shouldConvertFromNullEntity() {
         // When
-        TrainerLookupDTO dto = TrainerLookupDTO.fromEntity(null);
+        TrainerLookupResponseDTO dto = TrainerLookupResponseDTO.fromEntity(null);
 
         // Then
         assertThat(dto).isNull();
@@ -62,11 +62,11 @@ class TrainerLookupDTOTest {
         Trainer trainer5 = createTrainer("Charlie", "Wilson");
 
         // When
-        TrainerLookupDTO dto1 = TrainerLookupDTO.fromEntity(trainer1);
-        TrainerLookupDTO dto2 = TrainerLookupDTO.fromEntity(trainer2);
-        TrainerLookupDTO dto3 = TrainerLookupDTO.fromEntity(trainer3);
-        TrainerLookupDTO dto4 = TrainerLookupDTO.fromEntity(trainer4);
-        TrainerLookupDTO dto5 = TrainerLookupDTO.fromEntity(trainer5);
+        TrainerLookupResponseDTO dto1 = TrainerLookupResponseDTO.fromEntity(trainer1);
+        TrainerLookupResponseDTO dto2 = TrainerLookupResponseDTO.fromEntity(trainer2);
+        TrainerLookupResponseDTO dto3 = TrainerLookupResponseDTO.fromEntity(trainer3);
+        TrainerLookupResponseDTO dto4 = TrainerLookupResponseDTO.fromEntity(trainer4);
+        TrainerLookupResponseDTO dto5 = TrainerLookupResponseDTO.fromEntity(trainer5);
 
         // Then
         assertThat(dto1.name()).isEqualTo("Prof. John");
@@ -83,7 +83,7 @@ class TrainerLookupDTOTest {
         Trainer trainer = createTrainer("Madonna", null);
 
         // When
-        TrainerLookupDTO dto = TrainerLookupDTO.fromEntity(trainer);
+        TrainerLookupResponseDTO dto = TrainerLookupResponseDTO.fromEntity(trainer);
 
         // Then
         assertThat(dto.name()).isEqualTo("Prof. Madonna");
@@ -96,7 +96,7 @@ class TrainerLookupDTOTest {
         Trainer trainer = createTrainer("Cher", null);
 
         // When
-        TrainerLookupDTO dto = TrainerLookupDTO.fromEntity(trainer);
+        TrainerLookupResponseDTO dto = TrainerLookupResponseDTO.fromEntity(trainer);
 
         // Then
         assertThat(dto.name()).isEqualTo("Prof. Cher");
@@ -109,7 +109,7 @@ class TrainerLookupDTOTest {
         Trainer trainer = createTrainer(null, "Smith");
 
         // When
-        TrainerLookupDTO dto = TrainerLookupDTO.fromEntity(trainer);
+        TrainerLookupResponseDTO dto = TrainerLookupResponseDTO.fromEntity(trainer);
 
         // Then
         assertThat(dto.name()).isEqualTo("Prof. null");
@@ -122,7 +122,7 @@ class TrainerLookupDTOTest {
         Trainer trainer = createTrainer(null, null);
 
         // When
-        TrainerLookupDTO dto = TrainerLookupDTO.fromEntity(trainer);
+        TrainerLookupResponseDTO dto = TrainerLookupResponseDTO.fromEntity(trainer);
 
         // Then
         assertThat(dto.name()).isEqualTo("Prof. null");
@@ -135,7 +135,7 @@ class TrainerLookupDTOTest {
         Trainer trainer = createTrainer("", "");
 
         // When
-        TrainerLookupDTO dto = TrainerLookupDTO.fromEntity(trainer);
+        TrainerLookupResponseDTO dto = TrainerLookupResponseDTO.fromEntity(trainer);
 
         // Then
         assertThat(dto.name()).isEqualTo("Prof. ");
@@ -150,9 +150,9 @@ class TrainerLookupDTOTest {
         Trainer trainer3 = createTrainer("François", "Dupont");
 
         // When
-        TrainerLookupDTO dto = TrainerLookupDTO.fromEntity(trainer);
-        TrainerLookupDTO dto2 = TrainerLookupDTO.fromEntity(trainer2);
-        TrainerLookupDTO dto3 = TrainerLookupDTO.fromEntity(trainer3);
+        TrainerLookupResponseDTO dto = TrainerLookupResponseDTO.fromEntity(trainer);
+        TrainerLookupResponseDTO dto2 = TrainerLookupResponseDTO.fromEntity(trainer2);
+        TrainerLookupResponseDTO dto3 = TrainerLookupResponseDTO.fromEntity(trainer3);
 
         // Then
         assertThat(dto.name()).isEqualTo("Prof. José");
@@ -167,7 +167,7 @@ class TrainerLookupDTOTest {
         Trainer trainer = createTrainer("VeryLongFirstName", "VeryLongLastName");
 
         // When
-        TrainerLookupDTO dto = TrainerLookupDTO.fromEntity(trainer);
+        TrainerLookupResponseDTO dto = TrainerLookupResponseDTO.fromEntity(trainer);
 
         // Then
         assertThat(dto.name()).isEqualTo("Prof. VeryLongFirstName");
@@ -180,7 +180,7 @@ class TrainerLookupDTOTest {
         Trainer trainer = createTrainer("John2", "Doe3");
 
         // When
-        TrainerLookupDTO dto = TrainerLookupDTO.fromEntity(trainer);
+        TrainerLookupResponseDTO dto = TrainerLookupResponseDTO.fromEntity(trainer);
 
         // Then
         assertThat(dto.name()).isEqualTo("Prof. John2");

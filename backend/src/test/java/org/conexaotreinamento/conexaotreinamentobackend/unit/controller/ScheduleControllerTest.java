@@ -1,7 +1,5 @@
 package org.conexaotreinamento.conexaotreinamentobackend.unit.controller;
 
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.SessionUpdateRequestDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ScheduleResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.SessionResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.SessionParticipant;
 import org.conexaotreinamento.conexaotreinamentobackend.service.ScheduleService;
@@ -48,7 +46,19 @@ class ScheduleControllerTest {
         // Arrange
         List<SessionResponseDTO> sessions = new ArrayList<>();
         // minimal DTO instance; controller does not dereference fields, just wraps list
-        sessions.add(new SessionResponseDTO());
+        sessions.add(new SessionResponseDTO(
+                "session",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                false,
+                List.of(),
+                false,
+                0
+        ));
         when(scheduleService.getScheduledSessions(any(LocalDate.class), any(LocalDate.class)))
                 .thenReturn(sessions);
 

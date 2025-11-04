@@ -1,6 +1,6 @@
 package org.conexaotreinamento.conexaotreinamentobackend.unit.dto;
 
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateTrainerDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.TrainerCreateRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;
 import org.junit.jupiter.api.DisplayName;
@@ -12,8 +12,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("CreateTrainerDTO Tests")
-class CreateTrainerDTOTest {
+@DisplayName("TrainerCreateRequestDTO Tests")
+class TrainerCreateRequestDTOTest {
 
     @Test
     @DisplayName("Should create DTO with all fields")
@@ -29,7 +29,7 @@ class CreateTrainerDTOTest {
         CompensationType compensationType = CompensationType.HOURLY;
 
         // When
-        CreateTrainerDTO dto = new CreateTrainerDTO(name, email, phone, password, address, birthDate, specialties, compensationType);
+        TrainerCreateRequestDTO dto = new TrainerCreateRequestDTO(name, email, phone, password, address, birthDate, specialties, compensationType);
 
         // Then
         assertThat(dto.name()).isEqualTo(name);
@@ -46,7 +46,7 @@ class CreateTrainerDTOTest {
     @DisplayName("Should create DTO with null values")
     void shouldCreateDTOWithNullValues() {
         // When
-        CreateTrainerDTO dto = new CreateTrainerDTO(null, null, null, null, null, null, null, null);
+        TrainerCreateRequestDTO dto = new TrainerCreateRequestDTO(null, null, null, null, null, null, null, null);
 
         // Then
         assertThat(dto.name()).isNull();
@@ -64,7 +64,7 @@ class CreateTrainerDTOTest {
     void shouldConvertDTOToEntityCorrectly() {
         // Given
         UUID userId = UUID.randomUUID();
-        CreateTrainerDTO dto = new CreateTrainerDTO(
+        TrainerCreateRequestDTO dto = new TrainerCreateRequestDTO(
             "Maria Santos",
             "maria@test.com",
             "+5511888888888",
@@ -93,7 +93,7 @@ class CreateTrainerDTOTest {
     void shouldConvertDTOWithEmptySpecialtiesToEntity() {
         // Given
         UUID userId = UUID.randomUUID();
-        CreateTrainerDTO dto = new CreateTrainerDTO(
+        TrainerCreateRequestDTO dto = new TrainerCreateRequestDTO(
             "Trainer Name",
             "trainer@test.com",
             "+5511777777777",
@@ -119,7 +119,7 @@ class CreateTrainerDTOTest {
     void shouldConvertDTOWithSingleSpecialtyToEntity() {
         // Given
         UUID userId = UUID.randomUUID();
-        CreateTrainerDTO dto = new CreateTrainerDTO(
+        TrainerCreateRequestDTO dto = new TrainerCreateRequestDTO(
             "Single Specialist",
             "single@test.com",
             "+5511666666666",
@@ -147,7 +147,7 @@ class CreateTrainerDTOTest {
         // Given
         UUID userId = UUID.randomUUID();
         List<String> specialties = List.of("Musculação", "Crossfit", "Yoga", "Pilates", "Natação");
-        CreateTrainerDTO dto = new CreateTrainerDTO(
+        TrainerCreateRequestDTO dto = new TrainerCreateRequestDTO(
             "Multi Specialist",
             "multi@test.com",
             "+5511555555555",
@@ -176,7 +176,7 @@ class CreateTrainerDTOTest {
         UUID userId = UUID.randomUUID();
 
         // Test HOURLY
-        CreateTrainerDTO hourlyDTO = new CreateTrainerDTO(
+        TrainerCreateRequestDTO hourlyDTO = new TrainerCreateRequestDTO(
             "Hourly Trainer",
             "hourly@test.com",
             "+5511444444444",
@@ -188,7 +188,7 @@ class CreateTrainerDTOTest {
         );
 
         // Test MONTHLY
-        CreateTrainerDTO monthlyDTO = new CreateTrainerDTO(
+        TrainerCreateRequestDTO monthlyDTO = new TrainerCreateRequestDTO(
             "Monthly Trainer",
             "monthly@test.com",
             "+5511333333333",
@@ -224,7 +224,7 @@ class CreateTrainerDTOTest {
         List<String> specialties = List.of("Specialty1", "Specialty2");
         CompensationType compensationType = CompensationType.HOURLY;
 
-        CreateTrainerDTO dto = new CreateTrainerDTO(name, email, phone, password, address, birthDate, specialties, compensationType);
+        TrainerCreateRequestDTO dto = new TrainerCreateRequestDTO(name, email, phone, password, address, birthDate, specialties, compensationType);
 
         // When
         Trainer trainer = dto.toEntity(userId);
@@ -245,7 +245,7 @@ class CreateTrainerDTOTest {
         // Given
         UUID userId1 = UUID.randomUUID();
         UUID userId2 = UUID.randomUUID();
-        CreateTrainerDTO dto = new CreateTrainerDTO(
+        TrainerCreateRequestDTO dto = new TrainerCreateRequestDTO(
             "Same Trainer",
             "same@test.com",
             "+5511111111111",

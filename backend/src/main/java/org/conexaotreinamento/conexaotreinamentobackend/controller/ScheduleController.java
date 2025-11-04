@@ -35,12 +35,12 @@ public class ScheduleController {
             @PathVariable String sessionId,
             @RequestBody SessionUpdateRequestDTO request) {
         
-        if (request.getParticipants() != null) {
-            scheduleService.updateSessionParticipants(sessionId, request.getParticipants());
+        if (request.participants() != null) {
+            scheduleService.updateSessionParticipants(sessionId, request.participants());
         }
         
-        if (request.getNotes() != null) {
-            scheduleService.updateSessionNotes(sessionId, request.getNotes());
+        if (request.notes() != null) {
+            scheduleService.updateSessionNotes(sessionId, request.notes());
         }
         
         return ResponseEntity.ok("Session updated successfully");
@@ -53,19 +53,19 @@ public class ScheduleController {
 
     @PostMapping("/sessions/{sessionId}/trainer")
     public ResponseEntity<String> updateSessionTrainer(@PathVariable String sessionId, @RequestBody SessionTrainerUpdateRequestDTO req) {
-        scheduleService.updateSessionTrainer(sessionId, req.getTrainerId());
+        scheduleService.updateSessionTrainer(sessionId, req.trainerId());
         return ResponseEntity.ok("Trainer updated");
     }
 
     @PostMapping("/sessions/{sessionId}/cancel")
     public ResponseEntity<String> cancelOrRestoreSession(@PathVariable String sessionId, @RequestBody SessionCancelRequestDTO req) {
-        scheduleService.cancelOrRestoreSession(sessionId, req.isCancel());
+        scheduleService.cancelOrRestoreSession(sessionId, req.cancel());
         return ResponseEntity.ok("Session status updated");
     }
 
     @PostMapping("/sessions/{sessionId}/participants")
     public ResponseEntity<String> addSessionParticipant(@PathVariable String sessionId, @RequestBody SessionParticipantAddRequestDTO req) {
-        scheduleService.addParticipant(sessionId, req.getStudentId());
+        scheduleService.addParticipant(sessionId, req.studentId());
         return ResponseEntity.ok("Participant added");
     }
 
@@ -77,7 +77,7 @@ public class ScheduleController {
 
     @PostMapping("/sessions/{sessionId}/participants/{studentId}/presence")
     public ResponseEntity<String> updatePresence(@PathVariable String sessionId, @PathVariable java.util.UUID studentId, @RequestBody SessionParticipantPresenceRequestDTO req) {
-        scheduleService.updateParticipantPresence(sessionId, studentId, req.isPresent(), req.getNotes());
+        scheduleService.updateParticipantPresence(sessionId, studentId, req.present(), req.notes());
         return ResponseEntity.ok("Presence updated");
     }
 
