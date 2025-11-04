@@ -1,79 +1,46 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
-import Layout from "@/components/layout"
-import { Button } from "@/components/ui/button"
-import { AdministratorProfileSummaryCard } from "@/components/administrators/profile/profile-summary-card"
-import { useQuery } from "@tanstack/react-query"
-import { findAdministratorByIdOptions } from "@/lib/api-client/@tanstack/react-query.gen"
-import { apiClient } from "@/lib/client"
+import { Suspense } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import Layout from "@/components/layout";
+import { LoadingState } from "@/components/base/loading-state";
+import { EmptyState } from "@/components/base/empty-state";
+import { Button } from "@/components/ui/button";
+import { AdministratorProfileView } from "@/components/administrators/profile/administrator-profile-view";
 
 export default function AdministratorProfilePage() {
-  const router = useRouter()
-  const params = useParams()
-  const [userRole, setUserRole] = useState<string>("")
+  const params = useParams<{ id: string }>();
+  const administratorId = params?.id ?? "";
 
-  useEffect(() => {
-    const role = localStorage.getItem("userRole") || "professor"
-    setUserRole(role)
-
-    if (role !== "admin") {
-      router.push("/schedule")
-    }
-  }, [router])
-
-  // Usando React Query
-  const { data: administratorData, isLoading, error } = useQuery({
-    ...findAdministratorByIdOptions({
-      client: apiClient,
-      path: { id: params.id as string }
-    }),
-    enabled: !!params.id && userRole === "admin"
-  })
-
-  if (userRole !== "admin") {
-    return null
-  }
-
-  if (isLoading) {
+  if (!administratorId) {
     return (
       <Layout>
-        <div className="flex h-64 items-center justify-center">
-          <div className="text-center">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900" />
-            <p className="mt-2 text-sm text-muted-foreground">Carregando dados do administrador...</p>
-          </div>
-        </div>
-      </Layout>
-    )
-  }
-
-  if (error || !administratorData) {
-    return (
-      <Layout>
-        <div className="flex h-64 items-center justify-center">
-          <div className="text-center">
-            <p className="text-lg font-semibold">Administrador não encontrado</p>
-            <Button variant="outline" onClick={() => router.push("/administrators")} className="mt-4">
-              Voltar para lista de administradores
+        <EmptyState
+          title="Administrador inválido"
+          description="Não foi possível identificar o administrador solicitado."
+          action={
+            <Button asChild variant="outline">
+              <Link href="/administrators">Voltar para lista</Link>
             </Button>
-          </div>
-        </div>
+          }
+        />
       </Layout>
-    )
+    );
   }
 
   return (
     <Layout>
-      <div className="space-y-4">
-        <AdministratorProfileSummaryCard
-          heading="Perfil do Administrador"
-          description="Informações detalhadas do administrador"
-          onBack={() => router.back()}
-          administrator={administratorData}
-        />
-      </div>
+      <Suspense
+        fallback={
+          <LoadingState
+            message="Carregando dados do administrador..."
+            className="mt-6"
+          />
+        }
+      >
+        <AdministratorProfileView administratorId={administratorId} />
+      </Suspense>
     </Layout>
-  )
+  );
 }
