@@ -1,7 +1,7 @@
-import { PageHeader } from "@/components/base/page-header"
+import { PageHeader } from "@/components/base/page-header";
 
 interface StudentProfileHeaderProps {
-  onBack: () => void
+  onBack: () => void;
 }
 
 export function StudentProfileHeader({ onBack }: StudentProfileHeaderProps) {
@@ -11,5 +11,5 @@ export function StudentProfileHeader({ onBack }: StudentProfileHeaderProps) {
       description="Informações completas e histórico"
       onBack={onBack}
     />
-  )
+  );
 }

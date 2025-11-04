@@ -1,29 +1,34 @@
-"use client"
+"use client";
 
-import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import type { CommitmentDetailResponseDto } from "@/lib/api-client"
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import type { CommitmentDetailResponseDto } from "@/lib/api-client";
 
 interface ClassScheduleHistoryDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  history: CommitmentDetailResponseDto[]
-  isLoading: boolean
-  statusLabel: (status?: string) => string
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  history: CommitmentDetailResponseDto[];
+  isLoading: boolean;
+  statusLabel: (status?: string) => string;
 }
 
 const formatDate = (value?: string): string => {
   if (!value) {
-    return "—"
+    return "—";
   }
 
-  const date = new Date(value)
+  const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return "—"
+    return "—";
   }
 
-  return date.toLocaleDateString("pt-BR")
-}
+  return date.toLocaleDateString("pt-BR");
+};
 
 export function ClassScheduleHistoryDialog({
   open,
@@ -50,7 +55,11 @@ export function ClassScheduleHistoryDialog({
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium">{item.seriesName}</span>
                 <Badge
-                  variant={item.commitmentStatus === "ATTENDING" ? "secondary" : "outline"}
+                  variant={
+                    item.commitmentStatus === "ATTENDING"
+                      ? "secondary"
+                      : "outline"
+                  }
                   className="text-[10px]"
                 >
                   {statusLabel(item.commitmentStatus)}
@@ -64,5 +73,5 @@ export function ClassScheduleHistoryDialog({
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -1,5 +1,5 @@
-import { Card, CardContent } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function ScheduleClassSkeletonList({ count = 2 }: { count?: number }) {
   return (
@@ -23,5 +23,5 @@ export function ScheduleClassSkeletonList({ count = 2 }: { count?: number }) {
         </Card>
       ))}
     </div>
-  )
+  );
 }

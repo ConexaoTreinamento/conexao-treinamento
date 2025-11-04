@@ -21,7 +21,7 @@ export function CreateEvaluationButton(props: {
       onClick={props.onClick}
       className="h-8 px-2 text-xs"
     >
-      <EvaluationButton/>
+      <EvaluationButton />
     </Button>
   );
 }

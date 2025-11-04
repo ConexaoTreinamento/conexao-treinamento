@@ -1,45 +1,58 @@
-import type { KeyboardEventHandler } from "react"
-import { cn } from "@/lib/utils"
-import type { ScheduleDayItem } from "@/components/schedule/types"
+import type { KeyboardEventHandler } from "react";
+import { cn } from "@/lib/utils";
+import type { ScheduleDayItem } from "@/components/schedule/types";
 
 interface ScheduleDayPickerProps {
-  days: ScheduleDayItem[]
-  onSelectDay: (date: Date) => void
+  days: ScheduleDayItem[];
+  onSelectDay: (date: Date) => void;
 }
 
-export function ScheduleDayPicker({ days, onSelectDay }: ScheduleDayPickerProps) {
+export function ScheduleDayPicker({
+  days,
+  onSelectDay,
+}: ScheduleDayPickerProps) {
   const handleKeyNavigation: KeyboardEventHandler<HTMLDivElement> = (event) => {
-    const navigableKeys = ["ArrowRight", "ArrowLeft", "Home", "End"]
+    const navigableKeys = ["ArrowRight", "ArrowLeft", "Home", "End"];
     if (!navigableKeys.includes(event.key)) {
-      return
+      return;
     }
 
-    const container = event.currentTarget
-    const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>("button[data-day-pill='1']"))
+    const container = event.currentTarget;
+    const buttons = Array.from(
+      container.querySelectorAll<HTMLButtonElement>(
+        "button[data-day-pill='1']",
+      ),
+    );
     if (buttons.length === 0) {
-      return
+      return;
     }
 
-    const activeElement = document.activeElement as HTMLButtonElement | null
-    const currentIndex = activeElement ? buttons.indexOf(activeElement) : -1
+    const activeElement = document.activeElement as HTMLButtonElement | null;
+    const currentIndex = activeElement ? buttons.indexOf(activeElement) : -1;
 
-    let nextIndex = currentIndex
+    let nextIndex = currentIndex;
     if (event.key === "Home") {
-      nextIndex = 0
+      nextIndex = 0;
     } else if (event.key === "End") {
-      nextIndex = buttons.length - 1
+      nextIndex = buttons.length - 1;
     } else if (event.key === "ArrowRight") {
-      nextIndex = Math.min(buttons.length - 1, currentIndex < 0 ? 0 : currentIndex + 1)
+      nextIndex = Math.min(
+        buttons.length - 1,
+        currentIndex < 0 ? 0 : currentIndex + 1,
+      );
     } else if (event.key === "ArrowLeft") {
-      nextIndex = Math.max(0, currentIndex < 0 ? buttons.length - 1 : currentIndex - 1)
+      nextIndex = Math.max(
+        0,
+        currentIndex < 0 ? buttons.length - 1 : currentIndex - 1,
+      );
     }
 
-    const target = buttons[nextIndex]
+    const target = buttons[nextIndex];
     if (target) {
-      target.focus()
-      event.preventDefault()
+      target.focus();
+      event.preventDefault();
     }
-  }
+  };
 
   return (
     <div
@@ -50,12 +63,12 @@ export function ScheduleDayPicker({ days, onSelectDay }: ScheduleDayPickerProps)
       onKeyDown={handleKeyNavigation}
     >
       {days.map((item) => {
-        const hasSessions = Boolean(item.stats)
+        const hasSessions = Boolean(item.stats);
         const fullLabel = item.date.toLocaleDateString("pt-BR", {
           weekday: "long",
           day: "numeric",
           month: "long",
-        })
+        });
 
         return (
           <button
@@ -77,7 +90,9 @@ export function ScheduleDayPicker({ days, onSelectDay }: ScheduleDayPickerProps)
             <span className="text-[10px] font-medium uppercase leading-none tracking-wide">
               {item.date.toLocaleDateString("pt-BR", { weekday: "short" })}
             </span>
-            <span className="mt-1 text-lg font-bold leading-none">{item.date.getDate()}</span>
+            <span className="mt-1 text-lg font-bold leading-none">
+              {item.date.getDate()}
+            </span>
             {hasSessions ? (
               <span
                 className={cn(
@@ -87,14 +102,15 @@ export function ScheduleDayPicker({ days, onSelectDay }: ScheduleDayPickerProps)
                     : "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
                 )}
               >
-                {item.stats?.total} aula{(item.stats?.total ?? 0) > 1 ? "s" : ""}
+                {item.stats?.total} aula
+                {(item.stats?.total ?? 0) > 1 ? "s" : ""}
               </span>
             ) : (
               <span className="mt-1 text-[10px] text-muted-foreground">—</span>
             )}
           </button>
-        )
+        );
       })}
     </div>
-  )
+  );
 }

@@ -1,19 +1,23 @@
-"use client"
+"use client";
 
-import { Activity, CheckCircle, Plus, X, XCircle } from "lucide-react"
-import type { StudentCommitmentResponseDto } from "@/lib/api-client"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Activity, CheckCircle, Plus, X, XCircle } from "lucide-react";
+import type { StudentCommitmentResponseDto } from "@/lib/api-client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface SessionParticipantsCardProps {
-  filteredParticipants: StudentCommitmentResponseDto[]
-  onAddParticipant: () => void
-  onTogglePresence: (studentId: string) => void
-  onOpenExercises: (studentId: string) => void
-  onRemoveParticipant: (studentId: string) => void
-  onToggleExerciseDone: (studentId: string, exerciseId: string, done: boolean) => void
-  onDeleteExercise: (exerciseRecordId: string) => void
+  filteredParticipants: StudentCommitmentResponseDto[];
+  onAddParticipant: () => void;
+  onTogglePresence: (studentId: string) => void;
+  onOpenExercises: (studentId: string) => void;
+  onRemoveParticipant: (studentId: string) => void;
+  onToggleExerciseDone: (
+    studentId: string,
+    exerciseId: string,
+    done: boolean,
+  ) => void;
+  onDeleteExercise: (exerciseRecordId: string) => void;
 }
 
 export const SessionParticipantsCard = ({
@@ -44,11 +48,14 @@ export const SessionParticipantsCard = ({
             const initials = (student.studentName || "")
               .split(" ")
               .map((part) => part[0])
-              .join("")
-            const exercises = student.participantExercises ?? []
+              .join("");
+            const exercises = student.participantExercises ?? [];
 
             return (
-              <div key={student.studentId} className="rounded-lg border bg-card p-3">
+              <div
+                key={student.studentId}
+                className="rounded-lg border bg-card p-3"
+              >
                 <div
                   className={`flex flex-col justify-between gap-3 sm:flex-row sm:items-center ${exercises.length ? "mb-3" : ""}`}
                 >
@@ -57,12 +64,17 @@ export const SessionParticipantsCard = ({
                       <span className="select-none">{initials}</span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{student.studentName || student.studentId}</p>
+                      <p className="truncate font-medium">
+                        {student.studentName || student.studentId}
+                      </p>
                     </div>
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => student.studentId && onRemoveParticipant(student.studentId)}
+                      onClick={() =>
+                        student.studentId &&
+                        onRemoveParticipant(student.studentId)
+                      }
                       className="flex h-8 w-8 flex-shrink-0 p-0 text-red-500 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950 sm:hidden"
                       aria-label="Remover aluno da aula"
                       title="Remover"
@@ -75,7 +87,10 @@ export const SessionParticipantsCard = ({
                       <Button
                         size="sm"
                         variant={student.present ? "default" : "outline"}
-                        onClick={() => student.studentId && onTogglePresence(student.studentId)}
+                        onClick={() =>
+                          student.studentId &&
+                          onTogglePresence(student.studentId)
+                        }
                         className={`h-8 w-full text-xs sm:w-28 ${
                           student.present
                             ? "bg-green-600 hover:bg-green-700"
@@ -97,7 +112,10 @@ export const SessionParticipantsCard = ({
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => student.studentId && onOpenExercises(student.studentId)}
+                        onClick={() =>
+                          student.studentId &&
+                          onOpenExercises(student.studentId)
+                        }
                         className="h-8 w-full text-xs sm:w-28"
                       >
                         <Plus className="mr-1 h-3 w-3" />
@@ -107,7 +125,10 @@ export const SessionParticipantsCard = ({
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => student.studentId && onRemoveParticipant(student.studentId)}
+                      onClick={() =>
+                        student.studentId &&
+                        onRemoveParticipant(student.studentId)
+                      }
                       className="hidden h-8 w-8 flex-shrink-0 p-0 text-red-500 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-950 sm:flex"
                       aria-label="Remover aluno da aula"
                       title="Remover"
@@ -119,10 +140,16 @@ export const SessionParticipantsCard = ({
 
                 {exercises.length > 0 ? (
                   <div className="space-y-2 border-t pt-2">
-                    <p className="text-sm font-medium">Exercícios registrados:</p>
+                    <p className="text-sm font-medium">
+                      Exercícios registrados:
+                    </p>
                     <div className="space-y-1">
                       {[...exercises]
-                        .sort((a, b) => (a.exerciseName || "").localeCompare(b.exerciseName || ""))
+                        .sort((a, b) =>
+                          (a.exerciseName || "").localeCompare(
+                            b.exerciseName || "",
+                          ),
+                        )
                         .map((exercise) => (
                           <div
                             key={exercise.id}
@@ -134,7 +161,11 @@ export const SessionParticipantsCard = ({
                                 onCheckedChange={() =>
                                   exercise.id &&
                                   student.studentId &&
-                                  onToggleExerciseDone(student.studentId, exercise.id, Boolean(exercise.done))
+                                  onToggleExerciseDone(
+                                    student.studentId,
+                                    exercise.id,
+                                    Boolean(exercise.done),
+                                  )
                                 }
                                 aria-label="Marcar como concluído"
                               />
@@ -144,13 +175,16 @@ export const SessionParticipantsCard = ({
                                 {exercise.exerciseName || exercise.exerciseId}
                                 {exercise.setsCompleted != null &&
                                   ` - ${exercise.setsCompleted}x${exercise.repsCompleted ?? ""}`}
-                                {exercise.weightCompleted != null && ` - ${exercise.weightCompleted}kg`}
+                                {exercise.weightCompleted != null &&
+                                  ` - ${exercise.weightCompleted}kg`}
                               </span>
                             </div>
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => exercise.id && onDeleteExercise(exercise.id)}
+                              onClick={() =>
+                                exercise.id && onDeleteExercise(exercise.id)
+                              }
                               className="ml-2 h-6 w-6 flex-shrink-0 p-0 text-red-500"
                               aria-label="Remover exercício"
                               title="Remover exercício"
@@ -163,7 +197,7 @@ export const SessionParticipantsCard = ({
                   </div>
                 ) : null}
               </div>
-            )
+            );
           })}
 
           {filteredParticipants.length === 0 ? (
@@ -174,5 +208,5 @@ export const SessionParticipantsCard = ({
         </div>
       </CardContent>
     </Card>
-  )
-}
+  );
+};

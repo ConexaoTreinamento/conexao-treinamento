@@ -7,9 +7,9 @@ import {
   type EntityProfileMetadataItem,
 } from "@/components/base/entity-profile";
 import {
-  PlanAssignmentStatusBadge,
   getAssignmentDaysRemaining,
   getAssignmentEndDate,
+  PlanAssignmentStatusBadge,
 } from "@/components/plans/expiring-plans";
 import type {
   StudentPlanAssignmentResponseDto,
@@ -18,14 +18,14 @@ import type {
 import {
   Calendar,
   CalendarDays,
+  Mail,
   MapPin,
   Phone,
   PlusCircle,
+  RotateCcw,
   Trash2,
   User,
 } from "lucide-react";
-import { Mail } from "lucide-react";
-import { RotateCcw } from "lucide-react";
 import type { ReactNode } from "react";
 import { CreateEvaluationProfileButton } from "@/components/base/create-evaluation-buttons";
 

@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface ClassSchedulePlanSummaryProps {
-  planDays: number
-  selectedDaysCount: number
-  selectedSeriesCount: number
+  planDays: number;
+  selectedDaysCount: number;
+  selectedSeriesCount: number;
 }
 
 export function ClassSchedulePlanSummary({
@@ -27,9 +27,11 @@ export function ClassSchedulePlanSummary({
           <Badge variant="outline" className="mb-1">
             {selectedDaysCount}/{planDays} dias
           </Badge>
-          <p className="text-xs text-muted-foreground">{selectedSeriesCount} séries</p>
+          <p className="text-xs text-muted-foreground">
+            {selectedSeriesCount} séries
+          </p>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -1,54 +1,60 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Save, Calculator, User } from "lucide-react"
-import { PageHeader } from "@/components/base/page-header"
+import type React from "react";
+import { useEffect, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Calculator, Save, User } from "lucide-react";
+import { PageHeader } from "@/components/base/page-header";
 
 export interface EvaluationData {
-  id?: string
-  weight: string
-  height: string
-  bmi: string
+  id?: string;
+  weight: string;
+  height: string;
+  bmi: string;
   circumferences: {
-    rightArmRelaxed: string
-    leftArmRelaxed: string
-    rightArmFlexed: string
-    leftArmFlexed: string
-    waist: string
-    abdomen: string
-    hip: string
-    rightThigh: string
-    leftThigh: string
-    rightCalf: string
-    leftCalf: string
-  }
+    rightArmRelaxed: string;
+    leftArmRelaxed: string;
+    rightArmFlexed: string;
+    leftArmFlexed: string;
+    waist: string;
+    abdomen: string;
+    hip: string;
+    rightThigh: string;
+    leftThigh: string;
+    rightCalf: string;
+    leftCalf: string;
+  };
   subcutaneousFolds: {
-    triceps: string
-    thorax: string
-    subaxillary: string
-    subscapular: string
-    abdominal: string
-    suprailiac: string
-    thigh: string
-  }
+    triceps: string;
+    thorax: string;
+    subaxillary: string;
+    subscapular: string;
+    abdominal: string;
+    suprailiac: string;
+    thigh: string;
+  };
   diameters: {
-    umerus: string
-    femur: string
-  }
+    umerus: string;
+    femur: string;
+  };
 }
 
 interface EvaluationFormProps {
-  studentId: string
-  studentName: string
-  initialData?: Partial<EvaluationData>
-  isEdit?: boolean
-  onSubmit: (data: EvaluationData) => Promise<void>
-  onCancel: () => void
+  studentId: string;
+  studentName: string;
+  initialData?: Partial<EvaluationData>;
+  isEdit?: boolean;
+  onSubmit: (data: EvaluationData) => Promise<void>;
+  onCancel: () => void;
 }
 
 export default function EvaluationForm({
@@ -56,9 +62,9 @@ export default function EvaluationForm({
   initialData,
   isEdit = false,
   onSubmit,
-  onCancel
+  onCancel,
 }: EvaluationFormProps) {
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
 
   const [evaluationData, setEvaluationData] = useState<EvaluationData>({
     // Dados básicos
@@ -78,7 +84,7 @@ export default function EvaluationForm({
       rightThigh: "",
       leftThigh: "",
       rightCalf: "",
-      leftCalf: ""
+      leftCalf: "",
     },
 
     // Dobras Subcutâneas
@@ -89,15 +95,15 @@ export default function EvaluationForm({
       subscapular: "",
       abdominal: "",
       suprailiac: "",
-      thigh: ""
+      thigh: "",
     },
 
     // Diâmetros
     diameters: {
       umerus: "",
-      femur: ""
-    }
-  })
+      femur: "",
+    },
+  });
 
   // Load initial data if provided (for editing)
   useEffect(() => {
@@ -108,79 +114,90 @@ export default function EvaluationForm({
         height: initialData.height || "",
         bmi: initialData.bmi || "",
         circumferences: {
-          rightArmRelaxed: initialData.circumferences?.rightArmRelaxed?.toString() || "",
-          leftArmRelaxed: initialData.circumferences?.leftArmRelaxed?.toString() || "",
-          rightArmFlexed: initialData.circumferences?.rightArmFlexed?.toString() || "",
-          leftArmFlexed: initialData.circumferences?.leftArmFlexed?.toString() || "",
+          rightArmRelaxed:
+            initialData.circumferences?.rightArmRelaxed?.toString() || "",
+          leftArmRelaxed:
+            initialData.circumferences?.leftArmRelaxed?.toString() || "",
+          rightArmFlexed:
+            initialData.circumferences?.rightArmFlexed?.toString() || "",
+          leftArmFlexed:
+            initialData.circumferences?.leftArmFlexed?.toString() || "",
           waist: initialData.circumferences?.waist?.toString() || "",
           abdomen: initialData.circumferences?.abdomen?.toString() || "",
           hip: initialData.circumferences?.hip?.toString() || "",
           rightThigh: initialData.circumferences?.rightThigh?.toString() || "",
           leftThigh: initialData.circumferences?.leftThigh?.toString() || "",
           rightCalf: initialData.circumferences?.rightCalf?.toString() || "",
-          leftCalf: initialData.circumferences?.leftCalf?.toString() || ""
+          leftCalf: initialData.circumferences?.leftCalf?.toString() || "",
         },
         subcutaneousFolds: {
           triceps: initialData.subcutaneousFolds?.triceps?.toString() || "",
           thorax: initialData.subcutaneousFolds?.thorax?.toString() || "",
-          subaxillary: initialData.subcutaneousFolds?.subaxillary?.toString() || "",
-          subscapular: initialData.subcutaneousFolds?.subscapular?.toString() || "",
+          subaxillary:
+            initialData.subcutaneousFolds?.subaxillary?.toString() || "",
+          subscapular:
+            initialData.subcutaneousFolds?.subscapular?.toString() || "",
           abdominal: initialData.subcutaneousFolds?.abdominal?.toString() || "",
-          suprailiac: initialData.subcutaneousFolds?.suprailiac?.toString() || "",
-          thigh: initialData.subcutaneousFolds?.thigh?.toString() || ""
+          suprailiac:
+            initialData.subcutaneousFolds?.suprailiac?.toString() || "",
+          thigh: initialData.subcutaneousFolds?.thigh?.toString() || "",
         },
         diameters: {
           umerus: initialData.diameters?.umerus?.toString() || "",
-          femur: initialData.diameters?.femur?.toString() || ""
-        }
-      })
+          femur: initialData.diameters?.femur?.toString() || "",
+        },
+      });
     }
-  }, [initialData])
+  }, [initialData]);
 
   // Calcular IMC automaticamente
   useEffect(() => {
-    const weight = parseFloat(evaluationData.weight)
-    const height = parseFloat(evaluationData.height)
+    const weight = parseFloat(evaluationData.weight);
+    const height = parseFloat(evaluationData.height);
 
     if (weight > 0 && height > 0) {
-      const heightInMeters = height / 100
-      const bmi = weight / (heightInMeters * heightInMeters)
-      setEvaluationData(prev => ({
+      const heightInMeters = height / 100;
+      const bmi = weight / (heightInMeters * heightInMeters);
+      setEvaluationData((prev) => ({
         ...prev,
-        bmi: bmi.toFixed(2)
-      }))
+        bmi: bmi.toFixed(2),
+      }));
     }
-  }, [evaluationData.weight, evaluationData.height])
+  }, [evaluationData.weight, evaluationData.height]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     try {
-      await onSubmit(evaluationData)
+      await onSubmit(evaluationData);
     } catch (error) {
-      console.error('Error submitting evaluation:', error)
+      console.error("Error submitting evaluation:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  const handleInputChange = (category: string, field: string, value: string) => {
+  const handleInputChange = (
+    category: string,
+    field: string,
+    value: string,
+  ) => {
     if (category === "basic") {
-      setEvaluationData(prev => ({
+      setEvaluationData((prev) => ({
         ...prev,
-        [field]: value
-      }))
+        [field]: value,
+      }));
     } else {
-      setEvaluationData(prev => ({
+      setEvaluationData((prev) => ({
         ...prev,
         [category]: {
           ...(prev[category as keyof typeof prev] as object),
-          [field]: value
-        }
-      }))
+          [field]: value,
+        },
+      }));
     }
-  }
+  };
 
   return (
     <div className="space-y-4">
@@ -214,7 +231,9 @@ export default function EvaluationForm({
                   placeholder="70.5"
                   required
                   value={evaluationData.weight}
-                  onChange={(e) => handleInputChange("basic", "weight", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("basic", "weight", e.target.value)
+                  }
                 />
               </div>
 
@@ -227,7 +246,9 @@ export default function EvaluationForm({
                   placeholder="175.0"
                   required
                   value={evaluationData.height}
-                  onChange={(e) => handleInputChange("basic", "height", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("basic", "height", e.target.value)
+                  }
                 />
               </div>
 
@@ -245,7 +266,9 @@ export default function EvaluationForm({
                   />
                   <Calculator className="w-4 h-4 text-muted-foreground" />
                 </div>
-                <p className="text-xs text-muted-foreground">Calculado automaticamente</p>
+                <p className="text-xs text-muted-foreground">
+                  Calculado automaticamente
+                </p>
               </div>
             </div>
           </CardContent>
@@ -271,7 +294,13 @@ export default function EvaluationForm({
                     step="0.1"
                     placeholder="30.0"
                     value={evaluationData.circumferences.rightArmRelaxed}
-                    onChange={(e) => handleInputChange("circumferences", "rightArmRelaxed", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "circumferences",
+                        "rightArmRelaxed",
+                        e.target.value,
+                      )
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -281,7 +310,13 @@ export default function EvaluationForm({
                     step="0.1"
                     placeholder="30.0"
                     value={evaluationData.circumferences.leftArmRelaxed}
-                    onChange={(e) => handleInputChange("circumferences", "leftArmRelaxed", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "circumferences",
+                        "leftArmRelaxed",
+                        e.target.value,
+                      )
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -291,7 +326,13 @@ export default function EvaluationForm({
                     step="0.1"
                     placeholder="32.0"
                     value={evaluationData.circumferences.rightArmFlexed}
-                    onChange={(e) => handleInputChange("circumferences", "rightArmFlexed", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "circumferences",
+                        "rightArmFlexed",
+                        e.target.value,
+                      )
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -301,7 +342,13 @@ export default function EvaluationForm({
                     step="0.1"
                     placeholder="32.0"
                     value={evaluationData.circumferences.leftArmFlexed}
-                    onChange={(e) => handleInputChange("circumferences", "leftArmFlexed", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "circumferences",
+                        "leftArmFlexed",
+                        e.target.value,
+                      )
+                    }
                   />
                 </div>
               </div>
@@ -318,7 +365,13 @@ export default function EvaluationForm({
                     step="0.1"
                     placeholder="75.0"
                     value={evaluationData.circumferences.waist}
-                    onChange={(e) => handleInputChange("circumferences", "waist", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "circumferences",
+                        "waist",
+                        e.target.value,
+                      )
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -328,7 +381,13 @@ export default function EvaluationForm({
                     step="0.1"
                     placeholder="80.0"
                     value={evaluationData.circumferences.abdomen}
-                    onChange={(e) => handleInputChange("circumferences", "abdomen", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "circumferences",
+                        "abdomen",
+                        e.target.value,
+                      )
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -338,7 +397,9 @@ export default function EvaluationForm({
                     step="0.1"
                     placeholder="95.0"
                     value={evaluationData.circumferences.hip}
-                    onChange={(e) => handleInputChange("circumferences", "hip", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("circumferences", "hip", e.target.value)
+                    }
                   />
                 </div>
               </div>
@@ -355,7 +416,13 @@ export default function EvaluationForm({
                     step="0.1"
                     placeholder="55.0"
                     value={evaluationData.circumferences.rightThigh}
-                    onChange={(e) => handleInputChange("circumferences", "rightThigh", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "circumferences",
+                        "rightThigh",
+                        e.target.value,
+                      )
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -365,7 +432,13 @@ export default function EvaluationForm({
                     step="0.1"
                     placeholder="55.0"
                     value={evaluationData.circumferences.leftThigh}
-                    onChange={(e) => handleInputChange("circumferences", "leftThigh", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "circumferences",
+                        "leftThigh",
+                        e.target.value,
+                      )
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -375,7 +448,13 @@ export default function EvaluationForm({
                     step="0.1"
                     placeholder="35.0"
                     value={evaluationData.circumferences.rightCalf}
-                    onChange={(e) => handleInputChange("circumferences", "rightCalf", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "circumferences",
+                        "rightCalf",
+                        e.target.value,
+                      )
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -385,7 +464,13 @@ export default function EvaluationForm({
                     step="0.1"
                     placeholder="35.0"
                     value={evaluationData.circumferences.leftCalf}
-                    onChange={(e) => handleInputChange("circumferences", "leftCalf", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "circumferences",
+                        "leftCalf",
+                        e.target.value,
+                      )
+                    }
                   />
                 </div>
               </div>
@@ -410,7 +495,13 @@ export default function EvaluationForm({
                   step="0.1"
                   placeholder="12.0"
                   value={evaluationData.subcutaneousFolds.triceps}
-                  onChange={(e) => handleInputChange("subcutaneousFolds", "triceps", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "subcutaneousFolds",
+                      "triceps",
+                      e.target.value,
+                    )
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -420,7 +511,13 @@ export default function EvaluationForm({
                   step="0.1"
                   placeholder="8.0"
                   value={evaluationData.subcutaneousFolds.thorax}
-                  onChange={(e) => handleInputChange("subcutaneousFolds", "thorax", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "subcutaneousFolds",
+                      "thorax",
+                      e.target.value,
+                    )
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -430,7 +527,13 @@ export default function EvaluationForm({
                   step="0.1"
                   placeholder="10.0"
                   value={evaluationData.subcutaneousFolds.subaxillary}
-                  onChange={(e) => handleInputChange("subcutaneousFolds", "subaxillary", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "subcutaneousFolds",
+                      "subaxillary",
+                      e.target.value,
+                    )
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -440,7 +543,13 @@ export default function EvaluationForm({
                   step="0.1"
                   placeholder="14.0"
                   value={evaluationData.subcutaneousFolds.subscapular}
-                  onChange={(e) => handleInputChange("subcutaneousFolds", "subscapular", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "subcutaneousFolds",
+                      "subscapular",
+                      e.target.value,
+                    )
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -450,7 +559,13 @@ export default function EvaluationForm({
                   step="0.1"
                   placeholder="16.0"
                   value={evaluationData.subcutaneousFolds.abdominal}
-                  onChange={(e) => handleInputChange("subcutaneousFolds", "abdominal", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "subcutaneousFolds",
+                      "abdominal",
+                      e.target.value,
+                    )
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -460,7 +575,13 @@ export default function EvaluationForm({
                   step="0.1"
                   placeholder="18.0"
                   value={evaluationData.subcutaneousFolds.suprailiac}
-                  onChange={(e) => handleInputChange("subcutaneousFolds", "suprailiac", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "subcutaneousFolds",
+                      "suprailiac",
+                      e.target.value,
+                    )
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -470,7 +591,13 @@ export default function EvaluationForm({
                   step="0.1"
                   placeholder="20.0"
                   value={evaluationData.subcutaneousFolds.thigh}
-                  onChange={(e) => handleInputChange("subcutaneousFolds", "thigh", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "subcutaneousFolds",
+                      "thigh",
+                      e.target.value,
+                    )
+                  }
                 />
               </div>
             </div>
@@ -494,7 +621,9 @@ export default function EvaluationForm({
                   step="0.1"
                   placeholder="6.5"
                   value={evaluationData.diameters.umerus}
-                  onChange={(e) => handleInputChange("diameters", "umerus", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("diameters", "umerus", e.target.value)
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -504,7 +633,9 @@ export default function EvaluationForm({
                   step="0.1"
                   placeholder="9.0"
                   value={evaluationData.diameters.femur}
-                  onChange={(e) => handleInputChange("diameters", "femur", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("diameters", "femur", e.target.value)
+                  }
                 />
               </div>
             </div>
@@ -516,12 +647,20 @@ export default function EvaluationForm({
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancelar
           </Button>
-          <Button type="submit" disabled={isLoading} className="flex items-center gap-2">
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="flex items-center gap-2"
+          >
             <Save className="w-4 h-4" />
-            {isLoading ? "Salvando..." : isEdit ? "Atualizar avaliação" : "Salvar avaliação"}
+            {isLoading
+              ? "Salvando..."
+              : isEdit
+                ? "Atualizar avaliação"
+                : "Salvar avaliação"}
           </Button>
         </div>
       </form>
     </div>
-  )
+  );
 }

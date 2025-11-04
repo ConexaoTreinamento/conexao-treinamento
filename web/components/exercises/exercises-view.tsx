@@ -1,68 +1,92 @@
-import type { MouseEvent } from "react"
-import { Activity, RotateCcw, Trash2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { EmptyState } from "@/components/base/empty-state"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
-import type { ReactNode } from "react"
-import { FilterToolbar } from "@/components/base/filter-toolbar"
-import { EntityCard } from "@/components/base/entity-card"
-import { EntityList } from "@/components/base/entity-list"
-import { StatusBadge } from "@/components/base/status-badge"
-import ConfirmDeleteButton from "@/components/base/confirm-delete-button"
-import { EditButton } from "@/components/base/edit-button"
+import type { MouseEvent, ReactNode } from "react";
+import { Activity, RotateCcw, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/base/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { FilterToolbar } from "@/components/base/filter-toolbar";
+import { EntityCard } from "@/components/base/entity-card";
+import { EntityList } from "@/components/base/entity-list";
+import { StatusBadge } from "@/components/base/status-badge";
+import ConfirmDeleteButton from "@/components/base/confirm-delete-button";
+import { EditButton } from "@/components/base/edit-button";
 
 export interface ExerciseCardData {
-  id: string
-  name: string
-  description?: string
-  isDeleted: boolean
+  id: string;
+  name: string;
+  description?: string;
+  isDeleted: boolean;
 }
 
 interface ExercisesListProps {
-  exercises: ExerciseCardData[]
-  onSelect: (exerciseId: string) => void
-  onEdit: (exerciseId: string) => void
-  onDelete: (exerciseId: string) => Promise<void> | void
-  onRestore: (exerciseId: string) => void
-  deletingExerciseId?: string | null
+  exercises: ExerciseCardData[];
+  onSelect: (exerciseId: string) => void;
+  onEdit: (exerciseId: string) => void;
+  onDelete: (exerciseId: string) => Promise<void> | void;
+  onRestore: (exerciseId: string) => void;
+  deletingExerciseId?: string | null;
 }
 
-export function ExercisesList({ exercises, onSelect, onEdit, onDelete, onRestore, deletingExerciseId }: ExercisesListProps) {
+export function ExercisesList({
+  exercises,
+  onSelect,
+  onEdit,
+  onDelete,
+  onRestore,
+  deletingExerciseId,
+}: ExercisesListProps) {
   if (!exercises.length) {
-    return null
+    return null;
   }
 
   return (
     <EntityList>
       {exercises.map((exercise) => {
-        const isDeleted = exercise.isDeleted
+        const isDeleted = exercise.isDeleted;
 
-        const handleCardClick = () => onSelect(exercise.id)
+        const handleCardClick = () => onSelect(exercise.id);
 
         const handleEdit = (event: MouseEvent<HTMLButtonElement>) => {
-          event.stopPropagation()
-          onEdit(exercise.id)
-        }
+          event.stopPropagation();
+          onEdit(exercise.id);
+        };
 
         const handleRestore = (event: MouseEvent<HTMLButtonElement>) => {
-          event.stopPropagation()
-          onRestore(exercise.id)
-        }
+          event.stopPropagation();
+          onRestore(exercise.id);
+        };
 
         const badges: ReactNode[] = [
-          <StatusBadge key="status" active={!isDeleted} activeLabel="Ativo" inactiveLabel="Excluído" />,
-        ]
+          <StatusBadge
+            key="status"
+            active={!isDeleted}
+            activeLabel="Ativo"
+            inactiveLabel="Excluído"
+          />,
+        ];
 
         const descriptionBody = (
-          <p className={exercise.description ? "text-sm text-muted-foreground line-clamp-2" : "text-sm italic text-muted-foreground"}>
+          <p
+            className={
+              exercise.description
+                ? "text-sm text-muted-foreground line-clamp-2"
+                : "text-sm italic text-muted-foreground"
+            }
+          >
             {exercise.description ?? "Sem descrição"}
           </p>
-        )
+        );
 
-        const isDeleting = deletingExerciseId === exercise.id
+        const isDeleting = deletingExerciseId === exercise.id;
 
         const mobileActions = isDeleted ? (
           <Button
@@ -96,10 +120,15 @@ export function ExercisesList({ exercises, onSelect, onEdit, onDelete, onRestore
               <span className="sr-only">Excluir exercício</span>
             </ConfirmDeleteButton>
           </>
-        )
+        );
 
         const desktopActions = isDeleted ? (
-          <Button size="sm" variant="outline" className="h-8 px-3 text-sm" onClick={handleRestore}>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 px-3 text-sm"
+            onClick={handleRestore}
+          >
             <RotateCcw className="mr-1 h-3 w-3" aria-hidden="true" /> Restaurar
           </Button>
         ) : (
@@ -122,7 +151,7 @@ export function ExercisesList({ exercises, onSelect, onEdit, onDelete, onRestore
               <Trash2 className="mr-1 h-3 w-3" aria-hidden="true" /> Excluir
             </ConfirmDeleteButton>
           </>
-        )
+        );
 
         return (
           <EntityCard
@@ -135,21 +164,27 @@ export function ExercisesList({ exercises, onSelect, onEdit, onDelete, onRestore
             mobileActions={mobileActions}
             desktopActions={desktopActions}
           />
-        )
+        );
       })}
     </EntityList>
-  )
+  );
 }
 
 interface ExercisesToolbarProps {
-  searchValue: string
-  onSearchChange: (value: string) => void
-  onClearSearch: () => void
-  showInactive: boolean
-  onToggleInactive: (value: boolean) => void
+  searchValue: string;
+  onSearchChange: (value: string) => void;
+  onClearSearch: () => void;
+  showInactive: boolean;
+  onToggleInactive: (value: boolean) => void;
 }
 
-export function ExercisesToolbar({ searchValue, onSearchChange, onClearSearch, showInactive, onToggleInactive }: ExercisesToolbarProps) {
+export function ExercisesToolbar({
+  searchValue,
+  onSearchChange,
+  onClearSearch,
+  showInactive,
+  onToggleInactive,
+}: ExercisesToolbarProps) {
   const toolbarActions = (
     <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
       {searchValue ? (
@@ -158,7 +193,7 @@ export function ExercisesToolbar({ searchValue, onSearchChange, onClearSearch, s
         </Button>
       ) : null}
     </div>
-  )
+  );
 
   return (
     <FilterToolbar
@@ -172,10 +207,15 @@ export function ExercisesToolbar({ searchValue, onSearchChange, onClearSearch, s
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <Label htmlFor="show-inactive-exercises" className="text-sm font-medium">
+              <Label
+                htmlFor="show-inactive-exercises"
+                className="text-sm font-medium"
+              >
                 Mostrar exercícios excluídos
               </Label>
-              <p className="text-xs text-muted-foreground">Inclui exercícios restauráveis na lista.</p>
+              <p className="text-xs text-muted-foreground">
+                Inclui exercícios restauráveis na lista.
+              </p>
             </div>
             <Switch
               id="show-inactive-exercises"
@@ -187,7 +227,7 @@ export function ExercisesToolbar({ searchValue, onSearchChange, onClearSearch, s
       )}
       className="gap-3"
     />
-  )
+  );
 }
 
 export function ExercisesSkeletonList() {
@@ -204,20 +244,28 @@ export function ExercisesSkeletonList() {
         </div>
       ))}
     </EntityList>
-  )
+  );
 }
 
 interface ExercisesEmptyStateProps {
-  hasSearch: boolean
-  onCreate: () => void
-  onClearSearch?: () => void
+  hasSearch: boolean;
+  onCreate: () => void;
+  onClearSearch?: () => void;
 }
 
-export function ExercisesEmptyState({ hasSearch, onCreate, onClearSearch }: ExercisesEmptyStateProps) {
+export function ExercisesEmptyState({
+  hasSearch,
+  onCreate,
+  onClearSearch,
+}: ExercisesEmptyStateProps) {
   return (
     <EmptyState
       icon={<Activity className="h-12 w-12" aria-hidden="true" />}
-      title={hasSearch ? "Nenhum exercício encontrado" : "Nenhum exercício cadastrado"}
+      title={
+        hasSearch
+          ? "Nenhum exercício encontrado"
+          : "Nenhum exercício cadastrado"
+      }
       description={
         hasSearch
           ? "Tente ajustar o termo de busca para encontrar o exercício desejado."
@@ -230,21 +278,27 @@ export function ExercisesEmptyState({ hasSearch, onCreate, onClearSearch }: Exer
               Limpar busca
             </Button>
           ) : null}
-          <Button className="bg-green-600 hover:bg-green-700" onClick={onCreate}>
+          <Button
+            className="bg-green-600 hover:bg-green-700"
+            onClick={onCreate}
+          >
             Novo exercício
           </Button>
         </>
       }
     />
-  )
+  );
 }
 
 interface ExercisesErrorStateProps {
-  message?: string
-  onRetry?: () => void
+  message?: string;
+  onRetry?: () => void;
 }
 
-export function ExercisesErrorState({ message, onRetry }: ExercisesErrorStateProps) {
+export function ExercisesErrorState({
+  message,
+  onRetry,
+}: ExercisesErrorStateProps) {
   return (
     <EmptyState
       icon={<Activity className="h-12 w-12 text-red-500" aria-hidden="true" />}
@@ -258,22 +312,26 @@ export function ExercisesErrorState({ message, onRetry }: ExercisesErrorStatePro
         ) : null
       }
     />
-  )
+  );
 }
 
 interface ExercisesPaginationProps {
-  currentPage: number
-  totalPages: number
-  onPageChange: (page: number) => void
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
 }
 
-export function ExercisesPagination({ currentPage, totalPages, onPageChange }: ExercisesPaginationProps) {
+export function ExercisesPagination({
+  currentPage,
+  totalPages,
+  onPageChange,
+}: ExercisesPaginationProps) {
   if (totalPages <= 1) {
-    return null
+    return null;
   }
 
-  const startPage = Math.max(0, currentPage - 1)
-  const endPage = Math.min(totalPages - 1, currentPage + 1)
+  const startPage = Math.max(0, currentPage - 1);
+  const endPage = Math.min(totalPages - 1, currentPage + 1);
 
   return (
     <div className="flex justify-center">
@@ -282,14 +340,18 @@ export function ExercisesPagination({ currentPage, totalPages, onPageChange }: E
           <PaginationItem>
             <PaginationPrevious
               onClick={() => currentPage > 0 && onPageChange(currentPage - 1)}
-              className={currentPage === 0 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+              className={
+                currentPage === 0
+                  ? "pointer-events-none opacity-50"
+                  : "cursor-pointer"
+              }
             >
               Anterior
             </PaginationPrevious>
           </PaginationItem>
 
           {Array.from({ length: endPage - startPage + 1 }).map((_, index) => {
-            const pageIndex = startPage + index
+            const pageIndex = startPage + index;
             return (
               <PaginationItem key={pageIndex}>
                 <PaginationLink
@@ -300,13 +362,19 @@ export function ExercisesPagination({ currentPage, totalPages, onPageChange }: E
                   {pageIndex + 1}
                 </PaginationLink>
               </PaginationItem>
-            )
+            );
           })}
 
           <PaginationItem>
             <PaginationNext
-              onClick={() => currentPage < totalPages - 1 && onPageChange(currentPage + 1)}
-              className={currentPage === totalPages - 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+              onClick={() =>
+                currentPage < totalPages - 1 && onPageChange(currentPage + 1)
+              }
+              className={
+                currentPage === totalPages - 1
+                  ? "pointer-events-none opacity-50"
+                  : "cursor-pointer"
+              }
             >
               Próxima
             </PaginationNext>
@@ -314,5 +382,5 @@ export function ExercisesPagination({ currentPage, totalPages, onPageChange }: E
         </PaginationContent>
       </Pagination>
     </div>
-  )
+  );
 }

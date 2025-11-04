@@ -1,51 +1,78 @@
-"use client"
+"use client";
 
-import { RotateCcw, Trash2, Calendar, CalendarCheck } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import ConfirmDeleteButton from "@/components/base/confirm-delete-button"
-import { EntityCard, type EntityCardMetadataItem } from "@/components/base/entity-card"
-import { StatusBadge } from "@/components/base/status-badge"
-import type { ReactNode } from "react"
+import { Calendar, CalendarCheck, RotateCcw, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import ConfirmDeleteButton from "@/components/base/confirm-delete-button";
+import {
+  EntityCard,
+  type EntityCardMetadataItem,
+} from "@/components/base/entity-card";
+import { StatusBadge } from "@/components/base/status-badge";
+import type { ReactNode } from "react";
 
 export type PlanCardProps = {
-  id: string
-  name: string
-  maxDays: number
-  durationDays: number
-  active: boolean
-  description?: string | null
-  deleting?: boolean
-  restoring?: boolean
-  onDelete?: (id: string) => void
-  onRestore?: (id: string) => void
-}
+  id: string;
+  name: string;
+  maxDays: number;
+  durationDays: number;
+  active: boolean;
+  description?: string | null;
+  deleting?: boolean;
+  restoring?: boolean;
+  onDelete?: (id: string) => void;
+  onRestore?: (id: string) => void;
+};
 
-export default function PlanCard(props: PlanCardProps){
-  const { id, name, maxDays, durationDays, active, description, deleting, restoring, onDelete, onRestore } = props
+export default function PlanCard(props: PlanCardProps) {
+  const {
+    id,
+    name,
+    maxDays,
+    durationDays,
+    active,
+    description,
+    deleting,
+    restoring,
+    onDelete,
+    onRestore,
+  } = props;
 
   const badges: ReactNode[] = [
-    <StatusBadge key="status" active={active} activeLabel="Ativo" inactiveLabel="Inativo" />,
-  ]
+    <StatusBadge
+      key="status"
+      active={active}
+      activeLabel="Ativo"
+      inactiveLabel="Inativo"
+    />,
+  ];
 
   const metadata: EntityCardMetadataItem[] = [
     {
-      icon: <Calendar className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />,
+      icon: (
+        <Calendar
+          className="h-3.5 w-3.5 text-muted-foreground"
+          aria-hidden="true"
+        />
+      ),
       content: `Até ${maxDays}x por semana`,
     },
-  ]
+  ];
 
   const infoRows: ReactNode[] = [
     <span key="duration" className="flex items-center gap-2">
-      <CalendarCheck className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+      <CalendarCheck
+        className="h-3.5 w-3.5 text-muted-foreground"
+        aria-hidden="true"
+      />
       <span>{`${durationDays} dias de duração`}</span>
     </span>,
-  ]
+  ];
 
   const body = description ? (
     <p className="text-sm text-muted-foreground line-clamp-3">{description}</p>
   ) : (
     <p className="text-sm italic text-muted-foreground">Sem descrição</p>
-  )
+  );
 
   const mobileActions = active ? (
     <ConfirmDeleteButton
@@ -69,7 +96,7 @@ export default function PlanCard(props: PlanCardProps){
     >
       <RotateCcw className="h-3 w-3" aria-hidden="true" />
     </Button>
-  )
+  );
 
   const desktopActions = active ? (
     <ConfirmDeleteButton
@@ -94,7 +121,7 @@ export default function PlanCard(props: PlanCardProps){
       <RotateCcw className="mr-1 h-3 w-3" aria-hidden="true" />
       Restaurar
     </Button>
-  )
+  );
 
   return (
     <EntityCard
@@ -108,5 +135,5 @@ export default function PlanCard(props: PlanCardProps){
       desktopActions={desktopActions}
       muted={!active}
     />
-  )
+  );
 }

@@ -1,18 +1,30 @@
-import { X } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { UseFormReturn } from "react-hook-form"
-import type { StudentFilters } from "./types"
-import { DEFAULT_STUDENT_FILTERS, countActiveStudentFilters } from "./types"
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+} from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { UseFormReturn } from "react-hook-form";
+import type { StudentFilters } from "./types";
+import { countActiveStudentFilters, DEFAULT_STUDENT_FILTERS } from "./types";
 
 export interface StudentFiltersContentProps {
-  filtersForm: UseFormReturn<StudentFilters>
-  professions: string[]
-  onFiltersReset?: () => void
-  onClose?: () => void
+  filtersForm: UseFormReturn<StudentFilters>;
+  professions: string[];
+  onFiltersReset?: () => void;
+  onClose?: () => void;
 }
 
 export const StudentFiltersContent = ({
@@ -21,19 +33,21 @@ export const StudentFiltersContent = ({
   onFiltersReset,
   onClose,
 }: StudentFiltersContentProps) => {
-  const watchedFilters = filtersForm.watch()
-  const activeFilterCount = countActiveStudentFilters(watchedFilters)
-  const hasActiveFilters = activeFilterCount > 0
+  const watchedFilters = filtersForm.watch();
+  const activeFilterCount = countActiveStudentFilters(watchedFilters);
+  const hasActiveFilters = activeFilterCount > 0;
 
   const hasInvalidDateRange = Boolean(
-    watchedFilters.startDate && watchedFilters.endDate && watchedFilters.startDate > watchedFilters.endDate,
-  )
+    watchedFilters.startDate &&
+      watchedFilters.endDate &&
+      watchedFilters.startDate > watchedFilters.endDate,
+  );
 
   const clearFilters = () => {
-    filtersForm.reset(DEFAULT_STUDENT_FILTERS)
-    onFiltersReset?.()
-    onClose?.()
-  }
+    filtersForm.reset(DEFAULT_STUDENT_FILTERS);
+    onFiltersReset?.();
+    onClose?.();
+  };
 
   return (
     <Form {...filtersForm}>
@@ -41,14 +55,19 @@ export const StudentFiltersContent = ({
         <FormField
           control={filtersForm.control}
           name="includeInactive"
-          render={({field}) => (
+          render={({ field }) => (
             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
               <div className="space-y-0.5">
                 <FormLabel>Mostrar inativos</FormLabel>
-                <p className="text-xs text-muted-foreground">Inclui alunos marcados como inativos no resultado.</p>
+                <p className="text-xs text-muted-foreground">
+                  Inclui alunos marcados como inativos no resultado.
+                </p>
               </div>
               <FormControl>
-                <Checkbox checked={Boolean(field.value)} onCheckedChange={(value) => field.onChange(Boolean(value))} />
+                <Checkbox
+                  checked={Boolean(field.value)}
+                  onCheckedChange={(value) => field.onChange(Boolean(value))}
+                />
               </FormControl>
             </FormItem>
           )}
@@ -57,7 +76,7 @@ export const StudentFiltersContent = ({
         <FormField
           control={filtersForm.control}
           name="status"
-          render={({field}) => (
+          render={({ field }) => (
             <FormItem>
               <FormLabel>Status</FormLabel>
               <FormControl>
@@ -81,7 +100,7 @@ export const StudentFiltersContent = ({
           <FormField
             control={filtersForm.control}
             name="minAge"
-            render={({field}) => (
+            render={({ field }) => (
               <FormItem>
                 <FormLabel>Idade mínima</FormLabel>
                 <FormControl>
@@ -89,7 +108,11 @@ export const StudentFiltersContent = ({
                     type="number"
                     placeholder="Ex: 18"
                     value={field.value ?? ""}
-                    onChange={(event) => field.onChange(event.target.value ? Number(event.target.value) : null)}
+                    onChange={(event) =>
+                      field.onChange(
+                        event.target.value ? Number(event.target.value) : null,
+                      )
+                    }
                     min={0}
                     max={150}
                   />
@@ -101,7 +124,7 @@ export const StudentFiltersContent = ({
           <FormField
             control={filtersForm.control}
             name="maxAge"
-            render={({field}) => (
+            render={({ field }) => (
               <FormItem>
                 <FormLabel>Idade máxima</FormLabel>
                 <FormControl>
@@ -109,7 +132,11 @@ export const StudentFiltersContent = ({
                     type="number"
                     placeholder="Ex: 65"
                     value={field.value ?? ""}
-                    onChange={(event) => field.onChange(event.target.value ? Number(event.target.value) : null)}
+                    onChange={(event) =>
+                      field.onChange(
+                        event.target.value ? Number(event.target.value) : null,
+                      )
+                    }
                     min={0}
                     max={150}
                   />
@@ -122,7 +149,7 @@ export const StudentFiltersContent = ({
         <FormField
           control={filtersForm.control}
           name="gender"
-          render={({field}) => (
+          render={({ field }) => (
             <FormItem>
               <FormLabel>Gênero</FormLabel>
               <FormControl>
@@ -145,7 +172,7 @@ export const StudentFiltersContent = ({
         <FormField
           control={filtersForm.control}
           name="profession"
-          render={({field}) => (
+          render={({ field }) => (
             <FormItem>
               <FormLabel>Profissão</FormLabel>
               <FormControl>
@@ -171,7 +198,7 @@ export const StudentFiltersContent = ({
           <FormField
             control={filtersForm.control}
             name="startDate"
-            render={({field}) => (
+            render={({ field }) => (
               <FormItem>
                 <FormLabel>Data de ingresso (De)</FormLabel>
                 <FormControl>
@@ -179,7 +206,11 @@ export const StudentFiltersContent = ({
                     type="date"
                     value={field.value}
                     onChange={field.onChange}
-                    className={hasInvalidDateRange ? "border-red-500 focus-visible:ring-red-500" : undefined}
+                    className={
+                      hasInvalidDateRange
+                        ? "border-red-500 focus-visible:ring-red-500"
+                        : undefined
+                    }
                   />
                 </FormControl>
               </FormItem>
@@ -189,7 +220,7 @@ export const StudentFiltersContent = ({
           <FormField
             control={filtersForm.control}
             name="endDate"
-            render={({field}) => (
+            render={({ field }) => (
               <FormItem>
                 <FormLabel>Data de ingresso (Até)</FormLabel>
                 <FormControl>
@@ -197,11 +228,17 @@ export const StudentFiltersContent = ({
                     type="date"
                     value={field.value}
                     onChange={field.onChange}
-                    className={hasInvalidDateRange ? "border-red-500 focus-visible:ring-red-500" : undefined}
+                    className={
+                      hasInvalidDateRange
+                        ? "border-red-500 focus-visible:ring-red-500"
+                        : undefined
+                    }
                   />
                 </FormControl>
                 {hasInvalidDateRange ? (
-                  <p className="text-xs text-red-600">A data inicial não pode ser posterior à data final.</p>
+                  <p className="text-xs text-red-600">
+                    A data inicial não pode ser posterior à data final.
+                  </p>
                 ) : null}
               </FormItem>
             )}
@@ -209,12 +246,17 @@ export const StudentFiltersContent = ({
         </div>
 
         {hasActiveFilters ? (
-          <Button type="button" variant="outline" onClick={clearFilters} className="w-full">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={clearFilters}
+            className="w-full"
+          >
             <X className="mr-2 h-4 w-4" aria-hidden="true" />
             Limpar filtros
           </Button>
         ) : null}
       </form>
     </Form>
-  )
-}
+  );
+};

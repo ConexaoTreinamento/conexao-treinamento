@@ -1,11 +1,11 @@
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface StatusBadgeProps {
-  active: boolean
-  activeLabel?: string
-  inactiveLabel?: string
-  className?: string
+  active: boolean;
+  activeLabel?: string;
+  inactiveLabel?: string;
+  className?: string;
 }
 
 export function StatusBadge({
@@ -19,11 +19,13 @@ export function StatusBadge({
       variant={active ? "default" : "outline"}
       className={cn(
         "text-xs",
-        active ? "bg-green-600 hover:bg-green-700 text-white" : "text-muted-foreground",
+        active
+          ? "bg-green-600 hover:bg-green-700 text-white"
+          : "text-muted-foreground",
         className,
       )}
     >
       {active ? activeLabel : inactiveLabel}
     </Badge>
-  )
+  );
 }

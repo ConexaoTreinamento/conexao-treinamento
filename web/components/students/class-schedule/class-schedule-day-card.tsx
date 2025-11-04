@@ -1,48 +1,56 @@
-"use client"
+"use client";
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { AlertTriangle, Calendar, Clock, History, User, Users } from "lucide-react"
-import { Fragment } from "react"
-import type { NormalizedSeries } from "./types"
+} from "@/components/ui/tooltip";
+import {
+  AlertTriangle,
+  Calendar,
+  Clock,
+  History,
+  User,
+  Users,
+} from "lucide-react";
+import { Fragment } from "react";
+import type { NormalizedSeries } from "./types";
 
 interface ClassScheduleDayCardProps {
-  dayLabel: string
-  weekday: number
-  classes: NormalizedSeries[]
-  selectedSeries: ReadonlyArray<string>
-  activeSeriesIds: ReadonlySet<string>
-  canSelectSeries: (seriesId: string) => boolean
-  toggleSeries: (seriesId: string) => void
-  hasConflict: (series: NormalizedSeries) => boolean
-  getTrainerLabel: (series: NormalizedSeries) => string
-  onOpenParticipants: (seriesId: string) => void
-  onOpenHistory: (seriesId: string) => void
+  dayLabel: string;
+  weekday: number;
+  classes: NormalizedSeries[];
+  selectedSeries: ReadonlyArray<string>;
+  activeSeriesIds: ReadonlySet<string>;
+  canSelectSeries: (seriesId: string) => boolean;
+  toggleSeries: (seriesId: string) => void;
+  hasConflict: (series: NormalizedSeries) => boolean;
+  getTrainerLabel: (series: NormalizedSeries) => string;
+  onOpenParticipants: (seriesId: string) => void;
+  onOpenHistory: (seriesId: string) => void;
 }
 
-const formatTime = (value?: string): string => (value ? value.slice(0, 5) : "--:--")
+const formatTime = (value?: string): string =>
+  value ? value.slice(0, 5) : "--:--";
 
 const getOccupancyColor = (current: number, max: number): string => {
   if (max === 0) {
-    return "bg-muted"
+    return "bg-muted";
   }
-  const percentage = (current / max) * 100
+  const percentage = (current / max) * 100;
   if (percentage >= 90) {
-    return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+    return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
   }
   if (percentage >= 70) {
-    return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+    return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
   }
-  return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-}
+  return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+};
 
 export function ClassScheduleDayCard({
   dayLabel,
@@ -71,12 +79,12 @@ export function ClassScheduleDayCard({
       </CardHeader>
       <CardContent className="space-y-2">
         {classes.map((session) => {
-          const isSelected = selectedSeries.includes(session.id)
-          const canSelect = canSelectSeries(session.id)
-          const max = session.capacity ?? 0
-          const current = session.enrolledCount ?? 0
-          const conflict = isSelected && hasConflict(session)
-          const trainerLabel = getTrainerLabel(session)
+          const isSelected = selectedSeries.includes(session.id);
+          const canSelect = canSelectSeries(session.id);
+          const max = session.capacity ?? 0;
+          const current = session.enrolledCount ?? 0;
+          const conflict = isSelected && hasConflict(session);
+          const trainerLabel = getTrainerLabel(session);
 
           return (
             <Fragment key={session.id}>
@@ -96,7 +104,9 @@ export function ClassScheduleDayCard({
                   />
                   <div className="min-w-0 flex-1">
                     <div className="mb-1 flex items-center gap-2">
-                      <h4 className="text-sm font-medium">{session.seriesName}</h4>
+                      <h4 className="text-sm font-medium">
+                        {session.seriesName}
+                      </h4>
                       {max > 0 ? (
                         <TooltipProvider delayDuration={300}>
                           <Tooltip>
@@ -104,7 +114,7 @@ export function ClassScheduleDayCard({
                               <Badge
                                 className={`${getOccupancyColor(
                                   current,
-                                  max
+                                  max,
                                 )} text-xs ${current >= max ? "ring-2 ring-red-500" : ""}`}
                               >
                                 {current}/{max}
@@ -121,7 +131,10 @@ export function ClassScheduleDayCard({
                         <TooltipProvider delayDuration={300}>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Badge variant="secondary" className="text-[10px]">
+                              <Badge
+                                variant="secondary"
+                                className="text-[10px]"
+                              >
                                 Ativo
                               </Badge>
                             </TooltipTrigger>
@@ -143,7 +156,8 @@ export function ClassScheduleDayCard({
                               </Badge>
                             </TooltipTrigger>
                             <TooltipContent>
-                              Conflito de horário com outra série selecionada no mesmo dia
+                              Conflito de horário com outra série selecionada no
+                              mesmo dia
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -153,12 +167,16 @@ export function ClassScheduleDayCard({
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         <span>
-                          {formatTime(session.startTime)} - {formatTime(session.endTime)}
+                          {formatTime(session.startTime)} -{" "}
+                          {formatTime(session.endTime)}
                         </span>
                       </div>
                       <div className="flex items-center gap-1">
                         <User className="h-3 w-3" />
-                        <span className="max-w-[14rem] truncate" title={trainerLabel}>
+                        <span
+                          className="max-w-[14rem] truncate"
+                          title={trainerLabel}
+                        >
                           {trainerLabel}
                         </span>
                       </div>
@@ -188,7 +206,10 @@ export function ClassScheduleDayCard({
                   </div>
                 </div>
                 {max > 0 ? (
-                  <div aria-hidden className="h-1.5 overflow-hidden rounded bg-muted">
+                  <div
+                    aria-hidden
+                    className="h-1.5 overflow-hidden rounded bg-muted"
+                  >
                     <div
                       className="h-full bg-green-600 transition-all"
                       style={{
@@ -199,9 +220,9 @@ export function ClassScheduleDayCard({
                 ) : null}
               </div>
             </Fragment>
-          )
+          );
         })}
       </CardContent>
     </Card>
-  )
+  );
 }

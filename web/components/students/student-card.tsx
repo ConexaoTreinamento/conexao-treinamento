@@ -25,7 +25,7 @@ export interface StudentCardProps {
 }
 
 const getPlanLabel = (
-  assignment: StudentPlanAssignmentResponseDto | null
+  assignment: StudentPlanAssignmentResponseDto | null,
 ): string => {
   if (!assignment?.planName?.trim()) {
     return "Plano: não atribuído";
@@ -61,7 +61,7 @@ export const StudentCard = ({
   const fullName = `${student.name ?? ""} ${student.surname ?? ""}`.trim();
   const initials = useMemo(
     () => getInitials(fullName || student.email || ""),
-    [fullName, student.email]
+    [fullName, student.email],
   );
   const age = useMemo(() => {
     if (!student.birthDate) {

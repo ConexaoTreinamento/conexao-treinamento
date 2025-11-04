@@ -1,29 +1,29 @@
-"use client"
+"use client";
 
-import { Calendar } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { EditButton } from "@/components/base/edit-button"
-import { PageHeader } from "@/components/base/page-header"
+import { Calendar } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { EditButton } from "@/components/base/edit-button";
+import { PageHeader } from "@/components/base/page-header";
 
 interface EvaluationDetailHeaderProps {
-  studentName: string
-  evaluationDate?: string
-  onBack: () => void
-  onEdit?: () => void
+  studentName: string;
+  evaluationDate?: string;
+  onBack: () => void;
+  onEdit?: () => void;
 }
 
 const formatDate = (value?: string): string => {
   if (!value) {
-    return ""
+    return "";
   }
 
-  const date = new Date(value)
+  const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return ""
+    return "";
   }
 
-  return date.toLocaleDateString("pt-BR")
-}
+  return date.toLocaleDateString("pt-BR");
+};
 
 export function EvaluationDetailHeader({
   studentName,
@@ -31,7 +31,7 @@ export function EvaluationDetailHeader({
   onBack,
   onEdit,
 }: EvaluationDetailHeaderProps) {
-  const formattedDate = formatDate(evaluationDate)
+  const formattedDate = formatDate(evaluationDate);
 
   const rightActions = (
     <>
@@ -50,9 +50,14 @@ export function EvaluationDetailHeader({
         />
       ) : null}
     </>
-  )
+  );
 
   return (
-    <PageHeader title="Avaliação Física" description={studentName} onBack={onBack} rightActions={rightActions} />
-  )
+    <PageHeader
+      title="Avaliação Física"
+      description={studentName}
+      onBack={onBack}
+      rightActions={rightActions}
+    />
+  );
 }

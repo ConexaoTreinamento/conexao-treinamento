@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import { Label } from "@/components/ui/label"
-import { TrainerSelect } from "@/components/trainers/trainer-select"
-import type { TrainerLookupDto } from "@/lib/api-client/types.gen"
+import { Label } from "@/components/ui/label";
+import { TrainerSelect } from "@/components/trainers/trainer-select";
+import type { TrainerLookupDto } from "@/lib/api-client/types.gen";
 
 interface ClassScheduleTrainerFilterProps {
-  trainers: Array<TrainerLookupDto & { id: string }>
-  value: string
-  onValueChange: (value: string) => void
-  isLoading: boolean
-  isError: boolean
+  trainers: Array<TrainerLookupDto & { id: string }>;
+  value: string;
+  onValueChange: (value: string) => void;
+  isLoading: boolean;
+  isError: boolean;
 }
 
 export function ClassScheduleTrainerFilter({
@@ -34,5 +34,5 @@ export function ClassScheduleTrainerFilter({
         className="w-full"
       />
     </div>
-  )
+  );
 }

@@ -1,63 +1,69 @@
-"use client"
+"use client";
 
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Loader2, Plus, Save } from 'lucide-react'
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Loader2, Plus, Save } from "lucide-react";
 
 const planFormSchema = z.object({
-  name: z.string().min(2, 'Nome obrigatório'),
+  name: z.string().min(2, "Nome obrigatório"),
   maxDays: z.coerce.number().int().min(1).max(7),
-  durationDays: z.coerce.number().int().min(7).max(365)
-})
+  durationDays: z.coerce.number().int().min(7).max(365),
+});
 
-export type PlanFormValues = z.infer<typeof planFormSchema>
+export type PlanFormValues = z.infer<typeof planFormSchema>;
 
 const DEFAULT_VALUES: PlanFormValues = {
-  name: '',
+  name: "",
   maxDays: 3,
-  durationDays: 30
-}
+  durationDays: 30,
+};
 
 type PlanCreateDialogProps = {
-  onCreate: (values: PlanFormValues) => Promise<void>
-  isSubmitting: boolean
-}
+  onCreate: (values: PlanFormValues) => Promise<void>;
+  isSubmitting: boolean;
+};
 
 export function PlanCreateDialog(props: PlanCreateDialogProps) {
-  const { onCreate, isSubmitting } = props
-  const [open, setOpen] = useState(false)
+  const { onCreate, isSubmitting } = props;
+  const [open, setOpen] = useState(false);
 
   const form = useForm<PlanFormValues>({
     resolver: zodResolver(planFormSchema),
-    defaultValues: DEFAULT_VALUES
-  })
+    defaultValues: DEFAULT_VALUES,
+  });
 
   const closeAndReset = () => {
-    setOpen(false)
-    form.reset(DEFAULT_VALUES)
-  }
+    setOpen(false);
+    form.reset(DEFAULT_VALUES);
+  };
 
   const handleSubmit = form.handleSubmit(async (values) => {
     try {
-      await onCreate(values)
-      closeAndReset()
+      await onCreate(values);
+      closeAndReset();
     } catch {
       // The parent handles error feedback (e.g. via toast)
     }
-  })
+  });
 
   return (
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
-        setOpen(nextOpen)
+        setOpen(nextOpen);
         if (!nextOpen) {
-          form.reset(DEFAULT_VALUES)
+          form.reset(DEFAULT_VALUES);
         }
       }}
     >
@@ -76,7 +82,7 @@ export function PlanCreateDialog(props: PlanCreateDialogProps) {
             <label className="text-xs font-medium" htmlFor="plan-name">
               Nome
             </label>
-            <Input id="plan-name" {...form.register('name')} />
+            <Input id="plan-name" {...form.register("name")} />
             {form.formState.errors.name && (
               <p className="text-xs text-red-600">
                 {form.formState.errors.name.message}
@@ -91,7 +97,7 @@ export function PlanCreateDialog(props: PlanCreateDialogProps) {
               <Input
                 id="plan-max-days"
                 type="number"
-                {...form.register('maxDays', { valueAsNumber: true })}
+                {...form.register("maxDays", { valueAsNumber: true })}
               />
               {form.formState.errors.maxDays && (
                 <p className="text-xs text-red-600">
@@ -100,13 +106,16 @@ export function PlanCreateDialog(props: PlanCreateDialogProps) {
               )}
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium" htmlFor="plan-duration-days">
+              <label
+                className="text-xs font-medium"
+                htmlFor="plan-duration-days"
+              >
                 Duração (dias)
               </label>
               <Input
                 id="plan-duration-days"
                 type="number"
-                {...form.register('durationDays', { valueAsNumber: true })}
+                {...form.register("durationDays", { valueAsNumber: true })}
               />
               {form.formState.errors.durationDays && (
                 <p className="text-xs text-red-600">
@@ -132,5 +141,5 @@ export function PlanCreateDialog(props: PlanCreateDialogProps) {
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

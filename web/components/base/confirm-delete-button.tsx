@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import React from "react"
-import { Trash2 } from "lucide-react"
-import { buttonVariants, type ButtonProps } from "@/components/ui/button"
-import { ProfileActionButton } from "@/components/base/profile-action-button"
+import React from "react";
+import { Trash2 } from "lucide-react";
+import { type ButtonProps, buttonVariants } from "@/components/ui/button";
+import { ProfileActionButton } from "@/components/base/profile-action-button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,18 +14,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
 type ConfirmDeleteButtonProps = {
-  title?: string
-  description?: string
-  confirmText?: string
-  onConfirm: () => Promise<void> | void
-  confirmVariant?: ButtonProps["variant"]
-  children?: React.ReactNode
-  fullWidthOnDesktop?: boolean
-} & Omit<ButtonProps, "onClick">
+  title?: string;
+  description?: string;
+  confirmText?: string;
+  onConfirm: () => Promise<void> | void;
+  confirmVariant?: ButtonProps["variant"];
+  children?: React.ReactNode;
+  fullWidthOnDesktop?: boolean;
+} & Omit<ButtonProps, "onClick">;
 
 export default function ConfirmDeleteButton({
   title = "Excluir Registro",
@@ -42,21 +42,21 @@ export default function ConfirmDeleteButton({
   fullWidthOnDesktop = false,
   ...buttonProps
 }: ConfirmDeleteButtonProps) {
-  const [open, setOpen] = React.useState(false)
-  const [loading, setLoading] = React.useState(false)
+  const [open, setOpen] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
 
   const handleConfirm = async () => {
     try {
-      setLoading(true)
-      await onConfirm()
-      setOpen(false)
+      setLoading(true);
+      await onConfirm();
+      setOpen(false);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <AlertDialog open={open} onOpenChange={v => !loading && setOpen(v)}>
+    <AlertDialog open={open} onOpenChange={(v) => !loading && setOpen(v)}>
       <AlertDialogTrigger asChild>
         <ProfileActionButton
           variant={variant}
@@ -71,17 +71,22 @@ export default function ConfirmDeleteButton({
           {children ?? <Trash2 className="w-4 h-4" />}
         </ProfileActionButton>
       </AlertDialogTrigger>
-      <AlertDialogContent onClick={e => e.stopPropagation()}>
+      <AlertDialogContent onClick={(e) => e.stopPropagation()}>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading} onClick={e => e.stopPropagation()} >Cancelar</AlertDialogCancel>
+          <AlertDialogCancel
+            disabled={loading}
+            onClick={(e) => e.stopPropagation()}
+          >
+            Cancelar
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={(event) => {
-              event.stopPropagation()
-              void handleConfirm()
+              event.stopPropagation();
+              void handleConfirm();
             }}
             className={cn(
               buttonVariants({ variant: confirmVariant }),
@@ -94,5 +99,5 @@ export default function ConfirmDeleteButton({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }

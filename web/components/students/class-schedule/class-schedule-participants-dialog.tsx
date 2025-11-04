@@ -1,20 +1,25 @@
-"use client"
+"use client";
 
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import type { CommitmentDetailResponseDto } from "@/lib/api-client"
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import type { CommitmentDetailResponseDto } from "@/lib/api-client";
 
-type ParticipantFilter = "ALL" | "ATTENDING"
+type ParticipantFilter = "ALL" | "ATTENDING";
 
 interface ClassScheduleParticipantsDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  participants: CommitmentDetailResponseDto[]
-  isLoading: boolean
-  filter: ParticipantFilter
-  onFilterChange: (filter: ParticipantFilter) => void
-  statusLabel: (status?: string) => string
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  participants: CommitmentDetailResponseDto[];
+  isLoading: boolean;
+  filter: ParticipantFilter;
+  onFilterChange: (filter: ParticipantFilter) => void;
+  statusLabel: (status?: string) => string;
 }
 
 export function ClassScheduleParticipantsDialog({
@@ -26,9 +31,10 @@ export function ClassScheduleParticipantsDialog({
   onFilterChange,
   statusLabel,
 }: ClassScheduleParticipantsDialogProps) {
-  const visibleParticipants = participants.filter((participant) =>
-    filter === "ALL" || participant.commitmentStatus === "ATTENDING"
-  )
+  const visibleParticipants = participants.filter(
+    (participant) =>
+      filter === "ALL" || participant.commitmentStatus === "ATTENDING",
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -64,15 +70,27 @@ export function ClassScheduleParticipantsDialog({
             <p className="text-xs text-muted-foreground">Carregando...</p>
           ) : null}
           {!isLoading && visibleParticipants.length === 0 ? (
-            <p className="text-xs text-muted-foreground">Nenhum participante.</p>
+            <p className="text-xs text-muted-foreground">
+              Nenhum participante.
+            </p>
           ) : null}
           {visibleParticipants.map((participant) => (
-            <div key={participant.id} className="flex items-center justify-between rounded border p-2">
-              <span className="truncate font-medium" title={participant.seriesName}>
+            <div
+              key={participant.id}
+              className="flex items-center justify-between rounded border p-2"
+            >
+              <span
+                className="truncate font-medium"
+                title={participant.seriesName}
+              >
                 {participant.studentName || participant.seriesName}
               </span>
               <Badge
-                variant={participant.commitmentStatus === "ATTENDING" ? "secondary" : "outline"}
+                variant={
+                  participant.commitmentStatus === "ATTENDING"
+                    ? "secondary"
+                    : "outline"
+                }
                 className="text-[10px]"
               >
                 {statusLabel(participant.commitmentStatus)}
@@ -82,5 +100,5 @@ export function ClassScheduleParticipantsDialog({
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

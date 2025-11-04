@@ -1,72 +1,93 @@
-"use client"
+"use client";
 
-import { useMemo } from "react"
-import { AdministratorCard } from "@/components/administrators/administrator-card"
-import { EmptyState } from "@/components/base/empty-state"
-import { EntityList } from "@/components/base/entity-list"
-import { Section } from "@/components/base/section"
-import { Skeleton } from "@/components/ui/skeleton"
-import type { ListAdministratorsDto } from "@/lib/api-client"
+import { useMemo } from "react";
+import { AdministratorCard } from "@/components/administrators/administrator-card";
+import { EmptyState } from "@/components/base/empty-state";
+import { EntityList } from "@/components/base/entity-list";
+import { Section } from "@/components/base/section";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { ListAdministratorsDto } from "@/lib/api-client";
 
 interface AdministratorListProps {
-  administrators: ListAdministratorsDto[]
-  searchTerm: string
-  isLoading: boolean
-  error: unknown
-  onAdministratorOpen: (administrator: ListAdministratorsDto) => void
+  administrators: ListAdministratorsDto[];
+  searchTerm: string;
+  isLoading: boolean;
+  error: unknown;
+  onAdministratorOpen: (administrator: ListAdministratorsDto) => void;
 }
 
-const resolveAdministratorName = (administrator: ListAdministratorsDto): string => {
-  const fallback = `${administrator.firstName ?? ""} ${administrator.lastName ?? ""}`.trim()
-  return administrator.fullName?.trim() || fallback || administrator.email || "Administrador"
-}
+const resolveAdministratorName = (
+  administrator: ListAdministratorsDto,
+): string => {
+  const fallback =
+    `${administrator.firstName ?? ""} ${administrator.lastName ?? ""}`.trim();
+  return (
+    administrator.fullName?.trim() ||
+    fallback ||
+    administrator.email ||
+    "Administrador"
+  );
+};
 
-const matchesSearch = (administrator: ListAdministratorsDto, searchTerm: string): boolean => {
+const matchesSearch = (
+  administrator: ListAdministratorsDto,
+  searchTerm: string,
+): boolean => {
   if (!searchTerm) {
-    return true
+    return true;
   }
 
-  const normalizedSearch = searchTerm.toLowerCase()
-  const name = resolveAdministratorName(administrator).toLowerCase()
-  const email = (administrator.email ?? "").toLowerCase()
+  const normalizedSearch = searchTerm.toLowerCase();
+  const name = resolveAdministratorName(administrator).toLowerCase();
+  const email = (administrator.email ?? "").toLowerCase();
 
-  return name.includes(normalizedSearch) || email.includes(normalizedSearch)
-}
+  return name.includes(normalizedSearch) || email.includes(normalizedSearch);
+};
 
 export function AdministratorList(props: AdministratorListProps) {
-  const { administrators, searchTerm, isLoading, error, onAdministratorOpen } = props
+  const { administrators, searchTerm, isLoading, error, onAdministratorOpen } =
+    props;
 
   const filteredAdministrators = useMemo(
-    () => administrators.filter((administrator) => matchesSearch(administrator, searchTerm)),
-    [administrators, searchTerm]
-  )
+    () =>
+      administrators.filter((administrator) =>
+        matchesSearch(administrator, searchTerm),
+      ),
+    [administrators, searchTerm],
+  );
 
-  const totalAdministrators = administrators.length
-  const hasError = Boolean(error)
+  const totalAdministrators = administrators.length;
+  const hasError = Boolean(error);
 
   const resultsSummary = useMemo(() => {
     if (isLoading) {
-      return "Carregando administradores..."
+      return "Carregando administradores...";
     }
 
     if (hasError) {
-      return "Não foi possível carregar os administradores."
+      return "Não foi possível carregar os administradores.";
     }
 
     if (!totalAdministrators) {
-      return "Nenhum administrador cadastrado ainda."
+      return "Nenhum administrador cadastrado ainda.";
     }
 
     if (!filteredAdministrators.length) {
-      return "Ajuste a busca para encontrar administradores."
+      return "Ajuste a busca para encontrar administradores.";
     }
 
     if (filteredAdministrators.length === totalAdministrators && !searchTerm) {
-      return `${filteredAdministrators.length} administradores cadastrados`
+      return `${filteredAdministrators.length} administradores cadastrados`;
     }
 
-    return `${filteredAdministrators.length} de ${totalAdministrators} administradores exibidos`
-  }, [filteredAdministrators.length, hasError, isLoading, searchTerm, totalAdministrators])
+    return `${filteredAdministrators.length} de ${totalAdministrators} administradores exibidos`;
+  }, [
+    filteredAdministrators.length,
+    hasError,
+    isLoading,
+    searchTerm,
+    totalAdministrators,
+  ]);
 
   return (
     <Section title="Resultados" description={resultsSummary}>
@@ -95,7 +116,11 @@ export function AdministratorList(props: AdministratorListProps) {
       {!isLoading && !hasError && filteredAdministrators.length ? (
         <EntityList>
           {filteredAdministrators.map((administrator, index) => {
-            const key = administrator.id || administrator.email || administrator.fullName || `administrator-${index}`
+            const key =
+              administrator.id ||
+              administrator.email ||
+              administrator.fullName ||
+              `administrator-${index}`;
 
             return (
               <AdministratorCard
@@ -103,10 +128,10 @@ export function AdministratorList(props: AdministratorListProps) {
                 administrator={administrator}
                 onOpen={() => onAdministratorOpen(administrator)}
               />
-            )
+            );
           })}
         </EntityList>
       ) : null}
     </Section>
-  )
+  );
 }

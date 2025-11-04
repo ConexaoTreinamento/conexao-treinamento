@@ -1,21 +1,21 @@
-import type { LucideIcon } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { StatCard, type StatCardProps } from "@/components/base/stat-card"
-import { EmptyState } from "@/components/base/empty-state"
+import type { LucideIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { StatCard, type StatCardProps } from "@/components/base/stat-card";
+import { EmptyState } from "@/components/base/empty-state";
 
 interface DashboardStat extends Omit<StatCardProps, "value"> {
-  id: string
-  value: string | number
+  id: string;
+  value: string | number;
 }
 
 interface DashboardStatsGridProps {
-  stats: DashboardStat[]
+  stats: DashboardStat[];
 }
 
 export function DashboardStatsGrid({ stats }: DashboardStatsGridProps) {
-  if (!stats.length) return null
+  if (!stats.length) return null;
 
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -23,36 +23,45 @@ export function DashboardStatsGrid({ stats }: DashboardStatsGridProps) {
         <StatCard key={id} {...stat} />
       ))}
     </div>
-  )
+  );
 }
 
 interface DashboardActivity {
-  id: string
-  title: string
-  subtitle: string
-  icon: LucideIcon
-  accent?: StatCardProps["accent"]
+  id: string;
+  title: string;
+  subtitle: string;
+  icon: LucideIcon;
+  accent?: StatCardProps["accent"];
 }
 
-const ACTIVITY_ACCENTS: Record<NonNullable<DashboardActivity["accent"]>, string> = {
+const ACTIVITY_ACCENTS: Record<
+  NonNullable<DashboardActivity["accent"]>,
+  string
+> = {
   green: "text-green-600 dark:text-green-400",
   blue: "text-blue-600 dark:text-blue-300",
   purple: "text-purple-600 dark:text-purple-300",
   orange: "text-orange-600 dark:text-orange-300",
   neutral: "text-muted-foreground",
-}
+};
 
 interface DashboardActivitiesCardProps {
-  activities: DashboardActivity[]
-  emptyLabel?: string
-  badge?: string
+  activities: DashboardActivity[];
+  emptyLabel?: string;
+  badge?: string;
 }
 
-export function DashboardActivitiesCard({ activities, emptyLabel = "Nenhuma atividade recente", badge }: DashboardActivitiesCardProps) {
+export function DashboardActivitiesCard({
+  activities,
+  emptyLabel = "Nenhuma atividade recente",
+  badge,
+}: DashboardActivitiesCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2">
-        <CardTitle className="flex items-center gap-2 text-base">Atividades recentes</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base">
+          Atividades recentes
+        </CardTitle>
         {badge ? (
           <Badge variant="outline" className="text-xs">
             {badge}
@@ -69,13 +78,19 @@ export function DashboardActivitiesCard({ activities, emptyLabel = "Nenhuma ativ
               <activity.icon
                 className={
                   "h-5 w-5 " +
-                  (activity.accent ? ACTIVITY_ACCENTS[activity.accent] : ACTIVITY_ACCENTS.green)
+                  (activity.accent
+                    ? ACTIVITY_ACCENTS[activity.accent]
+                    : ACTIVITY_ACCENTS.green)
                 }
                 aria-hidden="true"
               />
               <div className="flex-1 space-y-1">
-                <p className="text-sm font-medium leading-tight">{activity.title}</p>
-                <p className="text-xs text-muted-foreground">{activity.subtitle}</p>
+                <p className="text-sm font-medium leading-tight">
+                  {activity.title}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {activity.subtitle}
+                </p>
               </div>
             </div>
           ))
@@ -88,23 +103,27 @@ export function DashboardActivitiesCard({ activities, emptyLabel = "Nenhuma ativ
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
 
 interface ExpiredPlanSummary {
-  id: string
-  student: string
-  plan: string
-  expiredLabel: string
+  id: string;
+  student: string;
+  plan: string;
+  expiredLabel: string;
 }
 
 interface DashboardPlansCardProps {
-  plans: ExpiredPlanSummary[]
-  onViewAll?: () => void
-  badge?: string
+  plans: ExpiredPlanSummary[];
+  onViewAll?: () => void;
+  badge?: string;
 }
 
-export function DashboardPlansCard({ plans, onViewAll, badge }: DashboardPlansCardProps) {
+export function DashboardPlansCard({
+  plans,
+  onViewAll,
+  badge,
+}: DashboardPlansCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -117,7 +136,12 @@ export function DashboardPlansCard({ plans, onViewAll, badge }: DashboardPlansCa
           ) : null}
         </div>
         {onViewAll ? (
-          <Button variant="outline" size="sm" onClick={onViewAll} className="bg-transparent">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onViewAll}
+            className="bg-transparent"
+          >
             Ver todos
           </Button>
         ) : null}
@@ -131,7 +155,9 @@ export function DashboardPlansCard({ plans, onViewAll, badge }: DashboardPlansCa
             >
               <div>
                 <p className="font-medium leading-tight">{plan.student}</p>
-                <p className="text-xs text-muted-foreground">Plano {plan.plan}</p>
+                <p className="text-xs text-muted-foreground">
+                  Plano {plan.plan}
+                </p>
               </div>
               <Badge variant="destructive" className="text-xs">
                 {plan.expiredLabel}
@@ -147,31 +173,36 @@ export function DashboardPlansCard({ plans, onViewAll, badge }: DashboardPlansCa
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
 
 interface ScheduleEntry {
-  id: string
-  title: string
-  subtitle: string
-  timeLabel: string
-  badge?: string
+  id: string;
+  title: string;
+  subtitle: string;
+  timeLabel: string;
+  badge?: string;
 }
 
 interface DashboardScheduleCardProps {
-  items: ScheduleEntry[]
+  items: ScheduleEntry[];
 }
 
 export function DashboardScheduleCard({ items }: DashboardScheduleCardProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">Minha agenda de hoje</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-base">
+          Minha agenda de hoje
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {items.length ? (
           items.map((item) => (
-            <div key={item.id} className="flex items-center justify-between rounded-md border border-border/50 bg-muted/40 p-3 text-sm">
+            <div
+              key={item.id}
+              className="flex items-center justify-between rounded-md border border-border/50 bg-muted/40 p-3 text-sm"
+            >
               <div>
                 <p className="font-medium leading-tight">{item.title}</p>
                 <p className="text-xs text-muted-foreground">{item.subtitle}</p>
@@ -190,5 +221,5 @@ export function DashboardScheduleCard({ items }: DashboardScheduleCardProps) {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

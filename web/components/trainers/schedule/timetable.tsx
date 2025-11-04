@@ -1,41 +1,48 @@
-import { Calendar as CalendarIcon } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import type { TrainerScheduleResponseDto } from "@/lib/api-client/types.gen"
-import { WEEKDAY_NAMES } from "./constants"
-import { scheduleEndHHmm, scheduleEndMinutes, toMinutes, toHHmm } from "./time-helpers"
+import { Calendar as CalendarIcon } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { TrainerScheduleResponseDto } from "@/lib/api-client/types.gen";
+import { WEEKDAY_NAMES } from "./constants";
+import {
+  scheduleEndHHmm,
+  scheduleEndMinutes,
+  toHHmm,
+  toMinutes,
+} from "./time-helpers";
 
-const ROW_HEIGHT_PX = 56
+const ROW_HEIGHT_PX = 56;
 
 const ensureDayBuckets = (
   schedules: TrainerScheduleResponseDto[],
 ): Record<number, TrainerScheduleResponseDto[]> => {
-  const buckets: Record<number, TrainerScheduleResponseDto[]> = {}
+  const buckets: Record<number, TrainerScheduleResponseDto[]> = {};
 
   for (const schedule of schedules) {
-    const weekday = schedule.weekday ?? 0
-    const bucket = buckets[weekday] ?? []
-    bucket.push(schedule)
-    buckets[weekday] = bucket
+    const weekday = schedule.weekday ?? 0;
+    const bucket = buckets[weekday] ?? [];
+    bucket.push(schedule);
+    buckets[weekday] = bucket;
   }
 
-  return buckets
-}
+  return buckets;
+};
 
 const getHourRange = (schedules: TrainerScheduleResponseDto[]) => {
   if (!schedules.length) {
-    return { startHour: 8, endHour: 18 }
+    return { startHour: 8, endHour: 18 };
   }
 
-  const starts = schedules.map((schedule) => toMinutes(schedule.startTime))
-  const ends = schedules.map((schedule) => scheduleEndMinutes(schedule))
-  const minStart = Math.min(...starts)
-  const maxEnd = Math.max(...ends)
+  const starts = schedules.map((schedule) => toMinutes(schedule.startTime));
+  const ends = schedules.map((schedule) => scheduleEndMinutes(schedule));
+  const minStart = Math.min(...starts);
+  const maxEnd = Math.max(...ends);
 
-  const startHour = Number.isFinite(minStart) ? Math.floor(minStart / 60) : 8
-  const endHour = Number.isFinite(maxEnd) ? Math.ceil(maxEnd / 60) : startHour + 1
+  const startHour = Number.isFinite(minStart) ? Math.floor(minStart / 60) : 8;
+  const endHour = Number.isFinite(maxEnd)
+    ? Math.ceil(maxEnd / 60)
+    : startHour + 1;
 
-  return { startHour, endHour }
-}
+  return { startHour, endHour };
+};
 
 const HoursColumn = ({ hours }: { hours: number[] }) => (
   <div
@@ -52,7 +59,7 @@ const HoursColumn = ({ hours }: { hours: number[] }) => (
       </div>
     ))}
   </div>
-)
+);
 
 const HourGridLines = ({ hours }: { hours: number[] }) => (
   <>
@@ -64,22 +71,28 @@ const HourGridLines = ({ hours }: { hours: number[] }) => (
       />
     ))}
   </>
-)
+);
 
 export interface TrainerTimetableProps {
-  schedules: TrainerScheduleResponseDto[]
+  schedules: TrainerScheduleResponseDto[];
 }
 
 export const TrainerWeekTimetable = ({ schedules }: TrainerTimetableProps) => {
-  const buckets = ensureDayBuckets(schedules)
-  const { startHour, endHour } = getHourRange(schedules)
-  const hours = Array.from({ length: Math.max(endHour - startHour, 1) + 1 }, (_, index) => startHour + index)
-  const totalHeight = Math.max(1, endHour - startHour) * ROW_HEIGHT_PX
+  const buckets = ensureDayBuckets(schedules);
+  const { startHour, endHour } = getHourRange(schedules);
+  const hours = Array.from(
+    { length: Math.max(endHour - startHour, 1) + 1 },
+    (_, index) => startHour + index,
+  );
+  const totalHeight = Math.max(1, endHour - startHour) * ROW_HEIGHT_PX;
 
   return (
     <div className="relative mt-2 overflow-auto rounded-md border bg-background timetable-desktop">
       <div className="min-w-[980px]">
-        <div className="grid sticky top-0 z-30" style={{ gridTemplateColumns: "80px repeat(7,1fr)" }}>
+        <div
+          className="grid sticky top-0 z-30"
+          style={{ gridTemplateColumns: "80px repeat(7,1fr)" }}
+        >
           <div className="sticky left-0 z-40 flex h-10 items-center justify-center border-r bg-muted/60 text-xs font-medium backdrop-blur supports-[backdrop-filter]:bg-muted/50">
             Hora
           </div>
@@ -102,15 +115,22 @@ export const TrainerWeekTimetable = ({ schedules }: TrainerTimetableProps) => {
             style={{ gridTemplateColumns: "repeat(7,1fr)" }}
           >
             {Array.from({ length: 7 }, (_, day) => {
-              const daySchedules = (buckets[day] ?? []).slice().sort((a, b) => toMinutes(a.startTime) - toMinutes(b.startTime))
+              const daySchedules = (buckets[day] ?? [])
+                .slice()
+                .sort(
+                  (a, b) => toMinutes(a.startTime) - toMinutes(b.startTime),
+                );
 
               return (
                 <div key={day} className="relative border-r last:border-r-0">
                   {daySchedules.map((schedule) => {
-                    const startMinutes = toMinutes(schedule.startTime)
-                    const endMinutes = scheduleEndMinutes(schedule)
-                    const top = ((startMinutes / 60) - startHour) * ROW_HEIGHT_PX
-                    const height = Math.max(((endMinutes - startMinutes) / 60) * ROW_HEIGHT_PX, 24)
+                    const startMinutes = toMinutes(schedule.startTime);
+                    const endMinutes = scheduleEndMinutes(schedule);
+                    const top = (startMinutes / 60 - startHour) * ROW_HEIGHT_PX;
+                    const height = Math.max(
+                      ((endMinutes - startMinutes) / 60) * ROW_HEIGHT_PX,
+                      24,
+                    );
 
                     return (
                       <div
@@ -122,29 +142,34 @@ export const TrainerWeekTimetable = ({ schedules }: TrainerTimetableProps) => {
                           {schedule.seriesName}
                         </div>
                         <div className="px-1 pb-0.5 text-[10px] text-muted-foreground">
-                          {toHHmm(schedule.startTime)} - {schedule.startTime ? scheduleEndHHmm(schedule) : "--:--"}
+                          {toHHmm(schedule.startTime)} -{" "}
+                          {schedule.startTime
+                            ? scheduleEndHHmm(schedule)
+                            : "--:--"}
                         </div>
                       </div>
-                    )
+                    );
                   })}
                 </div>
-              )
+              );
             })}
           </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export const TrainerMobileTimetable = ({ schedules }: TrainerTimetableProps) => {
-  const buckets = ensureDayBuckets(schedules)
+export const TrainerMobileTimetable = ({
+  schedules,
+}: TrainerTimetableProps) => {
+  const buckets = ensureDayBuckets(schedules);
   const orderedDays = Object.keys(buckets)
     .map(Number)
-    .sort((a, b) => a - b)
+    .sort((a, b) => a - b);
 
   if (!orderedDays.length) {
-    return null
+    return null;
   }
 
   return (
@@ -166,7 +191,9 @@ export const TrainerMobileTimetable = ({ schedules }: TrainerTimetableProps) => 
                   {schedule.seriesName}
                 </div>
                 <div className="text-muted-foreground">
-                  {schedule.startTime ? `${toHHmm(schedule.startTime)} - ${scheduleEndHHmm(schedule)}` : "--:--"}
+                  {schedule.startTime
+                    ? `${toHHmm(schedule.startTime)} - ${scheduleEndHHmm(schedule)}`
+                    : "--:--"}
                 </div>
               </div>
             ))}
@@ -174,5 +201,5 @@ export const TrainerMobileTimetable = ({ schedules }: TrainerTimetableProps) => 
         </Card>
       ))}
     </div>
-  )
-}
+  );
+};

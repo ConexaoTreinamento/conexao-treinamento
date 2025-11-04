@@ -1,21 +1,26 @@
-"use client"
+"use client";
 
-import { CheckCircle, XCircle, Calendar, Activity, Edit } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Activity, Calendar, CheckCircle, Edit, XCircle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface SessionInfoCardProps {
-  dateLabel: string
-  timeLabel: string
-  studentCount: number
-  trainerName?: string | null
-  notes?: string | null
-  isCanceled: boolean
-  onEdit: () => void
-  onToggleCancel: () => void
-  isTogglingCancel: boolean
+  dateLabel: string;
+  timeLabel: string;
+  studentCount: number;
+  trainerName?: string | null;
+  notes?: string | null;
+  isCanceled: boolean;
+  onEdit: () => void;
+  onToggleCancel: () => void;
+  isTogglingCancel: boolean;
 }
 
 export function SessionInfoCard({
@@ -29,8 +34,8 @@ export function SessionInfoCard({
   onToggleCancel,
   isTogglingCancel,
 }: SessionInfoCardProps) {
-  const studentLabel = `${studentCount} aluno${studentCount === 1 ? "" : "s"}`
-  const trainerLabel = trainerName?.trim() || "—"
+  const studentLabel = `${studentCount} aluno${studentCount === 1 ? "" : "s"}`;
+  const trainerLabel = trainerName?.trim() || "—";
   return (
     <Card>
       <CardHeader className="pb-4 sm:pb-5">
@@ -45,7 +50,10 @@ export function SessionInfoCard({
                 <TooltipProvider delayDuration={300}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Badge variant="destructive" className="cursor-help text-[10px]">
+                      <Badge
+                        variant="destructive"
+                        className="cursor-help text-[10px]"
+                      >
                         Cancelada
                       </Badge>
                     </TooltipTrigger>
@@ -118,11 +126,13 @@ export function SessionInfoCard({
 
           {notes ? (
             <div className="border-t pt-3">
-              <p className="whitespace-pre-wrap text-sm text-muted-foreground">{notes}</p>
+              <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                {notes}
+              </p>
             </div>
           ) : null}
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -1,13 +1,17 @@
-import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ScheduleMonthNavigationProps {
-  monthLabel: string
-  onPreviousMonth: () => void
-  onNextMonth: () => void
+  monthLabel: string;
+  onPreviousMonth: () => void;
+  onNextMonth: () => void;
 }
 
-export function ScheduleMonthNavigation({ monthLabel, onPreviousMonth, onNextMonth }: ScheduleMonthNavigationProps) {
+export function ScheduleMonthNavigation({
+  monthLabel,
+  onPreviousMonth,
+  onNextMonth,
+}: ScheduleMonthNavigationProps) {
   return (
     <div className="flex items-center gap-3">
       <Button
@@ -19,7 +23,9 @@ export function ScheduleMonthNavigation({ monthLabel, onPreviousMonth, onNextMon
       >
         <ChevronLeft className="h-4 w-4" aria-hidden="true" />
       </Button>
-      <h2 className="min-w-[140px] text-center text-lg font-semibold capitalize">{monthLabel}</h2>
+      <h2 className="min-w-[140px] text-center text-lg font-semibold capitalize">
+        {monthLabel}
+      </h2>
       <Button
         size="sm"
         variant="outline"
@@ -30,5 +36,5 @@ export function ScheduleMonthNavigation({ monthLabel, onPreviousMonth, onNextMon
         <ChevronRight className="h-4 w-4" aria-hidden="true" />
       </Button>
     </div>
-  )
+  );
 }

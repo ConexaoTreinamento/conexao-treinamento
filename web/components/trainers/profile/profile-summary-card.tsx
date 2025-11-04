@@ -1,27 +1,38 @@
-import { Badge } from "@/components/ui/badge"
-import ConfirmDeleteButton from "@/components/base/confirm-delete-button"
-import { EditButton } from "@/components/base/edit-button"
-import { ProfileActionButton } from "@/components/base/profile-action-button"
-import { EntityProfile, type EntityProfileMetadataItem } from "@/components/base/entity-profile"
-import { StatusBadge } from "@/components/base/status-badge"
-import type { TrainerResponseDto } from "@/lib/api-client/types.gen"
-import { Calendar, CalendarDays, Clock, Mail, MapPin, Phone, Trash2 } from "lucide-react"
-import type { ReactNode } from "react"
+import { Badge } from "@/components/ui/badge";
+import ConfirmDeleteButton from "@/components/base/confirm-delete-button";
+import { EditButton } from "@/components/base/edit-button";
+import { ProfileActionButton } from "@/components/base/profile-action-button";
+import {
+  EntityProfile,
+  type EntityProfileMetadataItem,
+} from "@/components/base/entity-profile";
+import { StatusBadge } from "@/components/base/status-badge";
+import type { TrainerResponseDto } from "@/lib/api-client/types.gen";
+import {
+  Calendar,
+  CalendarDays,
+  Clock,
+  Mail,
+  MapPin,
+  Phone,
+  Trash2,
+} from "lucide-react";
+import type { ReactNode } from "react";
 
 interface TrainerProfileSummaryCardProps {
-  heading: string
-  description?: string
-  onBack: () => void
-  trainer: TrainerResponseDto & { active?: boolean }
-  onEdit: () => void
-  onOpenSchedule: () => void
-  onDelete?: () => void | Promise<void>
-  isDeleting?: boolean
+  heading: string;
+  description?: string;
+  onBack: () => void;
+  trainer: TrainerResponseDto & { active?: boolean };
+  onEdit: () => void;
+  onOpenSchedule: () => void;
+  onDelete?: () => void | Promise<void>;
+  isDeleting?: boolean;
 }
 
 const getInitials = (name?: string | null) => {
   if (!name) {
-    return "?"
+    return "?";
   }
 
   return name
@@ -30,74 +41,78 @@ const getInitials = (name?: string | null) => {
     .map((part) => part[0]!)
     .slice(0, 2)
     .join("")
-    .toUpperCase()
-}
+    .toUpperCase();
+};
 
 const calculateAge = (birthDate?: string | null) => {
   if (!birthDate) {
-    return "Data não informada"
+    return "Data não informada";
   }
 
-  const today = new Date()
-  const birth = new Date(birthDate)
-  let age = today.getFullYear() - birth.getFullYear()
-  const monthDiff = today.getMonth() - birth.getMonth()
+  const today = new Date();
+  const birth = new Date(birthDate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
 
   if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
-    age -= 1
+    age -= 1;
   }
 
-  return `${age} anos`
-}
+  return `${age} anos`;
+};
 
 const formatAddress = (address?: string | null) => {
   if (!address) {
-    return "Endereço não informado"
+    return "Endereço não informado";
   }
 
-  return address
-}
+  return address;
+};
 
 const formatJoinDate = (joinDate?: string | null) => {
   if (!joinDate) {
-    return null
+    return null;
   }
 
   try {
-    return new Date(joinDate).toLocaleDateString("pt-BR")
+    return new Date(joinDate).toLocaleDateString("pt-BR");
   } catch {
-    return null
+    return null;
   }
-}
+};
 
-const getCompensationLabel = (compensationType?: TrainerResponseDto["compensationType"]) => {
+const getCompensationLabel = (
+  compensationType?: TrainerResponseDto["compensationType"],
+) => {
   if (compensationType === "MONTHLY") {
-    return "Mensalista"
+    return "Mensalista";
   }
 
   if (compensationType === "HOURLY") {
-    return "Horista"
+    return "Horista";
   }
 
-  return "Compensação não informada"
-}
+  return "Compensação não informada";
+};
 
 const getHoursWorkedLabel = (hoursWorked?: number | null) => {
   if (typeof hoursWorked === "number") {
-    return `${hoursWorked}h este mês`
+    return `${hoursWorked}h este mês`;
   }
 
-  return "Sem horas registradas"
-}
+  return "Sem horas registradas";
+};
 
 const getSpecialtiesSection = (specialties?: string[] | null): ReactNode => {
   if (!specialties?.length) {
-    return null
+    return null;
   }
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-medium text-muted-foreground">Especialidades</p>
+      <p className="text-xs font-medium text-muted-foreground">
+        Especialidades
+      </p>
       <div className="flex flex-wrap gap-1">
         {specialties.map((specialty) => (
           <Badge key={specialty} variant="outline" className="text-xs">
@@ -106,8 +121,8 @@ const getSpecialtiesSection = (specialties?: string[] | null): ReactNode => {
         ))}
       </div>
     </div>
-  )
-}
+  );
+};
 
 export function TrainerProfileSummaryCard({
   heading,
@@ -119,44 +134,75 @@ export function TrainerProfileSummaryCard({
   onDelete,
   isDeleting,
 }: TrainerProfileSummaryCardProps) {
-  const initials = getInitials(trainer.name)
-  const isActive = trainer.active ?? true
-  const hasDeleteAction = Boolean(onDelete)
+  const initials = getInitials(trainer.name);
+  const isActive = trainer.active ?? true;
+  const hasDeleteAction = Boolean(onDelete);
 
   const metadata: EntityProfileMetadataItem[] = [
     {
-      icon: <Mail className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />,
+      icon: (
+        <Mail
+          className="h-3.5 w-3.5 text-muted-foreground"
+          aria-hidden="true"
+        />
+      ),
       content: trainer.email ?? "Sem e-mail",
     },
     {
-      icon: <Phone className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />,
+      icon: (
+        <Phone
+          className="h-3.5 w-3.5 text-muted-foreground"
+          aria-hidden="true"
+        />
+      ),
       content: trainer.phone ?? "Sem telefone",
     },
     {
-      icon: <Calendar className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />,
+      icon: (
+        <Calendar
+          className="h-3.5 w-3.5 text-muted-foreground"
+          aria-hidden="true"
+        />
+      ),
       content: calculateAge(trainer.birthDate),
     },
     {
-      icon: <Clock className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />,
+      icon: (
+        <Clock
+          className="h-3.5 w-3.5 text-muted-foreground"
+          aria-hidden="true"
+        />
+      ),
       content: getHoursWorkedLabel(trainer.hoursWorked),
     },
-  ]
+  ];
 
   const infoRows: ReactNode[] = [
-    <span key="address" className="flex items-start gap-2 text-sm text-muted-foreground">
+    <span
+      key="address"
+      className="flex items-start gap-2 text-sm text-muted-foreground"
+    >
       <MapPin className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
-      <span className="text-xs leading-relaxed">{formatAddress(trainer.address)}</span>
+      <span className="text-xs leading-relaxed">
+        {formatAddress(trainer.address)}
+      </span>
     </span>,
-  ]
+  ];
 
-  const joinDateLabel = formatJoinDate(trainer.joinDate)
+  const joinDateLabel = formatJoinDate(trainer.joinDate);
   if (joinDateLabel) {
     infoRows.push(
-      <span key="join-date" className="flex items-center gap-2 text-sm text-muted-foreground">
-        <CalendarDays className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+      <span
+        key="join-date"
+        className="flex items-center gap-2 text-sm text-muted-foreground"
+      >
+        <CalendarDays
+          className="h-3.5 w-3.5 flex-shrink-0"
+          aria-hidden="true"
+        />
         <span className="text-xs">Ingressou em {joinDateLabel}</span>
       </span>,
-    )
+    );
   }
 
   const badges: ReactNode[] = [
@@ -164,13 +210,10 @@ export function TrainerProfileSummaryCard({
     <Badge key="compensation" variant="outline" className="text-xs">
       {getCompensationLabel(trainer.compensationType)}
     </Badge>,
-  ]
+  ];
 
   const actions: ReactNode[] = [
-    <ProfileActionButton
-      key="schedule"
-      onClick={onOpenSchedule}
-    >
+    <ProfileActionButton key="schedule" onClick={onOpenSchedule}>
       <CalendarDays className="h-4 w-4" aria-hidden="true" />
       <span>Horários</span>
     </ProfileActionButton>,
@@ -188,9 +231,9 @@ export function TrainerProfileSummaryCard({
         <span>Excluir</span>
       </ConfirmDeleteButton>
     ) : null,
-  ].filter(Boolean) as ReactNode[]
+  ].filter(Boolean) as ReactNode[];
 
-  const specialtiesSection = getSpecialtiesSection(trainer.specialties)
+  const specialtiesSection = getSpecialtiesSection(trainer.specialties);
 
   return (
     <EntityProfile
@@ -207,5 +250,5 @@ export function TrainerProfileSummaryCard({
       footer={specialtiesSection}
       muted={!isActive}
     />
-  )
+  );
 }

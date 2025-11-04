@@ -1,15 +1,20 @@
-"use client"
+"use client";
 
-import { PageHeader } from "@/components/base/page-header"
+import { PageHeader } from "@/components/base/page-header";
 
 interface SessionHeaderProps {
-  title: string
-  dateLabel: string
-  timeLabel: string
-  onBack?: () => void
+  title: string;
+  dateLabel: string;
+  timeLabel: string;
+  onBack?: () => void;
 }
 
-export function SessionHeader({ title, dateLabel, timeLabel, onBack }: SessionHeaderProps) {
+export function SessionHeader({
+  title,
+  dateLabel,
+  timeLabel,
+  onBack,
+}: SessionHeaderProps) {
   return (
     <PageHeader
       title={title}
@@ -20,5 +25,5 @@ export function SessionHeader({ title, dateLabel, timeLabel, onBack }: SessionHe
       }
       onBack={onBack}
     />
-  )
+  );
 }

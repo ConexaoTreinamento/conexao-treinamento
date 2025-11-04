@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { PageHeader } from "@/components/base/page-header"
+import { PageHeader } from "@/components/base/page-header";
 
 interface StudentEditHeaderProps {
-  onBack: () => void
+  onBack: () => void;
 }
 
 export function StudentEditHeader({ onBack }: StudentEditHeaderProps) {
@@ -13,5 +13,5 @@ export function StudentEditHeader({ onBack }: StudentEditHeaderProps) {
       description="Atualize as informações do aluno"
       onBack={onBack}
     />
-  )
+  );
 }

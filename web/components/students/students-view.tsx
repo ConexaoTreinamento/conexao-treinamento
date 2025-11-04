@@ -1,20 +1,25 @@
-import { Users, TriangleAlert } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import { EmptyState } from "@/components/base/empty-state"
-import { StudentCard } from "@/components/students/student-card"
-import type { StudentPlanAssignmentResponseDto, StudentResponseDto } from "@/lib/api-client/types.gen"
-import { EntityList } from "@/components/base/entity-list"
+import { TriangleAlert, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/base/empty-state";
+import { StudentCard } from "@/components/students/student-card";
+import type {
+  StudentPlanAssignmentResponseDto,
+  StudentResponseDto,
+} from "@/lib/api-client/types.gen";
+import { EntityList } from "@/components/base/entity-list";
 
 interface StudentsListProps {
-  students: StudentResponseDto[]
-  resolveAssignment: (studentId: string) => StudentPlanAssignmentResponseDto | null
-  onOpenDetails: (studentId: string) => void
-  onCreateEvaluation: (studentId: string) => void
-  onDelete: (studentId: string) => Promise<void>
-  onRestore: (studentId: string) => Promise<void>
-  isDeleting: boolean
-  isRestoring: boolean
+  students: StudentResponseDto[];
+  resolveAssignment: (
+    studentId: string,
+  ) => StudentPlanAssignmentResponseDto | null;
+  onOpenDetails: (studentId: string) => void;
+  onCreateEvaluation: (studentId: string) => void;
+  onDelete: (studentId: string) => Promise<void>;
+  onRestore: (studentId: string) => Promise<void>;
+  isDeleting: boolean;
+  isRestoring: boolean;
 }
 
 export function StudentsList({
@@ -28,18 +33,18 @@ export function StudentsList({
   isRestoring,
 }: StudentsListProps) {
   if (!students.length) {
-    return null
+    return null;
   }
 
   return (
     <EntityList>
       {students.map((student) => {
-        const studentId = student.id
+        const studentId = student.id;
         if (!studentId) {
-          return null
+          return null;
         }
 
-        const assignment = resolveAssignment(studentId)
+        const assignment = resolveAssignment(studentId);
 
         return (
           <StudentCard
@@ -53,10 +58,10 @@ export function StudentsList({
             isRestoring={isRestoring}
             isDeleting={isDeleting}
           />
-        )
+        );
       })}
     </EntityList>
-  )
+  );
 }
 
 export function StudentsLoadingList() {
@@ -74,15 +79,15 @@ export function StudentsLoadingList() {
         </div>
       ))}
     </EntityList>
-  )
+  );
 }
 
 interface StudentsEmptyStateProps {
-  hasSearchTerm: boolean
-  hasActiveFilters: boolean
-  onCreate: () => void
-  onClearSearch?: () => void
-  onClearFilters?: () => void
+  hasSearchTerm: boolean;
+  hasActiveFilters: boolean;
+  onCreate: () => void;
+  onClearSearch?: () => void;
+  onClearFilters?: () => void;
 }
 
 export function StudentsEmptyState({
@@ -92,11 +97,15 @@ export function StudentsEmptyState({
   onClearSearch,
   onClearFilters,
 }: StudentsEmptyStateProps) {
-  const hasFiltersApplied = hasSearchTerm || hasActiveFilters
+  const hasFiltersApplied = hasSearchTerm || hasActiveFilters;
   return (
     <EmptyState
       icon={<Users className="h-12 w-12" aria-hidden="true" />}
-      title={hasFiltersApplied ? "Nenhum aluno encontrado" : "Nenhum aluno cadastrado"}
+      title={
+        hasFiltersApplied
+          ? "Nenhum aluno encontrado"
+          : "Nenhum aluno cadastrado"
+      }
       description={
         hasFiltersApplied
           ? "Tente ajustar os filtros ou termo de busca."
@@ -118,24 +127,32 @@ export function StudentsEmptyState({
               ) : null}
             </>
           ) : null}
-          <Button className="bg-green-600 hover:bg-green-700" onClick={onCreate}>
+          <Button
+            className="bg-green-600 hover:bg-green-700"
+            onClick={onCreate}
+          >
             Novo aluno
           </Button>
         </>
       }
     />
-  )
+  );
 }
 
 interface StudentsErrorStateProps {
-  message?: string
-  onRetry?: () => void
+  message?: string;
+  onRetry?: () => void;
 }
 
-export function StudentsErrorState({ message, onRetry }: StudentsErrorStateProps) {
+export function StudentsErrorState({
+  message,
+  onRetry,
+}: StudentsErrorStateProps) {
   return (
     <EmptyState
-      icon={<TriangleAlert className="h-12 w-12 text-red-500" aria-hidden="true" />}
+      icon={
+        <TriangleAlert className="h-12 w-12 text-red-500" aria-hidden="true" />
+      }
       title="Erro ao carregar alunos"
       description={message ?? "Tente novamente em instantes."}
       action={
@@ -146,5 +163,5 @@ export function StudentsErrorState({ message, onRetry }: StudentsErrorStateProps
         ) : null
       }
     />
-  )
+  );
 }

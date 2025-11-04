@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { PageHeader } from "@/components/base/page-header"
+import { PageHeader } from "@/components/base/page-header";
 
 interface ClassScheduleHeaderProps {
-  onBack: () => void
+  onBack: () => void;
 }
 
 export function ClassScheduleHeader({ onBack }: ClassScheduleHeaderProps) {
@@ -13,5 +13,5 @@ export function ClassScheduleHeader({ onBack }: ClassScheduleHeaderProps) {
       description="Selecione as séries que deseja frequentar"
       onBack={onBack}
     />
-  )
+  );
 }

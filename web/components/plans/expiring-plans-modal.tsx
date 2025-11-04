@@ -1,32 +1,41 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { AlertTriangle, Calendar, User, Phone, Mail } from "lucide-react"
-import Link from "next/link"
-import { UnifiedStatusBadge } from "./expiring-plans"
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, Calendar, Mail, Phone, User } from "lucide-react";
+import Link from "next/link";
+import { UnifiedStatusBadge } from "./expiring-plans";
 
 interface Student {
-  id: number
-  name: string
-  email: string
-  phone: string
-  planExpirationDate: string
-  daysUntilExpiration: number
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  planExpirationDate: string;
+  daysUntilExpiration: number;
 }
 
 interface ExpiringPlansModalProps {
-  isOpen: boolean
-  onClose: () => void
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansModalProps) {
-  const [expiringStudents] = useState<Student[]>([])
+export default function ExpiringPlansModal({
+  isOpen,
+  onClose,
+}: ExpiringPlansModalProps) {
+  const [expiringStudents] = useState<Student[]>([]);
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("pt-BR")
-  }
+    return new Date(dateString).toLocaleDateString("pt-BR");
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -49,9 +58,7 @@ export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansMod
                 <p className="text-lg font-medium text-green-600 dark:text-green-400">
                   Nenhum plano próximo ao vencimento
                 </p>
-                <p className="text-sm">
-                  Todos os planos estão em dia!
-                </p>
+                <p className="text-sm">Todos os planos estão em dia!</p>
               </div>
             </div>
           ) : (
@@ -80,11 +87,11 @@ export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansMod
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-medium">
-                            {student.name}
-                          </span>
+                          <span className="font-medium">{student.name}</span>
                         </div>
-                        <UnifiedStatusBadge expirationDate={student.planExpirationDate}/>
+                        <UnifiedStatusBadge
+                          expirationDate={student.planExpirationDate}
+                        />
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground mb-3">
@@ -104,8 +111,12 @@ export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansMod
 
                       <div className="flex items-center gap-2 text-sm">
                         <Calendar className="w-3 h-3 text-muted-foreground" />
-                        <span className="text-muted-foreground">Vencimento:</span>
-                        <span className="font-medium">{formatDate(student.planExpirationDate)}</span>
+                        <span className="text-muted-foreground">
+                          Vencimento:
+                        </span>
+                        <span className="font-medium">
+                          {formatDate(student.planExpirationDate)}
+                        </span>
                       </div>
                     </div>
                   </Link>
@@ -127,5 +138,5 @@ export default function ExpiringPlansModal({ isOpen, onClose }: ExpiringPlansMod
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

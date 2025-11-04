@@ -1,21 +1,27 @@
-"use client"
+"use client";
 
-import { EntityList } from "@/components/base/entity-list"
-import { Skeleton } from "@/components/ui/skeleton"
-import PlanCard from "@/components/plans/plan-card"
-import type { PlanWithId } from "./plan-types"
+import { EntityList } from "@/components/base/entity-list";
+import { Skeleton } from "@/components/ui/skeleton";
+import PlanCard from "@/components/plans/plan-card";
+import type { PlanWithId } from "./plan-types";
 
 type PlanListProps = {
-  plans: PlanWithId[]
-  onDeletePlan: (planId: string) => void
-  onRestorePlan: (planId: string) => void
-  isDeleting: boolean
-  isRestoring: boolean
-}
+  plans: PlanWithId[];
+  onDeletePlan: (planId: string) => void;
+  onRestorePlan: (planId: string) => void;
+  isDeleting: boolean;
+  isRestoring: boolean;
+};
 
-export function PlanList({ plans, onDeletePlan, onRestorePlan, isDeleting, isRestoring }: PlanListProps) {
+export function PlanList({
+  plans,
+  onDeletePlan,
+  onRestorePlan,
+  isDeleting,
+  isRestoring,
+}: PlanListProps) {
   if (!plans.length) {
-    return null
+    return null;
   }
 
   return (
@@ -36,7 +42,7 @@ export function PlanList({ plans, onDeletePlan, onRestorePlan, isDeleting, isRes
         />
       ))}
     </EntityList>
-  )
+  );
 }
 
 export function PlanListSkeleton() {
@@ -56,7 +62,7 @@ export function PlanListSkeleton() {
         </div>
       ))}
     </EntityList>
-  )
+  );
 }
 
-export { PlanList as PlanGrid }
+export { PlanList as PlanGrid };
