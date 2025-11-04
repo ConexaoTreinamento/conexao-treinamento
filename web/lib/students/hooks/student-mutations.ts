@@ -1,13 +1,22 @@
 import {useMutation, UseMutationOptions, useQueryClient} from "@tanstack/react-query";
 import {
   assignPlanToStudentMutation,
+  bulkUpdateCommitmentsMutation,
   createStudentMutation,
   deleteStudentMutation, findStudentByIdOptions,
   restoreStudentMutation,
   updateStudentMutation
 } from "@/lib/api-client/@tanstack/react-query.gen";
 import {apiClient} from "@/lib/client";
-import type {AssignPlanToStudentData, AssignPlanToStudentResponse, Options, StudentResponseDto, UpdateStudentData} from "@/lib/api-client";
+import type {
+  AssignPlanToStudentData,
+  AssignPlanToStudentResponse,
+  BulkUpdateCommitmentsData,
+  BulkUpdateCommitmentsResponse,
+  Options,
+  StudentResponseDto,
+  UpdateStudentData,
+} from "@/lib/api-client";
 
 /**
  * Hooks that wrap generated mutation factories and add onSuccess invalidations
@@ -130,3 +139,11 @@ export type AssignPlanToStudentMutationVariables = Options<AssignPlanToStudentDa
 export type AssignPlanToStudentMutationResponse = AssignPlanToStudentResponse;
 
 export type AssignPlanToStudentMutationOptions = ReturnType<typeof assignPlanToStudentMutationOptions>;
+
+export const bulkUpdateCommitmentsMutationOptions = () =>
+  bulkUpdateCommitmentsMutation({ client: apiClient });
+
+export type BulkUpdateCommitmentsMutationVariables = Options<BulkUpdateCommitmentsData>;
+export type BulkUpdateCommitmentsMutationResponse = BulkUpdateCommitmentsResponse;
+
+export type BulkUpdateCommitmentsMutationOptions = ReturnType<typeof bulkUpdateCommitmentsMutationOptions>;

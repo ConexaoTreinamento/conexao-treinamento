@@ -14,21 +14,23 @@ import { ClassScheduleFooter } from "@/components/students/class-schedule/class-
 import { ClassScheduleParticipantsDialog } from "@/components/students/class-schedule/class-schedule-participants-dialog"
 import { ClassScheduleHistoryDialog } from "@/components/students/class-schedule/class-schedule-history-dialog"
 import { Card, CardContent } from "@/components/ui/card"
-import { apiClient } from "@/lib/client"
 import {
-  bulkUpdateCommitmentsMutation,
-  getAvailableSessionSeriesOptions,
-  getCommitmentHistoryOptions,
-  getCurrentActiveCommitmentsOptions,
-  getCurrentActiveCommitmentsQueryKey,
-  getCurrentStudentPlanOptions,
-  getScheduleQueryKey,
-  getSessionSeriesCommitmentsOptions,
-  getStudentCommitmentsQueryKey,
-  getTrainersForLookupOptions,
-} from "@/lib/api-client/@tanstack/react-query.gen"
+  availableSessionSeriesQueryOptions,
+  commitmentHistoryQueryOptions,
+  currentActiveCommitmentsQueryOptions,
+  currentStudentPlanQueryOptions,
+  sessionSeriesCommitmentsQueryOptions,
+  studentCommitmentsQueryOptions,
+  trainersForLookupQueryOptions,
+} from "@/lib/students/hooks/student-queries"
+import { bulkUpdateCommitmentsMutationOptions } from "@/lib/students/hooks/student-mutations"
+import type {
+  BulkUpdateCommitmentsMutationResponse,
+  BulkUpdateCommitmentsMutationVariables,
+} from "@/lib/students/hooks/student-mutations"
+import { scheduleByDateQueryOptions } from "@/lib/schedule/hooks/session-queries"
 import type { CommitmentDetailResponseDto, TrainerSchedule } from "@/lib/api-client"
-import type { TrainerLookupDto } from "@/lib/api-client/types.gen"
+import type { StudentPlanAssignmentResponseDto, TrainerLookupDto } from "@/lib/api-client/types.gen"
 import type { NormalizedSeries } from "@/components/students/class-schedule/types"
 
 const weekdayMap: Record<number, string> = {
@@ -103,84 +105,77 @@ export default function ClassSchedulePage() {
   const [participantsFilter, setParticipantsFilter] = useState<ParticipantFilter>("ALL")
   const [trainerFilter, setTrainerFilter] = useState<string>("all")
 
-  const studentIdQueryOptions = useMemo(
-    () => ({ path: { studentId }, client: apiClient }),
-    [studentId]
+  const studentPlanOptions = useMemo(
+    () => currentStudentPlanQueryOptions({ studentId }),
+    [studentId],
+  )
+  const activeCommitmentsOptions = useMemo(
+    () => currentActiveCommitmentsQueryOptions({ studentId }),
+    [studentId],
+  )
+  const studentCommitmentsOptions = useMemo(
+    () => studentCommitmentsQueryOptions({ studentId }),
+    [studentId],
   )
 
-  const availableQuery = useQuery(getAvailableSessionSeriesOptions({ client: apiClient }))
-  const planQuery = useQuery(getCurrentStudentPlanOptions(studentIdQueryOptions))
-  const mutation = useMutation(bulkUpdateCommitmentsMutation({ client: apiClient }))
-  const activeCommitmentsQuery = useQuery(getCurrentActiveCommitmentsOptions(studentIdQueryOptions))
-  const trainersQuery = useQuery(getTrainersForLookupOptions({ client: apiClient }))
+  const availableQuery = useQuery(availableSessionSeriesQueryOptions())
+  const planQuery = useQuery(studentPlanOptions)
+  const bulkMutation = useMutation<
+    BulkUpdateCommitmentsMutationResponse,
+    Error,
+    BulkUpdateCommitmentsMutationVariables
+  >(bulkUpdateCommitmentsMutationOptions())
+  const activeCommitmentsQuery = useQuery(activeCommitmentsOptions)
+  const trainersQuery = useQuery(trainersForLookupQueryOptions())
 
   const participantsQuery = useQuery({
-    ...getSessionSeriesCommitmentsOptions({
-      path: { sessionSeriesId: openParticipantsFor || "placeholder" },
-      client: apiClient,
+    ...sessionSeriesCommitmentsQueryOptions({
+      sessionSeriesId: openParticipantsFor ?? "placeholder",
     }),
     enabled: Boolean(openParticipantsFor),
-    queryKey: [
-      {
-        path: { sessionSeriesId: openParticipantsFor || "placeholder" },
-        _id: `sessionSeriesCommitments-${openParticipantsFor || "none"}`,
-      },
-    ],
   })
 
   const historyQuery = useQuery({
-    ...getCommitmentHistoryOptions({
-      path: { studentId, sessionSeriesId: openHistoryFor || "placeholder" },
-      client: apiClient,
+    ...commitmentHistoryQueryOptions({
+      studentId,
+      sessionSeriesId: openHistoryFor ?? "placeholder",
     }),
     enabled: Boolean(openHistoryFor),
-    queryKey: [
-      {
-        path: { studentId, sessionSeriesId: openHistoryFor || "placeholder" },
-        _id: `commitmentHistory-${openHistoryFor || "none"}`,
-      },
-    ],
   })
 
-  const participantsData: CommitmentDetailResponseDto[] = Array.isArray(participantsQuery.data)
-    ? participantsQuery.data
-    : []
-  const historyData: CommitmentDetailResponseDto[] = Array.isArray(historyQuery.data)
-    ? historyQuery.data
-    : []
+  const participantsData = (participantsQuery.data as CommitmentDetailResponseDto[] | undefined) ?? []
+  const historyData = (historyQuery.data as CommitmentDetailResponseDto[] | undefined) ?? []
+  const currentPlan = planQuery.data as StudentPlanAssignmentResponseDto | undefined
+  const activeCommitments = useMemo(
+    () => (activeCommitmentsQuery.data as CommitmentDetailResponseDto[] | undefined) ?? [],
+    [activeCommitmentsQuery.data],
+  )
+  const planDays = currentPlan?.planMaxDays ?? 3
 
-  const activeSeriesIds = useMemo(() => {
-    const active = Array.isArray(activeCommitmentsQuery.data)
-      ? activeCommitmentsQuery.data
-      : []
-    return new Set(
-      active
+  const activeSeriesIds = useMemo(() => (
+    new Set(
+      activeCommitments
         .filter((commitment) => commitment.commitmentStatus === "ATTENDING")
         .map((commitment) => commitment.sessionSeriesId)
-        .filter((id): id is string => Boolean(id))
+        .filter((id): id is string => Boolean(id)),
     )
-  }, [activeCommitmentsQuery.data])
-
-  const planDays = planQuery.data?.planMaxDays ?? 3
+  ), [activeCommitments])
 
   useEffect(() => {
-    if (!initializedSelection && activeCommitmentsQuery.data) {
-      const attending = activeCommitmentsQuery.data
+    if (!initializedSelection && activeCommitments.length > 0) {
+      const attending = activeCommitments
         .filter((commitment) => commitment.commitmentStatus === "ATTENDING")
         .map((commitment) => commitment.sessionSeriesId)
         .filter((id): id is string => Boolean(id))
       setSelectedSeries(attending)
       setInitializedSelection(true)
     }
-  }, [activeCommitmentsQuery.data, initializedSelection])
+  }, [activeCommitments, initializedSelection])
 
-  const trainerOptions = useMemo(
-    () =>
-      (trainersQuery.data ?? []).filter(
-        (trainer): trainer is TrainerLookupDto & { id: string } => Boolean(trainer?.id)
-      ),
-    [trainersQuery.data]
-  )
+  const trainerOptions = useMemo(() => {
+    const raw = (trainersQuery.data as TrainerLookupDto[] | undefined) ?? []
+    return raw.filter((trainer): trainer is TrainerLookupDto & { id: string } => Boolean(trainer?.id))
+  }, [trainersQuery.data])
 
   const trainerNameById = useMemo(() => {
     const map = new Map<string, string>()
@@ -386,10 +381,7 @@ export default function ClassSchedulePage() {
     const monthEndIso = monthEnd.toISOString().slice(0, 10)
 
     await queryClient.invalidateQueries({
-      queryKey: getScheduleQueryKey({
-        client: apiClient,
-        query: { startDate: monthStartIso, endDate: monthEndIso },
-      }),
+      queryKey: scheduleByDateQueryOptions({ startDate: monthStartIso, endDate: monthEndIso }).queryKey,
     })
 
     const formatDate = (value: Date) =>
@@ -401,15 +393,12 @@ export default function ClassSchedulePage() {
     )
 
     await queryClient.invalidateQueries({
-      queryKey: getScheduleQueryKey({
-        client: apiClient,
-        query: { startDate: recentStart, endDate: recentEnd },
-      }),
+      queryKey: scheduleByDateQueryOptions({ startDate: recentStart, endDate: recentEnd }).queryKey,
     })
   }
 
   const handleSave = async () => {
-    const currentAttending = (activeCommitmentsQuery.data ?? [])
+    const currentAttending = activeCommitments
       .filter((commitment) => commitment.commitmentStatus === "ATTENDING")
       .map((commitment) => commitment.sessionSeriesId)
       .filter((id): id is string => Boolean(id))
@@ -419,27 +408,21 @@ export default function ClassSchedulePage() {
 
     try {
       if (toRemove.length > 0) {
-        await mutation.mutateAsync({
+        await bulkMutation.mutateAsync({
           path: { studentId },
           body: { sessionSeriesIds: toRemove, commitmentStatus: "NOT_ATTENDING" },
-          client: apiClient,
         })
       }
 
       if (toAttend.length > 0) {
-        await mutation.mutateAsync({
+        await bulkMutation.mutateAsync({
           path: { studentId },
           body: { sessionSeriesIds: toAttend, commitmentStatus: "ATTENDING" },
-          client: apiClient,
         })
       }
 
-      await queryClient.invalidateQueries({
-        queryKey: getStudentCommitmentsQueryKey(studentIdQueryOptions),
-      })
-      await queryClient.invalidateQueries({
-        queryKey: getCurrentActiveCommitmentsQueryKey(studentIdQueryOptions),
-      })
+      await queryClient.invalidateQueries({ queryKey: studentCommitmentsOptions.queryKey })
+      await queryClient.invalidateQueries({ queryKey: activeCommitmentsOptions.queryKey })
       await invalidateScheduleWindows()
 
       router.back()
@@ -451,7 +434,7 @@ export default function ClassSchedulePage() {
   const getTrainerLabel = (series: NormalizedSeries) =>
     series.trainerName ?? (series.trainerId ? trainerNameById.get(series.trainerId) : undefined) ?? "Instrutor não definido"
 
-  const lastUpdatedLabel = !activeCommitmentsQuery.isLoading && activeCommitmentsQuery.data
+  const lastUpdatedLabel = activeCommitmentsQuery.isSuccess
     ? new Date().toLocaleTimeString("pt-BR")
     : undefined
 
@@ -541,7 +524,7 @@ export default function ClassSchedulePage() {
           activeSeriesCount={activeSeriesIds.size}
           lastUpdatedLabel={lastUpdatedLabel}
           isCommitmentsLoading={activeCommitmentsQuery.isLoading}
-          isSaving={mutation.isPending}
+          isSaving={bulkMutation.isPending}
           hasConflict={anyConflict}
           onCancel={() => router.back()}
           onSave={handleSave}

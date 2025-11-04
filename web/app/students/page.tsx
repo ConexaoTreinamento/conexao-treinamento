@@ -165,7 +165,10 @@ function StudentsPageContent() {
   const expiringAssignmentsQuery = useQuery(
     expiringPlanAssignmentsQueryOptions({ days: EXPIRING_LOOKAHEAD_DAYS }),
   )
-  const expiringSoonAssignments = (expiringAssignmentsQuery.data ?? []) as StudentPlanAssignmentResponseDto[]
+  const expiringSoonAssignments = useMemo(
+    () => (expiringAssignmentsQuery.data ?? []) as StudentPlanAssignmentResponseDto[],
+    [expiringAssignmentsQuery.data],
+  )
 
   // We'll lazily fetch current plan per student only if needed for fallback (optional optimization skipped)
   // Build quick lookup maps

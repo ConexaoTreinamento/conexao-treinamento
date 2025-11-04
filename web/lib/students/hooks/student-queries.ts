@@ -5,10 +5,15 @@ import {
   findStudentByIdQueryKey,
   getAllPlansOptions,
   getAllSchedulesOptions,
+  getAvailableSessionSeriesOptions,
+  getCommitmentHistoryOptions,
+  getCurrentActiveCommitmentsOptions,
   getCurrentStudentPlanOptions,
   getExpiringSoonAssignmentsOptions,
+  getSessionSeriesCommitmentsOptions,
   getStudentCommitmentsOptions,
   getStudentPlanHistoryOptions,
+  getTrainersForLookupOptions,
 } from "@/lib/api-client/@tanstack/react-query.gen";
 import type { Options } from "@/lib/api-client/client/types";
 import {apiClient} from "@/lib/client";
@@ -92,9 +97,31 @@ export const expiringPlanAssignmentsQueryOptions = ({ days }: { days: number }) 
   refetchInterval: 60_000,
 });
 
+export const availableSessionSeriesQueryOptions = () =>
+  getAvailableSessionSeriesOptions({ client: apiClient });
+
+export const currentActiveCommitmentsQueryOptions = ({ studentId }: { studentId: string }) =>
+  getCurrentActiveCommitmentsOptions({ client: apiClient, path: { studentId } });
+
+export const trainersForLookupQueryOptions = () =>
+  getTrainersForLookupOptions({ client: apiClient });
+
+export const sessionSeriesCommitmentsQueryOptions = ({ sessionSeriesId }: { sessionSeriesId: string }) =>
+  getSessionSeriesCommitmentsOptions({ client: apiClient, path: { sessionSeriesId } });
+
+export const commitmentHistoryQueryOptions = (
+  { studentId, sessionSeriesId }: { studentId: string; sessionSeriesId: string },
+) =>
+  getCommitmentHistoryOptions({ client: apiClient, path: { studentId, sessionSeriesId } });
+
 export type CurrentStudentPlanQueryOptions = ReturnType<typeof currentStudentPlanQueryOptions>;
 export type StudentPlanHistoryQueryOptions = ReturnType<typeof studentPlanHistoryQueryOptions>;
 export type StudentCommitmentsQueryOptions = ReturnType<typeof studentCommitmentsQueryOptions>;
 export type AllPlansQueryOptions = ReturnType<typeof allPlansQueryOptions>;
 export type AllSchedulesQueryOptions = ReturnType<typeof allSchedulesQueryOptions>;
 export type ExpiringPlanAssignmentsQueryOptions = ReturnType<typeof expiringPlanAssignmentsQueryOptions>;
+export type AvailableSessionSeriesQueryOptions = ReturnType<typeof availableSessionSeriesQueryOptions>;
+export type CurrentActiveCommitmentsQueryOptions = ReturnType<typeof currentActiveCommitmentsQueryOptions>;
+export type TrainersForLookupQueryOptions = ReturnType<typeof trainersForLookupQueryOptions>;
+export type SessionSeriesCommitmentsQueryOptions = ReturnType<typeof sessionSeriesCommitmentsQueryOptions>;
+export type CommitmentHistoryQueryOptions = ReturnType<typeof commitmentHistoryQueryOptions>;
