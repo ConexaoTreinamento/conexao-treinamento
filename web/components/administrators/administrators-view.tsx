@@ -1,16 +1,12 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import { PageHeader } from "@/components/base/page-header"
 import { FilterToolbar } from "@/components/base/filter-toolbar"
-import { AdministratorCard } from "@/components/administrators/administrator-card"
+import { AdministratorList } from "@/components/administrators/administrator-list"
 import { AdministratorCreateDialog } from "@/components/administrators/administrator-create-dialog"
-import { EmptyState } from "@/components/base/empty-state"
-import { Section } from "@/components/base/section"
-import { EntityList } from "@/components/base/entity-list"
-import { Skeleton } from "@/components/ui/skeleton"
 import { apiClient } from "@/lib/client"
 import type { ListAdministratorsDto } from "@/lib/api-client"
 import { findAllAdministratorsOptions } from "@/lib/api-client/@tanstack/react-query.gen"
@@ -36,39 +32,11 @@ export function AdministratorsView() {
   const administrators = (administratorsQuery.data as ListAdministratorsDto[] | undefined) ?? []
   const { isLoading, error } = administratorsQuery
 
-  const filteredAdministrators = administrators.filter((admin) => {
-    const fullName = admin.fullName || `${admin.firstName} ${admin.lastName}`
-    return (
-      fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (admin.email || "").toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  })
-
-  const totalAdministrators = administrators.length
-
-  const resultsSummary = useMemo(() => {
-    if (isLoading) {
-      return "Carregando administradores..."
+  const handleAdministratorOpen = (administrator: ListAdministratorsDto) => {
+    if (administrator.id) {
+      router.push(`/administrators/${administrator.id}`)
     }
-
-    if (error) {
-      return "Não foi possível carregar os administradores."
-    }
-
-    if (!totalAdministrators) {
-      return "Nenhum administrador cadastrado ainda."
-    }
-
-    if (!filteredAdministrators.length) {
-      return "Ajuste a busca para encontrar administradores."
-    }
-
-    if (filteredAdministrators.length === totalAdministrators && !searchTerm) {
-      return `${filteredAdministrators.length} administradores cadastrados`
-    }
-
-    return `${filteredAdministrators.length} de ${totalAdministrators} administradores exibidos`
-  }, [error, filteredAdministrators.length, isLoading, searchTerm, totalAdministrators])
+  }
 
   if (userRole !== "admin") {
     return null
@@ -88,48 +56,13 @@ export function AdministratorsView() {
         searchLabel="Buscar administradores"
       />
 
-      <Section title="Resultados" description={resultsSummary}>
-        {isLoading ? (
-          <EntityList>
-            {Array.from({ length: 3 }).map((_, index) => (
-              <Skeleton key={index} className="h-24 w-full" />
-            ))}
-          </EntityList>
-        ) : null}
-
-        {!isLoading && error ? (
-          <EmptyState
-            title="Erro ao carregar administradores"
-            description="Não foi possível carregar os administradores. Tente novamente mais tarde."
-          />
-        ) : null}
-
-        {!isLoading && !error && !filteredAdministrators.length ? (
-          <EmptyState
-            title="Nenhum administrador encontrado"
-            description="Ajuste os filtros ou utilize outro termo de busca."
-          />
-        ) : null}
-
-        {!isLoading && !error && filteredAdministrators.length ? (
-          <EntityList>
-            {filteredAdministrators.map((administrator, index) => {
-              const key = administrator.id || administrator.email || administrator.fullName || `administrator-${index}`
-              return (
-                <AdministratorCard
-                  key={key}
-                  administrator={administrator}
-                  onOpen={() => {
-                    if (administrator.id) {
-                      router.push(`/administrators/${administrator.id}`)
-                    }
-                  }}
-                />
-              )
-            })}
-          </EntityList>
-        ) : null}
-      </Section>
+      <AdministratorList
+        administrators={administrators}
+        searchTerm={searchTerm}
+        isLoading={isLoading}
+        error={error}
+        onAdministratorOpen={handleAdministratorOpen}
+      />
     </div>
   )
 }
