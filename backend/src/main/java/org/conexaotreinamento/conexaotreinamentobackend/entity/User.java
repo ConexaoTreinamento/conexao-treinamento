@@ -3,6 +3,7 @@ package org.conexaotreinamento.conexaotreinamentobackend.entity;
 import java.time.Instant;
 import java.util.UUID;
 
+import lombok.*;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -17,16 +18,13 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "users")
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@ToString
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -55,6 +53,21 @@ public class User {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
+    @Column(name = "password_expired_at")
+    private Instant passwordExpiredAt;
+
+    public boolean isPasswordExpired() {
+        return passwordExpiredAt != null && !passwordExpiredAt.isAfter(Instant.now());
+    }
+
+    public void setPasswordExpired(boolean expired) {
+        if (expired) {
+            this.passwordExpiredAt = Instant.now();
+        } else {
+            this.passwordExpiredAt = null;
+        }
+    }
 
     public User(String email, String password, Role role) {
         this.email = email;

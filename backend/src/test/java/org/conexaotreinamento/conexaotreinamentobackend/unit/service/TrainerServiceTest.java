@@ -120,8 +120,8 @@ class TrainerServiceTest {
             CompensationType.HOURLY
         );
 
-        UserResponseDTO userResponse = new UserResponseDTO(newUserId, "joao@test.com", Role.ROLE_TRAINER);
-        
+        UserResponseDTO userResponse = new UserResponseDTO(newUserId, "joao@test.com", Role.ROLE_TRAINER, null);
+
         Trainer savedTrainer = new Trainer();
         savedTrainer.setId(newTrainerId);
         savedTrainer.setUserId(newUserId);
@@ -276,13 +276,14 @@ class TrainerServiceTest {
                 Arrays.asList("Strength Training", "Cardio"),
                 CompensationType.HOURLY);
 
-        UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "john@example.com", Role.ROLE_TRAINER);
+        UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "john@example.com", Role.ROLE_TRAINER, null);
 
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
         when(userService.updateUserEmail(userId, "john@example.com")).thenReturn(updatedUserResponse);
-        when(userService.resetUserPassword(userId, "newpassword123")).thenReturn(updatedUserResponse);
-        when(trainerRepository.save(trainer)).thenReturn(trainer);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userService.resetUserPassword(userId, "newpassword123")).thenReturn(updatedUserResponse);
+        when(userRepository.save(user)).thenReturn(user);
+        when(trainerRepository.save(trainer)).thenReturn(trainer);
 
         // When
         TrainerResponseDTO result = trainerService.put(trainerId, updateTrainerDTO);
@@ -293,12 +294,14 @@ class TrainerServiceTest {
         assertThat(result.email()).isEqualTo("john@example.com");
         assertThat(result.address()).isEqualTo("123 Main St");
         assertThat(result.birthDate()).isEqualTo(LocalDate.of(1990, 1, 1));
+        assertThat(user.isPasswordExpired()).isTrue();
 
         verify(trainerRepository).findById(trainerId);
         verify(userService).updateUserEmail(userId, "john@example.com");
-        verify(userService).resetUserPassword(userId, "newpassword123");
-        verify(trainerRepository).save(trainer);
         verify(userRepository).findById(userId);
+        verify(userService).resetUserPassword(userId, "newpassword123");
+        verify(userRepository).save(user);
+        verify(trainerRepository).save(trainer);
     }
 
     @Test
@@ -316,12 +319,12 @@ class TrainerServiceTest {
                 CompensationType.MONTHLY);
 
         UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "john.updated@example.com",
-                Role.ROLE_TRAINER);
+                Role.ROLE_TRAINER, null);
 
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
         when(userService.updateUserEmail(userId, "john.updated@example.com")).thenReturn(updatedUserResponse);
-        when(trainerRepository.save(trainer)).thenReturn(trainer);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(trainerRepository.save(trainer)).thenReturn(trainer);
 
         // When
         TrainerResponseDTO result = trainerService.put(trainerId, updateTrainerDTO);
@@ -335,9 +338,10 @@ class TrainerServiceTest {
 
         verify(trainerRepository).findById(trainerId);
         verify(userService).updateUserEmail(userId, "john.updated@example.com");
-        verify(userService, never()).resetUserPassword(any(), any());
-        verify(trainerRepository).save(trainer);
         verify(userRepository).findById(userId);
+        verify(userService, never()).resetUserPassword(any(), any());
+        verify(userRepository, never()).save(user);
+        verify(trainerRepository).save(trainer);
     }
 
     @Test
@@ -413,13 +417,14 @@ class TrainerServiceTest {
                 Arrays.asList("Strength Training", "Cardio"),
                 CompensationType.HOURLY);
 
-        UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "john@example.com", Role.ROLE_TRAINER);
+        UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "john@example.com", Role.ROLE_TRAINER, null);
 
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
         when(userService.updateUserEmail(userId, "john@example.com")).thenReturn(updatedUserResponse);
-        when(userService.resetUserPassword(userId, "password123")).thenReturn(updatedUserResponse);
-        when(trainerRepository.save(trainer)).thenReturn(trainer);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userService.resetUserPassword(userId, "password123")).thenReturn(updatedUserResponse);
+        when(userRepository.save(user)).thenReturn(user);
+        when(trainerRepository.save(trainer)).thenReturn(trainer);
 
         // When
         TrainerResponseDTO result = trainerService.put(trainerId, updateTrainerDTO);
@@ -427,12 +432,14 @@ class TrainerServiceTest {
         // Then
         assertThat(result).isNotNull();
         assertThat(result.email()).isEqualTo("john@example.com");
+        assertThat(user.isPasswordExpired()).isTrue();
 
         verify(trainerRepository).findById(trainerId);
         verify(userService).updateUserEmail(userId, "john@example.com");
-        verify(userService).resetUserPassword(userId, "password123");
-        verify(trainerRepository).save(trainer);
         verify(userRepository).findById(userId);
+        verify(userService).resetUserPassword(userId, "password123");
+        verify(userRepository).save(user);
+        verify(trainerRepository).save(trainer);
     }
 
     @Test
