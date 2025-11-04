@@ -82,7 +82,7 @@ export function TrainerWeekConfigDialog({
           <Settings2 className="mr-2 h-4 w-4" /> Configurar
         </Button>
       </DialogTrigger>
-      <DialogContent className="w-full max-w-5xl md:w-[80vw]">
+      <DialogContent className="w-[85vw] max-w-5xl md:w-[85vw] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Configuração Semanal</DialogTitle>
         </DialogHeader>
@@ -97,15 +97,14 @@ export function TrainerWeekConfigDialog({
               onChange={(event) => handleDurationInput(event.target.value)}
             />
           </div>
-
-          <div className="-mr-1 flex max-h-[65vh] flex-col gap-2 overflow-y-auto pr-1 md:max-h-none md:flex-row md:flex-nowrap md:overflow-x-auto md:overflow-y-visible md:px-1 md:gap-2">
+          <div className="grid max-h-[55vh] grid-cols-1 gap-2 overflow-y-auto pr-1 sm:max-h-[60vh] sm:grid-cols-2 md:max-h-[65vh] md:pr-0 lg:grid-cols-3 xl:grid-cols-7">
             {weekConfig.map((row) => {
               const slots = getSlotsForRow(row);
 
               return (
                 <div
                   key={row.weekday}
-                  className={`flex-1 min-w-[100px] max-w-[360px] rounded-md border p-1.5 md:flex-[1_1_280px] lg:flex-[1_1_340px] ${row.enabled ? "" : "opacity-60"}`}
+                  className={`flex min-w-0 flex-col rounded-md border p-1.5 sm:p-2 ${row.enabled ? "" : "opacity-60"}`}
                 >
                   <div className="mb-2">
                     <div className="flex items-center gap-2">
