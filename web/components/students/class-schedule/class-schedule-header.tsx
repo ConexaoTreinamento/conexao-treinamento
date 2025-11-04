@@ -13,8 +13,8 @@ export function ClassScheduleHeader({ onBack }: ClassScheduleHeaderProps) {
       <Button variant="ghost" size="icon" onClick={onBack}>
         <ArrowLeft className="h-4 w-4" />
       </Button>
-      <div>
-        <h1 className="text-xl font-bold">Cronograma de Aulas</h1>
+      <div className="min-w-0 flex-1">
+        <h1 className="truncate text-xl font-bold">Cronograma de Aulas</h1>
         <p className="text-sm text-muted-foreground">
           Selecione as séries que deseja frequentar
         </p>
