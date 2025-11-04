@@ -88,7 +88,7 @@ export const TrainerWeekTimetable = ({ schedules }: TrainerTimetableProps) => {
 
   return (
     <div className="relative mt-2 overflow-auto rounded-md border bg-background timetable-desktop">
-      <div className="min-w-[980px]">
+      <div className="min-w-[720px] md:min-w-[880px] xl:min-w-[980px]">
         <div
           className="grid sticky top-0 z-30"
           style={{ gridTemplateColumns: "80px repeat(7,1fr)" }}
@@ -169,7 +169,11 @@ export const TrainerMobileTimetable = ({
     .sort((a, b) => a - b);
 
   if (!orderedDays.length) {
-    return null;
+    return (
+      <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+        Nenhum horário configurado ainda.
+      </div>
+    );
   }
 
   return (

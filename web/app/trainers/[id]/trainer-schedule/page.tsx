@@ -422,42 +422,42 @@ export default function TrainerSchedulePage() {
           description="Configure os horários semanais e séries geradas"
           onBack={() => router.back()}
           rightActions={
-            <div className="flex flex-wrap gap-2 sm:justify-end">
-              <TrainerWeekConfigDialog
-                open={bulkOpen}
-                onOpenChange={setBulkOpen}
-                weekConfig={weekConfig}
-                classDuration={classDuration}
-                onChangeClassDuration={handleClassDurationChange}
-                onToggleWeekday={toggleEnabled}
-                onUpdateWeekday={updateRow}
-                onToggleSlot={toggleSlot}
-                onSave={handleSaveWeek}
-                onCancel={() => setBulkOpen(false)}
-                isSaving={saving}
-                isInvalid={invalidConfig}
-                getSlotsForRow={genSlots}
-              />
-            </div>
+            <TrainerWeekConfigDialog
+              open={bulkOpen}
+              onOpenChange={setBulkOpen}
+              weekConfig={weekConfig}
+              classDuration={classDuration}
+              onChangeClassDuration={handleClassDurationChange}
+              onToggleWeekday={toggleEnabled}
+              onUpdateWeekday={updateRow}
+              onToggleSlot={toggleSlot}
+              onSave={handleSaveWeek}
+              onCancel={() => setBulkOpen(false)}
+              isSaving={saving}
+              isInvalid={invalidConfig}
+              getSlotsForRow={genSlots}
+            />
           }
         />
 
         {/* Current timetable preview */}
         <div className="space-y-2">
           <h2 className="text-lg font-semibold">Horários Ativos</h2>
-          {loadingList && (
+          {loadingList ? (
             <div className="space-y-2">
               {[...Array(2)].map((_, i) => (
-                <div key={i} className="animate-pulse h-24 rounded border" />
+                <div
+                  key={i}
+                  className="h-24 animate-pulse rounded border border-dashed"
+                />
               ))}
             </div>
-          )}
-          {!loadingList && (
+          ) : (
             <>
-              <div className="hidden md:block">
+              <div className="hidden lg:block">
                 <TrainerWeekTimetable schedules={grouped} />
               </div>
-              <div className="md:hidden">
+              <div className="block lg:hidden">
                 <TrainerMobileTimetable schedules={grouped} />
               </div>
             </>

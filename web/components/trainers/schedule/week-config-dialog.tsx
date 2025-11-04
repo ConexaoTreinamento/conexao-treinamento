@@ -76,13 +76,13 @@ export function TrainerWeekConfigDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button
-          className="bg-green-600 hover:bg-green-700"
+          className="bg-green-600 hover:bg-green-700 sm:w-auto"
           aria-label="Configurar semana do instrutor"
         >
           <Settings2 className="mr-2 h-4 w-4" /> Configurar
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-6xl">
+  <DialogContent className="w-full max-w-5xl md:w-[75vw] lg:w-[60vw]">
         <DialogHeader>
           <DialogTitle>Configuração Semanal</DialogTitle>
         </DialogHeader>
