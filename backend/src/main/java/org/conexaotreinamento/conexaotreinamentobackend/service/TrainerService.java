@@ -39,6 +39,9 @@ public class TrainerService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Trainer with this email already exists");
         }
 
+        UserResponseDTO savedUser = userService.createUser(new UserCreateRequestDTO(request.email(), request.password(), Role.ROLE_TRAINER));
+        log.info("User created for Trainer successfully [ID: {}] - Email: {}", savedUser.id(), request.email());
+
         Trainer trainer = request.toEntity(savedUser.id());
         Trainer savedTrainer = trainerRepository.save(trainer);
         

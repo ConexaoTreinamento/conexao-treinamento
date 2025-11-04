@@ -34,7 +34,7 @@ public class TrainerController {
     @PostMapping
     public ResponseEntity<TrainerListItemResponseDTO> createTrainerAndUser(@RequestBody @Valid TrainerCreateRequestDTO request) {
         log.info("Creating new trainer - Name: {}, Email: {}", request.name(), request.email());
-        TrainerListItemResponseDTO response = trainerService.create(request)
+        TrainerListItemResponseDTO response = trainerService.create(request);
         log.info("Trainer created successfully [ID: {}] - Name: {}", response.id(), response.name());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -55,7 +55,7 @@ public class TrainerController {
     public ResponseEntity<List<TrainerListItemResponseDTO>> findAllTrainers() {
         log.debug("Fetching all trainers");
         List<TrainerListItemResponseDTO> response = trainerService.findAll();
-        log.debug("Retrieved {} trainers", trainers.size());
+        log.debug("Retrieved {} trainers", response.size());
         return ResponseEntity.ok(response);
     }
 
