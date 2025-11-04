@@ -7,19 +7,6 @@ import { Button } from "@/components/ui/button"
 import Layout from "@/components/layout"
 import { useToast } from "@/hooks/use-toast"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import {
-  assignPlanToStudentMutation,
-  getAllPlansOptions,
-  getAllSchedulesOptions,
-  getCurrentStudentPlanOptions,
-  getCurrentStudentPlanQueryKey,
-  findAllTrainersOptions,
-  getScheduleOptions,
-  getStudentCommitmentsOptions,
-  getStudentCommitmentsQueryKey,
-  getStudentPlanHistoryOptions,
-  getStudentPlanHistoryQueryKey,
-} from "@/lib/api-client/@tanstack/react-query.gen"
 import type {
   ListTrainersDto,
   ScheduleResponseDto,
@@ -27,9 +14,23 @@ import type {
   StudentPlanAssignmentResponseDto,
   TrainerScheduleResponseDto,
 } from "@/lib/api-client/types.gen"
-import { apiClient } from "@/lib/client"
-import { useStudent } from "@/lib/students/hooks/student-queries"
-import { useDeleteStudent, useRestoreStudent } from "@/lib/students/hooks/student-mutations"
+import {
+  allPlansQueryOptions,
+  allSchedulesQueryOptions,
+  currentStudentPlanQueryOptions,
+  studentCommitmentsQueryOptions,
+  studentPlanHistoryQueryOptions,
+  useStudent,
+} from "@/lib/students/hooks/student-queries"
+import {
+  assignPlanToStudentMutationOptions,
+  useDeleteStudent,
+  useRestoreStudent,
+} from "@/lib/students/hooks/student-mutations"
+import {
+  scheduleByDateQueryOptions,
+  trainersLookupQueryOptions,
+} from "@/lib/schedule/hooks/session-queries"
 import { useEvaluations } from "@/lib/evaluations/hooks/evaluation-queries"
 import { hasInsomniaTypes, impairmentTypes } from "@/lib/students/student-types"
 import { handleHttpError } from "@/lib/error-utils"
@@ -58,51 +59,64 @@ export default function StudentProfilePage() {
   const studentId = ensureStudentId(params.id)
   const hasStudentId = studentId.length > 0
 
-  const currentPlanOptions = useMemo(
-    () => ({ path: { studentId }, client: apiClient }),
-    [studentId]
-  )
-
   const { data: studentData, isLoading, error } = useStudent(
     { path: { id: studentId } },
     { enabled: hasStudentId }
   )
+  const currentPlanQueryOptions = useMemo(
+    () => currentStudentPlanQueryOptions({ studentId }),
+    [studentId],
+  )
+  const planHistoryQueryOptions = useMemo(
+    () => studentPlanHistoryQueryOptions({ studentId }),
+    [studentId],
+  )
+  const commitmentsQueryOptions = useMemo(
+    () => studentCommitmentsQueryOptions({ studentId }),
+    [studentId],
+  )
 
   const currentPlanQuery = useQuery({
-    ...getCurrentStudentPlanOptions(currentPlanOptions),
+    ...currentPlanQueryOptions,
     enabled: hasStudentId,
   })
   const planHistoryQuery = useQuery({
-    ...getStudentPlanHistoryOptions(currentPlanOptions),
+    ...planHistoryQueryOptions,
     enabled: hasStudentId,
   })
   const commitmentsQuery = useQuery({
-    ...getStudentCommitmentsOptions(currentPlanOptions),
+    ...commitmentsQueryOptions,
     enabled: hasStudentId,
   })
-  const allPlansQuery = useQuery({
-    ...getAllPlansOptions({ client: apiClient }),
-  })
+  const allPlansQuery = useQuery(allPlansQueryOptions())
   const trainerSchedulesQuery = useQuery({
-    ...getAllSchedulesOptions({ client: apiClient }),
+    ...allSchedulesQueryOptions(),
     enabled: hasStudentId,
   })
   const trainersQuery = useQuery({
-    ...findAllTrainersOptions({ client: apiClient }),
+    ...trainersLookupQueryOptions(),
     enabled: hasStudentId,
   })
 
   const now = useMemo(() => new Date(), [])
   const endDateIso = formatLocalDate(now)
   const startDateIso = formatLocalDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7))
+  const recentScheduleOptions = useMemo(
+    () => scheduleByDateQueryOptions({ startDate: startDateIso, endDate: endDateIso }),
+    [endDateIso, startDateIso],
+  )
   const recentScheduleQuery = useQuery({
-    ...getScheduleOptions({ client: apiClient, query: { startDate: startDateIso, endDate: endDateIso } }),
+    ...recentScheduleOptions,
     enabled: hasStudentId,
   })
 
   const startExercisesIso = formatLocalDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30))
+  const exercisesScheduleOptions = useMemo(
+    () => scheduleByDateQueryOptions({ startDate: startExercisesIso, endDate: endDateIso }),
+    [endDateIso, startExercisesIso],
+  )
   const exercisesScheduleQuery = useQuery({
-    ...getScheduleOptions({ client: apiClient, query: { startDate: startExercisesIso, endDate: endDateIso } }),
+    ...exercisesScheduleOptions,
     enabled: hasStudentId,
   })
 
@@ -110,7 +124,7 @@ export default function StudentProfilePage() {
     enabled: hasStudentId,
   })
 
-  const assignPlanMutation = useMutation(assignPlanToStudentMutation({ client: apiClient }))
+  const assignPlanMutation = useMutation(assignPlanToStudentMutationOptions())
   const { mutateAsync: deleteStudent, isPending: isDeleting } = useDeleteStudent()
   const { mutateAsync: restoreStudent, isPending: isRestoring } = useRestoreStudent()
 
@@ -182,7 +196,7 @@ export default function StudentProfilePage() {
   const isStudentInactive = Boolean(studentData?.deletedAt)
 
   const handleDelete = async () => {
-    await deleteStudent({ path: { id: studentId }, client: apiClient })
+    await deleteStudent({ path: { id: studentId } })
     toast({
       title: "Aluno excluído",
       description: "O aluno foi marcado como inativo.",
@@ -192,7 +206,7 @@ export default function StudentProfilePage() {
   }
 
   const handleRestore = async () => {
-    await restoreStudent({ path: { id: studentId }, client: apiClient })
+    await restoreStudent({ path: { id: studentId } })
     toast({
       title: "Aluno reativado",
       description: "O aluno foi reativado com sucesso.",
@@ -221,7 +235,6 @@ export default function StudentProfilePage() {
           startDate: assignStartDate,
           assignmentNotes: assignNotes || undefined,
         },
-        client: apiClient,
       })
 
       toast({
@@ -234,9 +247,9 @@ export default function StudentProfilePage() {
       resetPlanForm()
 
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: getCurrentStudentPlanQueryKey(currentPlanOptions) }),
-        queryClient.invalidateQueries({ queryKey: getStudentPlanHistoryQueryKey(currentPlanOptions) }),
-        queryClient.invalidateQueries({ queryKey: getStudentCommitmentsQueryKey(currentPlanOptions) }),
+        queryClient.invalidateQueries({ queryKey: currentPlanQueryOptions.queryKey }),
+        queryClient.invalidateQueries({ queryKey: planHistoryQueryOptions.queryKey }),
+        queryClient.invalidateQueries({ queryKey: commitmentsQueryOptions.queryKey }),
       ])
     } catch (error: unknown) {
       handleHttpError(error, "atribuir plano", "Não foi possível atribuir o plano. Tente novamente.")

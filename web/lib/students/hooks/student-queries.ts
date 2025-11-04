@@ -1,5 +1,15 @@
 import {useQuery, keepPreviousData, UseQueryOptions} from "@tanstack/react-query";
-import {findAllStudentsOptions, findStudentByIdOptions, findStudentByIdQueryKey} from "@/lib/api-client/@tanstack/react-query.gen";
+import {
+  findAllStudentsOptions,
+  findStudentByIdOptions,
+  findStudentByIdQueryKey,
+  getAllPlansOptions,
+  getAllSchedulesOptions,
+  getCurrentStudentPlanOptions,
+  getExpiringSoonAssignmentsOptions,
+  getStudentCommitmentsOptions,
+  getStudentPlanHistoryOptions,
+} from "@/lib/api-client/@tanstack/react-query.gen";
 import type { Options } from "@/lib/api-client/client/types";
 import {apiClient} from "@/lib/client";
 import type {FindAllStudentsData, FindStudentByIdData, StudentResponseDto} from "@/lib/api-client";
@@ -62,3 +72,29 @@ export const useStudents = (params: {
     placeholderData: keepPreviousData,
   });
 };
+
+export const currentStudentPlanQueryOptions = ({ studentId }: { studentId: string }) =>
+  getCurrentStudentPlanOptions({ client: apiClient, path: { studentId } });
+
+export const studentPlanHistoryQueryOptions = ({ studentId }: { studentId: string }) =>
+  getStudentPlanHistoryOptions({ client: apiClient, path: { studentId } });
+
+export const studentCommitmentsQueryOptions = ({ studentId }: { studentId: string }) =>
+  getStudentCommitmentsOptions({ client: apiClient, path: { studentId } });
+
+export const allPlansQueryOptions = () => getAllPlansOptions({ client: apiClient });
+
+export const allSchedulesQueryOptions = () => getAllSchedulesOptions({ client: apiClient });
+
+export const expiringPlanAssignmentsQueryOptions = ({ days }: { days: number }) => ({
+  ...getExpiringSoonAssignmentsOptions({ client: apiClient, query: { days } }),
+  staleTime: 30_000,
+  refetchInterval: 60_000,
+});
+
+export type CurrentStudentPlanQueryOptions = ReturnType<typeof currentStudentPlanQueryOptions>;
+export type StudentPlanHistoryQueryOptions = ReturnType<typeof studentPlanHistoryQueryOptions>;
+export type StudentCommitmentsQueryOptions = ReturnType<typeof studentCommitmentsQueryOptions>;
+export type AllPlansQueryOptions = ReturnType<typeof allPlansQueryOptions>;
+export type AllSchedulesQueryOptions = ReturnType<typeof allSchedulesQueryOptions>;
+export type ExpiringPlanAssignmentsQueryOptions = ReturnType<typeof expiringPlanAssignmentsQueryOptions>;

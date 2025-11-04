@@ -1,43 +1,50 @@
 "use client"
 
-import {Suspense, useMemo, useState, useCallback} from "react"
+import { Suspense, useMemo, useState, useCallback } from "react"
 import type {
   AnamnesisResponseDto,
   StudentRequestDto,
   StudentPlanAssignmentResponseDto
 } from "@/lib/api-client/types.gen"
-import {Button} from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog"
-import {Plus} from "lucide-react"
-import {useRouter, useSearchParams} from "next/navigation"
+import { Plus } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Layout from "@/components/layout"
-import StudentForm, {type StudentFormData} from "@/components/students/student-form"
+import StudentForm, { type StudentFormData } from "@/components/students/student-form"
 import PageSelector from "@/components/ui/page-selector"
 import { PageHeader } from "@/components/base/page-header"
 import { Section } from "@/components/base/section"
 import useDebounce from "@/hooks/use-debounce"
-import {useForm} from "react-hook-form"
-import {useCreateStudent, useDeleteStudent, useRestoreStudent} from "@/lib/students/hooks/student-mutations"
-import {assignPlanToStudentMutation} from '@/lib/api-client/@tanstack/react-query.gen'
-import {useMutation, useQueryClient, useQueries} from '@tanstack/react-query'
+import { useForm } from "react-hook-form"
+import {
+  useCreateStudent,
+  useDeleteStudent,
+  useRestoreStudent,
+  assignPlanToStudentMutationOptions,
+} from "@/lib/students/hooks/student-mutations"
+import type {
+  AssignPlanToStudentMutationResponse,
+  AssignPlanToStudentMutationVariables,
+} from "@/lib/students/hooks/student-mutations"
+import {useMutation, useQueryClient, useQueries, useQuery} from "@tanstack/react-query"
 import {useToast} from "@/hooks/use-toast"
 import { handleHttpError } from "@/lib/error-utils"
-import {useStudents} from "@/lib/students/hooks/student-queries"
-import {apiClient} from "@/lib/client"
-import {getExpiringSoonAssignmentsOptions, getCurrentStudentPlanOptions} from '@/lib/api-client/@tanstack/react-query.gen'
-import {useQuery} from '@tanstack/react-query'
+import { useStudents, currentStudentPlanQueryOptions, expiringPlanAssignmentsQueryOptions } from "@/lib/students/hooks/student-queries"
 import { StudentFiltersContent } from "@/components/students/student-filters"
 import { FilterToolbar } from "@/components/base/filter-toolbar"
-import type {StudentFilters} from "@/components/students/types"
-import {DEFAULT_STUDENT_FILTERS, countActiveStudentFilters} from "@/components/students/types"
+import type { StudentFilters } from "@/components/students/types"
+import { DEFAULT_STUDENT_FILTERS, countActiveStudentFilters } from "@/components/students/types"
 import { StudentsEmptyState, StudentsErrorState, StudentsList, StudentsLoadingList } from "@/components/students/students-view"
+
+const EXPIRING_LOOKAHEAD_DAYS = 7
 
 export default function StudentsPage() {
   return (
@@ -71,26 +78,30 @@ function StudentsPageContent() {
   const { mutateAsync: restoreStudent, isPending: isRestoring } = useRestoreStudent()
   const { mutateAsync: createStudent } = useCreateStudent()
   const queryClient = useQueryClient()
-  const assignPlan = useMutation({
-    ...assignPlanToStudentMutation({ client: apiClient }),
+  const assignPlan = useMutation<
+    AssignPlanToStudentMutationResponse,
+    Error,
+    AssignPlanToStudentMutationVariables
+  >({
+    ...assignPlanToStudentMutationOptions(),
     onSuccess: async (_data, variables) => {
-      await queryClient.invalidateQueries({
-        predicate: (query) => {
-          const [rawKey] = query.queryKey as [unknown]
-          if (!rawKey || typeof rawKey !== "object") return false
-          const key = rawKey as { _id?: string; path?: { studentId?: string } }
-          if (key._id === "getExpiringSoonAssignments") {
-            return true
-          }
-          if (key._id === "getCurrentStudentPlan") {
-            const studentId = variables?.path?.studentId
-            if (!studentId) return true
-            return key.path?.studentId === studentId
-          }
-          return false
-        }
-      })
-    }
+      const tasks = [
+        queryClient.invalidateQueries({
+          queryKey: expiringPlanAssignmentsQueryOptions({ days: EXPIRING_LOOKAHEAD_DAYS }).queryKey,
+        }),
+      ]
+
+      const studentId = variables?.path?.studentId
+      if (studentId) {
+        tasks.push(
+          queryClient.invalidateQueries({
+            queryKey: currentStudentPlanQueryOptions({ studentId }).queryKey,
+          }),
+        )
+      }
+
+      await Promise.all(tasks)
+    },
   })
   
   // Get current page from URL query params or default to 0
@@ -151,17 +162,16 @@ function StudentsPageContent() {
   })
 
   // Fetch expiring soon assignments (e.g. next 7 days) & all current plans for mapping
-  const { data: expiringSoonAssignments } = useQuery({
-    ...getExpiringSoonAssignmentsOptions({ client: apiClient, query: { days: 7 } }),
-    staleTime: 30_000,
-    refetchInterval: 60_000,
-  })
+  const expiringAssignmentsQuery = useQuery(
+    expiringPlanAssignmentsQueryOptions({ days: EXPIRING_LOOKAHEAD_DAYS }),
+  )
+  const expiringSoonAssignments = (expiringAssignmentsQuery.data ?? []) as StudentPlanAssignmentResponseDto[]
 
   // We'll lazily fetch current plan per student only if needed for fallback (optional optimization skipped)
   // Build quick lookup maps
   const expiringMap = useMemo(() => {
     const map = new Map<string, StudentPlanAssignmentResponseDto>()
-    expiringSoonAssignments?.forEach((assignment) => {
+    expiringSoonAssignments.forEach((assignment) => {
       if (assignment.studentId) {
         map.set(assignment.studentId, assignment)
       }
@@ -186,10 +196,10 @@ function StudentsPageContent() {
   )
 
   const currentPlanQueries = useQueries({
-    queries: studentIdsNeedingCurrentPlan.map(studentId => ({
-      ...getCurrentStudentPlanOptions({ client: apiClient, path: { studentId } }),
+    queries: studentIdsNeedingCurrentPlan.map((studentId) => ({
+      ...currentStudentPlanQueryOptions({ studentId }),
       staleTime: 30_000,
-    }))
+    })),
   })
 
   const currentPlanMap = useMemo(() => {
@@ -342,7 +352,7 @@ function StudentsPageContent() {
           }))
       } as StudentRequestDto;
 
-      const created = await createStudent({ body: requestBody, client: apiClient })
+  const created = await createStudent({ body: requestBody })
 
       let assignedPlan = false
       // Automatic plan assignment (fire and forget with basic error handling)
@@ -353,9 +363,8 @@ function StudentsPageContent() {
             body: {
               planId: formData.plan,
               startDate: new Date().toISOString().substring(0, 10),
-              assignmentNotes: 'Assinado automaticamente no cadastro.'
+              assignmentNotes: "Assinado automaticamente no cadastro.",
             },
-            client: apiClient
           })
           assignedPlan = true
         } catch (error: unknown) {
@@ -381,7 +390,7 @@ function StudentsPageContent() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteStudent({ path: { id }, client: apiClient })
+  await deleteStudent({ path: { id } })
       toast({ title: "Aluno excluído", description: "O aluno foi marcado como inativo.", duration: 3000 })
     } catch (error: unknown) {
       handleHttpError(error, "excluir aluno", "Não foi possível excluir o aluno. Tente novamente.")
@@ -390,7 +399,7 @@ function StudentsPageContent() {
 
   const handleRestore = async (id: string) => {
     try {
-      await restoreStudent({ path: { id }, client: apiClient })
+  await restoreStudent({ path: { id } })
       toast({ title: "Aluno reativado", description: "O aluno foi reativado com sucesso.", duration: 3000 })
     } catch (error: unknown) {
       handleHttpError(error, "reativar aluno", "Não foi possível reativar o aluno. Tente novamente.")

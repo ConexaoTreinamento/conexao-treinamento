@@ -1,12 +1,13 @@
 import {useMutation, UseMutationOptions, useQueryClient} from "@tanstack/react-query";
 import {
+  assignPlanToStudentMutation,
   createStudentMutation,
   deleteStudentMutation, findStudentByIdOptions,
   restoreStudentMutation,
   updateStudentMutation
 } from "@/lib/api-client/@tanstack/react-query.gen";
 import {apiClient} from "@/lib/client";
-import type {Options, StudentResponseDto, UpdateStudentData} from "@/lib/api-client";
+import type {AssignPlanToStudentData, AssignPlanToStudentResponse, Options, StudentResponseDto, UpdateStudentData} from "@/lib/api-client";
 
 /**
  * Hooks that wrap generated mutation factories and add onSuccess invalidations
@@ -17,7 +18,7 @@ import type {Options, StudentResponseDto, UpdateStudentData} from "@/lib/api-cli
 
 export const useCreateStudent = () => {
   const queryClient = useQueryClient();
-  const base = createStudentMutation();
+  const base = createStudentMutation({ client: apiClient });
   const baseOnSuccess = base.onSuccess;
 
   return useMutation({
@@ -44,7 +45,7 @@ export const useCreateStudent = () => {
 
 export const useUpdateStudent = (options: UseMutationOptions<StudentResponseDto, Error, Options<UpdateStudentData>>) => {
   const queryClient = useQueryClient();
-  const base = updateStudentMutation();
+  const base = updateStudentMutation({ client: apiClient });
   const baseOnSuccess = base.onSuccess;
 
   return useMutation({
@@ -80,7 +81,7 @@ export const useUpdateStudent = (options: UseMutationOptions<StudentResponseDto,
 
 export const useDeleteStudent = () => {
   const queryClient = useQueryClient();
-  const base = deleteStudentMutation();
+  const base = deleteStudentMutation({ client: apiClient });
   const baseOnSuccess = base.onSuccess;
 
   return useMutation({
@@ -102,7 +103,7 @@ export const useDeleteStudent = () => {
 
 export const useRestoreStudent = () => {
   const queryClient = useQueryClient();
-  const base = restoreStudentMutation();
+  const base = restoreStudentMutation({ client: apiClient });
   const baseOnSuccess = base.onSuccess;
 
   return useMutation({
@@ -121,3 +122,11 @@ export const useRestoreStudent = () => {
     },
   });
 };
+
+export const assignPlanToStudentMutationOptions = () =>
+  assignPlanToStudentMutation({ client: apiClient });
+
+export type AssignPlanToStudentMutationVariables = Options<AssignPlanToStudentData>;
+export type AssignPlanToStudentMutationResponse = AssignPlanToStudentResponse;
+
+export type AssignPlanToStudentMutationOptions = ReturnType<typeof assignPlanToStudentMutationOptions>;
