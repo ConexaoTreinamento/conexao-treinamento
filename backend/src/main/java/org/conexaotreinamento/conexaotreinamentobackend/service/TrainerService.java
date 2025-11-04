@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateTrainerDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateUserRequestDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainersDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.TrainerCreateRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.UserCreateRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerListItemResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
@@ -32,16 +32,12 @@ public class TrainerService {
     private final UserService userService;
 
     @Transactional
-    public ListTrainersDTO create(CreateTrainerDTO request) {
+    public TrainerListItemResponseDTO create(TrainerCreateRequestDTO request) {
         log.debug("Attempting to create trainer with email: {}", request.email());
-        
         if (trainerRepository.existsByEmailIgnoreCase(request.email())) {
             log.warn("Trainer creation failed - Email already exists: {}", request.email());
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Trainer with this email already exists");
         }
-
-        UserResponseDTO savedUser = userService.createUser(new CreateUserRequestDTO(request.email(), request.password(), Role.ROLE_TRAINER));
-        log.debug("User created for trainer - User ID: {}", savedUser.id());
 
         Trainer trainer = request.toEntity(savedUser.id());
         Trainer savedTrainer = trainerRepository.save(trainer);
@@ -53,22 +49,22 @@ public class TrainerService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Created trainer not found"));
     }
 
-    public ListTrainersDTO findById(UUID id) {
+    public TrainerListItemResponseDTO findById(UUID id) {
         return trainerRepository.findActiveTrainerProfileById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trainer not found"));
     }
 
-    public ListTrainersDTO findByUserId(UUID id) {
+    public TrainerListItemResponseDTO findByUserId(UUID id) {
         return trainerRepository.findTrainerByUserId(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trainer not found"));
     }
 
-    public List<ListTrainersDTO> findAll() {
+    public List<TrainerListItemResponseDTO> findAll() {
         return trainerRepository.findAllTrainerProfiles(true);
     }
 
     @Transactional
-    public TrainerResponseDTO put(UUID id, CreateTrainerDTO request) {
+    public TrainerResponseDTO put(UUID id, TrainerCreateRequestDTO request) {
         Trainer trainer = trainerRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trainer not found"));
 

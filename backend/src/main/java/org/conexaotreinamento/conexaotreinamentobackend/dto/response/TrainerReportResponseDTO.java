@@ -5,7 +5,7 @@ import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;
 import java.util.List;
 import java.util.UUID;
 
-public record TrainerReportDTO(
+public record TrainerReportResponseDTO(
         UUID id,
         String name,
         Double hoursWorked,

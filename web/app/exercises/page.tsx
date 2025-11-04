@@ -26,8 +26,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
-import CreateExerciseModal from "@/components/ui/create-exercise-modal"
-import EditExerciseModal from "@/components/ui/edit-exercise-modal"
+import CreateExerciseModal from "@/components/exercises/create-exercise-modal"
+import EditExerciseModal from "@/components/exercises/edit-exercise-modal"
 
 import { Search, Plus, Activity, Edit, Trash2, X, Eye, RotateCcw, MoreVertical } from "lucide-react"
 import Layout from "@/components/layout"

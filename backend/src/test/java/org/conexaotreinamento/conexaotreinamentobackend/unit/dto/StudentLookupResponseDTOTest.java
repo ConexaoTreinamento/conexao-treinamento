@@ -1,6 +1,6 @@
 package org.conexaotreinamento.conexaotreinamentobackend.unit.dto;
 
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentLookupDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentLookupResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,8 +11,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("StudentLookupDTO Tests")
-class StudentLookupDTOTest {
+@DisplayName("StudentLookupResponseDTO Tests")
+class StudentLookupResponseDTOTest {
 
     @Test
     @DisplayName("Should create DTO with all fields")
@@ -22,7 +22,7 @@ class StudentLookupDTOTest {
         String name = "Alice Doe";
 
         // When
-        StudentLookupDTO dto = new StudentLookupDTO(id, name);
+        StudentLookupResponseDTO dto = new StudentLookupResponseDTO(id, name);
 
         // Then
         assertThat(dto.id()).isEqualTo(id);
@@ -33,7 +33,7 @@ class StudentLookupDTOTest {
     @DisplayName("Should create DTO with null values")
     void shouldCreateDTOWithNullValues() {
         // When
-        StudentLookupDTO dto = new StudentLookupDTO(null, null);
+        StudentLookupResponseDTO dto = new StudentLookupResponseDTO(null, null);
 
         // Then
         assertThat(dto.id()).isNull();
@@ -47,7 +47,7 @@ class StudentLookupDTOTest {
         Student student = createStudentWithAllFields();
 
         // When
-        StudentLookupDTO dto = StudentLookupDTO.fromEntity(student);
+        StudentLookupResponseDTO dto = StudentLookupResponseDTO.fromEntity(student);
 
         // Then
         assertThat(dto).isNotNull();
@@ -59,7 +59,7 @@ class StudentLookupDTOTest {
     @DisplayName("Should convert from null entity")
     void shouldConvertFromNullEntity() {
         // When
-        StudentLookupDTO dto = StudentLookupDTO.fromEntity(null);
+        StudentLookupResponseDTO dto = StudentLookupResponseDTO.fromEntity(null);
 
         // Then
         assertThat(dto).isNull();
@@ -76,11 +76,11 @@ class StudentLookupDTOTest {
         Student student5 = createStudent("Eve", "Adams");
 
         // When
-        StudentLookupDTO dto1 = StudentLookupDTO.fromEntity(student1);
-        StudentLookupDTO dto2 = StudentLookupDTO.fromEntity(student2);
-        StudentLookupDTO dto3 = StudentLookupDTO.fromEntity(student3);
-        StudentLookupDTO dto4 = StudentLookupDTO.fromEntity(student4);
-        StudentLookupDTO dto5 = StudentLookupDTO.fromEntity(student5);
+        StudentLookupResponseDTO dto1 = StudentLookupResponseDTO.fromEntity(student1);
+        StudentLookupResponseDTO dto2 = StudentLookupResponseDTO.fromEntity(student2);
+        StudentLookupResponseDTO dto3 = StudentLookupResponseDTO.fromEntity(student3);
+        StudentLookupResponseDTO dto4 = StudentLookupResponseDTO.fromEntity(student4);
+        StudentLookupResponseDTO dto5 = StudentLookupResponseDTO.fromEntity(student5);
 
         // Then
         assertThat(dto1.name()).isEqualTo("Alice Doe");
@@ -97,7 +97,7 @@ class StudentLookupDTOTest {
         Student student = createStudent("Madonna", null);
 
         // When
-        StudentLookupDTO dto = StudentLookupDTO.fromEntity(student);
+        StudentLookupResponseDTO dto = StudentLookupResponseDTO.fromEntity(student);
 
         // Then
         assertThat(dto.name()).isEqualTo("Madonna null");
@@ -110,7 +110,7 @@ class StudentLookupDTOTest {
         Student student = createStudent("Cher", null);
 
         // When
-        StudentLookupDTO dto = StudentLookupDTO.fromEntity(student);
+        StudentLookupResponseDTO dto = StudentLookupResponseDTO.fromEntity(student);
 
         // Then
         assertThat(dto.name()).isEqualTo("Cher null");
@@ -123,7 +123,7 @@ class StudentLookupDTOTest {
         Student student = createStudent(null, "Smith");
 
         // When
-        StudentLookupDTO dto = StudentLookupDTO.fromEntity(student);
+        StudentLookupResponseDTO dto = StudentLookupResponseDTO.fromEntity(student);
 
         // Then
         assertThat(dto.name()).isEqualTo("null Smith");
@@ -136,7 +136,7 @@ class StudentLookupDTOTest {
         Student student = createStudent(null, null);
 
         // When
-        StudentLookupDTO dto = StudentLookupDTO.fromEntity(student);
+        StudentLookupResponseDTO dto = StudentLookupResponseDTO.fromEntity(student);
 
         // Then
         assertThat(dto.name()).isEqualTo("null null");
@@ -149,7 +149,7 @@ class StudentLookupDTOTest {
         Student student = createStudent("", "");
 
         // When
-        StudentLookupDTO dto = StudentLookupDTO.fromEntity(student);
+        StudentLookupResponseDTO dto = StudentLookupResponseDTO.fromEntity(student);
 
         // Then
         assertThat(dto.name()).isEqualTo(" ");
@@ -164,9 +164,9 @@ class StudentLookupDTOTest {
         Student student3 = createStudent("François", "Dupont");
 
         // When
-        StudentLookupDTO dto = StudentLookupDTO.fromEntity(student);
-        StudentLookupDTO dto2 = StudentLookupDTO.fromEntity(student2);
-        StudentLookupDTO dto3 = StudentLookupDTO.fromEntity(student3);
+        StudentLookupResponseDTO dto = StudentLookupResponseDTO.fromEntity(student);
+        StudentLookupResponseDTO dto2 = StudentLookupResponseDTO.fromEntity(student2);
+        StudentLookupResponseDTO dto3 = StudentLookupResponseDTO.fromEntity(student3);
 
         // Then
         assertThat(dto.name()).isEqualTo("José da Silva");

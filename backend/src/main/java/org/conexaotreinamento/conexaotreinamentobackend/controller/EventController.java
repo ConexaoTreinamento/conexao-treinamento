@@ -6,8 +6,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.EventRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchEventRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.EventResponseDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentLookupDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerLookupDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentLookupResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerLookupResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.service.EventService;
 import org.conexaotreinamento.conexaotreinamentobackend.service.StudentService;
 import org.conexaotreinamento.conexaotreinamentobackend.service.TrainerService;
@@ -109,22 +109,23 @@ public class EventController {
     }
 
     @GetMapping("/lookup/students")
-    public ResponseEntity<List<StudentLookupDTO>> getStudentsForLookup() {
+        
+    public ResponseEntity<List<StudentLookupResponseDTO>> getStudentsForLookup() {
         log.debug("Fetching students for lookup");
-        List<StudentLookupDTO> students = studentService.findAllActive()
+        List<StudentLookupResponseDTO> students = studentService.findAllActive()
                 .stream()
-                .map(StudentLookupDTO::fromEntity)
+                .map(StudentLookupResponseDTO::fromEntity)
                 .toList();
         log.debug("Retrieved {} students for lookup", students.size());
         return ResponseEntity.ok(students);
     }
 
     @GetMapping("/lookup/trainers")
-    public ResponseEntity<List<TrainerLookupDTO>> getTrainersForLookup() {
+    public ResponseEntity<List<TrainerLookupResponseDTO>> getTrainersForLookup() {
         log.debug("Fetching trainers for lookup");
-        List<TrainerLookupDTO> trainers = trainerService.findAll()
+        List<TrainerLookupResponseDTO> trainers = trainerService.findAll()
                 .stream()
-                .map(dto -> new TrainerLookupDTO(dto.id(), "Prof. " + dto.name()))
+                .map(dto -> new TrainerLookupResponseDTO(dto.id(), "Prof. " + dto.name()))
                 .toList();
         log.debug("Retrieved {} trainers for lookup", trainers.size());
         return ResponseEntity.ok(trainers);

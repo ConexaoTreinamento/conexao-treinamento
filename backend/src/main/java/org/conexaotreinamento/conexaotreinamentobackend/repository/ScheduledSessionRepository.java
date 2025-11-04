@@ -35,7 +35,7 @@ public interface ScheduledSessionRepository extends JpaRepository<ScheduledSessi
     * Generate trainer performance reports with database-level aggregation.
     * Includes BOTH scheduled sessions AND events.
     * ONLY counts materialized sessions (sessions with at least one participant).
-    * Returns Object[] that needs to be mapped to TrainerReportDTO in the service.
+    * Returns Object[] that needs to be mapped to TrainerReportResponseDTO in the service.
     * 
     * PostgreSQL arrays are returned as String[] and need conversion to List<String>.
     */

@@ -1,37 +1,49 @@
-import type { EvaluationData } from '@/components/evaluation-form'
-import type { PhysicalEvaluationRequest } from '@/lib/hooks/evaluation-mutations'
+import type { EvaluationData } from "@/components/students/evaluation-form";
+import type { PhysicalEvaluationRequest } from "@/lib/hooks/evaluation-mutations";
 
-const normalizeNumber = (value: string): string => value.replace(',', '.').trim()
+const normalizeNumber = (value: string): string =>
+  value.replace(",", ".").trim();
 
 const parseRequiredNumber = (value: string): number => {
-  const parsed = Number(normalizeNumber(value))
-  return Number.isFinite(parsed) ? parsed : NaN
-}
+  const parsed = Number(normalizeNumber(value));
+  return Number.isFinite(parsed) ? parsed : NaN;
+};
 
 const parseOptionalNumber = (value: string): number | null => {
-  const normalized = normalizeNumber(value)
+  const normalized = normalizeNumber(value);
   if (!normalized) {
-    return null
+    return null;
   }
 
-  const parsed = Number(normalized)
-  return Number.isFinite(parsed) ? parsed : null
-}
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+};
 
-const mapGroup = <T extends Record<string, string>>(group: T): { [K in keyof T]: number | null } => {
+const mapGroup = <T extends Record<string, string>>(
+  group: T
+): { [K in keyof T]: number | null } => {
   return Object.fromEntries(
-    Object.entries(group).map(([key, rawValue]) => [key, parseOptionalNumber(rawValue)])
-  ) as { [K in keyof T]: number | null }
-}
+    Object.entries(group).map(([key, rawValue]) => [
+      key,
+      parseOptionalNumber(rawValue),
+    ])
+  ) as { [K in keyof T]: number | null };
+};
 
-const sanitizeGroup = <T extends Record<string, number | null>>(group: T): T | undefined => {
-  return Object.values(group).some((value) => value !== null) ? group : undefined
-}
+const sanitizeGroup = <T extends Record<string, number | null>>(
+  group: T
+): T | undefined => {
+  return Object.values(group).some((value) => value !== null)
+    ? group
+    : undefined;
+};
 
-export const toPhysicalEvaluationRequest = (data: EvaluationData): PhysicalEvaluationRequest => {
-  const circumferences = sanitizeGroup(mapGroup(data.circumferences))
-  const subcutaneousFolds = sanitizeGroup(mapGroup(data.subcutaneousFolds))
-  const diameters = sanitizeGroup(mapGroup(data.diameters))
+export const toPhysicalEvaluationRequest = (
+  data: EvaluationData
+): PhysicalEvaluationRequest => {
+  const circumferences = sanitizeGroup(mapGroup(data.circumferences));
+  const subcutaneousFolds = sanitizeGroup(mapGroup(data.subcutaneousFolds));
+  const diameters = sanitizeGroup(mapGroup(data.diameters));
 
   return {
     weight: parseRequiredNumber(data.weight),
@@ -39,5 +51,5 @@ export const toPhysicalEvaluationRequest = (data: EvaluationData): PhysicalEvalu
     circumferences,
     subcutaneousFolds,
     diameters,
-  }
-}
+  };
+};

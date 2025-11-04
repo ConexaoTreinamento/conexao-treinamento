@@ -9,8 +9,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateTrainerDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainersDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.TrainerCreateRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerListItemResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
@@ -57,8 +57,8 @@ class TrainerServiceTest {
     private UUID userId;
     private Trainer trainer;
     private User user;
-    private CreateTrainerDTO createTrainerDTO;
-    private ListTrainersDTO listTrainersDTO;
+    private TrainerCreateRequestDTO createTrainerDTO;
+    private TrainerListItemResponseDTO listTrainersDTO;
 
     @BeforeEach
     void setUp() {
@@ -77,7 +77,7 @@ class TrainerServiceTest {
 
         user = new User("john@example.com", "password123", Role.ROLE_TRAINER);
 
-        createTrainerDTO = new CreateTrainerDTO(
+        createTrainerDTO = new TrainerCreateRequestDTO(
             "John Trainer",
             "john@example.com",
             "+1234567890",
@@ -88,7 +88,7 @@ class TrainerServiceTest {
             CompensationType.HOURLY
         );
 
-        listTrainersDTO = new ListTrainersDTO(
+        listTrainersDTO = new TrainerListItemResponseDTO(
             trainerId,
             "John Trainer",
             "john@example.com",
@@ -109,7 +109,7 @@ class TrainerServiceTest {
         // Given
         UUID newUserId = UUID.randomUUID();
         UUID newTrainerId = UUID.randomUUID();
-        CreateTrainerDTO request = new CreateTrainerDTO(
+        TrainerCreateRequestDTO request = new TrainerCreateRequestDTO(
             "João Silva",
             "joao@test.com",
             "+5511999999999",
@@ -134,7 +134,7 @@ class TrainerServiceTest {
 
         User savedUser = new User("joao@test.com", "password123", Role.ROLE_TRAINER);
 
-        ListTrainersDTO expectedResult = new ListTrainersDTO(
+        TrainerListItemResponseDTO expectedResult = new TrainerListItemResponseDTO(
             newTrainerId,
             "João Silva",
             "joao@test.com",
@@ -154,7 +154,7 @@ class TrainerServiceTest {
         when(trainerRepository.findActiveTrainerProfileById(newTrainerId)).thenReturn(Optional.of(expectedResult));
 
         // When
-        ListTrainersDTO result = trainerService.create(request);
+        TrainerListItemResponseDTO result = trainerService.create(request);
 
         // Then
         assertThat(result).isNotNull();
@@ -200,7 +200,7 @@ class TrainerServiceTest {
         when(trainerRepository.findActiveTrainerProfileById(trainerId)).thenReturn(Optional.of(listTrainersDTO));
 
         // When
-        ListTrainersDTO result = trainerService.findById(trainerId);
+        TrainerListItemResponseDTO result = trainerService.findById(trainerId);
 
         // Then
         assertThat(result).isNotNull();
@@ -232,11 +232,11 @@ class TrainerServiceTest {
     @DisplayName("Should find all trainers successfully")
     void shouldFindAllTrainersSuccessfully() {
         // Given
-        List<ListTrainersDTO> trainers = Arrays.asList(listTrainersDTO);
+        List<TrainerListItemResponseDTO> trainers = Arrays.asList(listTrainersDTO);
         when(trainerRepository.findAllTrainerProfiles(true)).thenReturn(trainers);
 
         // When
-        List<ListTrainersDTO> result = trainerService.findAll();
+        List<TrainerListItemResponseDTO> result = trainerService.findAll();
 
         // Then
         assertThat(result).isNotNull();
@@ -253,7 +253,7 @@ class TrainerServiceTest {
         when(trainerRepository.findAllTrainerProfiles(true)).thenReturn(Arrays.asList());
 
         // When
-        List<ListTrainersDTO> result = trainerService.findAll();
+        List<TrainerListItemResponseDTO> result = trainerService.findAll();
 
         // Then
         assertThat(result).isNotNull();
@@ -266,7 +266,7 @@ class TrainerServiceTest {
     @DisplayName("Should update trainer successfully with password")
     void shouldUpdateTrainerSuccessfullyWithPassword() {
         // Given
-        CreateTrainerDTO updateTrainerDTO = new CreateTrainerDTO(
+        TrainerCreateRequestDTO updateTrainerDTO = new TrainerCreateRequestDTO(
                 "John Trainer",
                 "john@example.com",
                 "+1234567890",
@@ -305,7 +305,7 @@ class TrainerServiceTest {
     @DisplayName("Should update trainer successfully without password")
     void shouldUpdateTrainerSuccessfullyWithoutPassword() {
         // Given
-        CreateTrainerDTO updateTrainerDTO = new CreateTrainerDTO(
+        TrainerCreateRequestDTO updateTrainerDTO = new TrainerCreateRequestDTO(
                 "John Trainer Updated",
                 "john.updated@example.com",
                 "+1234567890",
@@ -344,7 +344,7 @@ class TrainerServiceTest {
     @DisplayName("Should throw not found when updating non-existent trainer")
     void shouldThrowNotFoundWhenUpdatingNonExistentTrainer() {
         // Given
-        CreateTrainerDTO updateTrainerDTO = new CreateTrainerDTO(
+        TrainerCreateRequestDTO updateTrainerDTO = new TrainerCreateRequestDTO(
             "John Trainer",
             "john@example.com",
             "+1234567890",
@@ -372,7 +372,7 @@ class TrainerServiceTest {
     @DisplayName("Should throw conflict when updating to existing email")
     void shouldThrowConflictWhenUpdatingToExistingEmail() {
         // Given
-        CreateTrainerDTO updateDTO = new CreateTrainerDTO(
+        TrainerCreateRequestDTO updateDTO = new TrainerCreateRequestDTO(
             "John Trainer",
             "existing@example.com",
             "+1234567890",
@@ -403,7 +403,7 @@ class TrainerServiceTest {
     @DisplayName("Should allow updating trainer with same email")
     void shouldAllowUpdatingTrainerWithSameEmail() {
         // Given
-        CreateTrainerDTO updateTrainerDTO = new CreateTrainerDTO(
+        TrainerCreateRequestDTO updateTrainerDTO = new TrainerCreateRequestDTO(
                 "John Trainer",
                 "john@example.com",
                 "+1234567890",
