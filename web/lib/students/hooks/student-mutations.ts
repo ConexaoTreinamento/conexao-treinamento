@@ -32,11 +32,11 @@ export const useCreateStudent = () => {
 
   return useMutation({
     ...base,
-    onSuccess: async (data, variables, context) => {
+    onSuccess: async (...args) => {
       try {
         if (baseOnSuccess) {
           try {
-            await baseOnSuccess(data, variables, context);
+            await baseOnSuccess(...args);
           } catch {
             // Best-effort: preserve base behaviour even if hook consumer swallows errors
           }
@@ -60,10 +60,10 @@ export const useUpdateStudent = (options: UseMutationOptions<StudentResponseDto,
   return useMutation({
     ...base,
     ...options,
-    onSuccess: async (data, variables, context) => {
+    onSuccess: async (data, variables, ...args) => {
       if (baseOnSuccess) {
         try {
-          await baseOnSuccess(data, variables, context);
+          await baseOnSuccess(data, variables, ...args);
         } catch {
           // ignore
         }
@@ -71,7 +71,7 @@ export const useUpdateStudent = (options: UseMutationOptions<StudentResponseDto,
 
       if (options.onSuccess) {
         try {
-          await options.onSuccess(data, variables, context);
+          await options.onSuccess(data, variables, ...args);
         } catch {
           // ignore
         }
@@ -95,10 +95,10 @@ export const useDeleteStudent = () => {
 
   return useMutation({
     ...base,
-    onSuccess: async (data, variables, context) => {
+    onSuccess: async (...args) => {
       if (baseOnSuccess) {
         try {
-          await baseOnSuccess(data, variables, context);
+          await baseOnSuccess(...args);
         } catch {
           // ignore
         }
@@ -117,10 +117,10 @@ export const useRestoreStudent = () => {
 
   return useMutation({
     ...base,
-    onSuccess: async (data, variables, context) => {
+    onSuccess: async (...args) => {
       if (baseOnSuccess) {
         try {
-          await baseOnSuccess(data, variables, context);
+          await baseOnSuccess(...args);
         } catch {
           // ignore
         }
