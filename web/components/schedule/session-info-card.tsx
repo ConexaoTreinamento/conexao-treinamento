@@ -31,7 +31,6 @@ export function SessionInfoCard({
 }: SessionInfoCardProps) {
   const studentLabel = `${studentCount} aluno${studentCount === 1 ? "" : "s"}`
   const trainerLabel = trainerName?.trim() || "—"
-
   return (
     <Card>
       <CardHeader className="pb-4 sm:pb-5">
@@ -92,34 +91,37 @@ export function SessionInfoCard({
             </Button>
           </div>
         </div>
-      <CardHeader>
-        <CardTitle>Informações da aula</CardTitle>
       </CardHeader>
+
+      <CardContent>
+        <div className="space-y-3">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <span>
               {dateLabel} • {timeLabel}
             </span>
           </div>
+
           <div className="flex items-center gap-2">
             <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-muted text-[10px]">
               P
             </span>
             <span>{studentLabel}</span>
           </div>
+
           <div className="flex items-center gap-2">
             <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-muted text-[10px]">
               I
             </span>
             <span>{trainerLabel}</span>
           </div>
-        </div>
 
-        {notes ? (
-          <div className="border-t pt-3">
-            <p className="whitespace-pre-wrap text-sm text-muted-foreground">{notes}</p>
-          </div>
-        ) : null}
+          {notes ? (
+            <div className="border-t pt-3">
+              <p className="whitespace-pre-wrap text-sm text-muted-foreground">{notes}</p>
+            </div>
+          ) : null}
+        </div>
       </CardContent>
     </Card>
   )
