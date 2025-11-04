@@ -5,10 +5,11 @@ import { ProfileActionButton } from "@/components/base/profile-action-button"
 import { EntityProfile, type EntityProfileMetadataItem } from "@/components/base/entity-profile"
 import { PlanAssignmentStatusBadge, getAssignmentDaysRemaining, getAssignmentEndDate } from "@/components/plans/expiring-plans"
 import type { StudentPlanAssignmentResponseDto, StudentResponseDto } from "@/lib/api-client/types.gen"
-import { Activity, Calendar, CalendarDays, MapPin, Phone, PlusCircle, Trash2, User } from "lucide-react"
+import { Calendar, CalendarDays, MapPin, Phone, Plus, PlusCircle, Trash2, User } from "lucide-react"
 import { Mail } from "lucide-react"
 import { RotateCcw } from "lucide-react"
 import type { ReactNode } from "react"
+import { CreateEvaluationProfileButton } from "@/components/base/create-evaluation-profile-button"
 
 interface StudentProfileSummaryCardProps {
   heading: string
@@ -143,13 +144,7 @@ export function StudentProfileSummaryCard({
 
   const actions: ReactNode[] = [
     <EditButton key="edit" onClick={onEdit} />,
-    <ProfileActionButton
-      key="evaluate"
-      onClick={onCreateEvaluation}
-    >
-      <Activity className="h-4 w-4" aria-hidden="true" />
-      <span>Avaliar</span>
-    </ProfileActionButton>,
+    <CreateEvaluationProfileButton key="evaluation" onClick={onCreateEvaluation}/>,
     <ProfileActionButton
       key="schedule"
       onClick={onOpenSchedule}

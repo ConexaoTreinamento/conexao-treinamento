@@ -1,5 +1,5 @@
 import {useMemo, type MouseEvent} from "react"
-import {Activity, Calendar, Mail, Phone, RotateCcw, Trash2} from "lucide-react"
+import {Activity, Calendar, Mail, Phone, Plus, RotateCcw, Trash2} from "lucide-react"
 import {Button} from "@/components/ui/button"
 import ConfirmDeleteButton from "@/components/base/confirm-delete-button"
 import {PlanAssignmentStatusBadge} from "@/components/plans/expiring-plans"
@@ -38,6 +38,18 @@ const getInitials = (fullName: string): string => {
     .map((name) => name[0] ?? "")
     .join("")
     .toUpperCase()
+}
+
+function CreateEvaluationButton(props: { onClick: (event: React.MouseEvent<HTMLButtonElement>) => void }) {
+  return <Button
+      size="sm"
+      variant="outline"
+      onClick={props.onClick}
+      className="h-8 px-2 text-xs"
+  >
+    <Plus className="mr-1 h-3 w-3" aria-hidden="true"/>
+    Avaliação
+  </Button>;
 }
 
 export const StudentCard = ({
@@ -122,52 +134,36 @@ export const StudentCard = ({
 
   const mobileActions = (
     <>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={handleCreateEvaluation}
-        className="h-8 px-2 text-xs"
-      >
-        <Activity className="mr-1 h-3 w-3" aria-hidden="true" />
-        Avaliar
-      </Button>
+      <CreateEvaluationButton onClick={handleCreateEvaluation}/>
       {student.deletedAt ? (
-        <Button
-          size="icon"
-          variant="outline"
-          onClick={handleRestore}
-          className="h-8 w-8"
-          disabled={isRestoring}
-          aria-label="Reativar aluno"
-        >
-          <RotateCcw className="h-3 w-3" aria-hidden="true" />
-        </Button>
+          <Button
+              size="icon"
+              variant="outline"
+              onClick={handleRestore}
+              className="h-8 w-8"
+              disabled={isRestoring}
+              aria-label="Reativar aluno"
+          >
+            <RotateCcw className="h-3 w-3" aria-hidden="true"/>
+          </Button>
       ) : (
-        <ConfirmDeleteButton
-          onConfirm={handleDelete}
-          disabled={isDeleting}
-          title="Excluir Aluno"
-          description={`Tem certeza que deseja excluir ${fullName}? Ele será marcado como inativo e poderá ser restaurado.`}
-          size="icon"
-          className="h-8 w-8"
-        >
-          <Trash2 className="h-3 w-3" aria-hidden="true" />
-        </ConfirmDeleteButton>
+          <ConfirmDeleteButton
+              onConfirm={handleDelete}
+              disabled={isDeleting}
+              title="Excluir Aluno"
+              description={`Tem certeza que deseja excluir ${fullName}? Ele será marcado como inativo e poderá ser restaurado.`}
+              size="icon"
+              className="h-8 w-8"
+          >
+            <Trash2 className="h-3 w-3" aria-hidden="true"/>
+          </ConfirmDeleteButton>
       )}
     </>
   )
 
   const desktopActions = (
     <>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={handleCreateEvaluation}
-        className="h-8 px-3 text-sm"
-      >
-        <Activity className="mr-1 h-3 w-3" aria-hidden="true" />
-        Avaliar
-      </Button>
+      <CreateEvaluationButton onClick={handleCreateEvaluation}/>
       {student.deletedAt ? (
         <Button
           size="sm"
