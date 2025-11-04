@@ -1,8 +1,6 @@
 "use client"
 
-import { type ReactNode, type MouseEvent } from "react"
-import { ArrowLeft } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { type ReactNode } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { PageHeader } from "@/components/base/page-header"
 import { cn } from "@/lib/utils"
@@ -56,11 +54,6 @@ const getAvatarNode = ({
       <span className={cn("text-xl font-semibold", textClassName ?? "text-green-700 dark:text-green-300")}>{label}</span>
     </div>
   )
-}
-
-const handleBackClick = (event: MouseEvent<HTMLButtonElement>, onBack?: () => void) => {
-  event.preventDefault()
-  onBack?.()
 }
 
 export function EntityProfile({
