@@ -1,9 +1,9 @@
 "use client"
 
-import { ArrowLeft, Calendar } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Calendar } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { EditButton } from "@/components/base/edit-button"
+import { PageHeader } from "@/components/base/page-header"
 
 interface EvaluationDetailHeaderProps {
   studentName: string
@@ -33,33 +33,26 @@ export function EvaluationDetailHeader({
 }: EvaluationDetailHeaderProps) {
   const formattedDate = formatDate(evaluationDate)
 
+  const rightActions = (
+    <>
+      {formattedDate ? (
+        <Badge variant="outline" className="flex items-center gap-1">
+          <Calendar className="h-3 w-3" />
+          {formattedDate}
+        </Badge>
+      ) : null}
+      {onEdit ? (
+        <EditButton
+          size="sm"
+          variant="outline"
+          onClick={onEdit}
+          fullWidthOnDesktop={false}
+        />
+      ) : null}
+    </>
+  )
+
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-xl font-bold">Avaliação Física</h1>
-          <p className="text-sm text-muted-foreground">{studentName}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        {formattedDate ? (
-          <Badge variant="outline" className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
-            {formattedDate}
-          </Badge>
-        ) : null}
-        {onEdit ? (
-          <EditButton
-            size="sm"
-            variant="outline"
-            onClick={onEdit}
-            fullWidthOnDesktop={false}
-          />
-        ) : null}
-      </div>
-    </div>
+    <PageHeader title="Avaliação Física" description={studentName} onBack={onBack} rightActions={rightActions} />
   )
 }

@@ -1,7 +1,6 @@
 "use client"
 
-import { ArrowLeft } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { PageHeader } from "@/components/base/page-header"
 
 interface ClassScheduleHeaderProps {
   onBack: () => void
@@ -9,16 +8,10 @@ interface ClassScheduleHeaderProps {
 
 export function ClassScheduleHeader({ onBack }: ClassScheduleHeaderProps) {
   return (
-    <div className="flex items-center gap-4">
-      <Button variant="ghost" size="icon" onClick={onBack}>
-        <ArrowLeft className="h-4 w-4" />
-      </Button>
-      <div className="min-w-0 flex-1">
-        <h1 className="truncate text-xl font-bold">Cronograma de Aulas</h1>
-        <p className="text-sm text-muted-foreground">
-          Selecione as séries que deseja frequentar
-        </p>
-      </div>
-    </div>
+    <PageHeader
+      title="Cronograma de Aulas"
+      description="Selecione as séries que deseja frequentar"
+      onBack={onBack}
+    />
   )
 }
