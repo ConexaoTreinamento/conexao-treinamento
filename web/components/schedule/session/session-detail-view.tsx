@@ -12,16 +12,7 @@ import { SessionAddParticipantDialog } from "@/components/schedule/session/sessi
 import { SessionExerciseDialog } from "@/components/schedule/session/session-exercise-dialog";
 import { SessionCreateExerciseDialog } from "@/components/schedule/session/session-create-exercise-dialog";
 import { SessionTrainerDialog } from "@/components/schedule/session/session-trainer-dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDeleteDialog } from "@/components/base/confirm-delete-dialog";
 import { formatISODateToDisplay } from "@/lib/formatters/time";
 import {
   exercisesQueryOptions,
@@ -633,68 +624,59 @@ export function SessionDetailView({
           onClose={() => setIsEditClassOpen(false)}
         />
 
-        <AlertDialog
+        <ConfirmDeleteDialog
           open={!!removeStudentConfirm}
-          onOpenChange={(open) => !open && setRemoveStudentConfirm(null)}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Deseja remover este aluno da aula?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                Tem certeza que deseja remover{" "}
-                <strong>{removeStudentConfirm?.name}</strong> desta aula? Todos
-                os exercícios registrados para este aluno nesta aula também
-                serão removidos.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={async () => {
-                  if (removeStudentConfirm) {
-                    await removeStudent(removeStudentConfirm.id);
-                    setRemoveStudentConfirm(null);
-                  }
-                }}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                Remover
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          onOpenChange={(open) => {
+            if (!open) {
+              setRemoveStudentConfirm(null);
+            }
+          }}
+          title="Deseja remover este aluno da aula?"
+          description={(
+            <>
+              Tem certeza que deseja remover <strong>{removeStudentConfirm?.name}</strong> desta aula?
+              {" "}Todos os exercícios registrados para este aluno nesta aula também serão removidos.
+            </>
+          )}
+          confirmText="Remover"
+          confirmingText="Removendo..."
+          confirmVariant="destructive"
+          confirmButtonClassName="bg-red-600 hover:bg-red-700"
+          onConfirm={async () => {
+            if (!removeStudentConfirm) {
+              return false;
+            }
+            await removeStudent(removeStudentConfirm.id);
+            return true;
+          }}
+        />
 
-        <AlertDialog
+        <ConfirmDeleteDialog
           open={!!removeExerciseConfirm}
-          onOpenChange={(open) => !open && setRemoveExerciseConfirm(null)}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Remover exercício?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Tem certeza que deseja remover o exercício{" "}
-                <strong>{removeExerciseConfirm?.name}</strong>? Esta ação não
-                pode ser desfeita.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={async () => {
-                  if (removeExerciseConfirm) {
-                    await deleteExercise(removeExerciseConfirm.id);
-                    setRemoveExerciseConfirm(null);
-                  }
-                }}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                Remover
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          onOpenChange={(open) => {
+            if (!open) {
+              setRemoveExerciseConfirm(null);
+            }
+          }}
+          title="Remover exercício?"
+          description={(
+            <>
+              Tem certeza que deseja remover o exercício{" "}
+              <strong>{removeExerciseConfirm?.name}</strong>? Esta ação não pode ser desfeita.
+            </>
+          )}
+          confirmText="Remover"
+          confirmingText="Removendo..."
+          confirmVariant="destructive"
+          confirmButtonClassName="bg-red-600 hover:bg-red-700"
+          onConfirm={async () => {
+            if (!removeExerciseConfirm) {
+              return false;
+            }
+            await deleteExercise(removeExerciseConfirm.id);
+            return true;
+          }}
+        />
       </div>
     </Layout>
   );

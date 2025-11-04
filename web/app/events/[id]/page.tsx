@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import ConfirmDeleteButton from "@/components/base/confirm-delete-button"
 import { EditButton } from "@/components/base/edit-button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { ConfirmDeleteDialog } from "@/components/base/confirm-delete-dialog"
 import { Calendar, CheckCircle, Clock, MapPin, Trophy, Users, X, XCircle, Loader2, Trash2 } from "lucide-react"
 import { PageHeader } from "@/components/base/page-header"
 import { Input } from "@/components/ui/input"
@@ -456,53 +456,33 @@ export default function EventDetailPage() {
           </Card>
         </div>
 
-        <AlertDialog
+        <ConfirmDeleteDialog
           open={!!removeParticipantConfirm}
           onOpenChange={(open) => {
             if (!open) {
               setRemoveParticipantConfirm(null)
             }
           }}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Remover participante?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Tem certeza que deseja remover {" "}
-                <strong>{removeParticipantConfirm?.name ?? "este participante"}</strong>{" "}
-                deste evento? Esta ação não pode ser desfeita.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={removeParticipantMutation.isPending}>
-                Cancelar
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={async () => {
-                  if (!removeParticipantConfirm) {
-                    return
-                  }
+          title="Remover participante?"
+          description={(
+            <>
+              Tem certeza que deseja remover {" "}
+              <strong>{removeParticipantConfirm?.name ?? "este participante"}</strong>{" "}
+              deste evento? Esta ação não pode ser desfeita.
+            </>
+          )}
+          confirmText="Remover"
+          confirmingText="Removendo..."
+          onConfirm={async () => {
+            if (!removeParticipantConfirm) {
+              return false
+            }
 
-                  const removed = await handleRemoveParticipant(removeParticipantConfirm.id)
-                  if (removed) {
-                    setRemoveParticipantConfirm(null)
-                  }
-                }}
-                className="bg-red-600 hover:bg-red-700"
-                disabled={removeParticipantMutation.isPending}
-              >
-                {removeParticipantMutation.isPending ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                    Removendo...
-                  </span>
-                ) : (
-                  "Remover"
-                )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+            return handleRemoveParticipant(removeParticipantConfirm.id)
+          }}
+          confirmVariant="destructive"
+          confirmButtonClassName="bg-red-600 hover:bg-red-700"
+        />
 
         {/* Event Edit Modal - using new unified EventModal component */}
         <EventModal

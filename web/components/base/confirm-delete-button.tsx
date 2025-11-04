@@ -2,25 +2,16 @@
 
 import React from "react";
 import { Trash2 } from "lucide-react";
-import { type ButtonProps, buttonVariants } from "@/components/ui/button";
+import { type ButtonProps } from "@/components/ui/button";
 import { ProfileActionButton } from "@/components/base/profile-action-button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
+import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { ConfirmDeleteDialog } from "@/components/base/confirm-delete-dialog";
 
 type ConfirmDeleteButtonProps = {
   title?: string;
   description?: string;
   confirmText?: string;
+  confirmingText?: string;
   onConfirm: () => Promise<void> | void;
   confirmVariant?: ButtonProps["variant"];
   children?: React.ReactNode;
@@ -31,6 +22,7 @@ export default function ConfirmDeleteButton({
   title = "Excluir Registro",
   description = "Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.",
   confirmText = "Excluir",
+  confirmingText,
   onConfirm,
   confirmVariant = "destructive",
   className,
@@ -45,18 +37,18 @@ export default function ConfirmDeleteButton({
   const [open, setOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
 
-  const handleConfirm = async () => {
-    try {
-      setLoading(true);
-      await onConfirm();
-      setOpen(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <AlertDialog open={open} onOpenChange={(v) => !loading && setOpen(v)}>
+    <ConfirmDeleteDialog
+      open={open}
+      onOpenChange={(value) => setOpen(value)}
+      onPendingChange={setLoading}
+      onConfirm={onConfirm}
+      title={title}
+      description={description}
+      confirmText={confirmText}
+      confirmingText={confirmingText}
+      confirmVariant={confirmVariant}
+    >
       <AlertDialogTrigger asChild>
         <ProfileActionButton
           variant={variant}
@@ -71,33 +63,6 @@ export default function ConfirmDeleteButton({
           {children ?? <Trash2 className="w-4 h-4" />}
         </ProfileActionButton>
       </AlertDialogTrigger>
-      <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel
-            disabled={loading}
-            onClick={(e) => e.stopPropagation()}
-          >
-            Cancelar
-          </AlertDialogCancel>
-          <AlertDialogAction
-            onClick={(event) => {
-              event.stopPropagation();
-              void handleConfirm();
-            }}
-            className={cn(
-              buttonVariants({ variant: confirmVariant }),
-              "justify-center",
-            )}
-            disabled={loading}
-          >
-            {confirmText}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    </ConfirmDeleteDialog>
   );
 }
