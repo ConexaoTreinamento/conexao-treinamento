@@ -6,6 +6,7 @@ import Layout from "@/components/layout"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { StudentCommitmentResponseDto } from "@/lib/api-client"
 import { useForm } from "react-hook-form"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import type { StudentSummary } from "@/components/students/student-picker"
 import { formatISODateToDisplay } from "@/lib/formatters/time"
 import { SessionHeader } from "@/components/schedule/session-header"
@@ -108,6 +109,8 @@ function ClassDetailPageContent() {
   const [editTrainer, setEditTrainer] = useState<string>("none")
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [isCreateExerciseOpen, setIsCreateExerciseOpen] = useState(false)
+  const [removeStudentConfirm, setRemoveStudentConfirm] = useState<{ id: string; name: string } | null>(null)
+  const [removeExerciseConfirm, setRemoveExerciseConfirm] = useState<{ id: string; name: string } | null>(null)
 
   // Exercise forms (react-hook-form)
   type RegisterExerciseForm = { exerciseId: string; sets?: string; reps?: string; weight?: string; notes?: string }
@@ -375,7 +378,6 @@ function ClassDetailPageContent() {
   const normalizedExerciseSearch = exerciseSearchTerm.trim().toLowerCase()
   const filteredExercises = (allExercises||[]).filter(e => (e.name || '').toLowerCase().includes(normalizedExerciseSearch))
   const shouldShowExerciseList = isExerciseListOpen && exerciseSearchTerm.trim().length > 0
-
   return (
     <Layout>
       <div className="space-y-4">
@@ -406,9 +408,19 @@ function ClassDetailPageContent() {
             onAddParticipant={() => setAddDialogOpen(true)}
             onTogglePresence={togglePresence}
             onOpenExercises={openExerciseDialog}
-            onRemoveParticipant={removeStudent}
+            onRemoveParticipant={(studentId: string) => {
+              const name = students.find(s => s.studentId === studentId)?.studentName || studentId
+              setRemoveStudentConfirm({ id: studentId, name })
+            }}
             onToggleExerciseDone={toggleExerciseDone}
-            onDeleteExercise={deleteExercise}
+            onDeleteExercise={(exerciseRecordId: string) => {
+              let exerciseName = exerciseRecordId
+              for (const p of students) {
+                const ex = (p.participantExercises ?? []).find(e => e.id === exerciseRecordId)
+                if (ex) { exerciseName = ex.exerciseName || ex.exerciseId || exerciseName; break }
+              }
+              setRemoveExerciseConfirm({ id: exerciseRecordId, name: exerciseName })
+            }}
           />
         </div>
 
@@ -452,6 +464,42 @@ function ClassDetailPageContent() {
           onSubmit={saveTrainer}
           onClose={() => setIsEditClassOpen(false)}
         />
+
+        {/* Confirm Remove Student AlertDialog */}
+        <AlertDialog open={!!removeStudentConfirm} onOpenChange={(open) => !open && setRemoveStudentConfirm(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Deseja remover este aluno da aula?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja remover <strong>{removeStudentConfirm?.name}</strong> desta aula? Todos os exercícios registrados para este aluno nesta aula também serão removidos.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={async () => { if (removeStudentConfirm) { await removeStudent(removeStudentConfirm.id); setRemoveStudentConfirm(null) } }} className="bg-red-600 hover:bg-red-700">
+                Remover
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Confirm Remove Exercise AlertDialog */}
+        <AlertDialog open={!!removeExerciseConfirm} onOpenChange={(open) => !open && setRemoveExerciseConfirm(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remover exercício?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja remover o exercício <strong>{removeExerciseConfirm?.name}</strong>? Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={async () => { if (removeExerciseConfirm) { await deleteExercise(removeExerciseConfirm.id); setRemoveExerciseConfirm(null) } }} className="bg-red-600 hover:bg-red-700">
+                Remover
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
       </div>
     </Layout>
