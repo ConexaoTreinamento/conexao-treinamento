@@ -64,5 +64,3 @@ export function PlanListSkeleton() {
     </EntityList>
   );
 }
-
-export { PlanList as PlanGrid };
