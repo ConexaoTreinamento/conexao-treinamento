@@ -1,17 +1,13 @@
 "use client"
 
-import { Activity, CheckCircle, X, XCircle } from "lucide-react"
+import { Activity, CheckCircle, Plus, X, XCircle } from "lucide-react"
 import type { StudentCommitmentResponseDto } from "@/lib/api-client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 
 interface SessionParticipantsCardProps {
   filteredParticipants: StudentCommitmentResponseDto[]
-  searchTerm: string
-  onSearchTermChange: (value: string) => void
   onAddParticipant: () => void
   onTogglePresence: (studentId: string) => void
   onOpenExercises: (studentId: string) => void
@@ -22,8 +18,6 @@ interface SessionParticipantsCardProps {
 
 export const SessionParticipantsCard = ({
   filteredParticipants,
-  searchTerm,
-  onSearchTermChange,
   onAddParticipant,
   onTogglePresence,
   onOpenExercises,
@@ -46,16 +40,6 @@ export const SessionParticipantsCard = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          <div>
-            <Label htmlFor="session-participant-search">Buscar aluno</Label>
-            <Input
-              id="session-participant-search"
-              placeholder="Digite o nome do aluno..."
-              value={searchTerm}
-              onChange={(event) => onSearchTermChange(event.target.value)}
-            />
-          </div>
-
           {filteredParticipants.map((student) => {
             const initials = (student.studentName || "")
               .split(" ")
@@ -116,8 +100,8 @@ export const SessionParticipantsCard = ({
                         onClick={() => student.studentId && onOpenExercises(student.studentId)}
                         className="h-8 w-full text-xs sm:w-28"
                       >
-                        <Activity className="mr-1 h-3 w-3" />
-                        Exercícios
+                        <Plus className="mr-1 h-3 w-3" />
+                        Exercício
                       </Button>
                     </div>
                     <Button

@@ -9,8 +9,8 @@ import { useForm } from "react-hook-form"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import type { StudentSummary } from "@/components/students/student-picker"
 import { formatISODateToDisplay } from "@/lib/formatters/time"
-import { SessionHeader } from "@/components/schedule/session-header"
-import { SessionInfoCard } from "@/components/schedule/session-info-card"
+import { SessionHeader } from "@/components/schedule/session/session-header"
+import { SessionInfoCard } from "@/components/schedule/session/session-info-card"
 import { SessionParticipantsCard } from "@/components/schedule/session/session-participants-card"
 import { SessionAddParticipantDialog } from "@/components/schedule/session/session-add-participant-dialog"
 import { SessionExerciseDialog } from "@/components/schedule/session/session-exercise-dialog"
@@ -91,7 +91,6 @@ function ClassDetailPageContent() {
   const trainersQuery = useQuery(trainersLookupQueryOptions())
 
   // Students (for Add Student dialog) with pagination similar to Students page
-  const [participantSearchTerm, setParticipantSearchTerm] = useState("")
 
   // Exercises catalog (for exercise selection)
   const exercisesQuery = useQuery(exercisesQueryOptions())
@@ -369,7 +368,7 @@ function ClassDetailPageContent() {
   const endTimeLabel = session.endTime ? session.endTime.slice(11, 16) : ""
   const sessionTimeLabel = endTimeLabel ? `${startTimeLabel} - ${endTimeLabel}` : startTimeLabel
   const studentCount = students.length
-  const filteredStudents = students.filter(s => ((s.studentName || s.studentId || '').toLowerCase()).includes(participantSearchTerm.toLowerCase()))
+  const filteredStudents = students
   const excludedIds = new Set((students||[]).map(p => p.studentId).filter(Boolean) as string[])
   const handleStudentSelect = (student: StudentSummary) => {
     void addStudent(student)
@@ -403,8 +402,6 @@ function ClassDetailPageContent() {
 
           <SessionParticipantsCard
             filteredParticipants={filteredStudents}
-            searchTerm={participantSearchTerm}
-            onSearchTermChange={setParticipantSearchTerm}
             onAddParticipant={() => setAddDialogOpen(true)}
             onTogglePresence={togglePresence}
             onOpenExercises={openExerciseDialog}
