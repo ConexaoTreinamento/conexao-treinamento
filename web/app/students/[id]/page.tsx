@@ -8,10 +8,6 @@ import Layout from "@/components/layout"
 import { useToast } from "@/hooks/use-toast"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type {
-  ListTrainersDto,
-  ScheduleResponseDto,
-  StudentCommitmentResponseDto,
-  StudentPlanAssignmentResponseDto,
   TrainerScheduleResponseDto,
 } from "@/lib/api-client/types.gen"
 import {
@@ -133,12 +129,12 @@ export default function StudentProfilePage() {
   const [assignStartDate, setAssignStartDate] = useState(() => formatLocalDate(new Date()))
   const [assignNotes, setAssignNotes] = useState("")
 
-  const commitmentsData = commitmentsQuery.data as StudentCommitmentResponseDto[] | undefined
-  const recentSchedule = recentScheduleQuery.data as ScheduleResponseDto | undefined
-  const exercisesSchedule = exercisesScheduleQuery.data as ScheduleResponseDto | undefined
-  const planHistoryData = planHistoryQuery.data as StudentPlanAssignmentResponseDto[] | undefined
-  const trainerSchedulesData = trainerSchedulesQuery.data as TrainerScheduleResponseDto[] | undefined
-  const trainersData = trainersQuery.data as ListTrainersDto[] | undefined
+  const commitmentsData = commitmentsQuery.data
+  const recentSchedule = recentScheduleQuery.data
+  const exercisesSchedule = exercisesScheduleQuery.data
+  const planHistoryData = planHistoryQuery.data
+  const trainerSchedulesData = trainerSchedulesQuery.data
+  const trainersData = trainersQuery.data
 
   const scheduleLookup = useMemo(() => {
     if (!trainerSchedulesData?.length) {

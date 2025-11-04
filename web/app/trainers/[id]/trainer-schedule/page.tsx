@@ -141,8 +141,7 @@ export default function TrainerSchedulePage() {
       return;
     }
 
-    const list: TrainerScheduleResponseDto[] =
-      (data as TrainerScheduleResponseDto[] | undefined) || [];
+    const list = data || [];
     // Group all active schedules by weekday and collect their slot starts
     const grouped: Record<number, TrainerScheduleResponseDto[]> = {};
     for (const s of list) {

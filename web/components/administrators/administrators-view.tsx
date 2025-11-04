@@ -30,7 +30,7 @@ export function AdministratorsView() {
     enabled: userRole === "admin",
   });
   const administrators =
-    (administratorsQuery.data as ListAdministratorsDto[] | undefined) ?? [];
+    (administratorsQuery.data) ?? [];
   const { isLoading, error } = administratorsQuery;
 
   const handleAdministratorOpen = (administrator: ListAdministratorsDto) => {

@@ -29,8 +29,8 @@ import type {
   BulkUpdateCommitmentsMutationVariables,
 } from "@/lib/students/hooks/student-mutations"
 import { scheduleByDateQueryOptions } from "@/lib/schedule/hooks/session-queries"
-import type { CommitmentDetailResponseDto, TrainerSchedule } from "@/lib/api-client"
-import type { StudentPlanAssignmentResponseDto, TrainerLookupDto } from "@/lib/api-client/types.gen"
+import type { TrainerSchedule } from "@/lib/api-client"
+import type { TrainerLookupDto } from "@/lib/api-client/types.gen"
 import type { NormalizedSeries } from "@/components/students/class-schedule/types"
 
 const weekdayMap: Record<number, string> = {
@@ -143,11 +143,11 @@ export default function ClassSchedulePage() {
     enabled: Boolean(openHistoryFor),
   })
 
-  const participantsData = (participantsQuery.data as CommitmentDetailResponseDto[] | undefined) ?? []
-  const historyData = (historyQuery.data as CommitmentDetailResponseDto[] | undefined) ?? []
-  const currentPlan = planQuery.data as StudentPlanAssignmentResponseDto | undefined
+  const participantsData = participantsQuery.data ?? []
+  const historyData = historyQuery.data ?? []
+  const currentPlan = planQuery.data
   const activeCommitments = useMemo(
-    () => (activeCommitmentsQuery.data as CommitmentDetailResponseDto[] | undefined) ?? [],
+    () => activeCommitmentsQuery.data ?? [],
     [activeCommitmentsQuery.data],
   )
   const planDays = currentPlan?.planMaxDays ?? 3
@@ -173,7 +173,7 @@ export default function ClassSchedulePage() {
   }, [activeCommitments, initializedSelection])
 
   const trainerOptions = useMemo(() => {
-    const raw = (trainersQuery.data as TrainerLookupDto[] | undefined) ?? []
+    const raw = trainersQuery.data ?? []
     return raw.filter((trainer): trainer is TrainerLookupDto & { id: string } => Boolean(trainer?.id))
   }, [trainersQuery.data])
 
@@ -196,12 +196,10 @@ export default function ClassSchedulePage() {
   }, [trainerFilter, trainerOptions])
 
   const normalizedSeries: NormalizedSeries[] = useMemo(() => {
-    type LegacyTrainerSchedule = TrainerSchedule & { dayOfWeek?: number; name?: string }
-
     const synonym = {
-      weekday: (schedule: LegacyTrainerSchedule) => schedule.weekday ?? schedule.dayOfWeek,
-      seriesName: (schedule: LegacyTrainerSchedule) =>
-        schedule.seriesName ?? schedule.name ?? "Série",
+      weekday: (schedule: TrainerSchedule) => schedule.weekday,
+      seriesName: (schedule: TrainerSchedule) =>
+        schedule.seriesName ?? "Série",
     }
 
     const pickString = <Key extends string>(source: unknown, key: Key): string | undefined => {
@@ -220,7 +218,7 @@ export default function ClassSchedulePage() {
       return typeof value === "number" ? value : undefined
     }
 
-    const raw = (availableQuery.data ?? []) as LegacyTrainerSchedule[]
+    const raw = availableQuery.data ?? []
 
     return raw
       .filter((schedule) => Boolean(schedule?.id) && Boolean(synonym.weekday(schedule)) && schedule.active)
