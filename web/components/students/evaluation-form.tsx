@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, Save, Calculator, User } from "lucide-react"
+import { Save, Calculator, User } from "lucide-react"
+import { PageHeader } from "@/components/base/page-header"
 
 export interface EvaluationData {
   id?: string
@@ -184,19 +185,11 @@ export default function EvaluationForm({
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={onCancel}>
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <h1 className="text-2xl font-bold">
-            {isEdit ? "Editar avaliação física" : "Nova avaliação física"}
-          </h1>
-        </div>
-        <div className="flex flex-col items-center sm:flex-row sm:items-center gap-2">
-          <p className="text-sm text-muted-foreground text-center sm:text-left">{studentName}</p>
-        </div>
-      </div>
+      <PageHeader
+        title={isEdit ? "Editar avaliação física" : "Nova avaliação física"}
+        description={studentName || undefined}
+        onBack={onCancel}
+      />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Dados Básicos */}

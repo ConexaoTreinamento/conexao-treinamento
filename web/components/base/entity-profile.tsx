@@ -4,6 +4,7 @@ import { type ReactNode, type MouseEvent } from "react"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { PageHeader } from "@/components/base/page-header"
 import { cn } from "@/lib/utils"
 
 export interface EntityProfileAvatar {
@@ -86,23 +87,7 @@ export function EntityProfile({
   return (
     <div className={cn("space-y-6", className)}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          {onBack ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={(event) => handleBackClick(event, onBack)}
-            >
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              <span className="sr-only">Voltar</span>
-            </Button>
-          ) : null}
-          <div>
-            <h1 className="text-2xl font-bold leading-tight">{heading}</h1>
-            {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
-          </div>
-        </div>
+        <PageHeader title={heading} description={description} onBack={onBack} />
       </div>
 
       <Card className={cn("transition-colors", muted ? "opacity-80" : "")}>

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, User, Edit, Calendar } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import Layout from "@/components/layout"
+import { PageHeader } from "@/components/base/page-header"
 import { useEvaluation } from "@/lib/evaluations/hooks/evaluation-queries"
 import { useStudent } from "@/lib/students/hooks/student-queries"
 import { MeasurementCard } from "@/components/students/measurement-card"
@@ -59,18 +60,16 @@ export default function EvaluationDetailPage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => router.back()}>
-                <ArrowLeft className="w-4 h-4" />
+          <PageHeader
+            title="Avaliação física"
+            onBack={() => router.back()}
+            rightActions={(
+              <Button size="sm" variant="outline" onClick={() => router.push(`/students/${studentId}/evaluation/${evaluationId}/edit`)}>
+                <Edit className="w-4 h-4 mr-2" />
+                Editar
               </Button>
-              <h1 className="text-2xl font-bold">Avaliação física</h1>
-            </div>
-            <Button size="sm" variant="outline" onClick={() => router.push(`/students/${studentId}/evaluation/${evaluationId}/edit`)}>
-              <Edit className="w-4 h-4 mr-2" />
-              Editar
-            </Button>
-          </div>
+            )}
+          />
           <div className="flex flex-col items-center sm:flex-row sm:items-center sm:justify-between gap-2">
             <p className="text-sm text-muted-foreground text-center sm:text-left">{`${student.name} ${student.surname}`}</p>
             <Badge variant="outline" className="flex items-center gap-1 w-fit">

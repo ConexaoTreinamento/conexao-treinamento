@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import Layout from "@/components/layout"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
+import { PageHeader } from "@/components/base/page-header"
 import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query"
 import { useToast } from "@/hooks/use-toast"
 import { apiClient } from "@/lib/client"
@@ -270,40 +271,30 @@ export default function TrainerSchedulePage(){
   return (
     <Layout>
       <div className="space-y-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.back()}
-              aria-label="Voltar"
-              title="Voltar"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold leading-tight">Agenda do Professor</h1>
-              <p className="text-sm text-muted-foreground">Configure os horários semanais e séries geradas</p>
+        <PageHeader
+          title="Agenda do Professor"
+          description="Configure os horários semanais e séries geradas"
+          onBack={() => router.back()}
+          rightActions={(
+            <div className="flex flex-wrap gap-2 sm:justify-end">
+              <TrainerWeekConfigDialog
+                open={bulkOpen}
+                onOpenChange={setBulkOpen}
+                weekConfig={weekConfig}
+                classDuration={classDuration}
+                onChangeClassDuration={handleClassDurationChange}
+                onToggleWeekday={toggleEnabled}
+                onUpdateWeekday={updateRow}
+                onToggleSlot={toggleSlot}
+                onSave={handleSaveWeek}
+                onCancel={() => setBulkOpen(false)}
+                isSaving={saving}
+                isInvalid={rowsInvalid}
+                getSlotsForRow={genSlots}
+              />
             </div>
-          </div>
-          <div className="flex flex-wrap gap-2 sm:justify-end">
-            <TrainerWeekConfigDialog
-              open={bulkOpen}
-              onOpenChange={setBulkOpen}
-              weekConfig={weekConfig}
-              classDuration={classDuration}
-              onChangeClassDuration={handleClassDurationChange}
-              onToggleWeekday={toggleEnabled}
-              onUpdateWeekday={updateRow}
-              onToggleSlot={toggleSlot}
-              onSave={handleSaveWeek}
-              onCancel={() => setBulkOpen(false)}
-              isSaving={saving}
-              isInvalid={rowsInvalid}
-              getSlotsForRow={genSlots}
-            />
-          </div>
-        </div>
+          )}
+        />
 
         {/* Current timetable preview */}
         <div className="space-y-2">

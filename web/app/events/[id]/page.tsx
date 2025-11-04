@@ -7,6 +7,7 @@ import ConfirmDeleteButton from "@/components/base/confirm-delete-button"
 import { EditButton } from "@/components/base/edit-button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ArrowLeft, Calendar, CheckCircle, Clock, MapPin, Trophy, Users, X, XCircle, Loader2, Trash2 } from "lucide-react"
+import { PageHeader } from "@/components/base/page-header"
 import { Input } from "@/components/ui/input"
 import { useParams, useRouter } from "next/navigation"
 import Layout from "@/components/layout"
@@ -252,46 +253,44 @@ export default function EventDetailPage() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => router.back()} aria-label="Voltar">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold leading-tight">{eventData.name}</h1>
-              <p className="text-sm text-muted-foreground">
-                {formatDate(eventData.date)} • {formatTimeValue(eventData.startTime)} - {formatTimeValue(eventData.endTime)}
-              </p>
+        <div className="space-y-6">
+        <PageHeader
+          title={eventData.name}
+          description={(
+            <>
+              {formatDate(eventData.date)} • {formatTimeValue(eventData.startTime)} - {formatTimeValue(eventData.endTime)}
+            </>
+          )}
+          onBack={() => router.back()}
+          rightActions={(
+            <div className="flex flex-wrap gap-2 sm:justify-end">
+              <EditButton
+                variant="outline"
+                hideLabelBelow="sm"
+                onClick={() => setIsEditOpen(true)}
+                fullWidthOnDesktop={false}
+              />
+              <ConfirmDeleteButton
+                onConfirm={handleDeleteEvent}
+                disabled={deleteEventMutation.isPending}
+                title="Excluir evento"
+                description="Esta ação não pode ser desfeita. O evento será marcado como excluído e não aparecerá mais na lista de eventos ativos."
+                confirmText={deleteEventMutation.isPending ? "Excluindo..." : "Excluir evento"}
+                fullWidthOnDesktop={false}
+              >
+                {deleteEventMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                )}
+                <span className="hidden sm:inline">
+                  {deleteEventMutation.isPending ? "Excluindo..." : "Excluir"}
+                </span>
+                <span className="sr-only">Excluir evento</span>
+              </ConfirmDeleteButton>
             </div>
-          </div>
-          <div className="flex flex-wrap gap-2 sm:justify-end">
-            <EditButton
-              variant="outline"
-              hideLabelBelow="sm"
-              onClick={() => setIsEditOpen(true)}
-              fullWidthOnDesktop={false}
-            />
-            <ConfirmDeleteButton
-              onConfirm={handleDeleteEvent}
-              disabled={deleteEventMutation.isPending}
-              title="Excluir evento"
-              description="Esta ação não pode ser desfeita. O evento será marcado como excluído e não aparecerá mais na lista de eventos ativos."
-              confirmText={deleteEventMutation.isPending ? "Excluindo..." : "Excluir evento"}
-              fullWidthOnDesktop={false}
-            >
-              {deleteEventMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              ) : (
-                <Trash2 className="h-4 w-4" aria-hidden="true" />
-              )}
-              <span className="hidden sm:inline">
-                {deleteEventMutation.isPending ? "Excluindo..." : "Excluir"}
-              </span>
-              <span className="sr-only">Excluir evento</span>
-            </ConfirmDeleteButton>
-          </div>
-        </div>
+          )}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Event Info */}
