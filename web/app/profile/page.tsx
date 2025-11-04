@@ -58,7 +58,7 @@ export default function ProfilePage() {
     address: "",
     birthDate: "",
     joinDate: "",
-    specialties: [],
+    specialties: [] as string[],
     avatar: "/placeholder.svg?height=100&width=100"
   })
 
