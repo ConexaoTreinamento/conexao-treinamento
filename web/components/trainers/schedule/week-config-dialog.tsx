@@ -19,11 +19,7 @@ import {
   SquareCheck,
 } from "lucide-react";
 import { addMinutesHHmm } from "./time-helpers";
-import {
-  DEFAULT_SERIES_NAME,
-  MIN_CLASS_DURATION_MINUTES,
-  WEEKDAY_NAMES,
-} from "./constants";
+import { DEFAULT_SERIES_NAME, WEEKDAY_NAMES } from "./constants";
 import type { WeekConfigRow } from "./types";
 
 const weekdayLabel = (weekday: number) => WEEKDAY_NAMES[weekday] ?? "Dia";
@@ -62,12 +58,18 @@ export function TrainerWeekConfigDialog({
   getSlotsForRow,
 }: TrainerWeekConfigDialogProps) {
   const handleDurationInput = (value: string) => {
-    const parsed = Number.parseInt(value ?? "", 10);
-    if (Number.isFinite(parsed)) {
-      onChangeClassDuration(Math.max(MIN_CLASS_DURATION_MINUTES, parsed));
+    if (value === "") {
+      onChangeClassDuration(Number.NaN);
       return;
     }
-    onChangeClassDuration(MIN_CLASS_DURATION_MINUTES);
+
+    const parsed = Number.parseFloat(value);
+    if (Number.isFinite(parsed)) {
+      onChangeClassDuration(parsed);
+      return;
+    }
+
+    onChangeClassDuration(Number.NaN);
   };
 
   return (
@@ -91,8 +93,7 @@ export function TrainerWeekConfigDialog({
             <Input
               type="number"
               className="h-8 w-24 text-xs"
-              value={classDuration}
-              min={MIN_CLASS_DURATION_MINUTES}
+              value={Number.isFinite(classDuration) ? classDuration : ""}
               onChange={(event) => handleDurationInput(event.target.value)}
             />
           </div>
@@ -174,7 +175,7 @@ export function TrainerWeekConfigDialog({
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex max-h-[160px] flex-wrap gap-1 overflow-x-auto rounded-md border bg-muted/10 p-1 scrollbar-thin scrollbar-thumb-muted-foreground/30">
                         {slots.length === 0 ? (
                           <span className="text-xs text-muted-foreground">
                             Sem blocos no horário informado.
@@ -189,7 +190,7 @@ export function TrainerWeekConfigDialog({
                                 key={start}
                                 type="button"
                                 onClick={() => onToggleSlot(row.weekday, start)}
-                                className={`${selected ? "bg-green-50 border-green-300 dark:bg-green-950 dark:border-green-800" : "hover:bg-muted"} flex items-center gap-1 rounded border px-2 py-1 text-[11px]`}
+                                className={`${selected ? "border-green-300 bg-green-50 dark:border-green-800 dark:bg-green-950" : "hover:bg-muted"} flex items-center gap-1 rounded border px-2 py-1 text-[11px]`}
                               >
                                 {selected ? (
                                   <SquareCheck className="h-3 w-3" />

@@ -31,7 +31,7 @@ import {
   TrainerMobileTimetable,
 } from "@/components/trainers/schedule/timetable"
 import { TrainerWeekConfigDialog } from "@/components/trainers/schedule/week-config-dialog"
-import { addMinutesHHmm, compareHHmm, scheduleEndHHmm, toHHmm } from "@/components/trainers/schedule/time-helpers"
+import { addMinutesHHmm, compareHHmm, scheduleEndHHmm, toHHmm, toMinutesFromHHmm } from "@/components/trainers/schedule/time-helpers"
 import type { WeekConfigRow } from "@/components/trainers/schedule/types"
 
 export default function TrainerSchedulePage(){
@@ -46,20 +46,29 @@ export default function TrainerSchedulePage(){
   const [saving, setSaving] = useState(false)
 
   const handleClassDurationChange = useCallback((minutes: number) => {
-    setClassDuration(Math.max(MIN_CLASS_DURATION_MINUTES, minutes))
-  }, [setClassDuration])
+    setClassDuration(minutes)
+  }, [])
 
   const genSlots = useCallback((row: WeekConfigRow): string[] => {
     if (!row.enabled) {
       return []
     }
 
-    const slots: string[] = []
-    let current = row.shiftStart
+    if (!Number.isFinite(classDuration) || classDuration < MIN_CLASS_DURATION_MINUTES || classDuration > 1440) {
+      return []
+    }
 
-    while (current && row.shiftEnd && compareHHmm(addMinutesHHmm(current, classDuration), row.shiftEnd) <= 0) {
-      slots.push(current)
-      current = addMinutesHHmm(current, classDuration)
+    const startMinutes = toMinutesFromHHmm(row.shiftStart)
+    const endMinutes = toMinutesFromHHmm(row.shiftEnd)
+
+    if (!Number.isFinite(startMinutes) || !Number.isFinite(endMinutes) || startMinutes >= endMinutes) {
+      return []
+    }
+
+    const slots: string[] = []
+    for (let current = startMinutes; current + classDuration <= endMinutes; current += classDuration) {
+      const offset = current - startMinutes
+      slots.push(addMinutesHHmm(row.shiftStart, offset))
     }
 
     return slots
@@ -105,8 +114,9 @@ export default function TrainerSchedulePage(){
     const defaults: WeekConfigRow[] = Array.from({length:7}, (_,i)=>{
       const slots = (grouped[i]||[]).slice().sort((a,b)=> (a.startTime||'').localeCompare(b.startTime||''))
       const firstStart = toHHmm(slots[0]?.startTime) || DEFAULT_SHIFT_START
+      const fallbackDuration = Number.isFinite(classDuration) && classDuration > 0 ? classDuration : MIN_CLASS_DURATION_MINUTES
       const lastSchedule = slots[slots.length-1]
-      const lastEnd = lastSchedule ? scheduleEndHHmm(lastSchedule, lastSchedule.intervalDuration ?? classDuration) : DEFAULT_SHIFT_END
+      const lastEnd = lastSchedule ? scheduleEndHHmm(lastSchedule, lastSchedule.intervalDuration ?? fallbackDuration) : DEFAULT_SHIFT_END
       const existingActive = new Map<string,string>()
       const selectedStarts = new Set<string>()
       for(const s of slots){
@@ -115,8 +125,8 @@ export default function TrainerSchedulePage(){
       }
       const any = slots.length>0
       // Best-effort infer duration from first slot
-      const inferredDur = slots.length>0 ? Math.max(MIN_CLASS_DURATION_MINUTES, slots[0]?.intervalDuration ?? classDuration) : classDuration
-      setClassDuration(prev=> prev || inferredDur)
+      const inferredDur = slots.length>0 ? Math.max(MIN_CLASS_DURATION_MINUTES, slots[0]?.intervalDuration ?? fallbackDuration) : fallbackDuration
+      setClassDuration(prev=> (Number.isFinite(prev) && prev > 0 ? prev : inferredDur))
       return {
         weekday: i,
         enabled: any,
@@ -177,18 +187,24 @@ export default function TrainerSchedulePage(){
     return {...r, selectedStarts: sel}
   }))
 
-  const rowsInvalid = useMemo(
-    () =>
-      weekConfig.some((row) =>
-        row.enabled && (
-          !row.seriesName ||
-          !row.shiftStart ||
-          !row.shiftEnd ||
-          compareHHmm(row.shiftEnd, row.shiftStart) <= 0
-        )
-      ) || classDuration < MIN_CLASS_DURATION_MINUTES,
-    [weekConfig, classDuration]
-  )
+  const invalidConfig = useMemo(() => {
+    const invalidDuration =
+      !Number.isFinite(classDuration) ||
+      classDuration < MIN_CLASS_DURATION_MINUTES ||
+      classDuration > 1440
+
+    const invalidRows = weekConfig.some((row) => {
+      if (!row.enabled) return false
+      if (!row.seriesName || !row.shiftStart || !row.shiftEnd || compareHHmm(row.shiftEnd, row.shiftStart) <= 0) {
+        return true
+      }
+
+      const slots = genSlots(row)
+      return slots.length === 0
+    })
+
+    return invalidDuration || invalidRows
+  }, [weekConfig, classDuration, genSlots])
 
   const handleSaveWeek = async () => {
     setSaving(true)
@@ -287,7 +303,7 @@ export default function TrainerSchedulePage(){
                 onSave={handleSaveWeek}
                 onCancel={() => setBulkOpen(false)}
                 isSaving={saving}
-                isInvalid={rowsInvalid}
+                isInvalid={invalidConfig}
                 getSlotsForRow={genSlots}
               />
             </div>

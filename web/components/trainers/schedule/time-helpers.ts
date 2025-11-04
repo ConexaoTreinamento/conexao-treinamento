@@ -14,14 +14,44 @@ export const toHHmm = (value?: string | null): string => {
 
 export const addMinutesHHmm = (time: string, minutes: number): string => {
   const [hours, mins] = time.split(":").map(Number);
-  const total =
-    (hours * 60 + mins + minutes + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+  if (!Number.isFinite(hours) || !Number.isFinite(mins)) {
+    return "00:00";
+  }
+
+  const base = hours * 60 + mins;
+  const total = base + minutes;
+
+  if (!Number.isFinite(total)) {
+    return "00:00";
+  }
+
+  if (total >= MINUTES_PER_DAY) {
+    return "23:59";
+  }
+
+  if (total < 0) {
+    return "00:00";
+  }
+
   const normalizedHours = Math.floor(total / 60);
   const normalizedMinutes = total % 60;
   return `${String(normalizedHours).padStart(2, "0")}:${String(normalizedMinutes).padStart(2, "0")}`;
 };
 
 export const compareHHmm = (a: string, b: string): number => a.localeCompare(b);
+
+export const toMinutesFromHHmm = (value?: string | null): number => {
+  if (!value) {
+    return Number.NaN;
+  }
+
+  const [hours, minutes] = value.split(":").map(Number);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    return Number.NaN;
+  }
+
+  return hours * 60 + minutes;
+};
 
 export const toMinutes = (value?: string | null): number => {
   if (!value) {
