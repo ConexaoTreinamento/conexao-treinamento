@@ -34,10 +34,14 @@ interface WeekConfigRow {
 const toHHmm = (s?: string) => (s || '').slice(0,5) || ''
 const pad2 = (n:number) => (n<10? `0${n}`: `${n}`)
 const addMinutesHHmm = (hhmm: string, minutes: number): string => {
-  const [h,m] = hhmm.split(":").map(Number)
-  const total = h*60 + m + minutes
-  const h2 = Math.floor((total% (24*60) + (24*60)) % (24*60) / 60)
-  const m2 = ((total%60)+60)%60
+  const [h, m] = hhmm.split(":").map(Number)
+  const total = h * 60 + m + minutes
+
+  if (total >= 24 * 60) return "23:59"
+  if (total < 0) return "00:00"
+
+  const h2 = Math.floor(total / 60)
+  const m2 = total % 60
   return `${pad2(h2)}:${pad2(m2)}`
 }
 const cmpHHmm = (a:string,b:string) => a.localeCompare(b)
@@ -187,12 +191,17 @@ export default function TrainerSchedulePage(){
 
   const genSlots = useCallback((row: WeekConfigRow): string[] => {
     if(!row.enabled) return []
+    if (classDuration < 15 || !Number.isFinite(classDuration)) return []
+
+    const startMins = toMinutesFromHHmm(row.shiftStart)
+    const endMins = toMinutesFromHHmm(row.shiftEnd)
+
     const out: string[] = []
-    let cur = row.shiftStart
-    while(cur && row.shiftEnd && cmpHHmm(addMinutesHHmm(cur, classDuration), row.shiftEnd) <= 0){
-      out.push(cur)
-      cur = addMinutesHHmm(cur, classDuration)
+
+    for (let cur = startMins; cur + classDuration <= endMins; cur += classDuration) {
+      out.push(addMinutesHHmm(row.shiftStart, cur - startMins))
     }
+
     return out
   }, [classDuration])
 
@@ -312,10 +321,21 @@ export default function TrainerSchedulePage(){
 
   const weekdayLabel = (n:number)=> weekdayNames[n]
 
-  const rowsInvalid = useMemo(
-    () => weekConfig.some(r=> r.enabled && (!r.seriesName || !r.shiftStart || !r.shiftEnd || r.shiftEnd <= r.shiftStart)) || classDuration < 15,
-    [weekConfig, classDuration]
-  )
+  const invalidInfo = useMemo(() => {
+    const invalidDuration =
+      !Number.isFinite(classDuration) || classDuration < 15 || classDuration > 1440
+
+    const invalidRows = weekConfig.some(r => {
+      if (!r.enabled) return false
+      if (!r.seriesName || !r.shiftStart || !r.shiftEnd || r.shiftEnd <= r.shiftStart)
+        return true
+
+      const slots = genSlots(r)
+      return slots.length === 0
+    })
+
+    return invalidDuration || invalidRows
+  }, [weekConfig, classDuration, genSlots])
 
   const handleSaveWeek = async () => {
     setSaving(true)
@@ -410,7 +430,7 @@ export default function TrainerSchedulePage(){
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <label className="text-xs font-medium">Duração da aula (min)</label>
-                    <Input type="number" className="h-8 w-24 text-xs" value={classDuration} onChange={e=> setClassDuration(Math.max(15, Number(e.target.value||"60")))} />
+                    <Input type="number" className="h-8 w-24 text-xs" value={classDuration} onChange={e=> setClassDuration(Number(e.target.value))} />
                   </div>
                   <div className="flex flex-col gap-2 max-h-[65vh] overflow-y-auto pr-1 -mr-1 md:max-h-none md:flex-row md:flex-nowrap md:overflow-x-auto md:overflow-y-visible md:px-1 md:gap-2">
                     {weekConfig.map(r=> (
@@ -441,7 +461,7 @@ export default function TrainerSchedulePage(){
                                 <Input type="time" value={r.shiftEnd} onChange={e=>updateRow(r.weekday,{shiftEnd:e.target.value})} className="h-8 text-xs" />
                               </div>
                             </div>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-1 overflow-x-auto max-h-[160px] p-1 rounded-md border bg-muted/10 scrollbar-thin scrollbar-thumb-muted-foreground/30">
                               {genSlots(r).length===0 && <span className="text-xs text-muted-foreground">Sem blocos no horário informado.</span>}
                               {genSlots(r).map(start=>{
                                 const end = addMinutesHHmm(start, classDuration)
@@ -461,7 +481,7 @@ export default function TrainerSchedulePage(){
                   </div>
                   <div className="flex items-center justify-end gap-2 pt-2">
                     <Button variant="outline" onClick={()=> setBulkOpen(false)}>Cancelar</Button>
-                    <Button onClick={handleSaveWeek} disabled={rowsInvalid || saving} className="bg-green-600 hover:bg-green-700">
+                    <Button onClick={handleSaveWeek} disabled={invalidInfo || saving} className="bg-green-600 hover:bg-green-700">
                       {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin"/> : <Save className="w-4 h-4 mr-2"/>}
                       Salvar
                     </Button>
