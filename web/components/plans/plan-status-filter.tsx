@@ -1,26 +1,38 @@
-"use client"
+"use client";
 
-import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Filter } from 'lucide-react'
-import type { PlanStatusValue } from './plan-types'
+import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Filter } from "lucide-react";
+import type { PlanStatusValue } from "../../lib/plans/plan-types";
 
 type PlanStatusFilterProps = {
-  value: PlanStatusValue
-  onValueChange: (value: PlanStatusValue) => void
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}
+  value: PlanStatusValue;
+  onValueChange: (value: PlanStatusValue) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
 
 const STATUS_OPTIONS: Array<{ label: string; value: PlanStatusValue }> = [
-  { label: 'Todos', value: 'all' },
-  { label: 'Ativos', value: 'active' },
-  { label: 'Inativos', value: 'inactive' }
-]
+  { label: "Todos", value: "all" },
+  { label: "Ativos", value: "active" },
+  { label: "Inativos", value: "inactive" },
+];
 
 export function PlanStatusFilter(props: PlanStatusFilterProps) {
-  const { value, onValueChange, onOpenChange, open } = props
+  const { value, onValueChange, onOpenChange, open } = props;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -42,8 +54,8 @@ export function PlanStatusFilter(props: PlanStatusFilterProps) {
             <Select
               value={value}
               onValueChange={(next) => {
-                onValueChange(next as PlanStatusValue)
-                onOpenChange(false)
+                onValueChange(next as PlanStatusValue);
+                onOpenChange(false);
               }}
             >
               <SelectTrigger id="plan-status-filter">
@@ -61,5 +73,5 @@ export function PlanStatusFilter(props: PlanStatusFilterProps) {
         </div>
       </SheetContent>
     </Sheet>
-  )
+  );
 }

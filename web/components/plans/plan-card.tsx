@@ -1,91 +1,139 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import ConfirmDeleteButton from "@/components/base/confirm-delete-button"
-import { cn } from "@/lib/utils"
-import { RotateCcw, Trash2 } from "lucide-react"
-import React from "react"
+import { Calendar, CalendarCheck, RotateCcw, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import ConfirmDeleteButton from "@/components/base/confirm-delete-button";
+import {
+  EntityCard,
+  type EntityCardMetadataItem,
+} from "@/components/base/entity-card";
+import { StatusBadge } from "@/components/base/status-badge";
+import type { ReactNode } from "react";
 
 export type PlanCardProps = {
-  id: string
-  name: string
-  maxDays: number
-  durationDays: number
-  active: boolean
-  description?: string | null
-  deleting?: boolean
-  restoring?: boolean
-  onDelete?: (id: string) => void
-  onRestore?: (id: string) => void
-}
+  id: string;
+  name: string;
+  maxDays: number;
+  durationDays: number;
+  active: boolean;
+  description?: string | null;
+  deleting?: boolean;
+  restoring?: boolean;
+  onDelete?: (id: string) => void;
+  onRestore?: (id: string) => void;
+};
 
-export default function PlanCard(props: PlanCardProps){
-  const { id, name, maxDays, durationDays, active, description, deleting, restoring, onDelete, onRestore } = props
+export default function PlanCard(props: PlanCardProps) {
+  const {
+    id,
+    name,
+    maxDays,
+    durationDays,
+    active,
+    description,
+    deleting,
+    restoring,
+    onDelete,
+    onRestore,
+  } = props;
+
+  const badges: ReactNode[] = [
+    <StatusBadge
+      key="status"
+      active={active}
+      activeLabel="Ativo"
+      inactiveLabel="Inativo"
+    />,
+  ];
+
+  const metadata: EntityCardMetadataItem[] = [
+    {
+      icon: (
+        <Calendar
+          className="h-3.5 w-3.5 text-muted-foreground"
+          aria-hidden="true"
+        />
+      ),
+      content: `Até ${maxDays}x por semana`,
+    },
+  ];
+
+  const infoRows: ReactNode[] = [
+    <span key="duration" className="flex items-center gap-2">
+      <CalendarCheck
+        className="h-3.5 w-3.5 text-muted-foreground"
+        aria-hidden="true"
+      />
+      <span>{`${durationDays} dias de duração`}</span>
+    </span>,
+  ];
+
+  const body = description ? (
+    <p className="text-sm text-muted-foreground line-clamp-3">{description}</p>
+  ) : (
+    <p className="text-sm italic text-muted-foreground">Sem descrição</p>
+  );
+
+  const mobileActions = active ? (
+    <ConfirmDeleteButton
+      size="icon"
+      className="h-8 w-8"
+      title="Excluir Plano"
+      description={`Tem certeza que deseja excluir o plano "${name}"? Ele será desativado e poderá ser restaurado.`}
+      onConfirm={() => onDelete?.(id)}
+      disabled={deleting}
+    >
+      <Trash2 className="h-3 w-3" aria-hidden="true" />
+    </ConfirmDeleteButton>
+  ) : (
+    <Button
+      size="icon"
+      variant="outline"
+      className="h-8 w-8"
+      disabled={restoring}
+      onClick={() => onRestore?.(id)}
+      aria-label="Restaurar plano"
+    >
+      <RotateCcw className="h-3 w-3" aria-hidden="true" />
+    </Button>
+  );
+
+  const desktopActions = active ? (
+    <ConfirmDeleteButton
+      size="sm"
+      className="h-8"
+      title="Excluir Plano"
+      description={`Tem certeza que deseja excluir o plano "${name}"? Ele será desativado e poderá ser restaurado.`}
+      onConfirm={() => onDelete?.(id)}
+      disabled={deleting}
+    >
+      <Trash2 className="mr-1 h-3 w-3" aria-hidden="true" />
+      Excluir
+    </ConfirmDeleteButton>
+  ) : (
+    <Button
+      size="sm"
+      variant="outline"
+      className="h-8"
+      disabled={restoring}
+      onClick={() => onRestore?.(id)}
+    >
+      <RotateCcw className="mr-1 h-3 w-3" aria-hidden="true" />
+      Restaurar
+    </Button>
+  );
 
   return (
-    <Card
-      className={cn(
-        "group relative transition-shadow hover:shadow-md",
-        active ? "border border-border" : "border border-dashed bg-muted/60"
-      )}
-    >
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <CardTitle className="text-base font-semibold leading-tight truncate" title={name}>
-            {name}
-          </CardTitle>
-          <Badge
-            variant={active ? "outline" : "secondary"}
-            className={cn("text-[11px] tracking-wide", active ? "border-green-500 text-green-600" : "bg-muted text-muted-foreground")}
-          >
-            {active ? "Ativo" : "Inativo"}
-          </Badge>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-          <Badge variant="outline" className="border-transparent bg-muted/60">
-            Até {maxDays}x por semana
-          </Badge>
-          <Badge variant="outline" className="border-transparent bg-muted/60">
-            {durationDays} dias
-          </Badge>
-        </div>
-        {description && (
-          <p className="mt-2 line-clamp-3 text-xs text-muted-foreground">
-            {description}
-          </p>
-        )}
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="flex flex-wrap items-center gap-2">
-          {active ? (
-            <ConfirmDeleteButton
-              size="sm"
-              variant="outline"
-              className="h-8 gap-1 px-2"
-              title="Excluir Plano"
-              description={`Tem certeza que deseja excluir o plano "${name}"? Ele será desativado e poderá ser restaurado.`}
-              onConfirm={() => onDelete?.(id)}
-              disabled={deleting}
-            >
-              <Trash2 className="h-3 w-3" />
-              Excluir
-            </ConfirmDeleteButton>
-          ) : (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 gap-1 px-3"
-              disabled={restoring}
-              onClick={() => onRestore?.(id)}
-            >
-              <RotateCcw className="h-3 w-3" />
-              Restaurar
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  )
+    <EntityCard
+      title={name}
+      badges={badges}
+      metadata={metadata}
+      metadataColumns={2}
+      infoRows={infoRows}
+      body={body}
+      mobileActions={mobileActions}
+      desktopActions={desktopActions}
+      muted={!active}
+    />
+  );
 }
