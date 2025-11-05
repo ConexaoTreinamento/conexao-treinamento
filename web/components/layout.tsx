@@ -70,12 +70,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 		router.push("/")
 	}
 
-	const filteredNavigation = navigation.filter((item) => {
-		if (item.adminOnly && userRole !== "admin") {
-			return false
-		}
-		return true
-	})
+	const filteredNavigation = navigation.filter(
+		(item) => !item.adminOnly || userRole === "admin"
+	)
 
 	if (!mounted) {
 		return null

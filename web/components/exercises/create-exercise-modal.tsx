@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -35,11 +35,11 @@ export default function CreateExerciseModal({
     createExerciseMutation({ client: apiClient }),
   );
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     try {
-      createExercise({ client: apiClient, body: { name, description } });
+      await createExercise({ client: apiClient, body: { name, description } });
 
       toast({
         title: "Exercício criado",

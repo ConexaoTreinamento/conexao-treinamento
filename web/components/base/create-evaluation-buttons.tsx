@@ -1,3 +1,4 @@
+import type { MouseEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { ProfileActionButton } from "@/components/base/profile-action-button";
@@ -12,7 +13,7 @@ function EvaluationButton() {
 }
 
 export function CreateEvaluationButton(props: {
-  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onClick: (event: MouseEvent<HTMLButtonElement>) => void;
 }) {
   return (
     <Button

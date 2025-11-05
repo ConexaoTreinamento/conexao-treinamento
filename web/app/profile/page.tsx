@@ -90,7 +90,7 @@ export default function ProfilePage() {
     }),
     onSuccess: () => {
       toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!", variant: "success" })
-      queryClient.invalidateQueries({ queryKey: ["findAdministratorByUserId"] })
+      void queryClient.invalidateQueries({ queryKey: ["findAdministratorByUserId"] })
     },
     onError: () => {
       toast({
@@ -126,7 +126,7 @@ export default function ProfilePage() {
     }),
     onSuccess: () => {
       toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!", variant: "success" })
-      queryClient.invalidateQueries({ queryKey: ["findTrainerById"] })
+      void queryClient.invalidateQueries({ queryKey: ["findTrainerById"] })
     },
     onError: () => {
       toast({
@@ -192,8 +192,8 @@ export default function ProfilePage() {
   const handleSave = () => {
     if (userRole === "admin") {
       if (!adminId) return
-      // Para atualizar admin, precisa de firstName, lastName, email, password
-      // Como não temos password aqui, pode ser enviado vazio ou não enviado
+  // Para atualizar admin, precisa de firstName, lastName, email e senha
+  // Como não temos a senha aqui, pode ser enviada vazia ou omitida
       const [firstName = "", ...rest] = (profileData.name ?? "").split(" ")
       const lastName = rest.join(" ")
       updateAdminMutation.mutate({
