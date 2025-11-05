@@ -31,7 +31,7 @@ export const ProfileActionButton = forwardRef<
       ? undefined
       : cn(
           PROFILE_ACTION_BUTTON_BASE_CLASSES,
-          fullWidthOnDesktop ? "sm:flex-1 sm:min-w-[11rem]" : "sm:w-auto",
+          fullWidthOnDesktop ? "sm:flex-1 sm:min-w-[12rem]" : "sm:w-auto",
         );
 
     return (

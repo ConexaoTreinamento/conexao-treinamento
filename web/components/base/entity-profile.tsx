@@ -150,7 +150,7 @@ export function EntityProfile({
 
           {actionNodes.length ? (
             <div className="flex justify-center">
-              <div className="flex w-full max-w-4xl flex-col gap-3 sm:grid sm:grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] sm:gap-4 sm:mx-auto">
+              <div className="flex w-full max-w-6xl flex-col gap-3 sm:grid sm:grid-cols-[repeat(auto-fit,minmax(12rem,1fr))] sm:gap-4 sm:mx-auto">
                 {actionNodes.map((action, index) => (
                   <div key={index} className="w-full">
                     {action}

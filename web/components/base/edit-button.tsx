@@ -4,10 +4,7 @@ import { forwardRef } from "react";
 import { Edit } from "lucide-react";
 import type { ButtonProps } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  PROFILE_ACTION_BUTTON_BASE_CLASSES,
-  ProfileActionButton,
-} from "@/components/base/profile-action-button";
+import { ProfileActionButton } from "@/components/base/profile-action-button";
 
 type Breakpoint = "sm" | "md" | "lg" | "xl";
 
@@ -39,9 +36,6 @@ export const EditButton = forwardRef<HTMLButtonElement, EditButtonProps>(
     ref,
   ) => {
     const isIconSize = size === "icon";
-    const widthClasses = isIconSize
-      ? undefined
-      : PROFILE_ACTION_BUTTON_BASE_CLASSES;
     const hideBreakpointClass = hideLabelBelow
       ? breakpointClass[hideLabelBelow]
       : undefined;
@@ -49,7 +43,7 @@ export const EditButton = forwardRef<HTMLButtonElement, EditButtonProps>(
     return (
       <ProfileActionButton
         ref={ref}
-        className={cn(widthClasses, className)}
+        className={className}
         size={size}
         type={type}
         variant={variant}
