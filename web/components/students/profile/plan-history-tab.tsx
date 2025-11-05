@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { History } from "lucide-react";
+import type { StudentPlanAssignmentResponseDto } from "@/lib/api-client";
 
 export interface PlanHistoryEntryView {
   id: string;
@@ -26,12 +27,14 @@ interface StudentPlanHistoryTabProps {
   entries: PlanHistoryEntryView[];
   isLoading: boolean;
   onAssignPlan: () => void;
+  currentAssignment: StudentPlanAssignmentResponseDto | null;
 }
 
 export function StudentPlanHistoryTab({
   entries,
   isLoading,
   onAssignPlan,
+  currentAssignment
 }: StudentPlanHistoryTabProps) {
   return (
     <Card>
@@ -92,7 +95,9 @@ export function StudentPlanHistoryTab({
         </div>
         <div className="pt-4">
           <Button size="sm" variant="outline" onClick={onAssignPlan}>
-            Atribuir / Renovar Plano
+            {currentAssignment
+            ? "Renovar plano"
+            : "Atribuir plano"}
           </Button>
         </div>
       </CardContent>
