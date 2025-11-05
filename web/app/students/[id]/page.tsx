@@ -392,6 +392,7 @@ export default function StudentProfilePage() {
                 entries={planHistoryViews}
                 isLoading={planHistoryQuery.isLoading}
                 onAssignPlan={() => setIsPlanDialogOpen(true)}
+                currentAssignment={currentAssignment}
               />
             </TabsContent>
           </Tabs>
