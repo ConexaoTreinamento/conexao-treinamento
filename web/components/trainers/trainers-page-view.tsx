@@ -363,7 +363,7 @@ export function TrainersPageView() {
         )}
       />
 
-      <Section title="Resultados" description={resultsSummary}>
+      <Section title="Professores" description={resultsSummary}>
         {isLoading ? <TrainersSkeletonGrid /> : null}
 
         {error ? (
