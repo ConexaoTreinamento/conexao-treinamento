@@ -1,0 +1,326 @@
+Enum "physical_impairment_type" {
+  "motor"
+  "sensory"
+  "cognitive"
+  "other"
+}
+
+Table "administrators" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "user_id" uuid [unique, not null]
+  "first_name" "character varying(100)" [not null]
+  "last_name" "character varying(100)" [not null]
+
+  Indexes {
+    (first_name, last_name) [type: btree, name: "idx_administrators_name"]
+    user_id [type: btree, name: "idx_administrators_user_id"]
+  }
+}
+
+Table "anamnesis" {
+  "student_id" uuid [pk, not null]
+  "medication" "character varying(255)"
+  "is_doctor_aware_of_physical_activity" boolean [not null]
+  "favorite_physical_activity" "character varying(255)"
+  "has_insomnia" "character varying(20)" [not null]
+  "diet_oriented_by" "character varying(255)"
+  "cardiac_problems" "character varying(255)"
+  "has_hypertension" boolean [not null]
+  "chronic_diseases" "character varying(255)"
+  "difficulties_in_physical_activities" "character varying(255)"
+  "medical_orientations_to_avoid_physical_activity" "character varying(255)"
+  "surgeries_in_the_last_12_months" "character varying(255)"
+  "respiratory_problems" "character varying(255)"
+  "joint_muscular_back_pain" "character varying(255)"
+  "spinal_disc_problems" "character varying(255)"
+  "diabetes" "character varying(255)"
+  "smoking_duration" "character varying(100)"
+  "altered_cholesterol" boolean [not null]
+  "osteoporosis_location" "character varying(255)"
+  "objectives" "character varying(255)"
+  "created_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamp
+
+  Indexes {
+    diet_oriented_by [type: btree, name: "idx_anamnesis_diet_oriented_by"]
+    has_insomnia [type: btree, name: "idx_anamnesis_has_insomnia"]
+    student_id [type: btree, name: "idx_anamnesis_student_id"]
+  }
+}
+
+Table "event_participants" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "event_id" uuid [not null]
+  "student_id" uuid [not null]
+  "enrolled_at" timestamp [not null, default: `now()`]
+  "present" boolean [not null, default: false]
+  "created_at" timestamp [not null, default: `now()`]
+  "updated_at" timestamp
+
+  Indexes {
+    (event_id, student_id) [unique, name: "uk_event_participants_event_student"]
+  }
+}
+
+Table "events" {
+  "event_id" uuid [pk, not null]
+  "name" "character varying(200)" [not null]
+  "event_date" date [not null]
+  "start_time" time
+  "end_time" time
+  "location" "character varying(255)"
+  "description" text
+  "trainer_id" uuid [not null]
+  "created_at" timestamp [not null, default: `now()`]
+  "updated_at" timestamp
+  "deleted_at" timestamp
+}
+
+Table "exercises" {
+  "id" uuid [pk, not null]
+  "name" "character varying(120)" [not null]
+  "description" "character varying(255)"
+  "created_at" timestamp [not null, default: `now()`]
+  "updated_at" timestamp
+  "deleted_at" timestamp
+}
+
+Table "participant_exercises" {
+  "id" uuid [pk, not null]
+  "session_participant_id" uuid [not null]
+  "exercise_id" uuid [not null]
+  "sets_completed" integer
+  "reps_completed" integer
+  "weight_completed" doubleprecision
+  "exercise_notes" text
+  "created_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  "deleted_at" timestamp
+  "active" boolean [not null, default: true]
+  "done" boolean [not null, default: false]
+}
+
+Table "physical_evaluations" {
+  "evaluation_id" uuid [pk, not null]
+  "student_id" uuid [not null]
+  "evaluation_date" date [not null]
+  "weight" doubleprecision [not null]
+  "height" doubleprecision [not null]
+  "bmi" doubleprecision [not null]
+  "circ_right_arm_relaxed" doubleprecision
+  "circ_left_arm_relaxed" doubleprecision
+  "circ_right_arm_flexed" doubleprecision
+  "circ_left_arm_flexed" doubleprecision
+  "circ_waist" doubleprecision
+  "circ_abdomen" doubleprecision
+  "circ_hip" doubleprecision
+  "circ_right_thigh" doubleprecision
+  "circ_left_thigh" doubleprecision
+  "circ_right_calf" doubleprecision
+  "circ_left_calf" doubleprecision
+  "fold_triceps" doubleprecision
+  "fold_thorax" doubleprecision
+  "fold_subaxillary" doubleprecision
+  "fold_subscapular" doubleprecision
+  "fold_abdominal" doubleprecision
+  "fold_suprailiac" doubleprecision
+  "fold_thigh" doubleprecision
+  "diam_umerus" doubleprecision
+  "diam_femur" doubleprecision
+  "created_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamp
+  "deleted_at" timestamp
+
+  Indexes {
+    evaluation_date [type: btree, name: "idx_physical_evaluations_date"]
+    deleted_at [type: btree, name: "idx_physical_evaluations_deleted_at"]
+    (student_id, evaluation_date) [type: btree, name: "idx_physical_evaluations_student_date"]
+    student_id [type: btree, name: "idx_physical_evaluations_student_id"]
+  }
+}
+
+Table "physical_impairments" {
+  "id" uuid [pk, not null]
+  "student_id" uuid [not null]
+  "impairment_type" "character varying(50)" [not null]
+  "name" "character varying(255)" [not null]
+  "observations" "character varying(255)"
+
+  Indexes {
+    student_id [type: btree, name: "idx_physical_impairments_student_id"]
+    impairment_type [type: btree, name: "idx_physical_impairments_type"]
+  }
+}
+
+Table "scheduled_sessions" {
+  "id" uuid [pk, not null]
+  "session_series_id" uuid
+  "session_id" "character varying(255)" [unique, not null]
+  "trainer_id" uuid
+  "start_time" timestamp [not null]
+  "end_time" timestamp [not null]
+  "max_participants" integer [not null, default: 1]
+  "series_name" "character varying(255)" [not null]
+  "notes" text
+  "instance_override" boolean [not null, default: false]
+  "effective_from_timestamp" timestamp [not null]
+  "created_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  "deleted_at" timestamp
+  "active" boolean [not null, default: true]
+  "canceled" boolean [not null, default: false]
+}
+
+Table "session_participants" {
+  "id" uuid [pk, not null]
+  "scheduled_session_id" uuid [not null]
+  "student_id" uuid [not null]
+  "participation_type" "character varying(20)" [not null]
+  "is_present" boolean [not null, default: false]
+  "attendance_notes" text
+  "created_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  "deleted_at" timestamp
+  "active" boolean [not null, default: true]
+}
+
+Table "student_commitments" {
+  "id" uuid [pk, not null]
+  "student_id" uuid [not null]
+  "session_series_id" uuid [not null]
+  "commitment_status" "character varying(20)" [not null]
+  "effective_from_timestamp" timestamp [not null]
+  "created_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table "student_plan_assignments" {
+  "id" uuid [pk, not null]
+  "student_id" uuid [not null]
+  "plan_id" uuid [not null]
+  "start_date" date [not null]
+  "assigned_by_user_id" uuid [not null]
+  "assignment_notes" text
+  "created_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  "duration_days" integer [not null]
+}
+
+Table "student_plans" {
+  "id" uuid [pk, not null]
+  "name" "character varying(255)" [unique, not null]
+  "max_days" integer [not null]
+  "duration_days" integer [not null]
+  "description" text
+  "active" boolean [not null, default: true]
+  "created_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table "students" {
+  "student_id" uuid [pk, not null]
+  "email" "character varying(255)" [unique, not null]
+  "name" "character varying(100)" [not null]
+  "surname" "character varying(100)" [not null]
+  "gender" "character (1)" [not null]
+  "birth_date" date [not null]
+  "phone" "character varying(20)"
+  "profession" "character varying(100)"
+  "street" "character varying(255)"
+  "number" "character varying(20)"
+  "complement" "character varying(255)"
+  "neighborhood" "character varying(255)"
+  "cep" "character varying(10)"
+  "registration_date" date [default: `CURRENT_DATE`]
+  "emergency_contact_name" "character varying(255)"
+  "emergency_contact_phone" "character varying(20)"
+  "emergency_contact_relationship" "character varying(255)"
+  "objectives" "character varying(255)"
+  "created_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamp
+  "deleted_at" timestamp
+  "observations" text
+
+  Checks {
+    `(gender = ANY (ARRAY['M'::bpchar, 'F'::bpchar, 'O'::bpchar]))` [name: 'students_gender_check']
+  }
+
+  Indexes {
+    created_at [type: btree, name: "idx_students_created_at"]
+    deleted_at [type: btree, name: "idx_students_deleted_at"]
+    email [type: btree, name: "idx_students_email"]
+    (name, surname) [type: btree, name: "idx_students_name_surname"]
+  }
+}
+
+Table "trainer_schedules" {
+  "id" uuid [pk, not null]
+  "trainer_id" uuid [not null]
+  "weekday" integer [not null]
+  "start_time" time [not null]
+  "interval_duration" integer [not null, default: 60]
+  "series_name" "character varying(255)" [not null]
+  "effective_from_timestamp" timestamp [not null]
+  "created_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  "updated_at" timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  "deleted_at" timestamp
+  "active" boolean [not null, default: true]
+}
+
+Table "trainers" {
+  "id" uuid [pk, not null, default: `gen_random_uuid()`]
+  "user_id" uuid [not null]
+  "name" "character varying(120)" [not null]
+  "phone" "character varying(255)"
+  "address" "character varying(500)"
+  "birth_date" date
+  "specialties" "text[]"
+  "compensation_type" "character varying(30)"
+}
+
+Table "users" {
+  "id" uuid [pk, not null]
+  "email" "character varying(120)" [unique, not null]
+  "password" "character varying(120)" [not null]
+  "role" "character varying(50)" [not null, default: `'ROLE_TRAINER'::charactervarying`]
+  "created_at" timestamp [not null, default: `now()`]
+  "updated_at" timestamp
+  "deleted_at" timestamp
+}
+
+Ref "fk_administrators_user_id":"users"."id" < "administrators"."user_id" [delete: cascade]
+
+Ref "fk_anamnesis_student":"students"."student_id" < "anamnesis"."student_id" [delete: cascade]
+
+Ref "fk_event_participants_event":"events"."event_id" < "event_participants"."event_id" [delete: cascade]
+
+Ref "fk_event_participants_student":"students"."student_id" < "event_participants"."student_id" [delete: cascade]
+
+Ref "fk_events_trainer":"trainers"."id" < "events"."trainer_id"
+
+Ref "fk_physical_evaluations_student":"students"."student_id" < "physical_evaluations"."student_id" [delete: cascade]
+
+Ref "fk_physical_impairments_student":"anamnesis"."student_id" < "physical_impairments"."student_id" [delete: cascade]
+
+Ref "fk_scheduled_sessions_series":"trainer_schedules"."id" < "scheduled_sessions"."session_series_id"
+
+Ref "fk_student_commitments_series":"trainer_schedules"."id" < "student_commitments"."session_series_id"
+
+Ref "participant_exercises_exercise_id_fkey":"exercises"."id" < "participant_exercises"."exercise_id"
+
+Ref "participant_exercises_session_participant_id_fkey":"session_participants"."id" < "participant_exercises"."session_participant_id" [delete: cascade]
+
+Ref "scheduled_sessions_trainer_id_fkey":"trainers"."id" < "scheduled_sessions"."trainer_id"
+
+Ref "session_participants_scheduled_session_id_fkey":"scheduled_sessions"."id" < "session_participants"."scheduled_session_id" [delete: cascade]
+
+Ref "session_participants_student_id_fkey":"students"."student_id" < "session_participants"."student_id"
+
+Ref "student_commitments_student_id_fkey":"students"."student_id" < "student_commitments"."student_id"
+
+Ref "student_plan_assignments_assigned_by_user_id_fkey":"users"."id" < "student_plan_assignments"."assigned_by_user_id"
+
+Ref "student_plan_assignments_plan_id_fkey":"student_plans"."id" < "student_plan_assignments"."plan_id"
+
+Ref "student_plan_assignments_student_id_fkey":"students"."student_id" < "student_plan_assignments"."student_id"
+
+Ref "trainer_schedules_trainer_id_fkey":"trainers"."id" < "trainer_schedules"."trainer_id" [delete: cascade]
+
+Ref "trainers_user_id_fkey":"users"."id" < "trainers"."user_id"
