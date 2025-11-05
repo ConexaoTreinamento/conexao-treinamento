@@ -3,7 +3,7 @@
 import { EntityList } from "@/components/base/entity-list";
 import { Skeleton } from "@/components/ui/skeleton";
 import PlanCard from "@/components/plans/plan-card";
-import type { PlanWithId } from "./plan-types";
+import type { PlanWithId } from "../../lib/plans/plan-types";
 
 type PlanListProps = {
   plans: PlanWithId[];

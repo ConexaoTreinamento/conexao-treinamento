@@ -17,8 +17,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { UseFormReturn } from "react-hook-form";
-import type { StudentFilters } from "./types";
-import { countActiveStudentFilters, DEFAULT_STUDENT_FILTERS } from "./types";
+import type { StudentFilters } from "../../lib/students/types";
+import { countActiveStudentFilters, DEFAULT_STUDENT_FILTERS } from "../../lib/students/types";
 
 export interface StudentFiltersContentProps {
   filtersForm: UseFormReturn<StudentFilters>;

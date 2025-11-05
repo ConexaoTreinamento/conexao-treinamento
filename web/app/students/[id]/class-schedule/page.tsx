@@ -31,7 +31,7 @@ import type {
 import { scheduleByDateQueryOptions } from "@/lib/schedule/hooks/session-queries"
 import type { TrainerSchedule } from "@/lib/api-client"
 import type { TrainerLookupDto } from "@/lib/api-client/types.gen"
-import type { NormalizedSeries } from "@/components/students/class-schedule/types"
+import type { NormalizedSeries } from "@/lib/students/class-schedule/types"
 
 const weekdayMap: Record<number, string> = {
   0: "Domingo",

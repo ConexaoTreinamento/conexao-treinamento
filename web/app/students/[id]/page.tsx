@@ -28,7 +28,7 @@ import {
   trainersLookupQueryOptions,
 } from "@/lib/schedule/hooks/session-queries"
 import { useEvaluations } from "@/lib/evaluations/hooks/evaluation-queries"
-import { hasInsomniaTypes, impairmentTypes } from "@/lib/students/student-types"
+import { hasInsomniaTypes, impairmentTypes } from "@/lib/students/types"
 import { handleHttpError } from "@/lib/error-utils"
 import { StudentProfileSummaryCard } from "@/components/students/profile/profile-summary-card"
 import { StudentOverviewTab } from "@/components/students/profile/overview-tab"
@@ -45,7 +45,7 @@ import {
   toExerciseRecords,
   toPlanHistoryViews,
   getLastRenewalLabel,
-} from "@/components/students/profile/utils"
+} from "@/lib/students/profile/utils"
 
 export default function StudentProfilePage() {
   const router = useRouter()

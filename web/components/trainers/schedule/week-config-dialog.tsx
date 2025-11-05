@@ -18,9 +18,9 @@ import {
   Square,
   SquareCheck,
 } from "lucide-react";
-import { addMinutesHHmm } from "./time-helpers";
-import { DEFAULT_SERIES_NAME, WEEKDAY_NAMES } from "./constants";
-import type { WeekConfigRow } from "./types";
+import { addMinutesHHmm } from "../../../lib/time-helpers";
+import { DEFAULT_SERIES_NAME, WEEKDAY_NAMES } from "../../../lib/trainers/constants";
+import type { WeekConfigRow } from "../../../lib/trainers/types";
 
 const weekdayLabel = (weekday: number) => WEEKDAY_NAMES[weekday] ?? "Dia";
 

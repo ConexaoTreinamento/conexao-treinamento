@@ -38,7 +38,7 @@ import {
   countActiveStudentFilters,
   DEFAULT_STUDENT_FILTERS,
   StudentFilters,
-} from "@/components/students/types";
+} from "@/lib/students/types";
 import {
   StudentsEmptyState,
   StudentsErrorState,

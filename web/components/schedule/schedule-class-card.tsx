@@ -22,7 +22,7 @@ import type {
 import type {
   ScheduleClassItem,
   ScheduleStudent,
-} from "@/components/schedule/types";
+} from "@/lib/schedule/types";
 
 interface ScheduleClassCardProps {
   classItem: ScheduleClassItem;

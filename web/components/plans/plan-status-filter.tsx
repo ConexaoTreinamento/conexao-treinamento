@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Filter } from "lucide-react";
-import type { PlanStatusValue } from "./plan-types";
+import type { PlanStatusValue } from "../../lib/plans/plan-types";
 
 type PlanStatusFilterProps = {
   value: PlanStatusValue;

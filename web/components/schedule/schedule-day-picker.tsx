@@ -1,6 +1,6 @@
 import type { KeyboardEventHandler } from "react";
 import { cn } from "@/lib/utils";
-import type { ScheduleDayItem } from "@/components/schedule/types";
+import type { ScheduleDayItem } from "@/lib/schedule/types";
 
 interface ScheduleDayPickerProps {
   days: ScheduleDayItem[];

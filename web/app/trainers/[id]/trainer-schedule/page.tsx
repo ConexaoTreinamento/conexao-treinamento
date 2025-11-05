@@ -25,7 +25,7 @@ import {
   DEFAULT_SHIFT_END,
   DEFAULT_SHIFT_START,
   MIN_CLASS_DURATION_MINUTES,
-} from "@/components/trainers/schedule/constants";
+} from "@/lib/trainers/constants";
 import {
   TrainerMobileTimetable,
   TrainerWeekTimetable,
@@ -37,8 +37,8 @@ import {
   scheduleEndHHmm,
   toHHmm,
   toMinutesFromHHmm,
-} from "@/components/trainers/schedule/time-helpers";
-import type { WeekConfigRow } from "@/components/trainers/schedule/types";
+} from "@/lib/time-helpers";
+import type { WeekConfigRow } from "@/lib/trainers/types";
 
 export default function TrainerSchedulePage() {
   const params = useParams<{ id: string }>();

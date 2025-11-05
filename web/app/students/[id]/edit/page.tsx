@@ -9,7 +9,7 @@ import { StudentEditLoading } from "@/components/students/profile/edit/student-e
 import {
   buildStudentRequestPayload,
   mapStudentResponseToForm
-} from "@/components/students/profile/edit/student-form-transforms";
+} from "@/lib/students/student-form-transforms";
 import { useToast } from "@/hooks/use-toast";
 import { handleHttpError } from "@/lib/error-utils";
 import { apiClient } from "@/lib/client";

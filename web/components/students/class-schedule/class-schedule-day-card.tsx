@@ -19,7 +19,7 @@ import {
   Users,
 } from "lucide-react";
 import { Fragment } from "react";
-import type { NormalizedSeries } from "./types";
+import type { NormalizedSeries } from "../../../lib/students/class-schedule/types";
 
 interface ClassScheduleDayCardProps {
   dayLabel: string;

@@ -1,13 +1,13 @@
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { TrainerScheduleResponseDto } from "@/lib/api-client/types.gen";
-import { WEEKDAY_NAMES } from "./constants";
+import { WEEKDAY_NAMES } from "../../../lib/trainers/constants";
 import {
   scheduleEndHHmm,
   scheduleEndMinutes,
   toHHmm,
   toMinutes,
-} from "./time-helpers";
+} from "../../../lib/time-helpers";
 
 const ROW_HEIGHT_PX = 56;
 

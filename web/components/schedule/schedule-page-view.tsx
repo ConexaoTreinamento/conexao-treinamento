@@ -23,7 +23,7 @@ import type {
   ScheduleClassItem,
   ScheduleDayItem,
   ScheduleStudent,
-} from "@/components/schedule/types";
+} from "@/lib/schedule/types";
 
 interface OneOffClassData {
   name: string;

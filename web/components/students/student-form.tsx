@@ -23,7 +23,7 @@ import { getAllPlansOptions } from "@/lib/api-client/@tanstack/react-query.gen";
 import {
   hasInsomniaTypes,
   impairmentTypes,
-} from "@/lib/students/student-types";
+} from "@/lib/students/types";
 import type { StudentPlanResponseDto } from "@/lib/api-client/types.gen";
 
 interface PhysicalImpairment {

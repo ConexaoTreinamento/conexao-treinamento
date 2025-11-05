@@ -24,8 +24,8 @@ import { PlanList, PlanListSkeleton } from "@/components/plans/plan-grid";
 import type {
   PlanStatusValue,
   PlanWithId,
-} from "@/components/plans/plan-types";
-import { PLAN_STATUS_EMPTY_MESSAGES } from "@/components/plans/plan-types";
+} from "@/lib/plans/plan-types";
+import { PLAN_STATUS_EMPTY_MESSAGES } from "@/lib/plans/plan-types";
 import { Section } from "@/components/base/section";
 import { EmptyState } from "@/components/base/empty-state";
 import { Button } from "@/components/ui/button";
