@@ -82,7 +82,7 @@ export function TrainerWeekConfigDialog({
           <Settings2 className="mr-2 h-4 w-4" /> Configurar
         </Button>
       </DialogTrigger>
-      <DialogContent className="w-[85vw] max-w-5xl md:w-[85vw] max-h-[90vh]">
+      <DialogContent className="w-[85vw] max-w-6xl md:w-[85vw] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Configuração Semanal</DialogTitle>
         </DialogHeader>
