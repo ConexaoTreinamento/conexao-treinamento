@@ -4,8 +4,8 @@ import { useRouter, useParams } from "next/navigation"
 import { toast } from "sonner"
 import Layout from "@/components/layout"
 import EvaluationForm, { type EvaluationData } from "@/components/students/evaluation-form"
-import { useCreateEvaluation } from "@/lib/hooks/evaluation-mutations"
-import { useStudent } from "@/lib/hooks/student-queries"
+import { useCreateEvaluation } from "@/lib/evaluations/hooks/evaluation-mutations"
+import { useStudent } from "@/lib/students/hooks/student-queries"
 import { toPhysicalEvaluationRequest } from "@/lib/evaluations/transform"
 
 export default function StudentEvaluationPage() {

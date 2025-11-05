@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { evaluationKeys } from "./evaluation-queries";
-import type { PhysicalEvaluationResponse } from "./evaluation-queries";
+import { evaluationKeys, type PhysicalEvaluationResponse } from "./evaluation-queries";
 
 export interface PhysicalEvaluationRequest {
   weight: number;

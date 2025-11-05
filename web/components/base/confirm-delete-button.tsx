@@ -1,85 +1,68 @@
-"use client"
+"use client";
 
-import React from "react"
-import { Trash2 } from "lucide-react"
-import { Button, type ButtonProps } from "@/components/ui/button"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import React from "react";
+import { Trash2 } from "lucide-react";
+import { type ButtonProps } from "@/components/ui/button";
+import { ProfileActionButton } from "@/components/base/profile-action-button";
+import { AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { ConfirmDeleteDialog } from "@/components/base/confirm-delete-dialog";
 
 type ConfirmDeleteButtonProps = {
-  title?: string
-  description?: string
-  confirmText?: string
-  onConfirm: () => Promise<void> | void
-  disabled?: boolean
-  className?: string
-  children?: React.ReactNode
-  variant?: ButtonProps["variant"]
-  size?: ButtonProps["size"]
-}
+  title?: string;
+  description?: string;
+  confirmText?: string;
+  confirmingText?: string;
+  onConfirm: () => Promise<void> | void;
+  confirmVariant?: ButtonProps["variant"];
+  children?: React.ReactNode;
+  fullWidthOnDesktop?: boolean;
+} & Omit<ButtonProps, "onClick">;
 
 export default function ConfirmDeleteButton({
   title = "Excluir Registro",
   description = "Tem certeza que deseja excluir este registro? Esta ação não pode ser desfeita.",
   confirmText = "Excluir",
+  confirmingText,
   onConfirm,
-  disabled,
+  confirmVariant = "destructive",
   className,
   children,
-  variant = "ghost",
-  size = "icon",
+  variant = "destructive",
+  size = "default",
+  disabled,
+  type = "button",
+  fullWidthOnDesktop = false,
+  ...buttonProps
 }: ConfirmDeleteButtonProps) {
-  const [open, setOpen] = React.useState(false)
-  const [loading, setLoading] = React.useState(false)
-
-  const handleConfirm = async () => {
-    try {
-      setLoading(true)
-      await onConfirm()
-      setOpen(false)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [open, setOpen] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
 
   return (
-    <AlertDialog open={open} onOpenChange={v => !loading && setOpen(v)}>
+    <ConfirmDeleteDialog
+      open={open}
+      onOpenChange={(value) => setOpen(value)}
+      onPendingChange={setLoading}
+      onConfirm={onConfirm}
+      title={title}
+      description={description}
+      confirmText={confirmText}
+      confirmingText={confirmingText}
+      confirmVariant={confirmVariant}
+    >
       <AlertDialogTrigger asChild>
-        <Button
+        <ProfileActionButton
           variant={variant}
           size={size}
           className={className}
           disabled={disabled || loading}
-          onClick={e => e.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
+          type={type}
+          fullWidthOnDesktop={fullWidthOnDesktop}
+          {...buttonProps}
         >
           {children ?? <Trash2 className="w-4 h-4" />}
-        </Button>
+        </ProfileActionButton>
       </AlertDialogTrigger>
-      <AlertDialogContent onClick={e => e.stopPropagation()}>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading} onClick={e => e.stopPropagation()} >Cancelar</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={e => {e.stopPropagation(); void handleConfirm()}}
-            className="bg-red-600 hover:bg-red-700"
-            disabled={loading}
-          >
-            {confirmText}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  )
+    </ConfirmDeleteDialog>
+  );
 }
