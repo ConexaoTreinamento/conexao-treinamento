@@ -24,7 +24,6 @@ import jakarta.persistence.Table;
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@ToString
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
