@@ -437,7 +437,7 @@ export function ReportsPageView() {
                       aria-hidden="true"
                     />
                   ) : (
-                    `${formatNumber(totals.hours, 1)}h`
+                    formatDurationHours(totals.hours)
                   )}
                 </p>
               </div>
