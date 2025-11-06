@@ -156,7 +156,11 @@ function StudentsPageLayout({
         )}
       />
 
-      <Section title="Resultados" description={resultDescription}>
+      <Section
+        title="Resultados"
+        description={resultDescription}
+        contentClassName="space-y-6"
+      >
         {isLoading ? <StudentsLoadingList /> : null}
 
         {error ? (
