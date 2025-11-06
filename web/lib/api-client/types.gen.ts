@@ -550,6 +550,7 @@ export type LoginRequestDto = {
 export type JwtResponseDto = {
     id?: string;
     token?: string;
+    passwordExpired?: boolean;
 };
 
 export type ListAdministratorsDto = {

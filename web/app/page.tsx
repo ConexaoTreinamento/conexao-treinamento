@@ -13,11 +13,13 @@ import { useMutation } from "@tanstack/react-query"
 import { loginMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { useToast } from "@/hooks/use-toast"
+import { ChangePasswordDialog } from "@/components/base/change-password-dialog"
 
 export default function HomePage() {
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
   
@@ -29,7 +31,18 @@ export default function HomePage() {
         localStorage.setItem("userRole", getRoleName(payload.role))
         localStorage.setItem("token", result.token)
         localStorage.setItem("userId", payload.userId)
-        router.push("/schedule")
+        
+        if (result.passwordExpired) {
+          toast({
+            title: "Senha Expirada",
+            description: "Sua senha expirou. Por favor, altere sua senha.",
+            variant: "destructive",
+            duration: 5000
+          })
+          setShowChangePasswordDialog(true)
+        } else {
+          router.push("/schedule")
+        }
       }
     },
     onError: (error) => {
@@ -125,6 +138,10 @@ export default function HomePage() {
           </form>
         </CardContent>
       </Card>
+      <ChangePasswordDialog 
+        open={showChangePasswordDialog} 
+        onOpenChange={setShowChangePasswordDialog}
+      />
     </div>
   )
 }
