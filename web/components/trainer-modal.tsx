@@ -16,6 +16,8 @@ import {
 import { useForm, Controller } from "react-hook-form"
 import { IMaskInput } from "react-imask"
 import SelectMultiple, { MultiValue } from "react-select"
+import { Badge } from "./ui/badge"
+import { X } from "lucide-react"
 
 export interface TrainerFormData {
   name?: string
@@ -52,7 +54,6 @@ type Option = {
   label: string;
 }
 
-//Available specialties for suggestions
 const availableSpecialties: Option[] = [
   {value:"Pilates", label: "Pilates"},
   {value:"Yoga", label: "Yoga"},
@@ -81,11 +82,13 @@ export default function TrainerForm({
 }: TrainerFormProps) {
   const id = useId()
 
-  const { control, register, handleSubmit, setValue, reset, formState: { errors } }= useForm<TrainerFormData> ({
+  const { control, register, handleSubmit, setValue, reset, getValues, watch, formState: { errors } }= useForm<TrainerFormData> ({
     defaultValues: {
       ...initialData
     }
   })
+
+  const specialties = watch("specialties") || []
 
   useEffect(() => {
      if (!open) return
@@ -103,7 +106,24 @@ export default function TrainerForm({
             compensationType: ""
           }
     )
-  }, [open]) //initialData, reset
+  }, [open])
+
+  const handleAddSpecialty = (specialty: string) => {
+    const current = getValues("specialties") || []
+    if (specialty && !current.includes(specialty)) {
+      setValue("specialties", [...current, specialty], { shouldValidate: true })
+    }
+  }
+
+  const handleRemoveSpecialty = (specialty: string) => {
+    const current = getValues("specialties") || []
+    setValue(
+      "specialties",
+      current.filter((s) => s !== specialty),
+      { shouldValidate: true }
+    )
+  }
+
 
   const onFormSubmit = (data: TrainerFormData) => {
     onSubmit(data)
@@ -127,21 +147,21 @@ export default function TrainerForm({
         <div className="space-y-6">
           {/* Personal Information */}
           <div className="space-y-4">
-            <h4 className="texy-sm font-medium">Informações Pessoais</h4>
+            <h4 className="texy-sm font-medium">Informações pessoais</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor={`name-${id}`}>Nome Completo*</Label>
+                <Label htmlFor={`name-${id}`}>Nome completo </Label><span className="text-red-500">*</span>
                 <Input id={`name-${id}`} {...register("name", { required: true })} placeholder="Ana Silva" />
                 {errors.name && <p className="text-xs text-red-600">Campo obrigatório</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor={`birthDate-${id}`}>Data de Nascimento *</Label>
+                <Label htmlFor={`birthDate-${id}`}>Data de nascimento </Label><span className="text-red-500">*</span>
                 <Input id={`birthDate-${id}`} type="date" {...register("birthDate", { required: true })} />
                 {errors.birthDate && <p className="text-xs text-red-600">Campo obrigatório</p>}
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`address-${id}`}>Endereço *</Label>
+              <Label htmlFor={`address-${id}`}>Endereço </Label><span className="text-red-500">*</span>
               <Input id={`address-${id}`} {...register("address", { required: true })} placeholder="Ex: Rua das Palmeiras" />
               {errors.address && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
@@ -152,7 +172,7 @@ export default function TrainerForm({
           <h4 className="text-sm font-medium">Contato</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor={`email-${id}`}>Email *</Label>
+              <Label htmlFor={`email-${id}`}>Email </Label><span className="text-red-500">*</span>
               <Input 
                 id={`email-${id}`} 
                 type="email" 
@@ -168,7 +188,7 @@ export default function TrainerForm({
               {errors.email && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`phone-${id}`}>Telefone *</Label>
+              <Label htmlFor={`phone-${id}`}>Telefone </Label><span className="text-red-500">*</span>
               <IMaskInput
                 id={`phone-${id}`}
                 {...register("phone", { required: true })}
@@ -183,10 +203,10 @@ export default function TrainerForm({
         </div>
         {/* Professional Information*/}
         <div className="space-y-4">
-          <h4 className="text-sm font-medium">Informações Profissionais</h4>
+          <h4 className="text-sm font-medium">Informações profissionais</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor={`compensation-${id}`}>Tipo de Compensação *</Label>
+              <Label htmlFor={`compensation-${id}`}>Tipo de compensação </Label><span className="text-red-500">*</span>
               <Controller
                 control={control}
                 name="compensationType"
@@ -208,66 +228,54 @@ export default function TrainerForm({
         <div className="space-y-4">
           <h4 className="text-sm font-medium">Especialidades</h4>
           <div className="space-y-2">
-            <Label htmlFor={`specialties-${id}`} >Adicionar Especialidade*</Label>
-            <Controller
-            control={control}
-            name="specialties"
-            rules={{ required: "Selecione pelo menos uma especialidade" }}
-            render={({ field }) => {
-              const value = availableSpecialties.filter((opt) => field.value.includes(opt.value));
-              return (
-                <SelectMultiple<Option, true>
-                  {...field}
-                  options={availableSpecialties}
-                  isMulti
-                  placeholder="Adicionar Especialidade"
-                  value={value}
-                  onChange={(val: MultiValue<Option>) => 
-                    field.onChange(val.map((v) => v.value))}
-                    classNames={{
-                      control: () =>
-                          "bg-white text-black dark:bg-[#09090b] dark:text-white border border-gray-300 dark:border-[1px solid #27272a] rounded-md shadow-sm min-h-[42px] hover:border-gray-400 dark:hover:border-gray-500 transition-colors disabled:opacity-50 focus:ring-2 focus:ring-ring focus:ring-offset-2 text-sm",
-                      valueContainer: () => 
-                        "flex flex-wrap gap-1 px-3 py-2",
-                      multiValue: () =>
-                        "bg-gray-200 dark:bg-[#1a1a1a] text-sm rounded-md px-2 py-1 flex items-center",
-                      multiValueLabel: () =>
-                        "text-gray-800 dark:text-gray-100",
-                      multiValueRemove: () =>
-                        "ml-1 text-gray-500 hover:text-red-500 cursor-pointer",
-                      menu: () =>
-                        "z-50 mt-1 bg-white dark:bg-[#09090b] border border-gray-300 dark:border-[#2b2b2b] rounded-md shadow-lg text-sm",
-                      option: ({ isFocused, isSelected }) =>
-                        `
-                          text-gray-900 dark:text-gray-100
-                          ${isFocused ? "bg-gray-100 dark:bg-[#16a34a]" : ""}
-                          ${isSelected ? "bg-gray-200 bg-[#16a34a]" : ""}
-                        `,
-                      placeholder: () =>
-                        "text-gray-500 dark:text-gray-400",
-                      dropdownIndicator: () =>
-                        "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors px-2",
-                        indicatorSeparator: () => "hidden",
-                        clearIndicator: () =>
-                          "text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors px-2",
-                      }}
-                  />
-                );
-              }}
-            />
-          </div>
+              <Label>Adicionar especialidade</Label>
+              <Select onValueChange={handleAddSpecialty} >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma especialidade" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableSpecialties
+                    .filter(spec => !specialties.includes(spec.value))
+                    .map((spec) => (
+                      <SelectItem key={spec.value} value={spec.value}>
+                        {spec.label}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {specialties.length > 0 && (
+              <div className="space-y-2">
+                <Label>Especialidades selecionadas</Label>
+                <div className="flex flex-wrap gap-2">
+                  {specialties.map((specialty) => (
+                    <Badge key={specialty} variant="secondary" className="flex items-center gap-1">
+                      {specialty}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleRemoveSpecialty(specialty)}
+                        className="h-4 w-4 p-0 text-muted-foreground hover:text-red-500"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
         </div>
         <div className="space-y-4">
           <h4 className="text-sm font-medium">Acesso</h4>
           <div className="space-y-2">
           <Label htmlFor="trainerPassword">
-            {mode === "create" ? "Senha *" : "Nova Senha"}
+            {mode === "create" ? (<> Senha <span className="text-red-500">*</span> </>)  : "Nova senha"}
           </Label>
           <Input
             id="trainerPassword"
             type="password"
             {...register("password", { required: true})}
-            // onChange={(e: string) => setValue("newPassword", e, { shouldValidate: true})}
             placeholder={mode === "create" ? "Digite a senha" : "Deixe vazio para manter a senha atual"}
           />
           </div>
