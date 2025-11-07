@@ -235,10 +235,6 @@ function TrainerCard({
   const joinDateLabel = trainer.joinDate
     ? new Date(trainer.joinDate).toLocaleDateString("pt-BR")
     : null;
-  const hoursWorkedLabel =
-    typeof trainer.hoursWorked === "number"
-      ? `${trainer.hoursWorked}h este mês`
-      : null;
   const compensationLabel =
     trainer.compensationType === "MONTHLY"
       ? "Mensalista"
@@ -281,13 +277,7 @@ function TrainerCard({
       content: joinDateLabel
         ? `Desde ${joinDateLabel}`
         : "Data de ingresso não informada",
-    },
-    {
-      icon: (
-        <Clock className="h-3 w-3 text-muted-foreground" aria-hidden="true" />
-      ),
-      content: hoursWorkedLabel ?? "Carga mensal não informada",
-    },
+    }
   ];
 
   const infoRows: ReactNode[] = [];
