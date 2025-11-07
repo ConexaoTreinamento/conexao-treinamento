@@ -2,10 +2,7 @@ package org.conexaotreinamento.conexaotreinamentobackend.unit.service;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -132,8 +129,6 @@ class TrainerServiceTest {
         savedTrainer.setSpecialties(List.of("Musculação", "Crossfit"));
         savedTrainer.setCompensationType(CompensationType.HOURLY);
 
-        User savedUser = new User("joao@test.com", "password123", Role.ROLE_TRAINER);
-
         TrainerListItemResponseDTO expectedResult = new TrainerListItemResponseDTO(
             newTrainerId,
             "João Silva",
@@ -232,7 +227,7 @@ class TrainerServiceTest {
     @DisplayName("Should find all trainers successfully")
     void shouldFindAllTrainersSuccessfully() {
         // Given
-        List<TrainerListItemResponseDTO> trainers = Arrays.asList(listTrainersDTO);
+        List<TrainerListItemResponseDTO> trainers = Collections.singletonList(listTrainersDTO);
         when(trainerRepository.findAllTrainerProfiles(true)).thenReturn(trainers);
 
         // When
