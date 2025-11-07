@@ -296,7 +296,6 @@ export type TrainerListItemResponseDto = {
     compensationType?: 'HOURLY' | 'MONTHLY';
     active?: boolean;
     joinDate?: string;
-    hoursWorked?: number;
 };
 
 export type Exercise = {
@@ -359,8 +358,8 @@ export type SessionParticipant = {
     active?: boolean;
     exercises?: Array<ParticipantExercise>;
     present?: boolean;
-    excluded?: boolean;
     included?: boolean;
+    excluded?: boolean;
 };
 
 export type SessionUpdateRequestDto = {
@@ -622,16 +621,16 @@ export type PageUserResponseDto = {
 export type PageableObject = {
     offset?: number;
     sort?: SortObject;
+    paged?: boolean;
     pageNumber?: number;
     pageSize?: number;
-    paged?: boolean;
     unpaged?: boolean;
 };
 
 export type SortObject = {
     empty?: boolean;
-    unsorted?: boolean;
     sorted?: boolean;
+    unsorted?: boolean;
 };
 
 export type PageStudentResponseDto = {

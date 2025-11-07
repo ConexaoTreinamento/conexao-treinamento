@@ -95,8 +95,7 @@ class TrainerServiceTest {
             Arrays.asList("Strength Training", "Cardio"),
             CompensationType.HOURLY,
             true,
-            Instant.now(),
-            120
+            Instant.now()
         );
     }
 
@@ -139,8 +138,7 @@ class TrainerServiceTest {
             List.of("Musculação", "Crossfit"),
             CompensationType.HOURLY,
             true,
-            Instant.now(),
-            120
+            Instant.now()
         );
 
         when(trainerRepository.existsByEmailIgnoreCase("joao@test.com")).thenReturn(false);
@@ -163,7 +161,6 @@ class TrainerServiceTest {
         assertThat(result.compensationType()).isEqualTo(CompensationType.HOURLY);
         assertThat(result.active()).isTrue();
         assertThat(result.joinDate()).isNotNull();
-        assertThat(result.hoursWorked()).isEqualTo(120);
 
         verify(trainerRepository).existsByEmailIgnoreCase("joao@test.com");
         verify(userService).createUser(any());

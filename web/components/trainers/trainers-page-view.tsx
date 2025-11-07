@@ -104,7 +104,6 @@ export function TrainersPageView() {
           email: trainer.email ?? null,
           phone: trainer.phone ?? null,
           joinDate: trainer.joinDate ?? null,
-          hoursWorked: trainer.hoursWorked ?? null,
           active: Boolean(trainer.active),
           compensationType: trainer.compensationType ?? null,
           specialties,
