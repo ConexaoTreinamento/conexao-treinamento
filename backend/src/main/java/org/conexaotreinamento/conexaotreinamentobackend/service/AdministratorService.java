@@ -28,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class AdministratorService {
 
     private final AdministratorRepository administratorRepository;
@@ -36,25 +37,29 @@ public class AdministratorService {
 
     @Transactional
     public AdministratorListItemResponseDTO create(AdministratorCreateRequestDTO request) {
+        log.debug("Attempting to create administrator with email: {}", request.email());
         if (administratorRepository.existsByEmailIgnoreCase(request.email())) {
+            log.warn("Administrator creation failed - Email already exists: {}", request.email());
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Administrator with this email already exists");
         }
 
         UserResponseDTO savedUser = userService.createUser(new UserCreateRequestDTO(request.email(), request.password(), Role.ROLE_ADMIN));
-
         Administrator administrator = request.toEntity(savedUser.id());
         Administrator savedAdministrator = administratorRepository.save(administrator);
+        log.info("Administrator created successfully [ID: {}] - Email: {}", savedAdministrator.getId(), request.email());
 
         return administratorRepository.findActiveAdministratorProfileById(savedAdministrator.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Created administrator not found"));
     }
 
     public AdministratorListItemResponseDTO findById(UUID id) {
+        log.debug("Finding administrator by ID: {}", id);
         return administratorRepository.findActiveAdministratorProfileById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Administrator not found"));
     }
 
     public AdministratorListItemResponseDTO findByUserId(UUID id) {
+        log.debug("Finding administrator by UserID: {}", id);
         return administratorRepository.findActiveAdministratorByUserId(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Administrator not found"));
     }
@@ -64,6 +69,7 @@ public class AdministratorService {
     }
 
     public Page<AdministratorListItemResponseDTO> findAll(String search, Pageable pageable, boolean includeInactive) {
+        log.debug("Listing administrators - search: {}, includeInactive: {}, page: {}", search, includeInactive, pageable);
         if (pageable.getSort().isUnsorted()) {
             pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), 
                                     Sort.by("joinDate").descending());
@@ -94,6 +100,7 @@ public class AdministratorService {
 
     @Transactional
     public AdministratorResponseDTO put(UUID id, AdministratorCreateRequestDTO request) {
+        log.debug("Updating administrator (PUT) [ID: {}]", id);
         Administrator administrator = administratorRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Administrator not found"));
 
@@ -115,11 +122,13 @@ public class AdministratorService {
         User user = userRepository.findByIdAndDeletedAtIsNull(administrator.getUserId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         
+        log.info("Administrator updated successfully (PUT) [ID: {}] - Email: {}", id, request.email());
         return AdministratorResponseDTO.fromEntity(savedAdministrator, updatedUser.email(), user.isActive(), user.getCreatedAt(), user.getUpdatedAt());
     }
 
     @Transactional
     public AdministratorResponseDTO patch(UUID id, PatchAdministratorRequestDTO request) {
+        log.debug("Patching administrator [ID: {}]", id);
         Administrator administrator = administratorRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Administrator not found"));
 
@@ -150,17 +159,26 @@ public class AdministratorService {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         }
 
+        log.info("Administrator patched successfully [ID: {}]", id);
         return AdministratorResponseDTO.fromEntity(savedAdministrator, user.getEmail(), user.isActive(), user.getCreatedAt(), user.getUpdatedAt());
     }
 
     @Transactional
     public void delete(UUID administratorId) {
+        log.debug("Deleting administrator [ID: {}]", administratorId);
         Optional<Administrator> administrator = administratorRepository.findById(administratorId);
-        administrator.ifPresent(value -> userService.delete(value.getUserId()));
+        administrator.ifPresentOrElse(
+            value -> {
+                userService.delete(value.getUserId());
+                log.info("Administrator deleted successfully [ID: {}]", administratorId);
+            },
+            () -> log.warn("Administrator deletion attempted for non-existent [ID: {}]", administratorId)
+        );
     }
 
     @Transactional
     public AdministratorResponseDTO restore(UUID administratorId) {
+        log.debug("Restoring administrator [ID: {}]", administratorId);
         Administrator administrator = administratorRepository.findById(administratorId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Administrator not found"));
         
@@ -171,6 +189,7 @@ public class AdministratorService {
         User user = userRepository.findById(administrator.getUserId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         
+        log.info("Administrator restored successfully [ID: {}]", administratorId);
         return AdministratorResponseDTO.fromEntity(
             administrator, 
             user.getEmail(), 

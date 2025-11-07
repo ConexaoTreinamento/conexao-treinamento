@@ -2,6 +2,7 @@ package org.conexaotreinamento.conexaotreinamentobackend.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.EventRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchEventRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.EventResponseDTO;
@@ -20,6 +21,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/events")
 @RequiredArgsConstructor
+@Slf4j
 public class EventController {
 
     private final EventService eventService;
@@ -28,11 +30,15 @@ public class EventController {
 
     @PostMapping
     public ResponseEntity<EventResponseDTO> createEvent(@RequestBody @Valid EventRequestDTO request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(eventService.createEvent(request));
+        log.info("Creating new event - Title: {}, Date: {}", request.name(), request.date());
+        EventResponseDTO response = eventService.createEvent(request);
+        log.info("Event created successfully [ID: {}] - Title: {}", response.id(), response.name());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<EventResponseDTO> findEventById(@PathVariable UUID id) {
+        log.debug("Fetching event by ID: {}", id);
         return ResponseEntity.ok(eventService.findEventById(id));
     }
 
@@ -40,61 +46,88 @@ public class EventController {
     public ResponseEntity<List<EventResponseDTO>> findAllEvents(
             @RequestParam(required = false) String search,
             @RequestParam(required = false, defaultValue = "false") boolean includeInactive) {
-        return ResponseEntity.ok(eventService.findAllEvents(search, includeInactive));
+        log.debug("Fetching all events - Search: {}, Include inactive: {}", search, includeInactive);
+        List<EventResponseDTO> events = eventService.findAllEvents(search, includeInactive);
+        log.debug("Retrieved {} events", events.size());
+        return ResponseEntity.ok(events);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<EventResponseDTO> updateEvent(@PathVariable UUID id, @RequestBody @Valid EventRequestDTO request) {
-        return ResponseEntity.ok(eventService.updateEvent(id, request));
+        log.info("Updating event [ID: {}] - Title: {}", id, request.name());
+        EventResponseDTO response = eventService.updateEvent(id, request);
+        log.info("Event updated successfully [ID: {}]", id);
+        return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/{id}")
     public ResponseEntity<EventResponseDTO> patchEvent(@PathVariable UUID id, @RequestBody @Valid PatchEventRequestDTO request) {
-        return ResponseEntity.ok(eventService.patchEvent(id, request));
+        log.info("Patching event [ID: {}]", id);
+        EventResponseDTO response = eventService.patchEvent(id, request);
+        log.info("Event patched successfully [ID: {}]", id);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEvent(@PathVariable UUID id) {
+        log.info("Deleting event [ID: {}]", id);
         eventService.deleteEvent(id);
+        log.info("Event deleted successfully [ID: {}]", id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/restore")
     public ResponseEntity<EventResponseDTO> restoreEvent(@PathVariable UUID id) {
-        return ResponseEntity.ok(eventService.restoreEvent(id));
+        log.info("Restoring event [ID: {}]", id);
+        EventResponseDTO response = eventService.restoreEvent(id);
+        log.info("Event restored successfully [ID: {}]", id);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{id}/participants/{studentId}")
     public ResponseEntity<EventResponseDTO> addParticipant(@PathVariable UUID id, @PathVariable UUID studentId) {
-        return ResponseEntity.ok(eventService.addParticipant(id, studentId));
+        log.info("Adding participant [Student ID: {}] to event [ID: {}]", studentId, id);
+        EventResponseDTO response = eventService.addParticipant(id, studentId);
+        log.info("Participant added successfully to event [ID: {}]", id);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}/participants/{studentId}")
     public ResponseEntity<Void> removeParticipant(@PathVariable UUID id, @PathVariable UUID studentId) {
+        log.info("Removing participant [Student ID: {}] from event [ID: {}]", studentId, id);
         eventService.removeParticipant(id, studentId);
+        log.info("Participant removed successfully from event [ID: {}]", id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/participants/{studentId}/attendance")
     public ResponseEntity<EventResponseDTO> toggleAttendance(@PathVariable UUID id, @PathVariable UUID studentId) {
-        return ResponseEntity.ok(eventService.toggleAttendance(id, studentId));
+        log.info("Toggling attendance for participant [Student ID: {}] in event [ID: {}]", studentId, id);
+        EventResponseDTO response = eventService.toggleAttendance(id, studentId);
+        log.info("Attendance toggled successfully for event [ID: {}]", id);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/lookup/students")
+        
     public ResponseEntity<List<StudentLookupResponseDTO>> getStudentsForLookup() {
+        log.debug("Fetching students for lookup");
         List<StudentLookupResponseDTO> students = studentService.findAllActive()
                 .stream()
                 .map(StudentLookupResponseDTO::fromEntity)
                 .toList();
+        log.debug("Retrieved {} students for lookup", students.size());
         return ResponseEntity.ok(students);
     }
 
     @GetMapping("/lookup/trainers")
     public ResponseEntity<List<TrainerLookupResponseDTO>> getTrainersForLookup() {
+        log.debug("Fetching trainers for lookup");
         List<TrainerLookupResponseDTO> trainers = trainerService.findAll()
                 .stream()
                 .map(dto -> new TrainerLookupResponseDTO(dto.id(), "Prof. " + dto.name()))
                 .toList();
+        log.debug("Retrieved {} trainers for lookup", trainers.size());
         return ResponseEntity.ok(trainers);
     }
 }
