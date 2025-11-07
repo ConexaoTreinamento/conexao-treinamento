@@ -35,6 +35,10 @@ import type {
 import { TrainerSelect } from "@/components/trainers/trainer-select";
 import { PageHeader } from "@/components/base/page-header";
 import { formatDurationHours } from "@/lib/formatters/time";
+import {
+  TrainerCompensationBadge,
+  getTrainerCompensationLabel,
+} from "@/components/trainers/trainer-compensation-badge";
 
 type PeriodKey = "week" | "month" | "quarter" | "year" | "custom";
 
@@ -122,12 +126,6 @@ const computePeriodRange = (period: PeriodKey, customRange?: CustomRange) => {
     start: start.toISOString(),
     end: end.toISOString(),
   };
-};
-
-const formatCompensation = (value?: "HOURLY" | "MONTHLY") => {
-  if (value === "MONTHLY") return "Mensalista";
-  if (value === "HOURLY") return "Horista";
-  return "—";
 };
 
 const formatNumber = (value: number, maximumFractionDigits = 0) =>
@@ -565,9 +563,10 @@ export function ReportsPageView() {
                             {formatNumber(trainer?.studentsManaged ?? 0)}
                           </td>
                           <td className="p-3">
-                            <Badge className="bg-muted text-xs font-medium">
-                              {formatCompensation(trainer?.compensation)}
-                            </Badge>
+                              <TrainerCompensationBadge
+                                compensationType={trainer?.compensation}
+                                fallbackLabel="Não informado"
+                              />
                           </td>
                           <td className="p-3">
                             <div className="flex flex-wrap gap-1">
@@ -621,7 +620,9 @@ export function ReportsPageView() {
                         <div>
                           <p className="font-semibold leading-tight">{name}</p>
                           <p className="text-xs text-muted-foreground">
-                            {formatCompensation(trainer?.compensation)}
+                            {getTrainerCompensationLabel(
+                              trainer?.compensation,
+                            ) ?? "Não informado"}
                           </p>
                         </div>
                       </div>

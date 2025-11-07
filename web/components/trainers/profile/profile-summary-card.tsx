@@ -8,6 +8,7 @@ import {
 } from "@/components/base/entity-profile";
 import { StatusBadge } from "@/components/base/status-badge";
 import type { TrainerResponseDto } from "@/lib/api-client/types.gen";
+import { TrainerCompensationBadge } from "@/components/trainers/trainer-compensation-badge";
 import {
   Calendar,
   CalendarDays,
@@ -79,20 +80,6 @@ const formatJoinDate = (joinDate?: string | null) => {
   } catch {
     return null;
   }
-};
-
-const getCompensationLabel = (
-  compensationType?: TrainerResponseDto["compensationType"],
-) => {
-  if (compensationType === "MONTHLY") {
-    return "Mensalista";
-  }
-
-  if (compensationType === "HOURLY") {
-    return "Horista";
-  }
-
-  return "Compensação não informada";
 };
 
 const getHoursWorkedLabel = (hoursWorked?: number | null) => {
@@ -207,9 +194,11 @@ export function TrainerProfileSummaryCard({
 
   const badges: ReactNode[] = [
     <StatusBadge key="status" active={isActive} className="h-6" />,
-    <Badge key="compensation" variant="outline" className="text-xs">
-      {getCompensationLabel(trainer.compensationType)}
-    </Badge>,
+    <TrainerCompensationBadge
+      key="compensation"
+      compensationType={trainer.compensationType}
+      fallbackLabel="Compensação não informada"
+    />,
   ];
 
   const actions: ReactNode[] = [
