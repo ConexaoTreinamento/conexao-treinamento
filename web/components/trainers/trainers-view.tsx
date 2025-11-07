@@ -235,12 +235,6 @@ function TrainerCard({
   const joinDateLabel = trainer.joinDate
     ? new Date(trainer.joinDate).toLocaleDateString("pt-BR")
     : null;
-  const compensationLabel =
-    trainer.compensationType === "MONTHLY"
-      ? "Mensalista"
-      : trainer.compensationType === "HOURLY"
-        ? "Horista"
-        : null;
 
   const statusBadge: ReactNode = <StatusBadge active={trainer.active} />;
 
@@ -252,7 +246,7 @@ function TrainerCard({
     />,
   ].filter(
     Boolean,
-  ) as ReactNode[];
+  );
 
   const metadata: EntityCardMetadataItem[] = [
     {

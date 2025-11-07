@@ -81,20 +81,6 @@ const formatJoinDate = (joinDate?: string | null) => {
   }
 };
 
-const getCompensationLabel = (
-  compensationType?: TrainerResponseDto["compensationType"],
-) => {
-  if (compensationType === "MONTHLY") {
-    return "Mensalista";
-  }
-
-  if (compensationType === "HOURLY") {
-    return "Horista";
-  }
-
-  return "Compensação não informada";
-};
-
 const getSpecialtiesSection = (specialties?: string[] | null): ReactNode => {
   if (!specialties?.length) {
     return null;
