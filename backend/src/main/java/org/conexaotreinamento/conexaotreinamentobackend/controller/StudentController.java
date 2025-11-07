@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.StudentRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
@@ -27,17 +28,22 @@ import java.util.UUID;
 @RequestMapping("/students")
 @RequiredArgsConstructor
 @Validated
+@Slf4j
 public class StudentController {
 
     private final StudentService studentService;
 
     @PostMapping
     public ResponseEntity<StudentResponseDTO> createStudent(@RequestBody @Valid StudentRequestDTO request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(studentService.create(request));
+        log.info("Creating new student - Name: {}, Email: {}", request.name(), request.email());
+        StudentResponseDTO response = studentService.create(request);
+        log.info("Student created successfully [ID: {}] - Name: {}", response.id(), response.name());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<StudentResponseDTO> findStudentById(@PathVariable UUID id) {
+        log.debug("Fetching student by ID: {}", id);
         return ResponseEntity.ok(studentService.findById(id));
     }
 
@@ -95,17 +101,25 @@ public class StudentController {
 
     @PutMapping("/{id}")
     public ResponseEntity<StudentResponseDTO> updateStudent(@PathVariable UUID id, @RequestBody @Valid StudentRequestDTO request) {
-        return ResponseEntity.ok(studentService.update(id, request));
+        log.info("Updating student [ID: {}] - Name: {}", id, request.name());
+        StudentResponseDTO response = studentService.update(id, request);
+        log.info("Student updated successfully [ID: {}]", id);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteStudent(@PathVariable UUID id) {
+        log.info("Deleting student [ID: {}]", id);
         studentService.delete(id);
+        log.info("Student deleted successfully [ID: {}]", id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/restore")
     public ResponseEntity<StudentResponseDTO> restoreStudent(@PathVariable UUID id) {
-        return ResponseEntity.ok(studentService.restore(id));
+        log.info("Restoring student [ID: {}]", id);
+        StudentResponseDTO response = studentService.restore(id);
+        log.info("Student restored successfully [ID: {}]", id);
+        return ResponseEntity.ok(response);
     }
 }

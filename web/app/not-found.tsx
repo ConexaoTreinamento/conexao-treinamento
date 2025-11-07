@@ -22,7 +22,7 @@ export default function NotFound() {
           </div>
           <div>
             <CardTitle className="text-6xl font-bold text-primary mb-2">404</CardTitle>
-            <CardTitle className="text-2xl font-bold mb-2">Página não encontrada</CardTitle>
+            <CardTitle className="text-xl font-bold mb-2">Página não encontrada</CardTitle>
             <CardDescription className="text-base">
               A página que você está procurando não existe ou foi movida.
             </CardDescription>

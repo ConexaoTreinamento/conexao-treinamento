@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Clock, Award } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Eye, EyeOff } from 'lucide-react'
 import Layout from "@/components/layout"
+import { PageHeader } from "@/components/base/page-header"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { findTrainerByUserIdOptions, findTrainerByIdOptions, updateTrainerAndUserMutation, findAdministratorByUserIdOptions, patchAdministratorMutation } from "@/lib/api-client/@tanstack/react-query.gen"
@@ -25,13 +26,14 @@ export default function ProfilePage() {
   const [token, setToken] = useState<string>("")
   const [userId, setUserId] = useState<string>("")
   const [userRole, setUserRole] = useState<string>("")
-  const [userName, setUserName] = useState<string>("")
   //const [isLoading, setIsLoading] = useState(false)
-  const [specialtiesInput, setSpecialtiesInput] = useState("")
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [securityMessage, setSecurityMessage] = useState({ type: "", text: "" });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { mutate: changePassword, isPending: isChangingPassword } = useMutation({
     ...changeOwnPasswordMutation({ client: apiClient }),
@@ -64,12 +66,10 @@ export default function ProfilePage() {
     const uToken = localStorage.getItem("token") || "";
     const uUserId = localStorage.getItem("userId") || "";
     const role = localStorage.getItem("userRole") || "";
-    const name = localStorage.getItem("userName") || "";
 
     setToken(uToken);
     setUserId(uUserId);
     setUserRole(role);
-    setUserName(name);
   }, []);
 
 
@@ -89,7 +89,7 @@ export default function ProfilePage() {
       client: apiClient,
     }),
     onSuccess: () => {
-      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!" })
+      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!", variant: "success" })
       queryClient.invalidateQueries({ queryKey: ["findAdministratorByUserId"] })
     },
     onError: () => {
@@ -125,7 +125,7 @@ export default function ProfilePage() {
       client: apiClient,
     }),
     onSuccess: () => {
-      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!" })
+      toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!", variant: "success" })
       queryClient.invalidateQueries({ queryKey: ["findTrainerById"] })
     },
     onError: () => {
@@ -163,18 +163,8 @@ export default function ProfilePage() {
     }
   }, [userRole, trainerData, adminDataByUser])
 
-  useEffect(() => {
-    if (profileData.specialties) {
-      setSpecialtiesInput(profileData.specialties.join(", "))
-    }
-  }, [profileData.specialties])
-
   const handleInputChange = (field: string, value: string) => {
-    if (field === "specialties") {
-      setSpecialtiesInput(value)
-    } else {
-      setProfileData(prev => ({ ...prev, [field]: value }))
-    }
+    setProfileData(prev => ({ ...prev, [field]: value }))
   }
 
   const handlePasswordSubmit = () => {
@@ -198,16 +188,6 @@ export default function ProfilePage() {
     });
 
   };
-
-  const handleSpecialtiesBlur = () => {
-    setProfileData(prev => ({
-      ...prev,
-      specialties: specialtiesInput
-        .split(",")
-        .map(s => s.trim())
-        .filter(s => s.length > 0)
-    }))
-  }
 
   const handleSave = () => {
     if (userRole === "admin") {
@@ -233,48 +213,6 @@ export default function ProfilePage() {
     })
   }
 
-  const handleChangePassword = () => {
-    if (userRole === "admin") {
-      if (!adminId) return
-      if (newPassword !== confirmPassword) {
-        toast({
-          title: "Erro",
-          description: "As senhas não coincidem!",
-          variant: "destructive"
-        })
-        return
-      }
-      const [firstName = "", ...rest] = (profileData.name ?? "").split(" ")
-      const lastName = rest.join(" ")
-      updateAdminMutation.mutate({
-        path: { id: String(adminId) },
-        body: {
-          firstName,
-          lastName,
-          email: profileData.email,
-        },
-      })
-      setNewPassword("")
-      setConfirmPassword("")
-      return
-    }
-    if (!trainerId) return
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "Erro",
-        description: "As senhas não coincidem!",
-        variant: "destructive"
-      })
-      return
-    }
-    updateTrainerMutation.mutate({
-      path: { id: String(trainerId) },
-      body: { ...profileData, password: newPassword },
-    })
-    setNewPassword("")
-    setConfirmPassword("")
-  }
-
   const isSaving = (updateAdminMutation.isPending || updateTrainerMutation.isPending)
   const isLoading = isSaving || isChangingPassword || isLoadingAdminId || isLoadingTrainerId || isLoadingTrainer
 
@@ -282,18 +220,16 @@ export default function ProfilePage() {
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Meu Perfil</h1>
-            <p className="text-muted-foreground">
-              Gerencie suas informações pessoais e configurações
-            </p>
-          </div>
-          <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700" disabled={isLoading}>
-            <Save className="w-4 h-4 mr-2" />
-            {isLoading ? "Salvando..." : "Salvar Alterações"}
-          </Button>
-        </div>
+        <PageHeader
+          title="Meu perfil"
+          description="Gerencie suas informações pessoais e configurações"
+          rightActions={(
+            <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700" disabled={isLoading}>
+              <Save className="w-4 h-4 mr-2" />
+              {isLoading ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+          )}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Profile Card */}
@@ -358,7 +294,6 @@ export default function ProfilePage() {
             <Tabs defaultValue="personal" className="space-y-4">
               <TabsList>
                 <TabsTrigger value="personal">Informações</TabsTrigger>
-                {userRole !== "admin" && <TabsTrigger value="professional">Profissional</TabsTrigger>}
                 <TabsTrigger value="security">Segurança</TabsTrigger>
               </TabsList>
 
@@ -426,54 +361,6 @@ export default function ProfilePage() {
                 </Card>
               </TabsContent>
 
-              {userRole !== "admin" && (
-                <TabsContent value="professional">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Award className="w-5 h-5" />
-                        Profissional
-                      </CardTitle>
-                      <CardDescription>
-                        Gerencie suas informações profissionais
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="joinDate">Data de Contratação</Label>
-                          <Input
-                            id="joinDate"
-                            type="date"
-                            value={profileData.joinDate}
-                            onChange={(e) => handleInputChange("joinDate", e.target.value)}
-                            disabled
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="role">Função</Label>
-                          <Input
-                            id="role"
-                            value={userRole === "admin" ? "Administrador" : "Professor"}
-                            disabled
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="specialties">Especialidades</Label>
-                        <Input
-                          id="specialties"
-                          value={specialtiesInput}
-                          onChange={(e) => handleInputChange("specialties", e.target.value)}
-                          onBlur={handleSpecialtiesBlur}
-                          placeholder="Musculação, Pilates, Yoga..."
-                        />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              )}
-
               <TabsContent value="security">
                 <Card>
                   <CardHeader>
@@ -483,51 +370,85 @@ export default function ProfilePage() {
                     </CardTitle>
                     <CardDescription>
                       Gerencie suas configurações de segurança
-                    </CardDescription>
+                    </CardDescription>  
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="currentPassword">Senha Atual</Label>
-                      <Input
-                        id="currentPassword"
-                        type="password"
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        placeholder="Digite sua senha atual"
-                        disabled={isChangingPassword}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="newPassword">Nova Senha</Label>
+                      <Label htmlFor="currentPassword">Senha atual</Label>
+                      <div className="relative">
                         <Input
-                          id="newPassword"
-                          type="password"
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          placeholder="Digite sua nova senha"
-                          disabled={isLoading}
+                            id="currentPassword"
+                            type={showCurrentPassword ? "text" : "password"}
+                            value={currentPassword}
+                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            placeholder="Digite sua senha atual"
+                            disabled={isChangingPassword}
                         />
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        >
+                          {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
-                      <Input
-                        id="confirmPassword"
-                        type="password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        placeholder="Confirme sua nova senha"
-                        disabled={isLoading}
-                      />
+                      <Label htmlFor="newPassword">Nova senha</Label>
+                      <div className="relative">
+                        <Input
+                            id="newPassword"
+                            type={showNewPassword ? "text" : "password"}
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="Digite sua nova senha"
+                            disabled={isLoading}
+                        />
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                        >
+                          {showNewPassword ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirmar nova senha</Label>
+                      <div className="relative">
+                        <Input
+                            id="confirmPassword"
+                            type={showConfirmPassword ? "text" : "password"}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Confirme sua nova senha"
+                            disabled={isLoading}
+                        />
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                          {showConfirmPassword ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
+                        </Button>
+                      </div>
                     </div>
                     {securityMessage.text && (
-                      <div className={securityMessage.type === "error" ? "text-red-600 text-sm" : "text-green-600 text-sm"}>
-                        {securityMessage.text}
-                      </div>
+                        <div
+                            className={securityMessage.type === "error" ? "text-red-600 text-sm" : "text-green-600 text-sm"}>
+                          {securityMessage.text}
+                        </div>
                     )}
                     <Button
-                      variant="outline"
-                      onClick={handlePasswordSubmit}
-                      disabled={isLoading}
+                        variant="outline"
+                        onClick={handlePasswordSubmit}
+                        disabled={isLoading}
                     >
                       {isLoading ? "Alterando..." : "Alterar Senha"}
                     </Button>

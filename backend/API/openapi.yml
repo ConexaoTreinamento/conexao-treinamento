@@ -1,0 +1,3600 @@
+openapi: 3.1.0
+info:
+  title: My API
+  version: v1
+servers:
+- url: http://localhost:8080
+  description: Generated server url
+security:
+- bearerAuth: []
+paths:
+  /trainers/{id}:
+    get:
+      tags:
+      - trainer-controller
+      operationId: findTrainerById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/TrainerListItemResponseDTO'
+    put:
+      tags:
+      - trainer-controller
+      operationId: updateTrainerAndUser
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainerCreateRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/TrainerResponseDTO'
+    delete:
+      tags:
+      - trainer-controller
+      operationId: softDeleteTrainerUser
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+  /trainer-schedules/{id}:
+    get:
+      tags:
+      - trainer-schedule-controller
+      operationId: getScheduleById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/TrainerScheduleResponseDTO'
+    put:
+      tags:
+      - trainer-schedule-controller
+      operationId: updateSchedule
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainerScheduleRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/TrainerScheduleResponseDTO'
+    delete:
+      tags:
+      - trainer-schedule-controller
+      operationId: deleteSchedule
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+  /students/{studentId}/evaluations/{evaluationId}:
+    get:
+      tags:
+      - physical-evaluation-controller
+      operationId: getEvaluation
+      parameters:
+      - name: evaluationId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PhysicalEvaluationResponseDTO'
+    put:
+      tags:
+      - physical-evaluation-controller
+      operationId: updateEvaluation
+      parameters:
+      - name: evaluationId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhysicalEvaluationRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PhysicalEvaluationResponseDTO'
+    delete:
+      tags:
+      - physical-evaluation-controller
+      operationId: deleteEvaluation
+      parameters:
+      - name: evaluationId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+  /students/{id}:
+    get:
+      tags:
+      - student-controller
+      operationId: findStudentById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/StudentResponseDTO'
+    put:
+      tags:
+      - student-controller
+      operationId: updateStudent
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/StudentResponseDTO'
+    delete:
+      tags:
+      - student-controller
+      operationId: deleteStudent
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+  /exercises/{id}:
+    get:
+      tags:
+      - exercise-controller
+      operationId: findExerciseById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ExerciseResponseDTO'
+    put:
+      tags:
+      - exercise-controller
+      operationId: updateExercise
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ExerciseResponseDTO'
+    delete:
+      tags:
+      - exercise-controller
+      operationId: deleteExercise
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+    patch:
+      tags:
+      - exercise-controller
+      operationId: patchExercise
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchExerciseRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ExerciseResponseDTO'
+  /events/{id}:
+    get:
+      tags:
+      - event-controller
+      operationId: findEventById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/EventResponseDTO'
+    put:
+      tags:
+      - event-controller
+      operationId: updateEvent
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/EventResponseDTO'
+    delete:
+      tags:
+      - event-controller
+      operationId: deleteEvent
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+    patch:
+      tags:
+      - event-controller
+      operationId: patchEvent
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchEventRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/EventResponseDTO'
+  /administrators/{id}:
+    get:
+      tags:
+      - administrator-controller
+      operationId: findAdministratorById
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/AdministratorListItemResponseDTO'
+    put:
+      tags:
+      - administrator-controller
+      operationId: updateAdministratorAndUser
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdministratorCreateRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/AdministratorResponseDTO'
+    delete:
+      tags:
+      - administrator-controller
+      operationId: softDeleteAdministratorUser
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+    patch:
+      tags:
+      - administrator-controller
+      operationId: patchAdministrator
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchAdministratorRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/AdministratorResponseDTO'
+  /users:
+    get:
+      tags:
+      - user-controller
+      operationId: getAllUsersSimple
+      parameters:
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/Pageable'
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PageUserResponseDTO'
+    post:
+      tags:
+      - user-controller
+      operationId: createUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/UserResponseDTO'
+  /users/me/change-password:
+    post:
+      tags:
+      - user-controller
+      operationId: changeOwnPassword
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+  /trainers:
+    get:
+      tags:
+      - trainer-controller
+      operationId: findAllTrainers
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrainerListItemResponseDTO'
+    post:
+      tags:
+      - trainer-controller
+      operationId: createTrainerAndUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainerCreateRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/TrainerListItemResponseDTO'
+  /trainer-schedules:
+    get:
+      tags:
+      - trainer-schedule-controller
+      operationId: getAllSchedules
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrainerScheduleResponseDTO'
+    post:
+      tags:
+      - trainer-schedule-controller
+      operationId: createSchedule
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainerScheduleRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/TrainerScheduleResponseDTO'
+  /students:
+    get:
+      tags:
+      - student-controller
+      operationId: findAllStudents
+      parameters:
+      - name: search
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: gender
+        in: query
+        required: false
+        schema:
+          type: string
+          pattern: (?i)^[MFO]$
+      - name: profession
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: minAge
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          maximum: 150
+          minimum: 0
+      - name: maxAge
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          maximum: 150
+          minimum: 0
+      - name: registrationPeriodMinDate
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: registrationPeriodMaxDate
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+      - name: includeInactive
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/Pageable'
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PageStudentResponseDTO'
+    post:
+      tags:
+      - student-controller
+      operationId: createStudent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/StudentResponseDTO'
+  /students/{studentId}/evaluations:
+    get:
+      tags:
+      - physical-evaluation-controller
+      operationId: getAllEvaluations
+      parameters:
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PhysicalEvaluationResponseDTO'
+    post:
+      tags:
+      - physical-evaluation-controller
+      operationId: createEvaluation
+      parameters:
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhysicalEvaluationRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PhysicalEvaluationResponseDTO'
+  /schedule/sessions/{sessionId}:
+    get:
+      tags:
+      - schedule-controller
+      operationId: getSession
+      parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: trainerId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/SessionResponseDTO'
+    post:
+      tags:
+      - schedule-controller
+      operationId: updateSession
+      parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionUpdateRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+  /schedule/sessions/{sessionId}/trainer:
+    post:
+      tags:
+      - schedule-controller
+      operationId: updateSessionTrainer
+      parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionTrainerUpdateRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+  /schedule/sessions/{sessionId}/participants:
+    post:
+      tags:
+      - schedule-controller
+      operationId: addSessionParticipant
+      parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionParticipantAddRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+  /schedule/sessions/{sessionId}/participants/{studentId}/presence:
+    post:
+      tags:
+      - schedule-controller
+      operationId: updatePresence
+      parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionParticipantPresenceRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+  /schedule/sessions/{sessionId}/participants/{studentId}/exercises:
+    post:
+      tags:
+      - schedule-controller
+      operationId: addRegisteredParticipantExercise
+      parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipantExerciseCreateRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: uuid
+  /schedule/sessions/{sessionId}/cancel:
+    post:
+      tags:
+      - schedule-controller
+      operationId: cancelOrRestoreSession
+      parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionCancelRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+  /schedule/sessions/one-off:
+    post:
+      tags:
+      - schedule-controller
+      operationId: createOneOffSession
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OneOffSessionCreateRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/SessionResponseDTO'
+  /plans:
+    get:
+      tags:
+      - student-plan-controller
+      operationId: getAllPlans
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentPlanResponseDTO'
+    post:
+      tags:
+      - student-plan-controller
+      operationId: createPlan
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentPlanRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/StudentPlanResponseDTO'
+  /plans/students/{studentId}/assign:
+    post:
+      tags:
+      - student-plan-controller
+      operationId: assignPlanToStudent
+      parameters:
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignPlanRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/StudentPlanAssignmentResponseDTO'
+  /exercises:
+    get:
+      tags:
+      - exercise-controller
+      operationId: findAllExercises
+      parameters:
+      - name: search
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: includeInactive
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/Pageable'
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PageExerciseResponseDTO'
+    post:
+      tags:
+      - exercise-controller
+      operationId: createExercise
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ExerciseResponseDTO'
+  /events:
+    get:
+      tags:
+      - event-controller
+      operationId: findAllEvents
+      parameters:
+      - name: search
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: includeInactive
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EventResponseDTO'
+    post:
+      tags:
+      - event-controller
+      operationId: createEvent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/EventResponseDTO'
+  /events/{id}/participants/{studentId}:
+    post:
+      tags:
+      - event-controller
+      operationId: addParticipant
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/EventResponseDTO'
+    delete:
+      tags:
+      - event-controller
+      operationId: removeParticipant
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+  /commitments/students/{studentId}/sessions/{sessionSeriesId}:
+    post:
+      tags:
+      - student-commitment-controller
+      operationId: updateCommitment
+      parameters:
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: sessionSeriesId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentCommitmentRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/CommitmentDetailResponseDTO'
+  /commitments/students/{studentId}/bulk:
+    post:
+      tags:
+      - student-commitment-controller
+      operationId: bulkUpdateCommitments
+      parameters:
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkCommitmentRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommitmentDetailResponseDTO'
+  /auth/logout:
+    post:
+      tags:
+      - auth-controller
+      operationId: logout
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+  /auth/login:
+    post:
+      tags:
+      - auth-controller
+      operationId: login
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/JwtResponseDTO'
+      security: []
+  /administrators:
+    get:
+      tags:
+      - administrator-controller
+      operationId: findAllAdministrators
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdministratorListItemResponseDTO'
+    post:
+      tags:
+      - administrator-controller
+      operationId: createAdministratorAndUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdministratorCreateRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/AdministratorListItemResponseDTO'
+  /users/{id}:
+    patch:
+      tags:
+      - user-controller
+      operationId: patch
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchUserRoleRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/UserResponseDTO'
+  /trainers/{id}/reset-password:
+    patch:
+      tags:
+      - trainer-controller
+      operationId: resetPassword
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainerPasswordResetRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+  /students/{id}/restore:
+    patch:
+      tags:
+      - student-controller
+      operationId: restoreStudent
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/StudentResponseDTO'
+  /schedule/sessions/participants/exercises/{exerciseRecordId}:
+    delete:
+      tags:
+      - schedule-controller
+      operationId: removeRegisteredParticipantExercise
+      parameters:
+      - name: exerciseRecordId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+    patch:
+      tags:
+      - schedule-controller
+      operationId: updateRegisteredParticipantExercise
+      parameters:
+      - name: exerciseRecordId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ParticipantExerciseUpdateRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+  /exercises/{id}/restore:
+    patch:
+      tags:
+      - exercise-controller
+      operationId: restoreExercise
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ExerciseResponseDTO'
+  /events/{id}/restore:
+    patch:
+      tags:
+      - event-controller
+      operationId: restoreEvent
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/EventResponseDTO'
+  /events/{id}/participants/{studentId}/attendance:
+    patch:
+      tags:
+      - event-controller
+      operationId: toggleAttendance
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/EventResponseDTO'
+  /administrators/{id}/restore:
+    patch:
+      tags:
+      - administrator-controller
+      operationId: restoreAdministrator
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/AdministratorResponseDTO'
+  /trainers/user-profile/{id}:
+    get:
+      tags:
+      - trainer-controller
+      operationId: findTrainerByUserId
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/TrainerListItemResponseDTO'
+  /trainer-schedules/trainer/{trainerId}:
+    get:
+      tags:
+      - trainer-schedule-controller
+      operationId: getSchedulesByTrainer
+      parameters:
+      - name: trainerId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrainerScheduleResponseDTO'
+  /schedule:
+    get:
+      tags:
+      - schedule-controller
+      operationId: getSchedule
+      parameters:
+      - name: startDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      - name: endDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ScheduleResponseDTO'
+  /reports:
+    get:
+      tags:
+      - reports-controller
+      operationId: getReports
+      parameters:
+      - name: startDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: endDate
+        in: query
+        required: true
+        schema:
+          type: string
+          format: date-time
+      - name: trainerId
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/ReportsResponseDTO'
+  /plans/{planId}:
+    get:
+      tags:
+      - student-plan-controller
+      operationId: getPlanById
+      parameters:
+      - name: planId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/StudentPlanResponseDTO'
+    delete:
+      tags:
+      - student-plan-controller
+      operationId: deletePlan
+      parameters:
+      - name: planId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+  /plans/students/{studentId}/history:
+    get:
+      tags:
+      - student-plan-controller
+      operationId: getStudentPlanHistory
+      parameters:
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentPlanAssignmentResponseDTO'
+  /plans/students/{studentId}/current:
+    get:
+      tags:
+      - student-plan-controller
+      operationId: getCurrentStudentPlan
+      parameters:
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/StudentPlanAssignmentResponseDTO'
+  /plans/assignments/expiring-soon:
+    get:
+      tags:
+      - student-plan-controller
+      operationId: getExpiringSoonAssignments
+      parameters:
+      - name: days
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int32
+          default: 7
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentPlanAssignmentResponseDTO'
+  /plans/assignments/active:
+    get:
+      tags:
+      - student-plan-controller
+      operationId: getAllActiveAssignments
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentPlanAssignmentResponseDTO'
+  /events/lookup/trainers:
+    get:
+      tags:
+      - event-controller
+      operationId: getTrainersForLookup
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrainerLookupResponseDTO'
+  /events/lookup/students:
+    get:
+      tags:
+      - event-controller
+      operationId: getStudentsForLookup
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentLookupResponseDTO'
+  /commitments/students/{studentId}:
+    get:
+      tags:
+      - student-commitment-controller
+      operationId: getStudentCommitments
+      parameters:
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommitmentDetailResponseDTO'
+  /commitments/students/{studentId}/sessions/{sessionSeriesId}/status:
+    get:
+      tags:
+      - student-commitment-controller
+      operationId: getCurrentCommitmentStatus
+      parameters:
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: sessionSeriesId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: timestamp
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+                enum:
+                - ATTENDING
+                - NOT_ATTENDING
+                - TENTATIVE
+  /commitments/students/{studentId}/sessions/{sessionSeriesId}/history:
+    get:
+      tags:
+      - student-commitment-controller
+      operationId: getCommitmentHistory
+      parameters:
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: sessionSeriesId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommitmentDetailResponseDTO'
+  /commitments/students/{studentId}/active:
+    get:
+      tags:
+      - student-commitment-controller
+      operationId: getCurrentActiveCommitments
+      parameters:
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: timestamp
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommitmentDetailResponseDTO'
+  /commitments/sessions/{sessionSeriesId}:
+    get:
+      tags:
+      - student-commitment-controller
+      operationId: getSessionSeriesCommitments
+      parameters:
+      - name: sessionSeriesId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CommitmentDetailResponseDTO'
+  /commitments/available-sessions:
+    get:
+      tags:
+      - student-commitment-controller
+      operationId: getAvailableSessionSeries
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrainerSchedule'
+  /administrators/user-profile/{id}:
+    get:
+      tags:
+      - administrator-controller
+      operationId: findAdministratorByUserId
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/AdministratorListItemResponseDTO'
+  /administrators/test:
+    get:
+      tags:
+      - administrator-controller
+      operationId: test
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+  /administrators/paginated:
+    get:
+      tags:
+      - administrator-controller
+      operationId: findAllPaginated
+      parameters:
+      - name: search
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: includeInactive
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+      - name: pageable
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/Pageable'
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/PageAdministratorListItemResponseDTO'
+  /schedule/sessions/{sessionId}/participants/{studentId}:
+    delete:
+      tags:
+      - schedule-controller
+      operationId: removeSessionParticipant
+      parameters:
+      - name: sessionId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            '*/*':
+              schema:
+                type: string
+components:
+  schemas:
+    TrainerCreateRequestDTO:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        password:
+          type: string
+        address:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        specialties:
+          type: array
+          items:
+            type: string
+        compensationType:
+          type: string
+          enum:
+          - HOURLY
+          - MONTHLY
+    TrainerResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        specialties:
+          type: array
+          items:
+            type: string
+        compensationType:
+          type: string
+          enum:
+          - HOURLY
+          - MONTHLY
+        joinDate:
+          type: string
+          format: date-time
+        hoursWorked:
+          type: integer
+          format: int32
+    TrainerScheduleRequestDTO:
+      type: object
+      properties:
+        trainerId:
+          type: string
+          format: uuid
+        weekday:
+          type: integer
+          format: int32
+          maximum: 6
+          minimum: 0
+        startTime:
+          type: string
+        intervalDuration:
+          type: integer
+          format: int32
+          minimum: 15
+        seriesName:
+          type: string
+          minLength: 1
+          pattern: ^(?!.*__).*$
+      required:
+      - seriesName
+      - startTime
+      - trainerId
+      - weekday
+    TrainerScheduleResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        trainerId:
+          type: string
+          format: uuid
+        weekday:
+          type: integer
+          format: int32
+        startTime:
+          type: string
+        intervalDuration:
+          type: integer
+          format: int32
+        seriesName:
+          type: string
+        effectiveFromTimestamp:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        active:
+          type: boolean
+        weekdayName:
+          type: string
+    CircumferencesDTO:
+      type: object
+      properties:
+        rightArmRelaxed:
+          type: number
+          format: double
+        leftArmRelaxed:
+          type: number
+          format: double
+        rightArmFlexed:
+          type: number
+          format: double
+        leftArmFlexed:
+          type: number
+          format: double
+        waist:
+          type: number
+          format: double
+        abdomen:
+          type: number
+          format: double
+        hip:
+          type: number
+          format: double
+        rightThigh:
+          type: number
+          format: double
+        leftThigh:
+          type: number
+          format: double
+        rightCalf:
+          type: number
+          format: double
+        leftCalf:
+          type: number
+          format: double
+    DiametersDTO:
+      type: object
+      properties:
+        umerus:
+          type: number
+          format: double
+        femur:
+          type: number
+          format: double
+    PhysicalEvaluationRequestDTO:
+      type: object
+      properties:
+        weight:
+          type: number
+          format: double
+        height:
+          type: number
+          format: double
+        circumferences:
+          $ref: '#/components/schemas/CircumferencesDTO'
+        subcutaneousFolds:
+          $ref: '#/components/schemas/SubcutaneousFoldsDTO'
+        diameters:
+          $ref: '#/components/schemas/DiametersDTO'
+      required:
+      - height
+      - weight
+    SubcutaneousFoldsDTO:
+      type: object
+      properties:
+        triceps:
+          type: number
+          format: double
+        thorax:
+          type: number
+          format: double
+        subaxillary:
+          type: number
+          format: double
+        subscapular:
+          type: number
+          format: double
+        abdominal:
+          type: number
+          format: double
+        suprailiac:
+          type: number
+          format: double
+        thigh:
+          type: number
+          format: double
+    PhysicalEvaluationResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        weight:
+          type: number
+          format: double
+        height:
+          type: number
+          format: double
+        bmi:
+          type: number
+          format: double
+        circumferences:
+          $ref: '#/components/schemas/CircumferencesDTO'
+        subcutaneousFolds:
+          $ref: '#/components/schemas/SubcutaneousFoldsDTO'
+        diameters:
+          $ref: '#/components/schemas/DiametersDTO'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    AnamnesisRequestDTO:
+      type: object
+      properties:
+        medication:
+          type: string
+        isDoctorAwareOfPhysicalActivity:
+          type: boolean
+        favoritePhysicalActivity:
+          type: string
+        hasInsomnia:
+          type: string
+          enum:
+          - 'yes'
+          - 'no'
+          - sometimes
+        dietOrientedBy:
+          type: string
+        cardiacProblems:
+          type: string
+        hasHypertension:
+          type: boolean
+        chronicDiseases:
+          type: string
+        difficultiesInPhysicalActivities:
+          type: string
+        medicalOrientationsToAvoidPhysicalActivity:
+          type: string
+        surgeriesInTheLast12Months:
+          type: string
+        respiratoryProblems:
+          type: string
+        jointMuscularBackPain:
+          type: string
+        spinalDiscProblems:
+          type: string
+        diabetes:
+          type: string
+        smokingDuration:
+          type: string
+        alteredCholesterol:
+          type: boolean
+        osteoporosisLocation:
+          type: string
+    PhysicalImpairmentRequestDTO:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+          - visual
+          - auditory
+          - motor
+          - intellectual
+          - other
+        name:
+          type: string
+          maxLength: 255
+          minLength: 0
+        observations:
+          type: string
+      required:
+      - name
+      - type
+    StudentRequestDTO:
+      type: object
+      properties:
+        email:
+          type: string
+          minLength: 1
+        name:
+          type: string
+          maxLength: 100
+          minLength: 0
+        surname:
+          type: string
+          maxLength: 100
+          minLength: 0
+        gender:
+          type: string
+          enum:
+          - M
+          - F
+          - O
+        birthDate:
+          type: string
+          format: date
+        phone:
+          type: string
+          maxLength: 20
+          minLength: 0
+        profession:
+          type: string
+          maxLength: 100
+          minLength: 0
+        street:
+          type: string
+          maxLength: 255
+          minLength: 0
+        number:
+          type: string
+          maxLength: 10
+          minLength: 0
+        complement:
+          type: string
+          maxLength: 100
+          minLength: 0
+        neighborhood:
+          type: string
+          maxLength: 100
+          minLength: 0
+        cep:
+          type: string
+          maxLength: 10
+          minLength: 0
+        emergencyContactName:
+          type: string
+          maxLength: 100
+          minLength: 0
+        emergencyContactPhone:
+          type: string
+          maxLength: 20
+          minLength: 0
+        emergencyContactRelationship:
+          type: string
+          maxLength: 50
+          minLength: 0
+        objectives:
+          type: string
+        observations:
+          type: string
+        anamnesis:
+          $ref: '#/components/schemas/AnamnesisRequestDTO'
+        physicalImpairments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PhysicalImpairmentRequestDTO'
+      required:
+      - birthDate
+      - email
+      - gender
+      - name
+      - surname
+    AnamnesisResponseDTO:
+      type: object
+      properties:
+        medication:
+          type: string
+        isDoctorAwareOfPhysicalActivity:
+          type: boolean
+        favoritePhysicalActivity:
+          type: string
+        hasInsomnia:
+          type: string
+          enum:
+          - 'yes'
+          - 'no'
+          - sometimes
+        dietOrientedBy:
+          type: string
+        cardiacProblems:
+          type: string
+        hasHypertension:
+          type: boolean
+        chronicDiseases:
+          type: string
+        difficultiesInPhysicalActivities:
+          type: string
+        medicalOrientationsToAvoidPhysicalActivity:
+          type: string
+        surgeriesInTheLast12Months:
+          type: string
+        respiratoryProblems:
+          type: string
+        jointMuscularBackPain:
+          type: string
+        spinalDiscProblems:
+          type: string
+        diabetes:
+          type: string
+        smokingDuration:
+          type: string
+        alteredCholesterol:
+          type: boolean
+        osteoporosisLocation:
+          type: string
+    PhysicalImpairmentResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum:
+          - visual
+          - auditory
+          - motor
+          - intellectual
+          - other
+        name:
+          type: string
+        observations:
+          type: string
+    StudentResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        name:
+          type: string
+        surname:
+          type: string
+        gender:
+          type: string
+          enum:
+          - M
+          - F
+          - O
+        birthDate:
+          type: string
+          format: date
+        phone:
+          type: string
+        profession:
+          type: string
+        street:
+          type: string
+        number:
+          type: string
+        complement:
+          type: string
+        neighborhood:
+          type: string
+        cep:
+          type: string
+        emergencyContactName:
+          type: string
+        emergencyContactPhone:
+          type: string
+        emergencyContactRelationship:
+          type: string
+        objectives:
+          type: string
+        observations:
+          type: string
+        registrationDate:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+        anamnesis:
+          $ref: '#/components/schemas/AnamnesisResponseDTO'
+        physicalImpairments:
+          type: array
+          items:
+            $ref: '#/components/schemas/PhysicalImpairmentResponseDTO'
+    ExerciseRequestDTO:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 120
+          minLength: 0
+        description:
+          type: string
+          maxLength: 255
+          minLength: 0
+      required:
+      - name
+    ExerciseResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+    EventRequestDTO:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          minLength: 0
+        date:
+          type: string
+          format: date
+        startTime:
+          type: string
+        endTime:
+          type: string
+        location:
+          type: string
+          maxLength: 255
+          minLength: 0
+        description:
+          type: string
+        trainerId:
+          type: string
+          format: uuid
+        participantIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+      - date
+      - name
+      - trainerId
+    EventParticipantResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        avatar:
+          type: string
+        enrolledAt:
+          type: string
+          format: date-time
+        present:
+          type: boolean
+    EventResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        date:
+          type: string
+          format: date
+        startTime:
+          type: string
+        endTime:
+          type: string
+        location:
+          type: string
+        description:
+          type: string
+        instructorId:
+          type: string
+          format: uuid
+        instructor:
+          type: string
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventParticipantResponseDTO'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+    AdministratorCreateRequestDTO:
+      type: object
+      properties:
+        firstName:
+          type: string
+          maxLength: 100
+          minLength: 0
+        lastName:
+          type: string
+          maxLength: 100
+          minLength: 0
+        email:
+          type: string
+          maxLength: 255
+          minLength: 0
+        password:
+          type: string
+          maxLength: 255
+          minLength: 6
+      required:
+      - email
+      - firstName
+      - lastName
+      - password
+    AdministratorResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    UserCreateRequestDTO:
+      type: object
+      properties:
+        email:
+          type: string
+          maxLength: 120
+          minLength: 0
+        password:
+          type: string
+          maxLength: 2147483647
+          minLength: 6
+        role:
+          type: string
+          enum:
+          - ROLE_ADMIN
+          - ROLE_TRAINER
+          - ROLE_STUDENT
+      required:
+      - email
+      - password
+    UserResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        role:
+          type: string
+          enum:
+          - ROLE_ADMIN
+          - ROLE_TRAINER
+          - ROLE_STUDENT
+    ChangePasswordRequestDTO:
+      type: object
+      properties:
+        oldPassword:
+          type: string
+          minLength: 1
+        newPassword:
+          type: string
+          maxLength: 2147483647
+          minLength: 6
+        confirmPassword:
+          type: string
+          minLength: 1
+      required:
+      - confirmPassword
+      - newPassword
+      - oldPassword
+    TrainerListItemResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        specialties:
+          type: array
+          items:
+            type: string
+        compensationType:
+          type: string
+          enum:
+          - HOURLY
+          - MONTHLY
+        active:
+          type: boolean
+        joinDate:
+          type: string
+          format: date-time
+        hoursWorked:
+          type: integer
+          format: int32
+    Exercise:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+        active:
+          type: boolean
+        inactive:
+          type: boolean
+    ParticipantExercise:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sessionParticipant:
+          $ref: '#/components/schemas/SessionParticipant'
+        exerciseId:
+          type: string
+          format: uuid
+        exercise:
+          $ref: '#/components/schemas/Exercise'
+        setsCompleted:
+          type: integer
+          format: int32
+        repsCompleted:
+          type: integer
+          format: int32
+        weightCompleted:
+          type: number
+          format: double
+        exerciseNotes:
+          type: string
+        done:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+        active:
+          type: boolean
+    ScheduledSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sessionSeriesId:
+          type: string
+          format: uuid
+        sessionId:
+          type: string
+        trainerId:
+          type: string
+          format: uuid
+        trainer:
+          $ref: '#/components/schemas/Trainer'
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        canceled:
+          type: boolean
+        seriesName:
+          type: string
+        notes:
+          type: string
+        instanceOverride:
+          type: boolean
+        effectiveFromTimestamp:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+        active:
+          type: boolean
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionParticipant'
+    SessionParticipant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        scheduledSession:
+          $ref: '#/components/schemas/ScheduledSession'
+        studentId:
+          type: string
+          format: uuid
+        student:
+          $ref: '#/components/schemas/Student'
+        participationType:
+          type: string
+          enum:
+          - INCLUDED
+          - EXCLUDED
+        attendanceNotes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+        active:
+          type: boolean
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipantExercise'
+        present:
+          type: boolean
+        included:
+          type: boolean
+        excluded:
+          type: boolean
+    SessionUpdateRequestDTO:
+      type: object
+      properties:
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionParticipant'
+        notes:
+          type: string
+    Student:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        name:
+          type: string
+        surname:
+          type: string
+        gender:
+          type: string
+          enum:
+          - M
+          - F
+          - O
+        birthDate:
+          type: string
+          format: date
+        phone:
+          type: string
+        profession:
+          type: string
+        street:
+          type: string
+        number:
+          type: string
+        complement:
+          type: string
+        neighborhood:
+          type: string
+        cep:
+          type: string
+        emergencyContactName:
+          type: string
+        emergencyContactPhone:
+          type: string
+        emergencyContactRelationship:
+          type: string
+        objectives:
+          type: string
+        observations:
+          type: string
+        registrationDate:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+        active:
+          type: boolean
+        inactive:
+          type: boolean
+    Trainer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        specialties:
+          type: array
+          items:
+            type: string
+        compensationType:
+          type: string
+          enum:
+          - HOURLY
+          - MONTHLY
+    SessionTrainerUpdateRequestDTO:
+      type: object
+      properties:
+        trainerId:
+          type: string
+          format: uuid
+    SessionParticipantAddRequestDTO:
+      type: object
+      properties:
+        studentId:
+          type: string
+          format: uuid
+    SessionParticipantPresenceRequestDTO:
+      type: object
+      properties:
+        present:
+          type: boolean
+        notes:
+          type: string
+    ParticipantExerciseCreateRequestDTO:
+      type: object
+      properties:
+        exerciseId:
+          type: string
+          format: uuid
+        setsCompleted:
+          type: integer
+          format: int32
+        repsCompleted:
+          type: integer
+          format: int32
+        weightCompleted:
+          type: number
+          format: double
+        exerciseNotes:
+          type: string
+        done:
+          type: boolean
+    SessionCancelRequestDTO:
+      type: object
+      properties:
+        cancel:
+          type: boolean
+        reason:
+          type: string
+    OneOffSessionCreateRequestDTO:
+      type: object
+      properties:
+        seriesName:
+          type: string
+        trainerId:
+          type: string
+          format: uuid
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        notes:
+          type: string
+    ParticipantExerciseResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        exerciseId:
+          type: string
+          format: uuid
+        exerciseName:
+          type: string
+        setsCompleted:
+          type: integer
+          format: int32
+        repsCompleted:
+          type: integer
+          format: int32
+        weightCompleted:
+          type: number
+          format: double
+        exerciseNotes:
+          type: string
+        done:
+          type: boolean
+    SessionResponseDTO:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        trainerId:
+          type: string
+          format: uuid
+        trainerName:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        seriesName:
+          type: string
+        notes:
+          type: string
+        instanceOverride:
+          type: boolean
+        students:
+          type: array
+          items:
+            $ref: '#/components/schemas/StudentCommitmentResponseDTO'
+        canceled:
+          type: boolean
+        presentCount:
+          type: integer
+          format: int32
+    StudentCommitmentResponseDTO:
+      type: object
+      properties:
+        studentId:
+          type: string
+          format: uuid
+        studentName:
+          type: string
+        commitmentStatus:
+          type: string
+          enum:
+          - ATTENDING
+          - NOT_ATTENDING
+          - TENTATIVE
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExerciseResponseDTO'
+        participantExercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParticipantExerciseResponseDTO'
+        present:
+          type: boolean
+        attendanceNotes:
+          type: string
+    StudentPlanRequestDTO:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        maxDays:
+          type: integer
+          format: int32
+        durationDays:
+          type: integer
+          format: int32
+        description:
+          type: string
+      required:
+      - durationDays
+      - maxDays
+      - name
+    StudentPlanResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        maxDays:
+          type: integer
+          format: int32
+        durationDays:
+          type: integer
+          format: int32
+        description:
+          type: string
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    AssignPlanRequestDTO:
+      type: object
+      properties:
+        planId:
+          type: string
+          format: uuid
+        startDate:
+          type: string
+          format: date
+        assignmentNotes:
+          type: string
+      required:
+      - planId
+      - startDate
+    StudentPlanAssignmentResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        studentName:
+          type: string
+        planId:
+          type: string
+          format: uuid
+        planName:
+          type: string
+        planMaxDays:
+          type: integer
+          format: int32
+        planDurationDays:
+          type: integer
+          format: int32
+        durationDays:
+          type: integer
+          format: int32
+        startDate:
+          type: string
+          format: date
+        assignedByUserId:
+          type: string
+          format: uuid
+        assignedByUserEmail:
+          type: string
+        assignmentNotes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        active:
+          type: boolean
+        expired:
+          type: boolean
+        expiringSoon:
+          type: boolean
+        daysRemaining:
+          type: integer
+          format: int64
+    StudentCommitmentRequestDTO:
+      type: object
+      properties:
+        commitmentStatus:
+          type: string
+          enum:
+          - ATTENDING
+          - NOT_ATTENDING
+          - TENTATIVE
+        effectiveFromTimestamp:
+          type: string
+          format: date-time
+      required:
+      - commitmentStatus
+    CommitmentDetailResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        studentId:
+          type: string
+          format: uuid
+        studentName:
+          type: string
+        sessionSeriesId:
+          type: string
+          format: uuid
+        seriesName:
+          type: string
+        commitmentStatus:
+          type: string
+          enum:
+          - ATTENDING
+          - NOT_ATTENDING
+          - TENTATIVE
+        effectiveFromTimestamp:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+    BulkCommitmentRequestDTO:
+      type: object
+      properties:
+        sessionSeriesIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+          minItems: 1
+        commitmentStatus:
+          type: string
+          enum:
+          - ATTENDING
+          - NOT_ATTENDING
+          - TENTATIVE
+        effectiveFromTimestamp:
+          type: string
+          format: date-time
+      required:
+      - commitmentStatus
+      - sessionSeriesIds
+    LoginRequestDTO:
+      type: object
+      properties:
+        email:
+          type: string
+          maxLength: 120
+          minLength: 0
+        password:
+          type: string
+          minLength: 1
+      required:
+      - email
+      - password
+    JwtResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        token:
+          type: string
+    AdministratorListItemResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        active:
+          type: boolean
+        joinDate:
+          type: string
+          format: date-time
+    PatchUserRoleRequestDTO:
+      type: object
+      properties:
+        role:
+          type: string
+          enum:
+          - ROLE_ADMIN
+          - ROLE_TRAINER
+          - ROLE_STUDENT
+    TrainerPasswordResetRequestDTO:
+      type: object
+      properties:
+        newPassword:
+          type: string
+          maxLength: 2147483647
+          minLength: 6
+      required:
+      - newPassword
+    ParticipantExerciseUpdateRequestDTO:
+      type: object
+      properties:
+        setsCompleted:
+          type: integer
+          format: int32
+        repsCompleted:
+          type: integer
+          format: int32
+        weightCompleted:
+          type: number
+          format: double
+        exerciseNotes:
+          type: string
+        done:
+          type: boolean
+    PatchExerciseRequestDTO:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 120
+          minLength: 0
+        description:
+          type: string
+          maxLength: 255
+          minLength: 0
+    PatchEventRequestDTO:
+      type: object
+      properties:
+        name:
+          type: string
+        date:
+          type: string
+          format: date
+        startTime:
+          type: string
+        endTime:
+          type: string
+        location:
+          type: string
+          maxLength: 255
+          minLength: 0
+        description:
+          type: string
+        trainerId:
+          type: string
+          format: uuid
+        participantIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+    PatchAdministratorRequestDTO:
+      type: object
+      properties:
+        firstName:
+          type: string
+          maxLength: 100
+          minLength: 0
+        lastName:
+          type: string
+          maxLength: 100
+          minLength: 0
+        email:
+          type: string
+          maxLength: 255
+          minLength: 0
+    Pageable:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 1
+        sort:
+          type: array
+          items:
+            type: string
+    PageUserResponseDTO:
+      type: object
+      properties:
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponseDTO'
+        number:
+          type: integer
+          format: int32
+        sort:
+          $ref: '#/components/schemas/SortObject'
+        numberOfElements:
+          type: integer
+          format: int32
+        pageable:
+          $ref: '#/components/schemas/PageableObject'
+        first:
+          type: boolean
+        last:
+          type: boolean
+        empty:
+          type: boolean
+    PageableObject:
+      type: object
+      properties:
+        offset:
+          type: integer
+          format: int64
+        sort:
+          $ref: '#/components/schemas/SortObject'
+        paged:
+          type: boolean
+        pageNumber:
+          type: integer
+          format: int32
+        pageSize:
+          type: integer
+          format: int32
+        unpaged:
+          type: boolean
+    SortObject:
+      type: object
+      properties:
+        empty:
+          type: boolean
+        sorted:
+          type: boolean
+        unsorted:
+          type: boolean
+    PageStudentResponseDTO:
+      type: object
+      properties:
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/StudentResponseDTO'
+        number:
+          type: integer
+          format: int32
+        sort:
+          $ref: '#/components/schemas/SortObject'
+        numberOfElements:
+          type: integer
+          format: int32
+        pageable:
+          $ref: '#/components/schemas/PageableObject'
+        first:
+          type: boolean
+        last:
+          type: boolean
+        empty:
+          type: boolean
+    ScheduleResponseDTO:
+      type: object
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionResponseDTO'
+    AgeDistributionResponseDTO:
+      type: object
+      properties:
+        ageRange:
+          type: string
+        count:
+          type: integer
+          format: int32
+        percentage:
+          type: number
+          format: double
+    ReportsResponseDTO:
+      type: object
+      properties:
+        trainerReports:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrainerReportResponseDTO'
+        ageDistribution:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgeDistributionResponseDTO'
+    TrainerReportResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        hoursWorked:
+          type: number
+          format: double
+        classesGiven:
+          type: integer
+          format: int32
+        studentsManaged:
+          type: integer
+          format: int32
+        compensation:
+          type: string
+          enum:
+          - HOURLY
+          - MONTHLY
+        specialties:
+          type: array
+          items:
+            type: string
+    PageExerciseResponseDTO:
+      type: object
+      properties:
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExerciseResponseDTO'
+        number:
+          type: integer
+          format: int32
+        sort:
+          $ref: '#/components/schemas/SortObject'
+        numberOfElements:
+          type: integer
+          format: int32
+        pageable:
+          $ref: '#/components/schemas/PageableObject'
+        first:
+          type: boolean
+        last:
+          type: boolean
+        empty:
+          type: boolean
+    TrainerLookupResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+    StudentLookupResponseDTO:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+    TrainerSchedule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        trainerId:
+          type: string
+          format: uuid
+        weekday:
+          type: integer
+          format: int32
+        startTime:
+          type: string
+        intervalDuration:
+          type: integer
+          format: int32
+        seriesName:
+          type: string
+        effectiveFromTimestamp:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+        active:
+          type: boolean
+        dayOfWeek:
+          type: string
+          enum:
+          - MONDAY
+          - TUESDAY
+          - WEDNESDAY
+          - THURSDAY
+          - FRIDAY
+          - SATURDAY
+          - SUNDAY
+    PageAdministratorListItemResponseDTO:
+      type: object
+      properties:
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdministratorListItemResponseDTO'
+        number:
+          type: integer
+          format: int32
+        sort:
+          $ref: '#/components/schemas/SortObject'
+        numberOfElements:
+          type: integer
+          format: int32
+        pageable:
+          $ref: '#/components/schemas/PageableObject'
+        first:
+          type: boolean
+        last:
+          type: boolean
+        empty:
+          type: boolean
+  securitySchemes:
+    bearerAuth:
+      type: http
+      name: bearerAuth
+      scheme: bearer
+      bearerFormat: JWT
+

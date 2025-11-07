@@ -2,6 +2,7 @@ package org.conexaotreinamento.conexaotreinamentobackend.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
@@ -12,11 +13,13 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ApiError> handleResponseStatus(ResponseStatusException ex, HttpServletRequest req) {
+        log.warn("ResponseStatusException: {} - {} [{}]", ex.getStatusCode(), ex.getReason(), req.getRequestURI());
         return build(HttpStatus.valueOf(ex.getStatusCode().value()), ex.getReason(), req, null);
     }
 
@@ -25,6 +28,7 @@ public class GlobalExceptionHandler {
         Map<String, String> fields = new LinkedHashMap<>();
         ex.getBindingResult().getFieldErrors()
                 .forEach(fe -> fields.put(fe.getField(), fe.getDefaultMessage()));
+        log.warn("Validation failed for {} - Fields: {}", req.getRequestURI(), fields);
         return build(HttpStatus.BAD_REQUEST, "Validation failed", req, fields);
     }
 
@@ -42,6 +46,7 @@ public class GlobalExceptionHandler {
         fields.put("error_type", ex.getClass().getSimpleName());
         fields.put("timestamp", Instant.now().toString());
 
+        log.error("Internal server error at {} - {}: {}", req.getRequestURI(), ex.getClass().getSimpleName(), ex.getMessage(), ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", req, fields);
     }
 

@@ -21,27 +21,33 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class ExerciseService {
     private final ExerciseRepository repository;
 
     @Transactional
     public ExerciseResponseDTO create(ExerciseRequestDTO request) {
+        log.debug("Creating exercise - name: {}", request.name());
         if (repository.existsByNameIgnoringCaseAndDeletedAtIsNull(request.name())) {
+            log.warn("Exercise creation failed - Name already exists: {}", request.name());
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Exercise already exists");
         }
 
         Exercise exercise = new Exercise(request.name(), request.description());
         Exercise saved = repository.save(exercise);
+        log.info("Exercise created successfully [ID: {}] - Name: {}", saved.getId(), saved.getName());
         return ExerciseResponseDTO.fromEntity(saved);
     }
 
     public ExerciseResponseDTO findById(UUID id) {
+        log.debug("Finding exercise by ID: {}", id);
         Exercise exercise = repository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Exercise not found"));
         return ExerciseResponseDTO.fromEntity(exercise);
     }
 
     public Page<ExerciseResponseDTO> findAll(String search, Pageable pageable, boolean includeInactive) {
+        log.debug("Listing exercises - search: {}, includeInactive: {}, page: {}", search, includeInactive, pageable);
 
         Page<Exercise> exercises;
 
@@ -68,6 +74,7 @@ public class ExerciseService {
 
     @Transactional
     public ExerciseResponseDTO update(UUID id, ExerciseRequestDTO request) {
+        log.debug("Updating exercise [ID: {}] - newName: {}", id, request.name());
         Exercise exercise = repository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Exercise not found"));
 
@@ -80,19 +87,23 @@ public class ExerciseService {
 
         exercise.setName(request.name());
         exercise.setDescription(request.description());
+        log.info("Exercise updated successfully [ID: {}] - Name: {}", id, exercise.getName());
         return ExerciseResponseDTO.fromEntity(exercise);
     }
 
     @Transactional
     public void delete(UUID id) {
+        log.debug("Deleting exercise [ID: {}]", id);
         Exercise exercise = repository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Exercise not found"));
 
         exercise.deactivate();
+        log.info("Exercise deactivated successfully [ID: {}]", id);
     }
 
     @Transactional
     public ExerciseResponseDTO restore(UUID id) {
+        log.debug("Restoring exercise [ID: {}]", id);
         Exercise exercise = repository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Exercise not found"));
         
@@ -101,11 +112,13 @@ public class ExerciseService {
         }
 
         exercise.activate();
+        log.info("Exercise restored successfully [ID: {}]", id);
         return ExerciseResponseDTO.fromEntity(exercise);
     }
 
     @Transactional
     public ExerciseResponseDTO patch(UUID id, PatchExerciseRequestDTO request) {
+        log.debug("Patching exercise [ID: {}]", id);
         Exercise exercise = repository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Exercise not found"));
 
@@ -121,6 +134,7 @@ public class ExerciseService {
             exercise.setDescription(request.description());
         }
 
+        log.info("Exercise patched successfully [ID: {}]", id);
         return ExerciseResponseDTO.fromEntity(exercise);
     }
 }

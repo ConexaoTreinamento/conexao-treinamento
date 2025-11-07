@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListAdministratorsDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AdministratorListItemResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Administrator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,28 +19,28 @@ public interface AdministratorRepository extends JpaRepository<Administrator, UU
             " WHERE LOWER(u.email) = LOWER(:email) AND u.deletedAt IS NULL")
     boolean existsByEmailIgnoreCase(String email);
 
-    @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListAdministratorsDTO(" +
+    @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.AdministratorListItemResponseDTO(" +
             "a.id, a.firstName, a.lastName, u.email, " +
             "CONCAT(a.firstName, ' ', a.lastName), (u.deletedAt IS NULL), u.createdAt) " +
             " FROM Administrator a INNER JOIN User u ON a.userId = u.id" +
             " WHERE a.id = :id AND u.deletedAt IS NULL")
-    Optional<ListAdministratorsDTO> findActiveAdministratorProfileById(UUID id);
+    Optional<AdministratorListItemResponseDTO> findActiveAdministratorProfileById(UUID id);
 
-    @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListAdministratorsDTO(" +
+    @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.AdministratorListItemResponseDTO(" +
             "a.id, a.firstName, a.lastName, u.email, " +
             "CONCAT(a.firstName, ' ', a.lastName), (u.deletedAt IS NULL), u.createdAt) " +
             " FROM Administrator a INNER JOIN User u ON a.userId = u.id" +
             " WHERE a.userId = :user_id AND u.deletedAt IS NULL")
-    Optional<ListAdministratorsDTO> findActiveAdministratorByUserId(UUID user_id);
+    Optional<AdministratorListItemResponseDTO> findActiveAdministratorByUserId(UUID user_id);
 
-    @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListAdministratorsDTO(" +
+    @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.AdministratorListItemResponseDTO(" +
             "a.id, a.firstName, a.lastName, u.email, " +
             "CONCAT(a.firstName, ' ', a.lastName), (u.deletedAt IS NULL), u.createdAt) " +
             " FROM Administrator a INNER JOIN User u ON a.userId = u.id" +
             " WHERE (:includeInactive = true OR u.deletedAt IS NULL)")
-    List<ListAdministratorsDTO> findAllAdministratorProfiles(Boolean includeInactive);
+    List<AdministratorListItemResponseDTO> findAllAdministratorProfiles(Boolean includeInactive);
 
-    @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListAdministratorsDTO(" +
+    @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.AdministratorListItemResponseDTO(" +
             "a.id, a.firstName, a.lastName, u.email, " +
             "CONCAT(a.firstName, ' ', a.lastName), (u.deletedAt IS NULL), u.createdAt) " +
             " FROM Administrator a INNER JOIN User u ON a.userId = u.id" +
@@ -48,27 +48,27 @@ public interface AdministratorRepository extends JpaRepository<Administrator, UU
             " AND (LOWER(a.firstName) LIKE :search " +
             " OR LOWER(a.lastName) LIKE :search " +
             " OR LOWER(u.email) LIKE :search)")
-    List<ListAdministratorsDTO> findBySearchTermAndActive(@Param("search") String search);
+    List<AdministratorListItemResponseDTO> findBySearchTermAndActive(@Param("search") String search);
 
-    @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListAdministratorsDTO(" +
+    @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.AdministratorListItemResponseDTO(" +
             "a.id, a.firstName, a.lastName, u.email, " +
             "CONCAT(a.firstName, ' ', a.lastName), (u.deletedAt IS NULL), u.createdAt) " +
             " FROM Administrator a INNER JOIN User u ON a.userId = u.id" +
             " WHERE (LOWER(a.firstName) LIKE :search " +
             " OR LOWER(a.lastName) LIKE :search " +
             " OR LOWER(u.email) LIKE :search)")
-    List<ListAdministratorsDTO> findBySearchTermIncludingInactive(@Param("search") String search);
+    List<AdministratorListItemResponseDTO> findBySearchTermIncludingInactive(@Param("search") String search);
 
-    @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListAdministratorsDTO(" +
+    @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.AdministratorListItemResponseDTO(" +
             "a.id, a.firstName, a.lastName, u.email, " +
             "CONCAT(a.firstName, ' ', a.lastName), (u.deletedAt IS NULL), u.createdAt) " +
             " FROM Administrator a INNER JOIN User u ON a.userId = u.id" +
             " WHERE u.deletedAt IS NULL")
-    Page<ListAdministratorsDTO> findActiveAdministratorsPage(Pageable pageable);
+    Page<AdministratorListItemResponseDTO> findActiveAdministratorsPage(Pageable pageable);
 
-    @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListAdministratorsDTO(" +
+    @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.AdministratorListItemResponseDTO(" +
             "a.id, a.firstName, a.lastName, u.email, " +
             "CONCAT(a.firstName, ' ', a.lastName), (u.deletedAt IS NULL), u.createdAt) " +
             " FROM Administrator a INNER JOIN User u ON a.userId = u.id")
-    Page<ListAdministratorsDTO> findAllAdministratorsPage(Pageable pageable);
+    Page<AdministratorListItemResponseDTO> findAllAdministratorsPage(Pageable pageable);
 }
