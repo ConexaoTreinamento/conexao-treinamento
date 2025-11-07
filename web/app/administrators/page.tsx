@@ -21,6 +21,7 @@ import Layout from "@/components/layout"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { createAdministratorMutation, findAllAdministratorsOptions } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
+import { useForm } from "react-hook-form"
 
 interface FormData {
   firstName: string
@@ -29,29 +30,11 @@ interface FormData {
   password: string
 }
 
-interface ValidationErrors {
-  firstName?: string
-  lastName?: string
-  email?: string
-  password?: string
-  general?: string
-}
-
 export default function AdministratorsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [userRole, setUserRole] = useState<string>("")
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
-
-  // Form state
-  const [formData, setFormData] = useState<FormData>({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-  })
-  const [errors, setErrors] = useState<ValidationErrors>({})
-  const [touched, setTouched] = useState<{ [key: string]: boolean }>({})
 
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -89,98 +72,52 @@ export default function AdministratorsPage() {
     )
   })
 
-  // ---------------- Validation helpers ----------------
-  const validateField = (name: string, value: string): string => {
-    switch (name) {
-      case "firstName":
-        if (!value.trim()) return "Nome é obrigatório"
-        if (value.length > 100) return "Nome deve ter no máximo 100 caracteres"
-        return ""
-      case "lastName":
-        if (!value.trim()) return "Sobrenome é obrigatório"
-        if (value.length > 100) return "Sobrenome deve ter no máximo 100 caracteres"
-        return ""
-      case "email":
-        if (!value.trim()) return "Email é obrigatório"
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(value)) return "Email deve ter um formato válido (nome@domínio)"
-        if (value.length > 255) return "Email deve ter no máximo 255 caracteres"
-        return ""
-      case "password":
-        if (!value.trim()) return "Senha é obrigatória"
-        if (value.length < 6) return "Senha deve ter pelo menos 6 caracteres"
-        if (value.length > 255) return "Senha deve ter no máximo 255 caracteres"
-        return ""
-      default:
-        return ""
-    }
-  }
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<FormData>({
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      password: "",
+    },
+  })
 
-  const handleFieldChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
-    if (touched[name]) {
-      setErrors((prev) => ({ ...prev, [name]: validateField(name, value) }))
-    }
-  }
-
-  const handleFieldBlur = (name: string) => {
-    setTouched((prev) => ({ ...prev, [name]: true }))
-    setErrors((prev) => ({ ...prev, [name]: validateField(name, formData[name as keyof FormData]) }))
-  }
-
-  const validateForm = (): boolean => {
-    const newErrors: ValidationErrors = {}
-    Object.keys(formData).forEach((key) => {
-      const error = validateField(key, formData[key as keyof FormData])
-      if (error) newErrors[key as keyof ValidationErrors] = error
-    })
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const resetForm = () => {
-    setFormData({ firstName: "", lastName: "", email: "", password: "" })
-    setErrors({})
-    setTouched({})
-    setShowSuccess(false)
-  }
-
-  // Submit handler
-  const handleCreateAdmin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setTouched({ firstName: true, lastName: true, email: true, password: true })
-
-    if (!validateForm()) return
-
+  const onSubmit = async (data: FormData) => {
     try {
       await createAdministrator({
-        body: formData,
+        body: data,
         client: apiClient,
       })
       setShowSuccess(true)
-      resetForm()
+      reset()
       await queryClient.invalidateQueries({
-        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === "findAllAdministrators",
+        predicate: (q) =>
+          Array.isArray(q.queryKey) && q.queryKey[0]?._id === "findAllAdministrators",
       })
+      setTimeout(() => setShowSuccess(false), 3000)
       setIsCreateOpen(false)
-      setShowSuccess(false)
     } catch (error: any) {
       if (error?.status === 409) {
-        setErrors({ email: "Email já está em uso" })
-      } else if (error?.status === 400 && error?.fieldErrors) {
-        setErrors(error.fieldErrors)
+        alert("Email já está em uso.")
       } else {
-        setErrors({ general: error?.message || "Erro ao cadastrar administrador" })
+        alert("Erro ao cadastrar administrador.")
       }
     }
   }
 
-  if (userRole !== "admin") return null
-
   const handleDialogOpenChange = (open: boolean) => {
     setIsCreateOpen(open)
-    if (!open) resetForm()
+    if (!open) {
+      reset()
+      setShowSuccess(false)
+    }
   }
+
+  if (userRole !== "admin") return null
 
   return (
     <Layout>
@@ -214,15 +151,7 @@ export default function AdministratorsPage() {
                 </div>
               )}
 
-              {/* General Error */}
-              {errors.general && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-600" />
-                  <span className="text-red-800">{errors.general}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleCreateAdmin} className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Nome */}
                   <div className="space-y-2">
@@ -231,19 +160,17 @@ export default function AdministratorsPage() {
                     </Label>
                     <Input
                       id="firstName"
-                      value={formData.firstName}
-                      onChange={(e) => handleFieldChange('firstName', e.target.value)}
-                      onBlur={() => handleFieldBlur('firstName')}
-                      className={errors.firstName ? "border-red-500 focus:border-red-500" : ""}
+                      {...register("firstName", {
+                        required: "Nome é obrigatório",
+                        maxLength: { value: 100, message: "Máx. 100 caracteres" },
+                      })}
                       placeholder="Digite o nome"
-                      maxLength={100}
                       disabled={isSubmitting}
                     />
                     {errors.firstName && (
-                      <div className="flex items-center gap-1 text-sm text-red-600">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>{errors.firstName}</span>
-                      </div>
+                      <p className="text-sm text-red-600 flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" /> {errors.firstName.message}
+                      </p>
                     )}
                   </div>
 
@@ -254,19 +181,17 @@ export default function AdministratorsPage() {
                     </Label>
                     <Input
                       id="lastName"
-                      value={formData.lastName}
-                      onChange={(e) => handleFieldChange('lastName', e.target.value)}
-                      onBlur={() => handleFieldBlur('lastName')}
-                      className={errors.lastName ? "border-red-500 focus:border-red-500" : ""}
+                      {...register("lastName", {
+                        required: "Sobrenome é obrigatório",
+                        maxLength: { value: 100, message: "Máx. 100 caracteres" },
+                      })}
                       placeholder="Digite o sobrenome"
-                      maxLength={100}
                       disabled={isSubmitting}
                     />
                     {errors.lastName && (
-                      <div className="flex items-center gap-1 text-sm text-red-600">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>{errors.lastName}</span>
-                      </div>
+                      <p className="text-sm text-red-600 flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" /> {errors.lastName.message}
+                      </p>
                     )}
                   </div>
 
@@ -278,19 +203,21 @@ export default function AdministratorsPage() {
                     <Input
                       id="email"
                       type="email"
-                      value={formData.email}
-                      onChange={(e) => handleFieldChange('email', e.target.value)}
-                      onBlur={() => handleFieldBlur('email')}
-                      className={errors.email ? "border-red-500 focus:border-red-500" : ""}
+                      {...register("email", {
+                        required: "Email é obrigatório",
+                        pattern: {
+                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                          message: "Formato de email inválido",
+                        },
+                        maxLength: { value: 255, message: "Máx. 255 caracteres" },
+                      })}
                       placeholder="nome@dominio.com"
-                      maxLength={255}
                       disabled={isSubmitting}
                     />
                     {errors.email && (
-                      <div className="flex items-center gap-1 text-sm text-red-600">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>{errors.email}</span>
-                      </div>
+                      <p className="text-sm text-red-600 flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" /> {errors.email.message}
+                      </p>
                     )}
                   </div>
 
@@ -302,19 +229,18 @@ export default function AdministratorsPage() {
                     <Input
                       id="password"
                       type="password"
-                      value={formData.password}
-                      onChange={(e) => handleFieldChange('password', e.target.value)}
-                      onBlur={() => handleFieldBlur('password')}
-                      className={errors.password ? "border-red-500 focus:border-red-500" : ""}
+                      {...register("password", {
+                        required: "Senha é obrigatória",
+                        minLength: { value: 6, message: "Mínimo 6 caracteres" },
+                        maxLength: { value: 255, message: "Máx. 255 caracteres" },
+                      })}
                       placeholder="Mínimo 6 caracteres"
-                      maxLength={255}
                       disabled={isSubmitting}
                     />
                     {errors.password && (
-                      <div className="flex items-center gap-1 text-sm text-red-600">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>{errors.password}</span>
-                      </div>
+                      <p className="text-sm text-red-600 flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" /> {errors.password.message}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -325,7 +251,7 @@ export default function AdministratorsPage() {
                     variant="outline"
                     onClick={() => {
                       setIsCreateOpen(false)
-                      resetForm()
+                      reset()
                     }}
                     disabled={isSubmitting}
                   >
