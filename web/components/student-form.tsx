@@ -164,17 +164,17 @@ export default function StudentForm({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor={`name-${id}`}>Nome *</Label>
-              <Input id={`name-${id}`} {...register("name", { required: true })} />
+              <Label htmlFor={`name-${id}`}>Nome </Label><span className="text-red-500">*</span>
+              <Input id={`name-${id}`} {...register("name", { required: true })} placeholder="John"/>
               {errors.name && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`surname-${id}`}>Sobrenome *</Label>
-              <Input id={`surname-${id}`} {...register("surname", { required: true })} />
+              <Label htmlFor={`surname-${id}`}>Sobrenome </Label><span className="text-red-500">*</span>
+              <Input id={`surname-${id}`} {...register("surname", { required: true })} placeholder="Doe"/>
               {errors.surname && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`email-${id}`}>Email *</Label>
+              <Label htmlFor={`email-${id}`}>Email </Label><span className="text-red-500">*</span>
               <Input 
                 id={`email-${id}`} 
                 type="email" 
@@ -190,7 +190,7 @@ export default function StudentForm({
               {errors.email && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`phone-${id}`}>Telefone *</Label>
+              <Label htmlFor={`phone-${id}`}>Telefone </Label><span className="text-red-500">*</span>
               <IMaskInput
                 id={`phone-${id}`}
                 {...register("phone", { required: true })}
@@ -202,7 +202,7 @@ export default function StudentForm({
               {errors.phone && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`sex-${id}`}>Sexo *</Label>
+              <Label htmlFor={`sex-${id}`}>Sexo </Label><span className="text-red-500">*</span>
               <Controller
                 control={control}
                 name="sex"
@@ -220,7 +220,7 @@ export default function StudentForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`birthDate-${id}`}>Data de Nascimento *</Label>
+              <Label htmlFor={`birthDate-${id}`}>Data de Nascimento </Label><span className="text-red-500">*</span>
               <Input id={`birthDate-${id}`} type="date" {...register("birthDate", { required: true })} />
               {errors.birthDate && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
@@ -240,12 +240,12 @@ export default function StudentForm({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor={`street-${id}`}>Rua *</Label>
+              <Label htmlFor={`street-${id}`}>Logradouro </Label><span className="text-red-500">*</span>
               <Input id={`street-${id}`} {...register("street", { required: true })} placeholder="Ex: Rua das Palmeiras" />
               {errors.street && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`number-${id}`}>Número *</Label>
+              <Label htmlFor={`number-${id}`}>Número </Label><span className="text-red-500">*</span>
               <Input id={`number-${id}`} {...register("number", { required: true })} placeholder="456 "/>
               {errors.number && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
@@ -254,12 +254,12 @@ export default function StudentForm({
               <Input id={`complement-${id}`} {...register("complement")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`neighborhood-${id}`}>Bairro *</Label>
+              <Label htmlFor={`neighborhood-${id}`}>Bairro </Label><span className="text-red-500">*</span>
               <Input id={`neighborhood-${id}`} {...register("neighborhood", { required: true })}  placeholder="Jardins"/>
               {errors.neighborhood && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`cep-${id}`}>CEP *</Label>
+              <Label htmlFor={`cep-${id}`}>CEP </Label><span className="text-red-500">*</span>
               <IMaskInput
                 {...register("cep", { required: true })}
                 id={`cep-${id}`}
@@ -282,12 +282,12 @@ export default function StudentForm({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor={`emergencyName-${id}`}>Nome *</Label>
-              <Input id={`emergencyName-${id}`} {...register("emergencyName", { required: true })} />
+              <Label htmlFor={`emergencyName-${id}`}>Nome </Label><span className="text-red-500">*</span>
+              <Input id={`emergencyName-${id}`} {...register("emergencyName", { required: true })} placeholder="Jane Doe"/>
               {errors.emergencyName && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`emergencyPhone-${id}`}>Telefone *</Label>
+              <Label htmlFor={`emergencyPhone-${id}`}>Telefone </Label><span className="text-red-500">*</span>
               <IMaskInput
                 id={`emergencyPhone-${id}`}
                 {...register("emergencyPhone", { required: true })}
@@ -299,8 +299,8 @@ export default function StudentForm({
               {errors.emergencyPhone && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`emergencyRelationship-${id}`}>Parentesco *</Label>
-              <Input id={`emergencyRelationship-${id}`} {...register("emergencyRelationship", { required: true })} />
+              <Label htmlFor={`emergencyRelationship-${id}`}>Parentesco </Label><span className="text-red-500">*</span>
+              <Input id={`emergencyRelationship-${id}`} {...register("emergencyRelationship", { required: true })} placeholder="Ex: Mae"/>
               {errors.emergencyRelationship && <p className="text-xs text-red-600">Campo obrigatório</p>}
             </div>
           </div>
@@ -310,12 +310,12 @@ export default function StudentForm({
       {/* Plan and Status */}
       <Card>
         <CardHeader>
-          <CardTitle>Plano e Status</CardTitle>
+          <CardTitle>Plano e status</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor={`plan-${id}`}>Plano *</Label>
+              <Label htmlFor={`plan-${id}`}>Plano </Label><span className="text-red-500">*</span>
               <Controller
                 control={control}
                 name="plan"
