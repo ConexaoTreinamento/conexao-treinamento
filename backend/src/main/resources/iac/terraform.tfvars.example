@@ -1,0 +1,27 @@
+# Exemplo de arquivo terraform.tfvars
+# Copie este arquivo para terraform.tfvars e ajuste os valores conforme necessário
+
+# Nome da aplicação
+app_name = "conexao-treinamento"
+
+# Ambiente (dev, staging, prod)
+environment = "dev"
+
+# Região AWS
+aws_region = "us-east-2"
+
+# URI da imagem Docker no ECR (OBRIGATÓRIO)
+# Exemplo: 123456789012.dkr.ecr.us-east-2.amazonaws.com/conexao-treinamento-backend:latest
+docker_image_uri = "YOUR_ECR_URI_HERE"
+
+# Porta da aplicação
+app_port = 8080
+
+# Configurações de CPU e Memória do App Runner
+cpu    = "0.5 vCPU"  # Opções: "0.25 vCPU", "0.5 vCPU", "1 vCPU", "2 vCPU"
+memory = "1 GB"      # Opções: "0.5 GB", "1 GB", "2 GB", "3 GB", "4 GB"
+
+# Configurações de Auto Scaling
+auto_scaling_max_concurrency = 100  # Máximo de requisições concorrentes por instância
+auto_scaling_max_size        = 10   # Número máximo de instâncias
+auto_scaling_min_size        = 1    # Número mínimo de instâncias
