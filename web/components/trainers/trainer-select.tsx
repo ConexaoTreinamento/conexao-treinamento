@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useMemo, useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -9,29 +9,33 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { Check, ChevronsUpDown, Loader2 } from "lucide-react"
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 
 export type TrainerOption = {
-  id: string
-  name?: string | null
-}
+  id: string;
+  name?: string | null;
+};
 
 export interface TrainerSelectProps {
-  value?: string
-  onValueChange: (value: string) => void
-  trainers: TrainerOption[]
-  isLoading?: boolean
-  includeAllOption?: boolean
-  allValue?: string
-  allLabel?: string
-  placeholder?: string
-  className?: string
-  buttonClassName?: string
-  disabled?: boolean
-  emptyMessage?: string
+  value?: string;
+  onValueChange: (value: string) => void;
+  trainers: TrainerOption[];
+  isLoading?: boolean;
+  includeAllOption?: boolean;
+  allValue?: string;
+  allLabel?: string;
+  placeholder?: string;
+  className?: string;
+  buttonClassName?: string;
+  disabled?: boolean;
+  emptyMessage?: string;
 }
 
 export function TrainerSelect({
@@ -48,33 +52,42 @@ export function TrainerSelect({
   disabled = false,
   emptyMessage = "Nenhum professor encontrado.",
 }: TrainerSelectProps) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
 
   const normalizedTrainers = useMemo(() => {
     return trainers
-      .filter((trainer): trainer is TrainerOption & { id: string } => Boolean(trainer?.id))
+      .filter((trainer): trainer is TrainerOption & { id: string } =>
+        Boolean(trainer?.id),
+      )
       .map((trainer) => ({
         id: trainer.id,
         name: trainer.name ?? "Nome não informado",
       }))
-      .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "", "pt-BR", { sensitivity: "base" }))
-  }, [trainers])
+      .sort((a, b) =>
+        (a.name ?? "").localeCompare(b.name ?? "", "pt-BR", {
+          sensitivity: "base",
+        }),
+      );
+  }, [trainers]);
 
-  const selectedTrainer = normalizedTrainers.find((trainer) => trainer.id === value)
-  const isAllSelected = includeAllOption && (value === allValue || (!value && allValue === "all"))
+  const selectedTrainer = normalizedTrainers.find(
+    (trainer) => trainer.id === value,
+  );
+  const isAllSelected =
+    includeAllOption && (value === allValue || (!value && allValue === "all"));
 
   const buttonLabel = useMemo(() => {
     if (isLoading) {
-      return "Carregando..."
+      return "Carregando...";
     }
     if (isAllSelected) {
-      return allLabel
+      return allLabel;
     }
     if (selectedTrainer) {
-      return selectedTrainer.name
+      return selectedTrainer.name;
     }
-    return placeholder
-  }, [allLabel, isAllSelected, isLoading, placeholder, selectedTrainer])
+    return placeholder;
+  }, [allLabel, isAllSelected, isLoading, placeholder, selectedTrainer]);
 
   return (
     <div className={cn("w-full", className)}>
@@ -111,14 +124,14 @@ export function TrainerSelect({
                   <CommandItem
                     value={allLabel}
                     onSelect={() => {
-                      onValueChange(allValue)
-                      setOpen(false)
+                      onValueChange(allValue);
+                      setOpen(false);
                     }}
                   >
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        isAllSelected ? "opacity-100" : "opacity-0"
+                        isAllSelected ? "opacity-100" : "opacity-0",
                       )}
                     />
                     {allLabel}
@@ -129,14 +142,14 @@ export function TrainerSelect({
                     key={trainer.id}
                     value={trainer.name ?? trainer.id}
                     onSelect={() => {
-                      onValueChange(trainer.id)
-                      setOpen(false)
+                      onValueChange(trainer.id);
+                      setOpen(false);
                     }}
                   >
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4",
-                        value === trainer.id ? "opacity-100" : "opacity-0"
+                        value === trainer.id ? "opacity-100" : "opacity-0",
                       )}
                     />
                     {trainer.name}
@@ -148,5 +161,5 @@ export function TrainerSelect({
         </PopoverContent>
       </Popover>
     </div>
-  )
+  );
 }

@@ -2,6 +2,7 @@ package org.conexaotreinamento.conexaotreinamentobackend.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.AnamnesisRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.StudentRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AnamnesisResponseDTO;
@@ -32,6 +33,7 @@ import jakarta.persistence.PersistenceContext;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class StudentService {
 
     private final StudentRepository studentRepository;
@@ -43,7 +45,10 @@ public class StudentService {
 
     @Transactional
     public StudentResponseDTO create(StudentRequestDTO request) {
+        log.debug("Attempting to create student with email: {}", request.email());
+        
         if (studentRepository.existsByEmailIgnoringCaseAndDeletedAtIsNull(request.email())) {
+            log.warn("Student creation failed - Email already exists: {}", request.email());
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Student with this email already exists");
         }
 
@@ -56,14 +61,18 @@ public class StudentService {
 
         // Persist student first to generate UUID (used by Anamnesis and PhysicalImpairments)
         Student savedStudent = studentRepository.save(student);
+        log.info("Student created successfully [ID: {}] - Name: {} {}, Email: {}", 
+                savedStudent.getId(), savedStudent.getName(), savedStudent.getSurname(), savedStudent.getEmail());
 
         // Save anamnesis if provided
         if (request.anamnesis() != null) {
+            log.debug("Creating anamnesis for student [ID: {}]", savedStudent.getId());
             AnamnesisRequestDTO dto = request.anamnesis();
             Anamnesis anamnesis = new Anamnesis(savedStudent);
             createOrEditAnamnesis(dto, anamnesis);
 
             anamnesisRepository.save(anamnesis);
+            log.debug("Anamnesis created for student [ID: {}]", savedStudent.getId());
         }
 
         // Save physical impairments if provided
@@ -246,26 +255,35 @@ public class StudentService {
 
     @Transactional
     public void delete(UUID id) {
+        log.debug("Attempting to delete student [ID: {}]", id);
+        
         Student student = studentRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
 
         student.deactivate();
-
         studentRepository.save(student);
+        
+        log.info("Student deactivated successfully [ID: {}] - Name: {} {}", 
+                id, student.getName(), student.getSurname());
     }
 
     @Transactional
     public StudentResponseDTO restore(UUID id) {
+        log.debug("Attempting to restore student [ID: {}]", id);
+        
         Student student = studentRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
         
         if (student.isActive() || studentRepository.existsByEmailIgnoringCaseAndDeletedAtIsNull(student.getEmail())) {
+            log.warn("Student restoration failed [ID: {}] - Email conflict or already active", id);
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot restore student due to email conflict or already active.");
         }
 
         student.activate();
-
         studentRepository.save(student);
+        
+        log.info("Student restored successfully [ID: {}] - Name: {} {}", 
+                id, student.getName(), student.getSurname());
 
         return StudentResponseDTO.fromEntity(student);
     }

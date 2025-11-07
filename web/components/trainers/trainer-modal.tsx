@@ -1,10 +1,16 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -12,17 +18,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
-import { X, Eye, EyeOff } from "lucide-react"
-import { CreateTrainerDto, TrainerResponseDto } from "@/lib/api-client"
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Eye, EyeOff, X } from "lucide-react";
+import { CreateTrainerDto, TrainerResponseDto } from "@/lib/api-client";
 
 interface TrainerModalProps {
-  open: boolean
-  mode: "create" | "edit"
-  initialData?: Partial<TrainerResponseDto>
-  onClose: () => void
-  onSubmit: (data: CreateTrainerDto) => void
+  open: boolean;
+  mode: "create" | "edit";
+  initialData?: Partial<TrainerResponseDto>;
+  onClose: () => void;
+  onSubmit: (data: CreateTrainerDto) => void;
 }
 
 export default function TrainerModal({
@@ -32,7 +38,7 @@ export default function TrainerModal({
   onClose,
   onSubmit,
 }: TrainerModalProps) {
-  const [showPassword, setShowPassword] = useState(false)
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState<CreateTrainerDto>({
     name: "",
     email: "",
@@ -42,7 +48,7 @@ export default function TrainerModal({
     specialties: [],
     compensationType: "HOURLY",
     password: "",
-  })
+  });
   const [specialtyOpen, setSpecialtyOpen] = useState(false);
   const [compensationOpen, setCompensationOpen] = useState(false);
   // Available specialties for suggestions
@@ -61,8 +67,8 @@ export default function TrainerModal({
     "Natação",
     "Zumba",
     "Boxe",
-    "Muay Thai"
-  ]
+    "Muay Thai",
+  ];
 
   // Initialize form data when modal opens or initialData changes
   useEffect(() => {
@@ -76,7 +82,7 @@ export default function TrainerModal({
         specialties: initialData.specialties || [],
         compensationType: initialData.compensationType || "HOURLY",
         password: "",
-      })
+      });
     } else {
       // Reset form for create mode
       setFormData({
@@ -88,59 +94,61 @@ export default function TrainerModal({
         specialties: [],
         compensationType: "HOURLY",
         password: "",
-      })
+      });
     }
-  }, [initialData, open])
+  }, [initialData, open]);
 
   const handleAddSpecialty = (specialty: string) => {
     if (specialty.trim() && !formData.specialties!.includes(specialty.trim())) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        specialties: [...prev.specialties!, specialty.trim()]
-      }))
+        specialties: [...prev.specialties!, specialty.trim()],
+      }));
     }
-  }
+  };
 
   const handleRemoveSpecialty = (specialty: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      specialties: prev.specialties!.filter(s => s !== specialty)
-    }))
-  }
+      specialties: prev.specialties!.filter((s) => s !== specialty),
+    }));
+  };
 
   const handleSubmit = () => {
-    onSubmit({ ...formData })
-    onClose()
-  }
+    onSubmit({ ...formData });
+    onClose();
+  };
 
   const isFormValid = () => {
-    const baseValidation = formData.name!.trim() &&
+    const baseValidation =
+      formData.name!.trim() &&
       formData.email!.trim() &&
       formData.phone!.trim() &&
       formData.address!.trim() &&
       formData.birthDate &&
-      formData.compensationType
+      formData.compensationType;
     // For create mode, password is required
     if (mode === "create") {
-      return baseValidation && formData.password && formData.password.trim()
+      return baseValidation && formData.password && formData.password.trim();
     }
 
     // For edit mode, password is optional
-    return baseValidation
-  }
+    return baseValidation;
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle>
-            {mode === "create" ? "Cadastrar Novo Professor" : "Editar Professor"}
+            {mode === "create"
+              ? "Cadastrar Novo Professor"
+              : "Editar Professor"}
           </DialogTitle>
           <DialogDescription>
             {mode === "create"
               ? "Preencha as informações para cadastrar um novo professor"
-              : "Edite as informações do professor"
-            }
+              : "Edite as informações do professor"}
           </DialogDescription>
         </DialogHeader>
 
@@ -155,7 +163,9 @@ export default function TrainerModal({
                 <Input
                   id="trainerName"
                   value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, name: e.target.value }))
+                  }
                   placeholder="Ex: Ana Silva"
                 />
               </div>
@@ -165,7 +175,12 @@ export default function TrainerModal({
                   id="trainerBirthDate"
                   type="date"
                   value={formData.birthDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, birthDate: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      birthDate: e.target.value,
+                    }))
+                  }
                 />
               </div>
             </div>
@@ -175,7 +190,9 @@ export default function TrainerModal({
               <Input
                 id="trainerAddress"
                 value={formData.address}
-                onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, address: e.target.value }))
+                }
                 placeholder="Ex: Rua das Palmeiras, 456 - Jardins, São Paulo"
               />
             </div>
@@ -192,7 +209,9 @@ export default function TrainerModal({
                   id="trainerEmail"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, email: e.target.value }))
+                  }
                   placeholder="Ex: ana@email.com"
                 />
               </div>
@@ -201,7 +220,9 @@ export default function TrainerModal({
                 <Input
                   id="trainerPhone"
                   value={formData.phone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, phone: e.target.value }))
+                  }
                   placeholder="Ex: (11) 99999-9999"
                 />
               </div>
@@ -213,20 +234,32 @@ export default function TrainerModal({
             <h4 className="text-sm font-medium">Informações profissionais</h4>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2" onClick={() => setCompensationOpen(!compensationOpen)}>
-                <Label htmlFor="trainerCompensation">Tipo de compensação *</Label>
+              <div
+                className="space-y-2"
+                onClick={() => setCompensationOpen(!compensationOpen)}
+              >
+                <Label htmlFor="trainerCompensation">
+                  Tipo de compensação *
+                </Label>
                 <Select
                   open={compensationOpen}
                   value={formData.compensationType}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, compensationType: value as typeof formData.compensationType }))}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      compensationType:
+                        value as typeof formData.compensationType,
+                    }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent
                     onPointerDownOutside={() => {
-                      setCompensationOpen(false)
-                    }}>
+                      setCompensationOpen(false);
+                    }}
+                  >
                     <SelectItem value="HOURLY">Horista</SelectItem>
                     <SelectItem value="MONTHLY">Mensalista</SelectItem>
                   </SelectContent>
@@ -239,7 +272,10 @@ export default function TrainerModal({
           <div className="space-y-4">
             <h4 className="text-sm font-medium">Especialidades</h4>
 
-            <div className="space-y-2" onClick={() => setSpecialtyOpen(!specialtyOpen)}>
+            <div
+              className="space-y-2"
+              onClick={() => setSpecialtyOpen(!specialtyOpen)}
+            >
               <Label>Adicionar especialidade</Label>
               <Select
                 open={specialtyOpen}
@@ -255,7 +291,7 @@ export default function TrainerModal({
                   }}
                 >
                   {availableSpecialties
-                    .filter(spec => !formData.specialties!.includes(spec))
+                    .filter((spec) => !formData.specialties!.includes(spec))
                     .map((specialty) => (
                       <SelectItem key={specialty} value={specialty}>
                         {specialty}
@@ -270,7 +306,11 @@ export default function TrainerModal({
                 <Label>Especialidades selecionadas</Label>
                 <div className="flex flex-wrap gap-2">
                   {formData.specialties!.map((specialty) => (
-                    <Badge key={specialty} variant="secondary" className="flex items-center gap-1">
+                    <Badge
+                      key={specialty}
+                      variant="secondary"
+                      className="flex items-center gap-1"
+                    >
                       {specialty}
                       <Button
                         size="sm"
@@ -300,8 +340,17 @@ export default function TrainerModal({
                   id="trainerPassword"
                   type={showPassword ? "text" : "password"}
                   value={formData.password || ""}
-                  onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-                  placeholder={mode === "create" ? "Digite a senha" : "Deixe vazio para manter a senha atual"}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      password: e.target.value,
+                    }))
+                  }
+                  placeholder={
+                    mode === "create"
+                      ? "Digite a senha"
+                      : "Deixe vazio para manter a senha atual"
+                  }
                 />
                 <Button
                   type="button"
@@ -335,5 +384,5 @@ export default function TrainerModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

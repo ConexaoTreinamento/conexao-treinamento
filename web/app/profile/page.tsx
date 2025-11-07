@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Eye, EyeOff } from 'lucide-react'
 import Layout from "@/components/layout"
+import { PageHeader } from "@/components/base/page-header"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import { findTrainerByUserIdOptions, findTrainerByIdOptions, updateTrainerAndUserMutation, findAdministratorByUserIdOptions, patchAdministratorMutation } from "@/lib/api-client/@tanstack/react-query.gen"
@@ -219,18 +220,16 @@ export default function ProfilePage() {
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Meu perfil</h1>
-            <p className="text-muted-foreground">
-              Gerencie suas informações pessoais e configurações
-            </p>
-          </div>
-          <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700" disabled={isLoading}>
-            <Save className="w-4 h-4 mr-2" />
-            {isLoading ? "Salvando..." : "Salvar Alterações"}
-          </Button>
-        </div>
+        <PageHeader
+          title="Meu perfil"
+          description="Gerencie suas informações pessoais e configurações"
+          rightActions={(
+            <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700" disabled={isLoading}>
+              <Save className="w-4 h-4 mr-2" />
+              {isLoading ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+          )}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Profile Card */}

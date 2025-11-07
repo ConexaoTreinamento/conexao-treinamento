@@ -20,9 +20,11 @@ import org.springframework.web.server.ResponseStatusException;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TrainerService {
 
     private final TrainerRepository trainerRepository;
@@ -31,14 +33,20 @@ public class TrainerService {
 
     @Transactional
     public TrainerListItemResponseDTO create(TrainerCreateRequestDTO request) {
+        log.debug("Attempting to create trainer with email: {}", request.email());
         if (trainerRepository.existsByEmailIgnoreCase(request.email())) {
+            log.warn("Trainer creation failed - Email already exists: {}", request.email());
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Trainer with this email already exists");
         }
 
         UserResponseDTO savedUser = userService.createUser(new UserCreateRequestDTO(request.email(), request.password(), Role.ROLE_TRAINER));
+        log.info("User created for Trainer successfully [ID: {}] - Email: {}", savedUser.id(), request.email());
 
         Trainer trainer = request.toEntity(savedUser.id());
         Trainer savedTrainer = trainerRepository.save(trainer);
+        
+        log.info("Trainer created successfully [ID: {}] - Name: {}, Email: {}", 
+                savedTrainer.getId(), savedTrainer.getName(), request.email());
 
         return trainerRepository.findActiveTrainerProfileById(savedTrainer.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Created trainer not found"));
@@ -91,16 +99,28 @@ public class TrainerService {
 
     @Transactional
     public void delete(UUID trainerId) {
+        log.debug("Attempting to delete trainer [ID: {}]", trainerId);
+        
         Optional<Trainer> trainer = trainerRepository.findById(trainerId);
-        trainer.ifPresent(value -> userService.delete(value.getUserId()));
+        if (trainer.isPresent()) {
+            log.info("Deleting trainer [ID: {}] - Name: {}", trainerId, trainer.get().getName());
+            userService.delete(trainer.get().getUserId());
+            log.info("Trainer deleted successfully [ID: {}]", trainerId);
+        } else {
+            log.warn("Trainer deletion attempted for non-existent trainer [ID: {}]", trainerId);
+        }
     }
 
     @Transactional
     public void resetPassword(UUID trainerId, String newPassword) {
+        log.debug("Attempting to reset password for trainer [ID: {}]", trainerId);
+        
         Trainer trainer = trainerRepository.findById(trainerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trainer not found"));
 
         UUID userId = trainer.getUserId();
         userService.resetUserPassword(userId, newPassword);
+        
+        log.info("Password reset successfully for trainer [ID: {}] - Name: {}", trainerId, trainer.getName());
     }
 }
