@@ -6,18 +6,18 @@ import { EmptyState } from "@/components/base/empty-state";
 import { EntityList } from "@/components/base/entity-list";
 import { Section } from "@/components/base/section";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ListAdministratorsDto } from "@/lib/api-client";
+import type { AdministratorListItemResponseDto } from "@/lib/api-client";
 
 interface AdministratorListProps {
-  administrators: ListAdministratorsDto[];
+  administrators: AdministratorListItemResponseDto[];
   searchTerm: string;
   isLoading: boolean;
   error: unknown;
-  onAdministratorOpen: (administrator: ListAdministratorsDto) => void;
+  onAdministratorOpen: (administrator: AdministratorListItemResponseDto) => void;
 }
 
 const resolveAdministratorName = (
-  administrator: ListAdministratorsDto,
+  administrator: AdministratorListItemResponseDto,
 ): string => {
   const fallback =
     `${administrator.firstName ?? ""} ${administrator.lastName ?? ""}`.trim();
@@ -30,7 +30,7 @@ const resolveAdministratorName = (
 };
 
 const matchesSearch = (
-  administrator: ListAdministratorsDto,
+  administrator: AdministratorListItemResponseDto,
   searchTerm: string,
 ): boolean => {
   if (!searchTerm) {

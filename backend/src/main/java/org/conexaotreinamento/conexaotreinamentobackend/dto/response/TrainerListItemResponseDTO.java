@@ -18,6 +18,5 @@ public record TrainerListItemResponseDTO(
         List<String> specialties,
         CompensationType compensationType,
         Boolean active,
-        Instant joinDate,
-        Integer hoursWorked
+        Instant joinDate
 ){}

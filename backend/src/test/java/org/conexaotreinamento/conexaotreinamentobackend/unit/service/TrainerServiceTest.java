@@ -2,10 +2,7 @@ package org.conexaotreinamento.conexaotreinamentobackend.unit.service;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -98,8 +95,7 @@ class TrainerServiceTest {
             Arrays.asList("Strength Training", "Cardio"),
             CompensationType.HOURLY,
             true,
-            Instant.now(),
-            120
+            Instant.now()
         );
     }
 
@@ -132,8 +128,6 @@ class TrainerServiceTest {
         savedTrainer.setSpecialties(List.of("Musculação", "Crossfit"));
         savedTrainer.setCompensationType(CompensationType.HOURLY);
 
-        User savedUser = new User("joao@test.com", "password123", Role.ROLE_TRAINER);
-
         TrainerListItemResponseDTO expectedResult = new TrainerListItemResponseDTO(
             newTrainerId,
             "João Silva",
@@ -144,8 +138,7 @@ class TrainerServiceTest {
             List.of("Musculação", "Crossfit"),
             CompensationType.HOURLY,
             true,
-            Instant.now(),
-            120
+            Instant.now()
         );
 
         when(trainerRepository.existsByEmailIgnoreCase("joao@test.com")).thenReturn(false);
@@ -168,7 +161,6 @@ class TrainerServiceTest {
         assertThat(result.compensationType()).isEqualTo(CompensationType.HOURLY);
         assertThat(result.active()).isTrue();
         assertThat(result.joinDate()).isNotNull();
-        assertThat(result.hoursWorked()).isEqualTo(120);
 
         verify(trainerRepository).existsByEmailIgnoreCase("joao@test.com");
         verify(userService).createUser(any());
@@ -232,7 +224,7 @@ class TrainerServiceTest {
     @DisplayName("Should find all trainers successfully")
     void shouldFindAllTrainersSuccessfully() {
         // Given
-        List<TrainerListItemResponseDTO> trainers = Arrays.asList(listTrainersDTO);
+        List<TrainerListItemResponseDTO> trainers = Collections.singletonList(listTrainersDTO);
         when(trainerRepository.findAllTrainerProfiles(true)).thenReturn(trainers);
 
         // When

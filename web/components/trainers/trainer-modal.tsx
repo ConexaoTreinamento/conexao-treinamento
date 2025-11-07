@@ -21,14 +21,14 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Eye, EyeOff, X } from "lucide-react";
-import { CreateTrainerDto, TrainerResponseDto } from "@/lib/api-client";
+import { TrainerCreateRequestDto, TrainerResponseDto } from "@/lib/api-client";
 
 interface TrainerModalProps {
   open: boolean;
   mode: "create" | "edit";
   initialData?: Partial<TrainerResponseDto>;
   onClose: () => void;
-  onSubmit: (data: CreateTrainerDto) => void;
+  onSubmit: (data: TrainerCreateRequestDto) => void;
 }
 
 export default function TrainerModal({
@@ -39,7 +39,7 @@ export default function TrainerModal({
   onSubmit,
 }: TrainerModalProps) {
   const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState<CreateTrainerDto>({
+  const [formData, setFormData] = useState<TrainerCreateRequestDto>({
     name: "",
     email: "",
     phone: "",

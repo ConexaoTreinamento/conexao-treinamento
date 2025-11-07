@@ -2,10 +2,10 @@
 
 import { Label } from "@/components/ui/label";
 import { TrainerSelect } from "@/components/trainers/trainer-select";
-import type { TrainerLookupDto } from "@/lib/api-client/types.gen";
+import type { TrainerLookupResponseDto } from "@/lib/api-client/types.gen";
 
 interface ClassScheduleTrainerFilterProps {
-  trainers: Array<TrainerLookupDto & { id: string }>;
+  trainers: Array<TrainerLookupResponseDto & { id: string }>;
   value: string;
   onValueChange: (value: string) => void;
   isLoading: boolean;

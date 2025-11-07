@@ -12,7 +12,6 @@ import { TrainerCompensationBadge } from "@/components/trainers/trainer-compensa
 import {
   Calendar,
   CalendarDays,
-  Clock,
   Mail,
   MapPin,
   Phone,
@@ -82,12 +81,18 @@ const formatJoinDate = (joinDate?: string | null) => {
   }
 };
 
-const getHoursWorkedLabel = (hoursWorked?: number | null) => {
-  if (typeof hoursWorked === "number") {
-    return `${hoursWorked}h este mês`;
+const getCompensationLabel = (
+  compensationType?: TrainerResponseDto["compensationType"],
+) => {
+  if (compensationType === "MONTHLY") {
+    return "Mensalista";
   }
 
-  return "Sem horas registradas";
+  if (compensationType === "HOURLY") {
+    return "Horista";
+  }
+
+  return "Compensação não informada";
 };
 
 const getSpecialtiesSection = (specialties?: string[] | null): ReactNode => {
@@ -152,16 +157,7 @@ export function TrainerProfileSummaryCard({
         />
       ),
       content: calculateAge(trainer.birthDate),
-    },
-    {
-      icon: (
-        <Clock
-          className="h-3.5 w-3.5 text-muted-foreground"
-          aria-hidden="true"
-        />
-      ),
-      content: getHoursWorkedLabel(trainer.hoursWorked),
-    },
+    }
   ];
 
   const infoRows: ReactNode[] = [

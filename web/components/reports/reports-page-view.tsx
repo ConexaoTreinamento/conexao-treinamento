@@ -28,9 +28,9 @@ import {
   getTrainersForLookupOptions,
 } from "@/lib/api-client/@tanstack/react-query.gen";
 import type {
-  AgeDistributionDto,
-  TrainerLookupDto,
-  TrainerReportDto,
+  AgeDistributionResponseDto,
+  TrainerLookupResponseDto,
+  TrainerReportResponseDto,
 } from "@/lib/api-client/types.gen";
 import { TrainerSelect } from "@/components/trainers/trainer-select";
 import { PageHeader } from "@/components/base/page-header";
@@ -248,7 +248,7 @@ export function ReportsPageView() {
   const trainerOptions = useMemo(
     () =>
       (trainersQuery.data ?? []).filter(
-        (trainer): trainer is TrainerLookupDto & { id: string } =>
+        (trainer): trainer is TrainerLookupResponseDto & { id: string } =>
           Boolean(trainer?.id),
       ),
     [trainersQuery.data],
@@ -264,12 +264,12 @@ export function ReportsPageView() {
     }
   }, [selectedTrainer, setValue, trainerOptions]);
 
-  const trainerReports = useMemo<TrainerReportDto[]>(
-    () => (reportsQuery.data?.trainerReports ?? []) as TrainerReportDto[],
+  const trainerReports = useMemo<TrainerReportResponseDto[]>(
+    () => (reportsQuery.data?.trainerReports ?? []) as TrainerReportResponseDto[],
     [reportsQuery.data],
   );
 
-  const filteredReports = useMemo<TrainerReportDto[]>(() => {
+  const filteredReports = useMemo<TrainerReportResponseDto[]>(() => {
     const search = searchTerm.trim().toLowerCase();
     if (!search) return trainerReports;
     return trainerReports.filter((trainer) =>
@@ -703,7 +703,7 @@ export function ReportsPageView() {
                 Nenhum dado disponível para o período selecionado.
               </p>
             ) : (
-              ageDistribution.map((profile: AgeDistributionDto, index) => {
+              ageDistribution.map((profile: AgeDistributionResponseDto, index) => {
                 const percentage = profile?.percentage ?? 0;
                 const count = profile?.count ?? 0;
                 const percentageLabel = Number.isFinite(percentage)
