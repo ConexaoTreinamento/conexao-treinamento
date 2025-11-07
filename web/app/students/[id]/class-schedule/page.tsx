@@ -174,7 +174,7 @@ export default function ClassSchedulePage() {
 
   const trainerOptions = useMemo(() => {
     const raw = trainersQuery.data ?? []
-    return raw.filter((trainer): trainer is TrainerLookupDto & { id: string } => Boolean(trainer?.id))
+    return raw.filter((trainer): trainer is TrainerLookupResponseDto & { id: string } => Boolean(trainer?.id))
   }, [trainersQuery.data])
 
   const trainerNameById = useMemo(() => {

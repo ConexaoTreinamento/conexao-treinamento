@@ -27,7 +27,7 @@ import {
   softDeleteTrainerUserMutation,
   updateTrainerAndUserMutation,
 } from "@/lib/api-client/@tanstack/react-query.gen";
-import type { ListTrainersDto, TrainerResponseDto } from "@/lib/api-client";
+import type { TrainerListItemResponseDto, TrainerResponseDto } from "@/lib/api-client";
 import { apiClient } from "@/lib/client";
 import { handleHttpError } from "@/lib/error-utils";
 import { useToast } from "@/hooks/use-toast";
@@ -47,7 +47,7 @@ export function TrainersPageView() {
   const [userRole, setUserRole] = useState<string>("admin");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
-  const [editingTrainer, setEditingTrainer] = useState<ListTrainersDto | null>(
+  const [editingTrainer, setEditingTrainer] = useState<TrainerListItemResponseDto | null>(
     null,
   );
 
@@ -86,7 +86,7 @@ export function TrainersPageView() {
     }
 
     return trainersData
-      .filter((trainer): trainer is ListTrainersDto & { id: string } =>
+      .filter((trainer): trainer is TrainerListItemResponseDto & { id: string } =>
         Boolean(trainer?.id),
       )
       .map((trainer) => {
@@ -114,7 +114,7 @@ export function TrainersPageView() {
   }, [trainersData]);
 
   const trainerMap = useMemo(() => {
-    const map = new Map<string, ListTrainersDto>();
+    const map = new Map<string, TrainerListItemResponseDto>();
     trainersData?.forEach((trainer) => {
       if (trainer?.id) {
         map.set(trainer.id, trainer);

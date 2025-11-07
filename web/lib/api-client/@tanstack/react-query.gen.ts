@@ -455,6 +455,7 @@ export const getAllUsersSimpleInfiniteOptions = (options: Options<GetAllUsersSim
             // @ts-ignore
             const page: Pick<QueryKey<Options<GetAllUsersSimpleData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
                 query: {
+                    // @ts-expect-error generated code contains some errors
                     'pageable.page': pageParam
                 }
             };
@@ -656,6 +657,7 @@ export const findAllStudentsInfiniteOptions = (options: Options<FindAllStudentsD
             // @ts-ignore
             const page: Pick<QueryKey<Options<FindAllStudentsData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
                 query: {
+                    // @ts-expect-error generated code contains some errors
                     'pageable.page': pageParam
                 }
             };
@@ -1122,6 +1124,7 @@ export const findAllExercisesInfiniteOptions = (options: Options<FindAllExercise
             // @ts-ignore
             const page: Pick<QueryKey<Options<FindAllExercisesData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
                 query: {
+                    // @ts-expect-error generated code contains some errors
                     'pageable.page': pageParam
                 }
             };
@@ -1924,6 +1927,7 @@ export const findAllPaginatedInfiniteOptions = (options: Options<FindAllPaginate
             // @ts-ignore
             const page: Pick<QueryKey<Options<FindAllPaginatedData>>[0], 'body' | 'headers' | 'path' | 'query'> = typeof pageParam === 'object' ? pageParam : {
                 query: {
+                    // @ts-expect-error generated code contains some errors
                     'pageable.page': pageParam
                 }
             };
