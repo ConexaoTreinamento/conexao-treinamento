@@ -11,7 +11,6 @@ import type { TrainerResponseDto } from "@/lib/api-client/types.gen";
 import {
   Calendar,
   CalendarDays,
-  Clock,
   Mail,
   MapPin,
   Phone,
@@ -95,14 +94,6 @@ const getCompensationLabel = (
   return "Compensação não informada";
 };
 
-const getHoursWorkedLabel = (hoursWorked?: number | null) => {
-  if (typeof hoursWorked === "number") {
-    return `${hoursWorked}h este mês`;
-  }
-
-  return "Sem horas registradas";
-};
-
 const getSpecialtiesSection = (specialties?: string[] | null): ReactNode => {
   if (!specialties?.length) {
     return null;
@@ -165,16 +156,7 @@ export function TrainerProfileSummaryCard({
         />
       ),
       content: calculateAge(trainer.birthDate),
-    },
-    {
-      icon: (
-        <Clock
-          className="h-3.5 w-3.5 text-muted-foreground"
-          aria-hidden="true"
-        />
-      ),
-      content: getHoursWorkedLabel(trainer.hoursWorked),
-    },
+    }
   ];
 
   const infoRows: ReactNode[] = [

@@ -24,7 +24,7 @@ import { CheckCircle, Loader2, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getTrainersForLookupOptions } from "@/lib/api-client/@tanstack/react-query.gen";
 import { apiClient } from "@/lib/client";
-import type { TrainerLookupDto } from "@/lib/api-client/types.gen";
+import type { TrainerLookupResponseDto } from "@/lib/api-client/types.gen";
 import {
   StudentPicker,
   type StudentSummary,
@@ -80,7 +80,7 @@ export default function EventModal({
   const trainersLoading = trainersQuery.isLoading;
 
   const trainers = (trainersData ?? []).filter(
-    (trainer): trainer is TrainerLookupDto & { id: string } =>
+    (trainer): trainer is TrainerLookupResponseDto & { id: string } =>
       Boolean(trainer?.id),
   );
 
