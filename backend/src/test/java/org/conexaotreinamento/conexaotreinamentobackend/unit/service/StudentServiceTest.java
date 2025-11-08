@@ -23,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.lang.reflect.Field;
@@ -56,6 +57,7 @@ class StudentServiceTest {
     @BeforeEach
     void setUp() {
         studentId = UUID.randomUUID();
+        ReflectionTestUtils.setField(studentService, "entityManager", entityManager);
     }
 
     private StudentRequestDTO sampleRequest(boolean includeAnamnesis, boolean includeImpairments) {
@@ -250,6 +252,30 @@ class StudentServiceTest {
         // Act + Assert
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentService.update(studentId, sampleRequest(false, false)));
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+
+    @Test
+    void update_removesAnamnesis_whenPayloadOmitsSection() {
+        // Arrange
+        Student existing = new Student("alice@example.com", "Alice", "Doe", Student.Gender.F, LocalDate.of(2000, 1, 1));
+        existing.setRegistrationDate(LocalDate.now());
+        setIdViaReflection(existing, studentId);
+
+        Anamnesis existingAnamnesis = new Anamnesis(existing);
+
+        when(studentRepository.findByIdAndDeletedAtIsNull(studentId)).thenReturn(Optional.of(existing));
+        when(studentRepository.save(any(Student.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(anamnesisRepository.findById(studentId)).thenReturn(Optional.of(existingAnamnesis));
+
+        StudentRequestDTO request = sampleRequest(false, false);
+
+        // Act
+        studentService.update(studentId, request);
+
+        // Assert
+        verify(anamnesisRepository).deleteById(studentId);
+        verify(anamnesisRepository, never()).saveAndFlush(any(Anamnesis.class));
+        verify(entityManager).flush();
     }
 
     @Test
