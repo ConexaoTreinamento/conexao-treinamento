@@ -1,15 +1,27 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useEffect } from "react"
+import {useEffect, useState} from "react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
-import { Menu, BarChart3, Users, Calendar, Dumbbell, User, Sun, Moon, LogOut, Shield, Crown } from "lucide-react"
-import { useTheme } from "next-themes"
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
+import {usePathname, useRouter} from "next/navigation"
+import {Button} from "@/components/ui/button"
+import {Sheet, SheetContent, SheetTitle, SheetTrigger} from "@/components/ui/sheet"
+import {
+	AlertTriangle,
+	BarChart3,
+	Calendar,
+	Crown,
+	Dumbbell,
+	LogOut,
+	Menu,
+	Moon,
+	Shield,
+	Sun,
+	User,
+	Users
+} from "lucide-react"
+import {useTheme} from "next-themes"
+import {VisuallyHidden} from "@radix-ui/react-visually-hidden"
 import Image from "next/image"
 import ExpiringPlansModal from "@/components/plans/expiring-plans-modal"
 
@@ -139,6 +151,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 										Perfil
 									</Link>
 									<Button
+										type="button"
+										variant="ghost"
+										size="sm"
+										onClick={() => setShowExpiringPlansModal(true)}
+										className="w-full justify-start gap-3 px-3"
+									>
+										<AlertTriangle className="w-4 h-4 text-orange-500"/>
+										Planos vencendo
+									</Button>
+									<Button
 										variant="ghost"
 										size="sm"
 										onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
@@ -201,6 +223,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 							<User className="w-5 h-5" />
 							Perfil
 						</Link>
+						<Button
+							type="button"
+							variant="ghost"
+							onClick={() => setShowExpiringPlansModal(true)}
+							className="w-full justify-start gap-3 px-3"
+						>
+							<AlertTriangle className="w-5 h-5 text-orange-500"/>
+							Planos vencendo
+						</Button>
 						<Button
 							variant="ghost"
 							onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
