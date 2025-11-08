@@ -99,7 +99,7 @@ export default function ExpiringPlansModal({
               Planos próximos ao vencimento
             </DialogTitle>
             <DialogDescription>
-              Alunos com planos que vencem nos próximos 7 dias ou já expirados
+              Alunos com planos que vencem nos próximos {EXPIRING_LOOKAHEAD_DAYS} dias ou já expirados
             </DialogDescription>
           </DialogHeader>
 
