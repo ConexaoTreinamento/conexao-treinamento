@@ -23,7 +23,9 @@ import {
 import {useTheme} from "next-themes"
 import {VisuallyHidden} from "@radix-ui/react-visually-hidden"
 import Image from "next/image"
-import ExpiringPlansModal from "@/components/plans/expiring-plans-modal"
+import {useQuery} from "@tanstack/react-query"
+import ExpiringPlansModal, {EXPIRING_LOOKAHEAD_DAYS} from "@/components/plans/expiring-plans-modal"
+import {expiringPlanAssignmentsQueryOptions} from "@/lib/students/hooks/student-queries"
 
 const navigation = [
 	{ name: "Agenda", href: "/schedule", icon: Calendar },
@@ -44,6 +46,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 	const [userName, setUserName] = useState<string>("")
 	const [mounted, setMounted] = useState(false)
 	const [showExpiringPlansModal, setShowExpiringPlansModal] = useState(false)
+	const expiringAssignmentsPreviewQuery = useQuery({
+		...expiringPlanAssignmentsQueryOptions({ days: EXPIRING_LOOKAHEAD_DAYS }),
+		enabled: mounted,
+		staleTime: 60_000,
+	})
+	const hasExpiringPlans = (expiringAssignmentsPreviewQuery.data?.length ?? 0) > 0
+	const shouldShowExpiringPlansButton = expiringAssignmentsPreviewQuery.isSuccess && hasExpiringPlans
 
 	useEffect(() => {
 		setMounted(true)
@@ -150,16 +159,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 										<User className="w-4 h-4" />
 										Perfil
 									</Link>
-									<Button
-										type="button"
-										variant="ghost"
-										size="sm"
-										onClick={() => setShowExpiringPlansModal(true)}
-										className="w-full justify-start gap-3 px-3"
-									>
-										<AlertTriangle className="w-4 h-4 text-orange-500"/>
-										Planos vencendo
-									</Button>
+									{shouldShowExpiringPlansButton ? (
+										<Button
+											type="button"
+											variant="ghost"
+											size="sm"
+											onClick={() => setShowExpiringPlansModal(true)}
+											className="w-full justify-start gap-3 px-3"
+										>
+											<AlertTriangle className="w-4 h-4 text-orange-500"/>
+											Planos vencendo
+										</Button>
+									) : null}
 									<Button
 										variant="ghost"
 										size="sm"
@@ -223,15 +234,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 							<User className="w-5 h-5" />
 							Perfil
 						</Link>
-						<Button
-							type="button"
-							variant="ghost"
-							onClick={() => setShowExpiringPlansModal(true)}
-							className="w-full justify-start gap-3 px-3"
-						>
-							<AlertTriangle className="w-5 h-5 text-orange-500"/>
-							Planos vencendo
-						</Button>
+						{shouldShowExpiringPlansButton ? (
+							<Button
+								type="button"
+								variant="ghost"
+								onClick={() => setShowExpiringPlansModal(true)}
+								className="w-full justify-start gap-3 px-3"
+							>
+								<AlertTriangle className="w-5 h-5 text-orange-500"/>
+								Planos vencendo
+							</Button>
+						) : null}
 						<Button
 							variant="ghost"
 							onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
