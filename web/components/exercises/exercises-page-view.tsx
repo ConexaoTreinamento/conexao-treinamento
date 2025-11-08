@@ -27,6 +27,7 @@ import {
 } from "@/lib/api-client/@tanstack/react-query.gen";
 import { apiClient } from "@/lib/client";
 import type { ExerciseResponseDto } from "@/lib/api-client";
+import { invalidateExercisesQueries } from "@/lib/exercises/query-utils";
 
 export function ExercisesPageView() {
   const [searchValue, setSearchValue] = useState("");
@@ -142,11 +143,7 @@ export function ExercisesPageView() {
           variant: "success",
         });
 
-        await queryClient.invalidateQueries({
-          predicate: (query) =>
-            Array.isArray(query.queryKey) &&
-            query.queryKey[0]?._id === "findAllExercises",
-        });
+        await invalidateExercisesQueries(queryClient);
       } catch (deleteError) {
         console.error("Erro ao excluir exercício:", deleteError);
         toast({
@@ -164,18 +161,14 @@ export function ExercisesPageView() {
   const handleRestoreExercise = useCallback(
     async (exerciseId: string) => {
       try {
-        await restoreExercise({ path: { id: exerciseId }, client: apiClient });
+        await restoreExercise({ path: { id: exerciseId } });
 
         toast({
           title: "Exercício restaurado",
           description: "O exercício foi restaurado com sucesso.",
         });
 
-        await queryClient.invalidateQueries({
-          predicate: (query) =>
-            Array.isArray(query.queryKey) &&
-            query.queryKey[0]?._id === "findAllExercises",
-        });
+        await invalidateExercisesQueries(queryClient);
       } catch (restoreError) {
         console.error("Erro ao restaurar exercício:", restoreError);
         toast({
