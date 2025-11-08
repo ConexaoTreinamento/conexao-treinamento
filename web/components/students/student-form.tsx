@@ -62,6 +62,9 @@ export interface StudentFormData {
   // Objectives (above anamnesis)
   objectives?: string;
 
+  // Controls whether the anamnesis section is enabled
+  includeAnamnesis?: boolean;
+
   // Anamnesis fields
   medication?: string;
   isDoctorAwareOfPhysicalActivity?: boolean;
@@ -87,6 +90,27 @@ export interface StudentFormData {
   physicalImpairments?: PhysicalImpairment[];
 }
 
+const ANAMNESIS_FORM_FIELDS = [
+  "medication",
+  "isDoctorAwareOfPhysicalActivity",
+  "favoritePhysicalActivity",
+  "hasInsomnia",
+  "dietOrientedBy",
+  "cardiacProblems",
+  "hasHypertension",
+  "chronicDiseases",
+  "difficultiesInPhysicalActivities",
+  "medicalOrientationsToAvoidPhysicalActivity",
+  "surgeriesInTheLast12Months",
+  "respiratoryProblems",
+  "jointMuscularBackPain",
+  "spinalDiscProblems",
+  "diabetes",
+  "smokingDuration",
+  "alteredCholesterol",
+  "osteoporosisLocation",
+] as const satisfies ReadonlyArray<keyof StudentFormData>;
+
 interface StudentFormProps {
   initialData?: Partial<StudentFormData>;
   onSubmit: (data: StudentFormData) => void;
@@ -106,22 +130,43 @@ export default function StudentForm({
 }: StudentFormProps) {
   const id = useId();
 
-  const normalizedInitialData: Partial<StudentFormData> = useMemo(
-    () => ({
+  const normalizedInitialData: Partial<StudentFormData> = useMemo(() => {
+    return {
       ...initialData,
       physicalImpairments:
         initialData?.physicalImpairments?.map((p) => ({ ...p })) ?? [],
-    }),
-    [initialData],
-  );
+    };
+  }, [initialData]);
+
+  const initialAnamnesisEnabled = useMemo(() => {
+    if (typeof normalizedInitialData.includeAnamnesis === "boolean") {
+      return normalizedInitialData.includeAnamnesis;
+    }
+
+    if (mode === "create") {
+      return false;
+    }
+
+    return ANAMNESIS_FORM_FIELDS.some((field) => {
+      const value = normalizedInitialData[field];
+      if (typeof value === "string") {
+        return value.trim().length > 0;
+      }
+      if (typeof value === "boolean") {
+        return true;
+      }
+      return value !== undefined && value !== null;
+    });
+  }, [mode, normalizedInitialData]);
 
   const defaultValues = useMemo<StudentFormData>(
     () => ({
       ...normalizedInitialData,
+      includeAnamnesis: initialAnamnesisEnabled,
       plan: mode === "create" ? null : (normalizedInitialData.plan ?? null),
       physicalImpairments: normalizedInitialData.physicalImpairments ?? [],
     }),
-    [mode, normalizedInitialData],
+    [mode, normalizedInitialData, initialAnamnesisEnabled],
   );
 
   const {
@@ -131,9 +176,13 @@ export default function StudentForm({
     setValue,
     reset,
     formState: { errors },
+    watch,
+    clearErrors,
   } = useForm<StudentFormData>({
     defaultValues,
   });
+
+  const includeAnamnesis = watch("includeAnamnesis") ?? false;
 
   // Reset form once when initialData becomes available (handles async load / page refresh)
   const initializedRef = useRef(false);
@@ -144,11 +193,18 @@ export default function StudentForm({
     if (!hasData) return;
     reset({
       ...normalizedInitialData,
+      includeAnamnesis: initialAnamnesisEnabled,
       plan: mode === "create" ? null : (normalizedInitialData.plan ?? null),
       physicalImpairments: normalizedInitialData?.physicalImpairments ?? [],
     });
     initializedRef.current = true;
-  }, [initialData, mode, normalizedInitialData, reset]);
+  }, [initialData, mode, normalizedInitialData, initialAnamnesisEnabled, reset]);
+
+  useEffect(() => {
+    if (!includeAnamnesis) {
+      clearErrors(ANAMNESIS_FORM_FIELDS);
+    }
+  }, [includeAnamnesis, clearErrors]);
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -477,258 +533,294 @@ export default function StudentForm({
       {/* Anamnesis */}
       <Card>
         <CardHeader>
-          <CardTitle>Ficha de anamnese</CardTitle>
+          <CardTitle>
+            <div className="flex items-center gap-3">
+              <Controller
+                control={control}
+                name="includeAnamnesis"
+                render={({ field }) => (
+                  <Checkbox
+                    id={`${id}-include-anamnesis`}
+                    checked={!!field.value}
+                    onCheckedChange={(checked) => field.onChange(!!checked)}
+                    className="h-5 w-5"
+                  />
+                )}
+              />
+              <Label
+                htmlFor={`${id}-include-anamnesis`}
+                className="cursor-pointer text-base font-semibold leading-none"
+              >
+                Ficha de anamnese
+              </Label>
+            </div>
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Anamnesis fields in responsive grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor={`medication-${id}`}>
-                Faz uso de algum medicamento?
-              </Label>
-              <Input
-                id={`medication-${id}`}
-                {...register("medication")}
-                placeholder="Ex: Vitamina D, Ômega 3"
-              />
-            </div>
+          {includeAnamnesis ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor={`medication-${id}`}>
+                  Faz uso de algum medicamento?
+                </Label>
+                <Input
+                  id={`medication-${id}`}
+                  {...register("medication")}
+                  placeholder="Ex: Vitamina D, Ômega 3"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label>
-                Seu médico tem conhecimento de sua atividade física?
-              </Label>
-              <Controller
-                control={control}
-                name="isDoctorAwareOfPhysicalActivity"
-                render={({ field }) => (
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={!!field.value}
-                      onCheckedChange={(v) => field.onChange(!!v)}
-                      className="h-5 w-5 data-[state=checked]:!bg-green-600 data-[state=checked]:!border-green-600 data-[state=checked]:!text-white"
-                    />
-                    <Label className="text-sm cursor-pointer">
-                      {field.value ? "Sim" : "Não"}
-                    </Label>
-                  </div>
+              <div className="space-y-2">
+                <Label>
+                  Seu médico tem conhecimento de sua atividade física?
+                </Label>
+                <Controller
+                  control={control}
+                  name="isDoctorAwareOfPhysicalActivity"
+                  render={({ field }) => (
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={!!field.value}
+                        onCheckedChange={(v) => field.onChange(!!v)}
+                        className="h-5 w-5 data-[state=checked]:!bg-green-600 data-[state=checked]:!border-green-600 data-[state=checked]:!text-white"
+                      />
+                      <Label className="text-sm cursor-pointer">
+                        {field.value ? "Sim" : "Não"}
+                      </Label>
+                    </div>
+                  )}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor={`favoritePhysicalActivity-${id}`}>
+                  Qual tipo de atividade que mais lhe agrada?
+                </Label>
+                <Input
+                  id={`favoritePhysicalActivity-${id}`}
+                  {...register("favoritePhysicalActivity")}
+                  placeholder="Ex: Corrida, Natação"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor={`hasInsomnia-${id}`}>
+                  Você tem insônia?
+                </Label>
+                <Controller
+                  control={control}
+                  name="hasInsomnia"
+                  defaultValue={normalizedInitialData?.hasInsomnia ?? ""}
+                  // Only require this field when creating a new student; in edit mode keep optional
+                  rules={
+                    includeAnamnesis && mode === "create"
+                      ? { required: true }
+                      : undefined
+                  }
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={(v) => field.onChange(v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(
+                          Object.keys(
+                            hasInsomniaTypes,
+                          ) as (keyof typeof hasInsomniaTypes)[]
+                        ).map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {hasInsomniaTypes[type]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {includeAnamnesis && errors.hasInsomnia && (
+                  <p className="text-xs text-red-600">Campo obrigatório</p>
                 )}
-              />
-            </div>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor={`favoritePhysicalActivity-${id}`}>
-                Qual tipo de atividade que mais lhe agrada?
-              </Label>
-              <Input
-                id={`favoritePhysicalActivity-${id}`}
-                {...register("favoritePhysicalActivity")}
-                placeholder="Ex: Corrida, Natação"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor={`dietOrientedBy-${id}`}>
+                  Faz dieta? Se sim, com orientação de:
+                </Label>
+                <Input
+                  id={`dietOrientedBy-${id}`}
+                  {...register("dietOrientedBy")}
+                  placeholder="Ex: Nutricionista Ana Silva"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor={`hasInsomnia-${id}`}>Você tem insônia?</Label>
-              <Controller
-                control={control}
-                name="hasInsomnia"
-                defaultValue={normalizedInitialData?.hasInsomnia ?? ""}
-                // Only require this field when creating a new student; in edit mode keep optional
-                rules={mode === "create" ? { required: true } : undefined}
-                render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={(v) => field.onChange(v)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(
-                        Object.keys(
-                          hasInsomniaTypes,
-                        ) as (keyof typeof hasInsomniaTypes)[]
-                      ).map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {hasInsomniaTypes[type]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {errors.hasInsomnia && (
-                <p className="text-xs text-red-600">Campo obrigatório</p>
-              )}
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor={`cardiacProblems-${id}`}>
+                  Problemas cardíacos?
+                </Label>
+                <Input
+                  id={`cardiacProblems-${id}`}
+                  {...register("cardiacProblems")}
+                  placeholder="Ex: Arritmia, Pressão alta"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor={`dietOrientedBy-${id}`}>
-                Faz dieta? Se sim, com orientação de:
-              </Label>
-              <Input
-                id={`dietOrientedBy-${id}`}
-                {...register("dietOrientedBy")}
-                placeholder="Ex: Nutricionista Ana Silva"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label>Hipertensão arterial?</Label>
+                <Controller
+                  control={control}
+                  name="hasHypertension"
+                  render={({ field }) => (
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={!!field.value}
+                        onCheckedChange={(v) => field.onChange(!!v)}
+                        className="h-5 w-5"
+                      />
+                      <Label className="text-sm cursor-pointer">
+                        {field.value ? "Sim" : "Não"}
+                      </Label>
+                    </div>
+                  )}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor={`cardiacProblems-${id}`}>
-                Problemas cardíacos?
-              </Label>
-              <Input
-                id={`cardiacProblems-${id}`}
-                {...register("cardiacProblems")}
-                placeholder="Ex: Arritmia, Pressão alta"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor={`chronicDiseases-${id}`}>
+                  Doenças crônicas?
+                </Label>
+                <Input
+                  id={`chronicDiseases-${id}`}
+                  {...register("chronicDiseases")}
+                  placeholder="Ex: Diabetes tipo 2, Artrite"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label>Hipertensão arterial?</Label>
-              <Controller
-                control={control}
-                name="hasHypertension"
-                render={({ field }) => (
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={!!field.value}
-                      onCheckedChange={(v) => field.onChange(!!v)}
-                      className="h-5 w-5"
-                    />
-                    <Label className="text-sm cursor-pointer">
-                      {field.value ? "Sim" : "Não"}
-                    </Label>
-                  </div>
-                )}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor={`difficultiesInPhysicalActivities-${id}`}>
+                  Dificuldades para realização de exercícios físicos?
+                </Label>
+                <Input
+                  id={`difficultiesInPhysicalActivities-${id}`}
+                  {...register("difficultiesInPhysicalActivities")}
+                  placeholder="Ex: Dor no joelho direito"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor={`chronicDiseases-${id}`}>Doenças crônicas?</Label>
-              <Input
-                id={`chronicDiseases-${id}`}
-                {...register("chronicDiseases")}
-                placeholder="Ex: Diabetes tipo 2, Artrite"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label
+                  htmlFor={`medicalOrientationsToAvoidPhysicalActivity-${id}`}
+                >
+                  Orientação médica impeditiva de alguma atividade física?
+                </Label>
+                <Input
+                  id={`medicalOrientationsToAvoidPhysicalActivity-${id}`}
+                  {...register("medicalOrientationsToAvoidPhysicalActivity")}
+                  placeholder="Ex: Evitar exercícios de alto impacto"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor={`difficultiesInPhysicalActivities-${id}`}>
-                Dificuldades para realização de exercícios físicos?
-              </Label>
-              <Input
-                id={`difficultiesInPhysicalActivities-${id}`}
-                {...register("difficultiesInPhysicalActivities")}
-                placeholder="Ex: Dor no joelho direito"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor={`surgeriesInTheLast12Months-${id}`}>
+                  Cirurgias nos últimos 12 meses?
+                </Label>
+                <Input
+                  id={`surgeriesInTheLast12Months-${id}`}
+                  {...register("surgeriesInTheLast12Months")}
+                  placeholder="Ex: Cirurgia de menisco"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label
-                htmlFor={`medicalOrientationsToAvoidPhysicalActivity-${id}`}
-              >
-                Orientação médica impeditiva de alguma atividade física?
-              </Label>
-              <Input
-                id={`medicalOrientationsToAvoidPhysicalActivity-${id}`}
-                {...register("medicalOrientationsToAvoidPhysicalActivity")}
-                placeholder="Ex: Evitar exercícios de alto impacto"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor={`respiratoryProblems-${id}`}>
+                  Problemas respiratórios?
+                </Label>
+                <Input
+                  id={`respiratoryProblems-${id}`}
+                  {...register("respiratoryProblems")}
+                  placeholder="Ex: Asma, Bronquite"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor={`surgeriesInTheLast12Months-${id}`}>
-                Cirurgias nos últimos 12 meses?
-              </Label>
-              <Input
-                id={`surgeriesInTheLast12Months-${id}`}
-                {...register("surgeriesInTheLast12Months")}
-                placeholder="Ex: Cirurgia de menisco"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor={`jointMuscularBackPain-${id}`}>
+                  Dor nas articulações, músculos ou nas costas?
+                </Label>
+                <Input
+                  id={`jointMuscularBackPain-${id}`}
+                  {...register("jointMuscularBackPain")}
+                  placeholder="Ex: Dor lombar crônica"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor={`respiratoryProblems-${id}`}>
-                Problemas respiratórios?
-              </Label>
-              <Input
-                id={`respiratoryProblems-${id}`}
-                {...register("respiratoryProblems")}
-                placeholder="Ex: Asma, Bronquite"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor={`spinalDiscProblems-${id}`}>
+                  Hérnia de disco, problemas degenerativos na coluna?
+                </Label>
+                <Input
+                  id={`spinalDiscProblems-${id}`}
+                  {...register("spinalDiscProblems")}
+                  placeholder="Ex: Hérnia de disco L4-L5"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor={`jointMuscularBackPain-${id}`}>
-                Dor nas articulações, músculos ou nas costas?
-              </Label>
-              <Input
-                id={`jointMuscularBackPain-${id}`}
-                {...register("jointMuscularBackPain")}
-                placeholder="Ex: Dor lombar crônica"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor={`diabetes-${id}`}>Diabetes?</Label>
+                <Input
+                  id={`diabetes-${id}`}
+                  {...register("diabetes")}
+                  placeholder="Ex: Tipo 2, controlada com medicação"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor={`spinalDiscProblems-${id}`}>
-                Hérnia de disco, problemas degenerativos na coluna?
-              </Label>
-              <Input
-                id={`spinalDiscProblems-${id}`}
-                {...register("spinalDiscProblems")}
-                placeholder="Ex: Hérnia de disco L4-L5"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor={`smokingDuration-${id}`}>
+                  Fumante (se sim, há quanto tempo?)
+                </Label>
+                <Input
+                  id={`smokingDuration-${id}`}
+                  {...register("smokingDuration")}
+                  placeholder="Ex: 5 anos"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor={`diabetes-${id}`}>Diabetes?</Label>
-              <Input
-                id={`diabetes-${id}`}
-                {...register("diabetes")}
-                placeholder="Ex: Tipo 2, controlada com medicação"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label>Colesterol alterado?</Label>
+                <Controller
+                  control={control}
+                  name="alteredCholesterol"
+                  render={({ field }) => (
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        checked={!!field.value}
+                        onCheckedChange={(v) => field.onChange(!!v)}
+                        className="h-5 w-5"
+                      />
+                      <Label className="text-sm cursor-pointer">
+                        {field.value ? "Sim" : "Não"}
+                      </Label>
+                    </div>
+                  )}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor={`smokingDuration-${id}`}>
-                Fumante (se sim, há quanto tempo?)
-              </Label>
-              <Input
-                id={`smokingDuration-${id}`}
-                {...register("smokingDuration")}
-                placeholder="Ex: 5 anos"
-              />
+              <div className="space-y-2">
+                <Label htmlFor={`osteoporosisLocation-${id}`}>
+                  Osteoporose?
+                </Label>
+                <Input
+                  id={`osteoporosisLocation-${id}`}
+                  {...register("osteoporosisLocation")}
+                  placeholder="Ex: Coluna vertebral, Quadril"
+                />
+              </div>
             </div>
-
-            <div className="space-y-2">
-              <Label>Colesterol alterado?</Label>
-              <Controller
-                control={control}
-                name="alteredCholesterol"
-                render={({ field }) => (
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={!!field.value}
-                      onCheckedChange={(v) => field.onChange(!!v)}
-                      className="h-5 w-5"
-                    />
-                    <Label className="text-sm cursor-pointer">
-                      {field.value ? "Sim" : "Não"}
-                    </Label>
-                  </div>
-                )}
-              />
+          ) : (
+            <div className="rounded-md border border-dashed border-muted-foreground/30 p-4 text-sm text-muted-foreground">
+              Marque a caixa acima para preencher a ficha de anamnese.
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor={`osteoporosisLocation-${id}`}>Osteoporose?</Label>
-              <Input
-                id={`osteoporosisLocation-${id}`}
-                {...register("osteoporosisLocation")}
-                placeholder="Ex: Coluna vertebral, Quadril"
-              />
-            </div>
-          </div>
+          )}
 
           {/* Physical Impairments Section */}
           <div className="space-y-4 mt-6">

@@ -9,15 +9,14 @@ import org.conexaotreinamento.conexaotreinamentobackend.entity.Anamnesis;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.PhysicalImpairment;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.AnamnesisRepository;
-import org.conexaotreinamento.conexaotreinamentobackend.service.StudentService;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.PhysicalImpairmentRepository;
-import org.conexaotreinamento.conexaotreinamentobackend.service.StudentService;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.service.StudentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -27,7 +26,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.lang.reflect.Field;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -118,9 +116,31 @@ class StudentServiceTest {
         assertEquals(req.email(), dto.email());
         verify(studentRepository).save(any(Student.class));
         verify(anamnesisRepository, times(1)).save(any(Anamnesis.class));
+        @SuppressWarnings("unchecked")
         ArgumentCaptor<List<PhysicalImpairment>> piCaptor = ArgumentCaptor.forClass(List.class);
         verify(physicalImpairmentRepository).saveAll(piCaptor.capture());
         assertEquals(2, piCaptor.getValue().size());
+    }
+
+    @Test
+    void create_success_withoutAnamnesis() {
+        // Arrange
+        StudentRequestDTO req = sampleRequest(false, false);
+
+        when(studentRepository.existsByEmailIgnoringCaseAndDeletedAtIsNull(req.email())).thenReturn(false);
+        when(studentRepository.save(any(Student.class))).thenAnswer(invocation -> {
+            Student s = invocation.getArgument(0);
+            setIdViaReflection(s, studentId);
+            return s;
+        });
+
+        // Act
+        StudentResponseDTO dto = studentService.create(req);
+
+        // Assert
+        assertNotNull(dto);
+        verify(anamnesisRepository, never()).save(any(Anamnesis.class));
+        verify(physicalImpairmentRepository, never()).saveAll(anyList());
     }
 
     @Test
@@ -182,7 +202,7 @@ class StudentServiceTest {
         setIdViaReflection(s, studentId);
 
         Page<Student> page = new PageImpl<>(List.of(s), PageRequest.of(0, 10), 1);
-        when(studentRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+        when(studentRepository.findAll(ArgumentMatchers.<Specification<Student>>any(), any(Pageable.class))).thenReturn(page);
 
         // Act
         Page<StudentResponseDTO> result = studentService.findAll(null, null, null, null, null, null, null, false, unsorted);
@@ -191,7 +211,7 @@ class StudentServiceTest {
         assertEquals(1, result.getTotalElements());
         // Capture pageable argument to verify sorting
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-        verify(studentRepository).findAll(any(Specification.class), pageableCaptor.capture());
+        verify(studentRepository).findAll(ArgumentMatchers.<Specification<Student>>any(), pageableCaptor.capture());
         Pageable used = pageableCaptor.getValue();
         assertFalse(used.getSort().isUnsorted(), "Sort should be applied");
         assertEquals(Sort.by("createdAt").descending(), used.getSort(), "Expected sort by createdAt desc");
