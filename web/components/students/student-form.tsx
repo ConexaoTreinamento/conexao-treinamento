@@ -410,36 +410,19 @@ export default function StudentForm({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor={`emergencyName-${id}`}>Nome *</Label>
-              <Input
-                id={`emergencyName-${id}`}
-                {...register("emergencyName", { required: true })}
-              />
-              {errors.emergencyName && (
-                <p className="text-xs text-red-600">Campo obrigatório</p>
-              )}
+              <Label htmlFor={`emergencyName-${id}`}>Nome</Label>
+              <Input id={`emergencyName-${id}`} {...register("emergencyName")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`emergencyPhone-${id}`}>Telefone *</Label>
-              <Input
-                id={`emergencyPhone-${id}`}
-                {...register("emergencyPhone", { required: true })}
-              />
-              {errors.emergencyPhone && (
-                <p className="text-xs text-red-600">Campo obrigatório</p>
-              )}
+              <Label htmlFor={`emergencyPhone-${id}`}>Telefone</Label>
+              <Input id={`emergencyPhone-${id}`} {...register("emergencyPhone")} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor={`emergencyRelationship-${id}`}>
-                Parentesco *
-              </Label>
+              <Label htmlFor={`emergencyRelationship-${id}`}>Parentesco</Label>
               <Input
                 id={`emergencyRelationship-${id}`}
-                {...register("emergencyRelationship", { required: true })}
+                {...register("emergencyRelationship")}
               />
-              {errors.emergencyRelationship && (
-                <p className="text-xs text-red-600">Campo obrigatório</p>
-              )}
             </div>
           </div>
         </CardContent>
@@ -611,12 +594,11 @@ export default function StudentForm({
                   control={control}
                   name="hasInsomnia"
                   defaultValue={normalizedInitialData?.hasInsomnia ?? ""}
-                  // Only require this field when creating a new student; in edit mode keep optional
-                  rules={
-                    includeAnamnesis && mode === "create"
-                      ? { required: true }
-                      : undefined
-                  }
+                  rules={{
+                    required: includeAnamnesis
+                      ? "Campo obrigatório"
+                      : false,
+                  }}
                   render={({ field }) => (
                     <Select
                       value={field.value}
@@ -640,7 +622,9 @@ export default function StudentForm({
                   )}
                 />
                 {includeAnamnesis && errors.hasInsomnia && (
-                  <p className="text-xs text-red-600">Campo obrigatório</p>
+                  <p className="text-xs text-red-600">
+                    {errors.hasInsomnia.message ?? "Campo obrigatório"}
+                  </p>
                 )}
               </div>
 
