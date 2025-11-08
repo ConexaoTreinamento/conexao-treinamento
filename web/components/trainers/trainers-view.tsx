@@ -29,6 +29,7 @@ import { StatusBadge } from "@/components/base/status-badge";
 import { EntityList } from "@/components/base/entity-list";
 import { EditButton } from "@/components/base/edit-button";
 import ConfirmDeleteButton from "@/components/base/confirm-delete-button";
+import { TrainerCompensationBadge } from "@/components/trainers/trainer-compensation-badge";
 
 export interface TrainerCardData {
   id: string;
@@ -234,24 +235,18 @@ function TrainerCard({
   const joinDateLabel = trainer.joinDate
     ? new Date(trainer.joinDate).toLocaleDateString("pt-BR")
     : null;
-  const compensationLabel =
-    trainer.compensationType === "MONTHLY"
-      ? "Mensalista"
-      : trainer.compensationType === "HOURLY"
-        ? "Horista"
-        : null;
 
   const statusBadge: ReactNode = <StatusBadge active={trainer.active} />;
 
-  const compensationBadge: ReactNode | null = compensationLabel ? (
-    <Badge variant="secondary" className="text-xs">
-      {compensationLabel}
-    </Badge>
-  ) : null;
-
-  const badges: ReactNode[] = [statusBadge, compensationBadge].filter(
+  const badges: ReactNode[] = [
+    statusBadge,
+    <TrainerCompensationBadge
+      key="compensation"
+      compensationType={trainer.compensationType}
+    />,
+  ].filter(
     Boolean,
-  ) as ReactNode[];
+  );
 
   const metadata: EntityCardMetadataItem[] = [
     {
