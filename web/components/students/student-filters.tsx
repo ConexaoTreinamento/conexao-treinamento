@@ -2,11 +2,11 @@ import {X} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {Input} from "@/components/ui/input";
 import {Form, FormControl, FormField, FormItem, FormLabel,} from "@/components/ui/form";
-import {Checkbox} from "@/components/ui/checkbox";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select";
 import type {UseFormReturn} from "react-hook-form";
 import type {StudentFilters} from "@/lib/students/types";
 import {countActiveStudentFilters, DEFAULT_STUDENT_FILTERS, STUDENT_PLAN_STATUS_FILTERS,} from "@/lib/students/types";
+import { EntityStatusFilter } from "@/components/base/entity-status-filter";
 
 export interface StudentFiltersContentProps {
   filtersForm: UseFormReturn<StudentFilters>;
@@ -42,19 +42,15 @@ export const StudentFiltersContent = ({
       <form className="space-y-5">
         <FormField
           control={filtersForm.control}
-          name="includeInactive"
+          name="entityStatus"
           render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
-              <div className="space-y-0.5">
-                <FormLabel>Mostrar inativos</FormLabel>
-                <p className="text-xs text-muted-foreground">
-                  Inclui alunos marcados como inativos no resultado.
-                </p>
-              </div>
+            <FormItem>
               <FormControl>
-                <Checkbox
-                  checked={Boolean(field.value)}
-                  onCheckedChange={(value) => field.onChange(Boolean(value))}
+                <EntityStatusFilter
+                  label="Status do cadastro"
+                  value={field.value}
+                  onChange={field.onChange}
+                  description="Escolha se deseja ver alunos ativos, inativos ou todos."
                 />
               </FormControl>
             </FormItem>

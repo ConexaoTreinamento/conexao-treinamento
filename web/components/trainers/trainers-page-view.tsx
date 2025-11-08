@@ -130,7 +130,7 @@ export function TrainersPageView() {
       const matchesStatus =
         filters.status === "all"
           ? true
-          : filters.status === "Ativo"
+          : filters.status === "active"
             ? trainer.active
             : !trainer.active;
       const matchesCompensation =

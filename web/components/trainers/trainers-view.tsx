@@ -30,6 +30,8 @@ import { EntityList } from "@/components/base/entity-list";
 import { EditButton } from "@/components/base/edit-button";
 import ConfirmDeleteButton from "@/components/base/confirm-delete-button";
 import { TrainerCompensationBadge } from "@/components/trainers/trainer-compensation-badge";
+import { EntityStatusFilter } from "@/components/base/entity-status-filter";
+import type { EntityStatusFilterValue } from "@/lib/entity-status";
 
 export interface TrainerCardData {
   id: string;
@@ -44,13 +46,13 @@ export interface TrainerCardData {
 }
 
 export interface TrainerFilters {
-  status: "Ativo" | "Inativo" | "all";
+  status: EntityStatusFilterValue;
   compensation: "all" | "Horista" | "Mensalista";
   specialty: string;
 }
 
 export const DEFAULT_TRAINER_FILTERS: TrainerFilters = {
-  status: "Ativo",
+  status: "active",
   compensation: "all",
   specialty: "",
 };
@@ -82,7 +84,7 @@ export function TrainerFiltersContent({
   onReset,
   onClose,
 }: TrainerFiltersContentProps) {
-  const handleStatusChange = (value: "Ativo" | "Inativo" | "all") => {
+  const handleStatusChange = (value: EntityStatusFilterValue) => {
     onChange({ ...filters, status: value });
   };
 
@@ -106,24 +108,11 @@ export function TrainerFiltersContent({
   return (
     <div className="space-y-5">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="trainer-status-filter">Status</Label>
-          <Select
-            value={filters.status}
-            onValueChange={(value: string) =>
-              handleStatusChange(value as TrainerFilters["status"])
-            }
-          >
-            <SelectTrigger id="trainer-status-filter">
-              <SelectValue placeholder="Selecione um status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Ativo">Ativo</SelectItem>
-              <SelectItem value="Inativo">Inativo</SelectItem>
-              <SelectItem value="all">Todos</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <EntityStatusFilter
+          id="trainer-status-filter"
+          value={filters.status}
+          onChange={handleStatusChange}
+        />
 
         <div className="space-y-2">
           <Label htmlFor="trainer-compensation-filter">Compensação</Label>
