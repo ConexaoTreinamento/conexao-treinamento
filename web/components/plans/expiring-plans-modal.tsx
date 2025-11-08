@@ -6,7 +6,7 @@ import {Button} from "@/components/ui/button";
 import {AlertTriangle, Calendar, Loader2, Mail, Phone, User,} from "lucide-react";
 import Link from "next/link";
 import {useQueries, useQuery} from "@tanstack/react-query";
-import type {StudentPlanAssignmentResponseDto, StudentResponseDto,} from "@/lib/api-client";
+import type { StudentResponseDto,} from "@/lib/api-client";
 import {expiringPlanAssignmentsQueryOptions} from "@/lib/students/hooks/student-queries";
 import {getAssignmentEndDate, PlanAssignmentStatusBadge} from "./expiring-plans";
 import {findStudentByIdOptions} from "@/lib/api-client/@tanstack/react-query.gen";
