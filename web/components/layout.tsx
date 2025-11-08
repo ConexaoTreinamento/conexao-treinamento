@@ -24,7 +24,8 @@ import {useTheme} from "next-themes"
 import {VisuallyHidden} from "@radix-ui/react-visually-hidden"
 import Image from "next/image"
 import {useQuery} from "@tanstack/react-query"
-import ExpiringPlansModal, {EXPIRING_LOOKAHEAD_DAYS} from "@/components/plans/expiring-plans-modal"
+import ExpiringPlansModal from "@/components/plans/expiring-plans-modal"
+import {EXPIRING_LOOKAHEAD_DAYS} from "@/lib/students/constants"
 import {expiringPlanAssignmentsQueryOptions} from "@/lib/students/hooks/student-queries"
 
 const navigation = [

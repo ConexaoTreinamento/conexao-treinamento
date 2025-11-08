@@ -11,13 +11,12 @@ import {expiringPlanAssignmentsQueryOptions} from "@/lib/students/hooks/student-
 import {getAssignmentEndDate, PlanAssignmentStatusBadge} from "./expiring-plans";
 import {findStudentByIdOptions} from "@/lib/api-client/@tanstack/react-query.gen";
 import {apiClient} from "@/lib/client";
+import {EXPIRING_LOOKAHEAD_DAYS} from "@/lib/students/constants";
 
 interface ExpiringPlansModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-export const EXPIRING_LOOKAHEAD_DAYS = 7;
 
 export default function ExpiringPlansModal({
   isOpen,
