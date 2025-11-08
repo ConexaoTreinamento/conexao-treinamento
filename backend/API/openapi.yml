@@ -123,6 +123,13 @@ paths:
         '200':
           description: OK
   /students/{studentId}/evaluations/{evaluationId}:
+    parameters:
+    - name: studentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
     get:
       tags:
       - physical-evaluation-controller
@@ -177,8 +184,8 @@ paths:
           type: string
           format: uuid
       responses:
-        '200':
-          description: OK
+        '204':
+          description: No Content
   /students/{id}:
     get:
       tags:

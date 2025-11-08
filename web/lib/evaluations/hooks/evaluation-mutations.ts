@@ -6,12 +6,8 @@ import {
   updateEvaluationMutation,
 } from "@/lib/api-client/@tanstack/react-query.gen";
 import type {
-  CreateEvaluationData,
-  DeleteEvaluationData,
   PhysicalEvaluationRequestDto,
-  UpdateEvaluationData,
 } from "@/lib/api-client";
-import type { Options } from "@/lib/api-client/client/types";
 import { apiClient } from "@/lib/client";
 import {
   evaluationDetailQueryKey,
@@ -19,15 +15,6 @@ import {
 } from "./evaluation-queries";
 
 export type PhysicalEvaluationRequest = PhysicalEvaluationRequestDto;
-
-type CreateEvaluationVariables = Options<CreateEvaluationData>;
-type EvaluationScopedPath = { studentId: string; evaluationId: string };
-type UpdateEvaluationVariables = Omit<Options<UpdateEvaluationData>, "path"> & {
-  path: EvaluationScopedPath;
-};
-type DeleteEvaluationVariables = Omit<Options<DeleteEvaluationData>, "path"> & {
-  path: EvaluationScopedPath;
-};
 
 export const useCreateEvaluation = () => {
   const queryClient = useQueryClient();
@@ -37,7 +24,7 @@ export const useCreateEvaluation = () => {
 
   return useMutation({
     ...base,
-    mutationFn: async (variables: CreateEvaluationVariables) => {
+    mutationFn: async (variables) => {
       if (!baseMutationFn) {
         throw new Error("Missing mutationFn for createEvaluationMutation");
       }
@@ -71,17 +58,17 @@ export const useUpdateEvaluation = () => {
 
   return useMutation({
     ...base,
-    mutationFn: async (variables: UpdateEvaluationVariables) => {
+    mutationFn: async (variables) => {
       if (!baseMutationFn) {
         throw new Error("Missing mutationFn for updateEvaluationMutation");
       }
 
       return baseMutationFn(variables);
     },
-    onSuccess: async (data, variables, context) => {
+    onSuccess: async (data, variables, ...args) => {
       if (baseOnSuccess) {
         try {
-          await baseOnSuccess(data, variables, context);
+          await baseOnSuccess(data, variables, ...args);
         } catch {
           // ignore
         }
