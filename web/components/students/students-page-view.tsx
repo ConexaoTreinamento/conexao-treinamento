@@ -276,21 +276,58 @@ export function StudentsPageView() {
     })),
   });
 
-  const currentPlanMap = useMemo(() => {
-    const map = new Map<string, StudentPlanAssignmentResponseDto | null>();
+  const currentPlanStateMap = useMemo(() => {
+    const map = new Map<string, { assignment: StudentPlanAssignmentResponseDto | null; isResolved: boolean }>();
     currentPlanQueries.forEach((query, index) => {
       const studentId = studentIdsNeedingCurrentPlan[index];
-      if (studentId) {
-        map.set(studentId, query.data ?? null);
+      if (!studentId) {
+        return;
       }
+
+      if (query.isLoading || query.isFetching) {
+        map.set(studentId, { assignment: null, isResolved: false });
+        return;
+      }
+
+      if (query.isError) {
+        map.set(studentId, { assignment: null, isResolved: true });
+        return;
+      }
+
+      map.set(studentId, { assignment: query.data ?? null, isResolved: true });
     });
     return map;
   }, [currentPlanQueries, studentIdsNeedingCurrentPlan]);
 
+  const studentIdsNeedingCurrentPlanSet = useMemo(
+    () => new Set(studentIdsNeedingCurrentPlan),
+    [studentIdsNeedingCurrentPlan],
+  );
+
+  const resolvePlanAssignmentState = useCallback(
+    (studentId: string) => {
+      const expiringAssignment = expiringMap.get(studentId);
+      if (expiringAssignment) {
+        return { assignment: expiringAssignment, isResolved: true } as const;
+      }
+
+      const state = currentPlanStateMap.get(studentId);
+      if (state) {
+        return state;
+      }
+
+      if (studentIdsNeedingCurrentPlanSet.has(studentId)) {
+        return { assignment: null, isResolved: false } as const;
+      }
+
+      return { assignment: null, isResolved: true } as const;
+    },
+    [currentPlanStateMap, expiringMap, studentIdsNeedingCurrentPlanSet],
+  );
+
   const resolveAssignment = useCallback(
-    (studentId: string) =>
-      expiringMap.get(studentId) ?? currentPlanMap.get(studentId) ?? null,
-    [expiringMap, currentPlanMap],
+    (studentId: string) => resolvePlanAssignmentState(studentId).assignment,
+    [resolvePlanAssignmentState],
   );
 
     const resolvePlanStatus = useCallback(
@@ -329,27 +366,121 @@ export function StudentsPageView() {
     );
 
     const filteredStudents = useMemo(() => {
-        if (debouncedFilters.status === "all") {
-            return students;
+      if (debouncedFilters.status === "all") {
+        return students;
+      }
+
+      return students.filter((student) => {
+        if (!student.id) {
+          return false;
         }
 
-        return students.filter((student) => {
-            if (!student.id) {
-                return false;
-            }
+        const { assignment, isResolved } = resolvePlanAssignmentState(student.id);
+        if (!isResolved) {
+          return true;
+        }
 
-            const assignment = resolveAssignment(student.id);
-            return resolvePlanStatus(assignment) === debouncedFilters.status;
-        });
+        return resolvePlanStatus(assignment) === debouncedFilters.status;
+      });
     }, [
-        students,
-        debouncedFilters.status,
-        resolveAssignment,
-        resolvePlanStatus,
+      students,
+      debouncedFilters.status,
+      resolvePlanAssignmentState,
+      resolvePlanStatus,
     ]);
 
+    const hasPendingPlanInfo = useMemo(
+      () =>
+        expiringAssignmentsQuery.isLoading ||
+        expiringAssignmentsQuery.isFetching ||
+        currentPlanQueries.some(
+          (query) => query.isLoading || query.isFetching,
+        ),
+      [
+        expiringAssignmentsQuery.isLoading,
+        expiringAssignmentsQuery.isFetching,
+        currentPlanQueries,
+      ],
+    );
+
+    const filterSignature = useMemo(
+      () =>
+        JSON.stringify({
+          status: debouncedFilters.status,
+          search: debouncedSearchTerm || "",
+          gender: debouncedFilters.gender,
+          profession: debouncedFilters.profession,
+          minAge: debouncedFilters.minAge ?? null,
+          maxAge: debouncedFilters.maxAge ?? null,
+          startDate: debouncedFilters.startDate || "",
+          endDate: debouncedFilters.endDate || "",
+          includeInactive: debouncedFilters.includeInactive,
+        }),
+      [
+        debouncedFilters.status,
+        debouncedFilters.gender,
+        debouncedFilters.profession,
+        debouncedFilters.minAge,
+        debouncedFilters.maxAge,
+        debouncedFilters.startDate,
+        debouncedFilters.endDate,
+        debouncedFilters.includeInactive,
+        debouncedSearchTerm,
+      ],
+    );
+
+    const autoPagingRef = useRef<{ signature: string; triedPages: Set<number> }>(
+      {
+        signature: "",
+        triedPages: new Set(),
+      },
+    );
+
+    useEffect(() => {
+      if (autoPagingRef.current.signature !== filterSignature) {
+        autoPagingRef.current = {
+          signature: filterSignature,
+          triedPages: new Set(),
+        };
+      }
+    }, [filterSignature]);
+
     const totalPages = studentsData?.totalPages || 0;
-  const totalElements = studentsData?.totalElements || 0;
+    const totalElements = studentsData?.totalElements || 0;
+
+    useEffect(() => {
+      if (debouncedFilters.status === "all") {
+        return;
+      }
+
+      if (isLoading || hasPendingPlanInfo) {
+        return;
+      }
+
+      if (filteredStudents.length > 0) {
+        return;
+      }
+
+      if (totalPages === 0 || currentPage >= totalPages - 1) {
+        return;
+      }
+
+      const tracker = autoPagingRef.current;
+      if (tracker.triedPages.has(currentPage)) {
+        return;
+      }
+
+      tracker.triedPages.add(currentPage);
+      setCurrentPage(currentPage + 1);
+    }, [
+      debouncedFilters.status,
+      isLoading,
+      hasPendingPlanInfo,
+      filteredStudents.length,
+      totalPages,
+      currentPage,
+      setCurrentPage,
+    ]);
 
   const handleSearchChange = (value: string) => {
     setSearchTerm(value);
