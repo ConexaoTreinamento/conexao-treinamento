@@ -6,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import type { PhysicalEvaluationResponse } from "@/lib/evaluations/hooks/evaluation-queries";
 import { Activity } from "lucide-react";
 
@@ -50,9 +49,6 @@ export function StudentEvaluationsTab({
                 const formattedDate = evaluation.date
                   ? new Date(evaluation.date).toLocaleDateString("pt-BR")
                   : "Data não informada";
-                const formattedCreatedAt = evaluation.createdAt
-                  ? new Date(evaluation.createdAt).toLocaleDateString("pt-BR")
-                  : "Data sem registro";
                 const weightDisplay = evaluation.weight != null
                   ? `${evaluation.weight}kg`
                   : "N/A";
@@ -73,13 +69,8 @@ export function StudentEvaluationsTab({
                   onClick={() => onOpenEvaluation(evaluationId)}
                 >
                   <div className="p-4 rounded-lg border bg-muted/50 hover:bg-muted/70 transition-colors">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="font-medium">
-                        {formattedDate}
-                      </span>
-                      <Badge variant="outline">
-                        {formattedCreatedAt}
-                      </Badge>
+                    <div className="mb-3">
+                      <span className="font-medium">{formattedDate}</span>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                       <div>
