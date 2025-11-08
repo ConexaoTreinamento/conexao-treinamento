@@ -24,12 +24,12 @@ export const useCreateEvaluation = () => {
 
   return useMutation({
     ...base,
-    mutationFn: async (variables) => {
+    mutationFn: async (...args) => {
       if (!baseMutationFn) {
         throw new Error("Missing mutationFn for createEvaluationMutation");
       }
 
-      return baseMutationFn(variables);
+      return baseMutationFn(...args);
     },
     onSuccess: async (data, variables, ...args) => {
       if (baseOnSuccess) {
@@ -58,12 +58,12 @@ export const useUpdateEvaluation = () => {
 
   return useMutation({
     ...base,
-    mutationFn: async (variables) => {
+    mutationFn: async (...args) => {
       if (!baseMutationFn) {
         throw new Error("Missing mutationFn for updateEvaluationMutation");
       }
 
-      return baseMutationFn(variables);
+      return baseMutationFn(...args);
     },
     onSuccess: async (data, variables, ...args) => {
       if (baseOnSuccess) {
@@ -110,12 +110,12 @@ export const useDeleteEvaluation = () => {
 
   return useMutation({
     ...base,
-    mutationFn: async (variables) => {
+    mutationFn: async (...args) => {
       if (!baseMutationFn) {
         throw new Error("Missing mutationFn for deleteEvaluationMutation");
       }
 
-      return baseMutationFn(variables);
+      return baseMutationFn(...args);
     },
     onSuccess: async (data, variables, ...args) => {
 
