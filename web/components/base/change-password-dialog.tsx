@@ -52,9 +52,9 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
       // Redirecionar para a página principal
       router.push("/schedule")
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       console.error("Erro ao alterar senha:", error)
-      const errorMessage = error?.body?.message || "Erro ao alterar senha. Verifique os dados e tente novamente."
+      const errorMessage = (error as { body?: { message?: string } })?.body?.message || "Erro ao alterar senha. Verifique os dados e tente novamente."
       toast({
         title: "Erro",
         description: errorMessage,
