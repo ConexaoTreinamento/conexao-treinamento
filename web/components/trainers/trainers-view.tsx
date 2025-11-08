@@ -1,8 +1,10 @@
 import type { ChangeEvent, ReactNode } from "react";
 import {
   Calendar,
+  Loader2,
   Mail,
   Phone,
+  RotateCcw,
   Trash2,
   TriangleAlert,
   Users,
@@ -165,8 +167,10 @@ interface TrainersGridProps {
   trainers: TrainerCardData[];
   onOpen: (trainerId: string) => void;
   onEdit: (trainerId: string) => void;
-  onDelete: (trainerId: string) => void;
+  onDelete: (trainerId: string) => Promise<void> | void;
+  onRestore: (trainerId: string) => Promise<void> | void;
   canManage: boolean;
+  restoringTrainerId?: string | null;
 }
 
 export function TrainersGrid({
@@ -174,7 +178,9 @@ export function TrainersGrid({
   onOpen,
   onEdit,
   onDelete,
+  onRestore,
   canManage,
+  restoringTrainerId,
 }: TrainersGridProps) {
   if (!trainers.length) {
     return null;
@@ -190,6 +196,8 @@ export function TrainersGrid({
           onOpen={() => onOpen(trainer.id)}
           onEdit={() => onEdit(trainer.id)}
           onDelete={() => onDelete(trainer.id)}
+          onRestore={() => onRestore(trainer.id)}
+          isRestoring={restoringTrainerId === trainer.id}
         />
       ))}
     </EntityList>
@@ -200,8 +208,10 @@ interface TrainerCardProps {
   trainer: TrainerCardData;
   onOpen: () => void;
   onEdit: () => void;
-  onDelete: () => void;
+  onDelete: () => Promise<void> | void;
+  onRestore: () => Promise<void> | void;
   canManage: boolean;
+  isRestoring: boolean;
 }
 
 function TrainerCard({
@@ -209,7 +219,9 @@ function TrainerCard({
   onOpen,
   onEdit,
   onDelete,
+  onRestore,
   canManage,
+  isRestoring,
 }: TrainerCardProps) {
   const nameSource = trainer.name?.trim() || trainer.email || "";
   const displayName = trainer.name?.trim() || trainer.email || "Professor";
@@ -293,59 +305,105 @@ function TrainerCard({
     </div>
   ) : undefined;
 
-  const mobileActions =
-    canManage && trainer.active ? (
-      <>
-        <EditButton
-          size="icon"
-          variant="outline"
-          className="h-8 w-8"
-          aria-label="Editar professor"
-          onClick={(event) => {
-            event.stopPropagation();
-            onEdit();
-          }}
-          fullWidthOnDesktop={false}
-        />
-        <ConfirmDeleteButton
-          size="icon"
-          aria-label="Excluir professor"
-          onConfirm={() => onDelete()}
-          confirmText="Excluir"
-          title="Excluir professor"
-          description="Tem certeza que deseja excluir este professor?"
-        >
-          <Trash2 className="h-3 w-3" aria-hidden="true" />
-          <span className="sr-only">Excluir professor</span>
-        </ConfirmDeleteButton>
-      </>
-    ) : null;
+  const mobileActions = canManage
+    ? trainer.active
+      ? (
+          <>
+            <EditButton
+              size="icon"
+              variant="outline"
+              className="h-8 w-8"
+              aria-label="Editar professor"
+              onClick={(event) => {
+                event.stopPropagation();
+                onEdit();
+              }}
+              fullWidthOnDesktop={false}
+            />
+            <ConfirmDeleteButton
+              size="icon"
+              aria-label="Excluir professor"
+              onConfirm={() => {
+                void onDelete();
+              }}
+              confirmText="Excluir"
+              title="Excluir professor"
+              description="Tem certeza que deseja excluir este professor?"
+            >
+              <Trash2 className="h-3 w-3" aria-hidden="true" />
+              <span className="sr-only">Excluir professor</span>
+            </ConfirmDeleteButton>
+          </>
+        )
+      : (
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-8 w-8"
+            onClick={(event) => {
+              event.stopPropagation();
+              void onRestore();
+            }}
+            disabled={isRestoring}
+            aria-label="Restaurar professor"
+          >
+            {isRestoring ? (
+              <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+            ) : (
+              <RotateCcw className="h-3 w-3" aria-hidden="true" />
+            )}
+          </Button>
+        )
+    : null;
 
-  const desktopActions =
-    canManage && trainer.active ? (
-      <>
-        <EditButton
-          size="sm"
-          variant="outline"
-          className="h-8 px-3 text-sm"
-          onClick={(event) => {
-            event.stopPropagation();
-            onEdit();
-          }}
-          fullWidthOnDesktop={false}
-        />
-        <ConfirmDeleteButton
-          size="sm"
-          onConfirm={() => onDelete()}
-          title="Excluir professor"
-          description="Tem certeza que deseja excluir este professor?"
-          className="h-8 px-3 text-sm gap-2"
-        >
-          <Trash2 className="h-4 w-4" aria-hidden="true" />
-          <span>Excluir</span>
-        </ConfirmDeleteButton>
-      </>
-    ) : null;
+  const desktopActions = canManage
+    ? trainer.active
+      ? (
+          <>
+            <EditButton
+              size="sm"
+              variant="outline"
+              className="h-8 px-3 text-sm"
+              onClick={(event) => {
+                event.stopPropagation();
+                onEdit();
+              }}
+              fullWidthOnDesktop={false}
+            />
+            <ConfirmDeleteButton
+              size="sm"
+              onConfirm={() => {
+                void onDelete();
+              }}
+              title="Excluir professor"
+              description="Tem certeza que deseja excluir este professor?"
+              className="h-8 px-3 text-sm gap-2"
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+              <span>Excluir</span>
+            </ConfirmDeleteButton>
+          </>
+        )
+      : (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 px-3 text-sm"
+            onClick={(event) => {
+              event.stopPropagation();
+              void onRestore();
+            }}
+            disabled={isRestoring}
+          >
+            {isRestoring ? (
+              <Loader2 className="mr-1 h-3 w-3 animate-spin" aria-hidden="true" />
+            ) : (
+              <RotateCcw className="mr-1 h-3 w-3" aria-hidden="true" />
+            )}
+            Restaurar
+          </Button>
+        )
+    : null;
 
   return (
     <EntityCard

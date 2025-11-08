@@ -75,6 +75,14 @@ public class TrainerController {
         return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping("/{id}/restore")
+    public ResponseEntity<TrainerListItemResponseDTO> restoreTrainer(@PathVariable UUID id) {
+        log.info("Restoring trainer [ID: {}]", id);
+        TrainerListItemResponseDTO response = trainerService.restore(id);
+        log.info("Trainer restored successfully [ID: {}]", id);
+        return ResponseEntity.ok(response);
+    }
+
     @PatchMapping("/{id}/reset-password")
     public ResponseEntity<Void> resetPassword(
             @PathVariable UUID id,
