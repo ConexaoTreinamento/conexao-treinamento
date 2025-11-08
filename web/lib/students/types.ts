@@ -3,8 +3,20 @@ import type {AnamnesisResponseDto, PhysicalImpairmentResponseDto} from "@/lib/ap
 export const impairmentTypes = {"visual": "Visual", "motor": "Motor", "auditory": "Auditório", "intellectual": "Intelectual", "other": "Outro"} as const satisfies Record<Exclude<PhysicalImpairmentResponseDto["type"], undefined>, string>
 export const hasInsomniaTypes = {"yes": "Sim", "no": "Não", "sometimes": "Às vezes"} as const satisfies Record<Exclude<AnamnesisResponseDto["hasInsomnia"], undefined>, string>
 
+export type StudentPlanStatusFilter = "all" | "no-plan" | "expiring" | "active" | "expired";
+
+export const STUDENT_PLAN_STATUS_FILTERS: Array<{
+  value: Exclude<StudentPlanStatusFilter, "all">;
+  label: string;
+}> = [
+  { value: "no-plan", label: "Sem plano" },
+  { value: "expiring", label: "Vencendo (1 semana)" },
+  { value: "active", label: "Plano ativo" },
+  { value: "expired", label: "Plano expirado" },
+];
+
 export interface StudentFilters {
-  status: "all" | "Ativo" | "Vencido" | "Inativo";
+  status: StudentPlanStatusFilter;
   minAge: number | null;
   maxAge: number | null;
   profession: string;

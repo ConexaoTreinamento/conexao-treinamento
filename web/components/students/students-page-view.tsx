@@ -1,15 +1,10 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Plus } from "lucide-react";
-import { useForm } from "react-hook-form";
-import {
-  useMutation,
-  useQueries,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
+import {useRouter, useSearchParams} from "next/navigation";
+import {Plus} from "lucide-react";
+import {useForm} from "react-hook-form";
+import {useMutation, useQueries, useQuery, useQueryClient,} from "@tanstack/react-query";
 import type {
   AnamnesisRequestDto,
   AnamnesisResponseDto,
@@ -17,7 +12,7 @@ import type {
   StudentPlanAssignmentResponseDto,
   StudentRequestDto,
 } from "@/lib/api-client/types.gen";
-import { Button } from "@/components/ui/button";
+import {Button} from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -27,17 +22,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import PageSelector from "@/components/ui/page-selector";
-import { PageHeader } from "@/components/base/page-header";
-import { Section } from "@/components/base/section";
-import { FilterToolbar } from "@/components/base/filter-toolbar";
-import StudentForm, {
-  type StudentFormData,
-} from "@/components/students/student-form";
-import { StudentFiltersContent } from "@/components/students/student-filters";
+import {PageHeader} from "@/components/base/page-header";
+import {Section} from "@/components/base/section";
+import {FilterToolbar} from "@/components/base/filter-toolbar";
+import StudentForm, {type StudentFormData,} from "@/components/students/student-form";
+import {StudentFiltersContent} from "@/components/students/student-filters";
 import {
   countActiveStudentFilters,
   DEFAULT_STUDENT_FILTERS,
   StudentFilters,
+  type StudentPlanStatusFilter,
 } from "@/lib/students/types";
 import {
   StudentsEmptyState,
@@ -46,8 +40,8 @@ import {
   StudentsLoadingList,
 } from "@/components/students/students-view";
 import useDebounce from "@/hooks/use-debounce";
-import { useToast } from "@/hooks/use-toast";
-import { handleHttpError } from "@/lib/error-utils";
+import {useToast} from "@/hooks/use-toast";
+import {handleHttpError} from "@/lib/error-utils";
 import type {
   AssignPlanToStudentMutationResponse,
   AssignPlanToStudentMutationVariables,
@@ -63,8 +57,10 @@ import {
   expiringPlanAssignmentsQueryOptions,
   useStudents,
 } from "@/lib/students/hooks/student-queries";
+import {getAssignmentDaysRemaining} from "@/components/plans/expiring-plans";
 
 const EXPIRING_LOOKAHEAD_DAYS = 7;
+type ResolvedPlanStatus = Exclude<StudentPlanStatusFilter, "all">;
 
 const resolveGender = (value?: string): StudentRequestDto["gender"] => {
   if (value === "M" || value === "F") {
@@ -149,22 +145,28 @@ export function StudentsPageView() {
 
   const currentPage = parseInt(searchParams.get("page") || "0", 10);
 
-  const updatePageInURL = (newPage: number) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (newPage > 0) {
-      params.set("page", newPage.toString());
-    } else {
-      params.delete("page");
-    }
-    router.replace(`?${params.toString()}`);
-    if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
+    const updatePageInURL = useCallback(
+        (newPage: number) => {
+            const params = new URLSearchParams(searchParams.toString());
+            if (newPage > 0) {
+                params.set("page", newPage.toString());
+            } else {
+                params.delete("page");
+            }
+            router.replace(`?${params.toString()}`);
+            if (typeof window !== "undefined") {
+                window.scrollTo({top: 0, behavior: "smooth"});
+            }
+        },
+        [router, searchParams],
+    );
 
-  const setCurrentPage = (newPage: number) => {
-    updatePageInURL(newPage);
-  };
+    const setCurrentPage = useCallback(
+        (newPage: number) => {
+            updatePageInURL(newPage);
+        },
+        [updatePageInURL],
+    );
 
   const mapGenderToBackend = (
     frontendGender: StudentFilters["gender"],
@@ -222,7 +224,19 @@ export function StudentsPageView() {
     pageSize,
   });
 
-  const expiringAssignmentsQuery = useQuery(
+    const previousStatusRef = useRef<StudentFilters["status"]>(
+        DEFAULT_STUDENT_FILTERS.status,
+    );
+
+    useEffect(() => {
+        const previousStatus = previousStatusRef.current;
+        previousStatusRef.current = debouncedFilters.status;
+        if (previousStatus !== debouncedFilters.status) {
+            setCurrentPage(0);
+        }
+    }, [debouncedFilters.status, setCurrentPage]);
+
+    const expiringAssignmentsQuery = useQuery(
     expiringPlanAssignmentsQueryOptions({ days: EXPIRING_LOOKAHEAD_DAYS }),
   );
   const expiringSoonAssignments = useMemo(
@@ -279,7 +293,62 @@ export function StudentsPageView() {
     [expiringMap, currentPlanMap],
   );
 
-  const totalPages = studentsData?.totalPages || 0;
+    const resolvePlanStatus = useCallback(
+        (assignment: StudentPlanAssignmentResponseDto | null): ResolvedPlanStatus => {
+            if (!assignment) {
+                return "no-plan";
+            }
+
+            const daysRemaining = getAssignmentDaysRemaining(assignment);
+            const isExpired = Boolean(
+                assignment.expired ||
+                (typeof daysRemaining === "number" && daysRemaining < 0),
+            );
+
+            if (isExpired) {
+                return "expired";
+            }
+
+            const isExpiringSoon = Boolean(
+                assignment.expiringSoon ||
+                (typeof daysRemaining === "number" &&
+                    daysRemaining <= EXPIRING_LOOKAHEAD_DAYS),
+            );
+
+            if (!assignment.active && !isExpiringSoon) {
+                return "no-plan";
+            }
+
+            if (isExpiringSoon) {
+                return "expiring";
+            }
+
+            return "active";
+        },
+        [],
+    );
+
+    const filteredStudents = useMemo(() => {
+        if (debouncedFilters.status === "all") {
+            return students;
+        }
+
+        return students.filter((student) => {
+            if (!student.id) {
+                return false;
+            }
+
+            const assignment = resolveAssignment(student.id);
+            return resolvePlanStatus(assignment) === debouncedFilters.status;
+        });
+    }, [
+        students,
+        debouncedFilters.status,
+        resolveAssignment,
+        resolvePlanStatus,
+    ]);
+
+    const totalPages = studentsData?.totalPages || 0;
   const totalElements = studentsData?.totalElements || 0;
 
   const handleSearchChange = (value: string) => {
@@ -303,7 +372,7 @@ export function StudentsPageView() {
 
   const resultDescription =
     !isLoading && !error
-      ? `Mostrando ${students.length} de ${totalElements} alunos${hasActiveFilters ? " (filtrados)" : ""}`
+        ? `Mostrando ${filteredStudents.length} de ${totalElements} alunos${hasActiveFilters ? " (filtrados)" : ""}`
       : "Acompanhe todos os alunos cadastrados e seus planos em andamento.";
 
   const uniqueProfessions = useMemo(() => {
@@ -579,10 +648,10 @@ export function StudentsPageView() {
           />
         ) : null}
 
-        {!isLoading && !error && students.length > 0 ? (
+          {!isLoading && !error && filteredStudents.length > 0 ? (
           <>
             <StudentsList
-              students={students}
+                students={filteredStudents}
               resolveAssignment={resolveAssignment}
               onOpenDetails={(id) => router.push(`/students/${id}`)}
               onCreateEvaluation={(id) =>
@@ -604,7 +673,7 @@ export function StudentsPageView() {
           </>
         ) : null}
 
-        {!isLoading && !error && students.length === 0 ? (
+          {!isLoading && !error && filteredStudents.length === 0 ? (
           <StudentsEmptyState
             hasSearchTerm={Boolean(searchTerm)}
             hasActiveFilters={hasActiveFilters}
