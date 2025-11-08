@@ -36,20 +36,17 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
   const { toast } = useToast()
 
   const { mutate: changePassword, isPending } = useMutation({
-    ...changeOwnPasswordMutation({ client: apiClient }),
+    mutationFn: changeOwnPasswordMutation({ client: apiClient }).mutationFn,
     onSuccess: () => {
       toast({
         title: "Sucesso",
         description: "Senha alterada com sucesso!",
         duration: 3000
       })
-      // Limpar campos
       setOldPassword("")
       setNewPassword("")
       setConfirmPassword("")
-      // Fechar modal
       onOpenChange(false)
-      // Redirecionar para a página principal
       router.push("/schedule")
     },
     onError: (error: unknown) => {
