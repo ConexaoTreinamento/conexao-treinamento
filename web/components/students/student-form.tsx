@@ -111,6 +111,28 @@ const ANAMNESIS_FORM_FIELDS = [
   "osteoporosisLocation",
 ] as const satisfies ReadonlyArray<keyof StudentFormData>;
 
+const CEP_DIGIT_LENGTH = 8;
+
+const formatCepValue = (value: string | undefined | null): string => {
+  if (!value) {
+    return "";
+  }
+
+  const digitsOnly = value.replace(/\D/g, "").slice(0, CEP_DIGIT_LENGTH);
+  if (digitsOnly.length <= 5) {
+    return digitsOnly;
+  }
+
+  return `${digitsOnly.slice(0, 5)}-${digitsOnly.slice(5)}`;
+};
+
+const isValidCep = (value: string | undefined | null): boolean => {
+  if (!value) {
+    return false;
+  }
+  return /^\d{5}-\d{3}$/.test(value);
+};
+
 interface StudentFormProps {
   initialData?: Partial<StudentFormData>;
   onSubmit: (data: StudentFormData) => void;
@@ -162,6 +184,7 @@ export default function StudentForm({
   const defaultValues = useMemo<StudentFormData>(
     () => ({
       ...normalizedInitialData,
+      cep: formatCepValue(normalizedInitialData.cep),
       includeAnamnesis: initialAnamnesisEnabled,
       plan: mode === "create" ? null : (normalizedInitialData.plan ?? null),
       physicalImpairments: normalizedInitialData.physicalImpairments ?? [],
@@ -193,6 +216,7 @@ export default function StudentForm({
     if (!hasData) return;
     reset({
       ...normalizedInitialData,
+      cep: formatCepValue(normalizedInitialData.cep),
       includeAnamnesis: initialAnamnesisEnabled,
       plan: mode === "create" ? null : (normalizedInitialData.plan ?? null),
       physicalImpairments: normalizedInitialData?.physicalImpairments ?? [],
@@ -390,12 +414,37 @@ export default function StudentForm({
             </div>
             <div className="space-y-2">
               <Label htmlFor={`cep-${id}`}>CEP *</Label>
-              <Input
-                id={`cep-${id}`}
-                {...register("cep", { required: true })}
+              <Controller
+                control={control}
+                name="cep"
+                rules={{
+                  required: "Campo obrigatório",
+                  validate: (value) =>
+                    !value || isValidCep(value) || "CEP inválido",
+                }}
+                render={({ field }) => (
+                  <Input
+                    id={`cep-${id}`}
+                    value={field.value ?? ""}
+                    inputMode="numeric"
+                    pattern="[0-9-]*"
+                    maxLength={9}
+                    onChange={(event) => {
+                      const formatted = formatCepValue(event.target.value);
+                      field.onChange(formatted);
+                    }}
+                    onBlur={(event) => {
+                      const formatted = formatCepValue(event.target.value);
+                      field.onChange(formatted);
+                      field.onBlur();
+                    }}
+                  />
+                )}
               />
               {errors.cep && (
-                <p className="text-xs text-red-600">Campo obrigatório</p>
+                <p className="text-xs text-red-600">
+                  {errors.cep.message ?? "CEP inválido"}
+                </p>
               )}
             </div>
           </div>
