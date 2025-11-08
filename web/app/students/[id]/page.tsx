@@ -116,9 +116,12 @@ export default function StudentProfilePage() {
     enabled: hasStudentId,
   })
 
-  const { data: evaluations, isLoading: isLoadingEvaluations } = useEvaluations(studentId, {
-    enabled: hasStudentId,
-  })
+  const { data: evaluations, isLoading: isLoadingEvaluations } = useEvaluations(
+    { path: { studentId } },
+    {
+      enabled: hasStudentId,
+    },
+  )
 
   const assignPlanMutation = useMutation(assignPlanToStudentMutationOptions())
   const { mutateAsync: deleteStudent, isPending: isDeleting } = useDeleteStudent()

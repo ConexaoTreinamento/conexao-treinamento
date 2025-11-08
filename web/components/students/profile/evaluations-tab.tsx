@@ -42,84 +42,98 @@ export function StudentEvaluationsTab({
         ) : (
           <div className="space-y-4">
             {evaluations && evaluations.length > 0 ? (
-              evaluations.map((evaluation) => (
-                <button
-                  key={evaluation.id}
+              evaluations.map((evaluation) => {
+                const evaluationId = evaluation.id;
+                if (!evaluationId) {
+                  return null;
+                }
+                const formattedDate = evaluation.date
+                  ? new Date(evaluation.date).toLocaleDateString("pt-BR")
+                  : "Data não informada";
+                const formattedCreatedAt = evaluation.createdAt
+                  ? new Date(evaluation.createdAt).toLocaleDateString("pt-BR")
+                  : "Data sem registro";
+                const weightDisplay = evaluation.weight != null
+                  ? `${evaluation.weight}kg`
+                  : "N/A";
+                const bmiDisplay = evaluation.bmi != null ? evaluation.bmi : "N/A";
+                const circumferences = evaluation.circumferences;
+                const folds = evaluation.subcutaneousFolds;
+                const foldParts = [
+                  folds?.triceps != null && `Tríceps ${folds.triceps}mm`,
+                  folds?.abdominal != null && `Abdominal ${folds.abdominal}mm`,
+                  folds?.thigh != null && `Coxa ${folds.thigh}mm`,
+                ].filter((part): part is string => Boolean(part));
+
+                return (
+                  <button
+                  key={evaluationId}
                   type="button"
                   className="w-full text-left"
-                  onClick={() => onOpenEvaluation(evaluation.id)}
+                  onClick={() => onOpenEvaluation(evaluationId)}
                 >
                   <div className="p-4 rounded-lg border bg-muted/50 hover:bg-muted/70 transition-colors">
                     <div className="flex justify-between items-center mb-3">
                       <span className="font-medium">
-                        {new Date(evaluation.date).toLocaleDateString("pt-BR")}
+                        {formattedDate}
                       </span>
                       <Badge variant="outline">
-                        {new Date(evaluation.createdAt).toLocaleDateString(
-                          "pt-BR",
-                        )}
+                        {formattedCreatedAt}
                       </Badge>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                       <div>
                         <span className="text-muted-foreground">Peso:</span>
-                        <p className="font-medium">{evaluation.weight}kg</p>
+                        <p className="font-medium">{weightDisplay}</p>
                       </div>
                       <div>
                         <span className="text-muted-foreground">IMC:</span>
-                        <p className="font-medium">{evaluation.bmi}</p>
+                        <p className="font-medium">{bmiDisplay}</p>
                       </div>
-                      {evaluation.circumferences?.waist && (
+                      {circumferences?.waist != null && (
                         <div>
                           <span className="text-muted-foreground">
                             Cintura:
                           </span>
                           <p className="font-medium">
-                            {evaluation.circumferences.waist}cm
+                            {circumferences.waist}cm
                           </p>
                         </div>
                       )}
-                      {evaluation.circumferences?.hip && (
+                      {circumferences?.hip != null && (
                         <div>
                           <span className="text-muted-foreground">
                             Quadril:
                           </span>
                           <p className="font-medium">
-                            {evaluation.circumferences.hip}cm
+                            {circumferences.hip}cm
                           </p>
                         </div>
                       )}
-                      {evaluation.circumferences?.rightArmFlexed && (
+                      {circumferences?.rightArmFlexed != null && (
                         <div>
                           <span className="text-muted-foreground">
                             Braço Dir.:
                           </span>
                           <p className="font-medium">
-                            {evaluation.circumferences.rightArmFlexed}cm
+                            {circumferences.rightArmFlexed}cm
                           </p>
                         </div>
                       )}
-                      {evaluation.circumferences?.rightThigh && (
+                      {circumferences?.rightThigh != null && (
                         <div>
                           <span className="text-muted-foreground">
                             Coxa Dir.:
                           </span>
                           <p className="font-medium">
-                            {evaluation.circumferences.rightThigh}cm
+                            {circumferences.rightThigh}cm
                           </p>
                         </div>
                       )}
                     </div>
-                    {evaluation.subcutaneousFolds && (
+                    {foldParts.length > 0 && (
                       <div className="mt-3 pt-3 border-t text-xs text-muted-foreground">
-                        <p>
-                          {evaluation.subcutaneousFolds.triceps &&
-                            `Dobras: Tríceps ${evaluation.subcutaneousFolds.triceps}mm`}
-                          {evaluation.subcutaneousFolds.abdominal &&
-                            ` • Abdominal ${evaluation.subcutaneousFolds.abdominal}mm`}
-                          {evaluation.subcutaneousFolds.thigh &&
-                            ` • Coxa ${evaluation.subcutaneousFolds.thigh}mm`}
-                        </p>
+                        <p>{`Dobras: ${foldParts.join(" • ")}`}</p>
                       </div>
                     )}
                     <div className="flex justify-end mt-2">
@@ -129,7 +143,8 @@ export function StudentEvaluationsTab({
                     </div>
                   </div>
                 </button>
-              ))
+                );
+              })
             ) : (
               <div className="text-center py-8">
                 <Activity className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
