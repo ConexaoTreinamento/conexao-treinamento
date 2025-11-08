@@ -153,13 +153,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 									})}
 								</nav>
 								<div className="p-4 border-t space-y-2 flex-shrink-0">
-									<Link
-										href="/profile"
-										className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-									>
-										<User className="w-4 h-4" />
-										Perfil
-									</Link>
 									{shouldShowExpiringPlansButton ? (
 										<Button
 											type="button"
@@ -172,6 +165,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 											Planos vencendo
 										</Button>
 									) : null}
+									<Link
+										href="/profile"
+										className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+									>
+										<User className="w-4 h-4" />
+										Perfil
+									</Link>
 									<Button
 										variant="ghost"
 										size="sm"
@@ -228,13 +228,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 						})}
 					</nav>
 					<div className="absolute bottom-0 left-0 w-64 bg-card border-t border-r p-4 space-y-2">
-						<Link
-							href="/profile"
-							className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-						>
-							<User className="w-5 h-5" />
-							Perfil
-						</Link>
 						{shouldShowExpiringPlansButton ? (
 							<Button
 								type="button"
@@ -246,6 +239,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 								Planos vencendo
 							</Button>
 						) : null}
+						<Link
+							href="/profile"
+							className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+						>
+							<User className="w-5 h-5" />
+							Perfil
+						</Link>
 						<Button
 							variant="ghost"
 							onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
