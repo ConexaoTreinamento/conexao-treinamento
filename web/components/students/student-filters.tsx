@@ -1,24 +1,12 @@
-import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-} from "@/components/ui/form";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import type { UseFormReturn } from "react-hook-form";
-import type { StudentFilters } from "../../lib/students/types";
-import { countActiveStudentFilters, DEFAULT_STUDENT_FILTERS } from "../../lib/students/types";
+import {X} from "lucide-react";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Form, FormControl, FormField, FormItem, FormLabel,} from "@/components/ui/form";
+import {Checkbox} from "@/components/ui/checkbox";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue,} from "@/components/ui/select";
+import type {UseFormReturn} from "react-hook-form";
+import type {StudentFilters} from "@/lib/students/types";
+import {countActiveStudentFilters, DEFAULT_STUDENT_FILTERS, STUDENT_PLAN_STATUS_FILTERS,} from "@/lib/students/types";
 
 export interface StudentFiltersContentProps {
   filtersForm: UseFormReturn<StudentFilters>;
@@ -86,9 +74,11 @@ export const StudentFiltersContent = ({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="Ativo">Ativo</SelectItem>
-                    <SelectItem value="Vencido">Vencido</SelectItem>
-                    <SelectItem value="Inativo">Inativo</SelectItem>
+                      {STUDENT_PLAN_STATUS_FILTERS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                          </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </FormControl>
