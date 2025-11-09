@@ -58,8 +58,7 @@ import {
   useStudents,
 } from "@/lib/students/hooks/student-queries";
 import {getAssignmentDaysRemaining} from "@/components/plans/expiring-plans";
-
-const EXPIRING_LOOKAHEAD_DAYS = 7;
+import {EXPIRING_LOOKAHEAD_DAYS} from "@/lib/students/constants";
 type ResolvedPlanStatus = Exclude<StudentPlanStatusFilter, "all">;
 
 const resolveGender = (value?: string): StudentRequestDto["gender"] => {

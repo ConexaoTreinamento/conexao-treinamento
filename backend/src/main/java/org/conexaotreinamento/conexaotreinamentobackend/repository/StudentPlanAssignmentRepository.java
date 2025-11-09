@@ -30,14 +30,17 @@ public interface StudentPlanAssignmentRepository extends JpaRepository<StudentPl
            "ORDER BY spa.startDate DESC")
     List<StudentPlanAssignment> findByStudentIdOrderByStartDateDesc(@Param("studentId") UUID studentId);
     
-    // Find assignments expiring soon
-              @Query(value = """
-                            SELECT * FROM student_plan_assignments spa
-                            WHERE spa.start_date + spa.duration_days - 1 >= CURRENT_DATE
-                                   AND spa.start_date + spa.duration_days - 1 <= :futureDate
-                            ORDER BY spa.start_date + spa.duration_days - 1 ASC
-                            """, nativeQuery = true)
-              List<StudentPlanAssignment> findExpiringSoon(@Param("futureDate") LocalDate futureDate);
+    // Find assignments expiring soon (active students only)
+                @Query(value = """
+                                SELECT spa.*
+                                FROM student_plan_assignments spa
+                                      JOIN students s ON s.student_id = spa.student_id
+                                WHERE s.deleted_at IS NULL
+                                       AND spa.start_date + spa.duration_days - 1 >= CURRENT_DATE
+                                       AND spa.start_date + spa.duration_days - 1 <= :futureDate
+                                ORDER BY spa.start_date + spa.duration_days - 1 ASC
+                                """, nativeQuery = true)
+                List<StudentPlanAssignment> findExpiringSoon(@Param("futureDate") LocalDate futureDate);
     
     // Find all currently active assignments
               @Query(value = """
