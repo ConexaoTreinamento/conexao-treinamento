@@ -1,4 +1,5 @@
 import type {AnamnesisResponseDto, PhysicalImpairmentResponseDto} from "@/lib/api-client";
+import type { EntityStatusFilterValue } from "@/lib/entity-status";
 
 export const impairmentTypes = {
     "visual": "Visual",
@@ -28,24 +29,24 @@ export const STUDENT_PLAN_STATUS_FILTERS: Array<{
 
 export interface StudentFilters {
     status: StudentPlanStatusFilter;
+    entityStatus: EntityStatusFilterValue;
     minAge: number | null;
     maxAge: number | null;
     profession: string;
     gender: "all" | "Masculino" | "Feminino" | "Outro";
     startDate: string;
     endDate: string;
-    includeInactive: boolean;
 }
 
 export const DEFAULT_STUDENT_FILTERS: StudentFilters = {
     status: "all",
+    entityStatus: "active",
     minAge: null,
     maxAge: null,
     profession: "all",
     gender: "all",
     startDate: "",
     endDate: "",
-    includeInactive: false,
 };
 
 export const countActiveStudentFilters = (filters: StudentFilters): number => {
@@ -79,7 +80,7 @@ export const countActiveStudentFilters = (filters: StudentFilters): number => {
         count += 1;
     }
 
-    if (filters.includeInactive !== DEFAULT_STUDENT_FILTERS.includeInactive) {
+    if (filters.entityStatus !== DEFAULT_STUDENT_FILTERS.entityStatus) {
         count += 1;
     }
 
