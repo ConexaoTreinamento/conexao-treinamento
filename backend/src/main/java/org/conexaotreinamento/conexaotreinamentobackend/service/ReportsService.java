@@ -9,7 +9,6 @@ import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerRepo
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Event;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.EventParticipant;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
-import org.conexaotreinamento.conexaotreinamentobackend.enums.CommitmentStatus;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.EventRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentRepository;
@@ -85,9 +84,9 @@ public class ReportsService {
             if (participants == null) {
                 continue;
             }
-            List<StudentCommitmentResponseDTO> attending = participants.stream()
-                    .filter(p -> p.commitmentStatus() == CommitmentStatus.ATTENDING)
-                    .collect(Collectors.toList());
+        List<StudentCommitmentResponseDTO> attending = participants.stream()
+            .filter(p -> Boolean.TRUE.equals(p.present()))
+            .collect(Collectors.toList());
             if (attending.isEmpty()) {
                 continue;
             }
