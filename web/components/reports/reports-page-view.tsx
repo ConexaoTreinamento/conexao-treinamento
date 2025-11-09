@@ -62,13 +62,45 @@ const formatDateInput = (date: Date) => {
 };
 
 const createDateFromInput = (value: string, endOfDay = false) => {
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
+
   const [year, month, day] = value.split("-").map(Number);
-  if (!year || !month || !day) return null;
+
+  if (!year || !month || !day) {
+    return null;
+  }
+
   if (endOfDay) {
     return new Date(year, month - 1, day, 23, 59, 59, 999);
   }
   return new Date(year, month - 1, day, 0, 0, 0, 0);
+};
+
+const getEndOfToday = () => {
+  const limit = new Date();
+  limit.setHours(23, 59, 59, 999);
+
+  return limit;
+};
+
+const clampDateToEndOfToday = (date: Date) => {
+  const limit = getEndOfToday();
+  return date.getTime() > limit.getTime() ? new Date(limit) : new Date(date);
+};
+
+const clampDateInputToToday = (value: string) => {
+  if (!value) {
+    return value;
+  }
+
+  const parsed = createDateFromInput(value);
+  if (!parsed) {
+    return value;
+  }
+
+  return formatDateInput(clampDateToEndOfToday(parsed));
 };
 
 const computePeriodRange = (period: PeriodKey, customRange?: CustomRange) => {
@@ -76,9 +108,11 @@ const computePeriodRange = (period: PeriodKey, customRange?: CustomRange) => {
     const startDate = customRange?.start
       ? createDateFromInput(customRange.start, false)
       : null;
-    const endDate = customRange?.end
+    const endDateRaw = customRange?.end
       ? createDateFromInput(customRange.end, true)
       : null;
+
+    const endDate = endDateRaw ? clampDateToEndOfToday(endDateRaw) : null;
 
     if (!startDate || !endDate || startDate > endDate) {
       return { start: "", end: "" };
@@ -122,6 +156,11 @@ const computePeriodRange = (period: PeriodKey, customRange?: CustomRange) => {
   start.setHours(0, 0, 0, 0);
   end.setHours(23, 59, 59, 999);
 
+  const endLimit = getEndOfToday();
+  if (end.getTime() > endLimit.getTime()) {
+    end.setTime(endLimit.getTime());
+  }
+
   return {
     start: start.toISOString(),
     end: end.toISOString(),
@@ -155,6 +194,13 @@ export function ReportsPageView() {
   );
   const customRangeStart = customRange?.start ?? "";
   const customRangeEnd = customRange?.end ?? "";
+  const todayInput = useMemo(() => formatDateInput(new Date()), []);
+  const startDateMax = useMemo(() => {
+    if (customRangeEnd && customRangeEnd < todayInput) {
+      return customRangeEnd;
+    }
+    return todayInput;
+  }, [customRangeEnd, todayInput]);
   const selectedTrainer = watch("trainerId") ?? "all";
   const searchTerm = watch("searchTerm") ?? "";
   const router = useRouter();
@@ -185,7 +231,9 @@ export function ReportsPageView() {
     const startDate = createDateFromInput(customRange.start);
     const endDate = createDateFromInput(customRange.end);
 
-    if (!startDate || !endDate) return false;
+    if (!startDate || !endDate) {
+      return false;
+    }
 
     return startDate > endDate;
   }, [customRange?.end, customRange?.start, selectedPeriod]);
@@ -220,11 +268,12 @@ export function ReportsPageView() {
 
   const handleCustomRangeChange = (key: keyof CustomRange, value: string) => {
     const currentRange = getValues("customRange") ?? { start: "", end: "" };
+    const clampedValue = clampDateInputToToday(value);
     setValue(
       "customRange",
       {
         ...currentRange,
-        [key]: value,
+        [key]: clampedValue,
       },
       { shouldDirty: true, shouldValidate: true },
     );
@@ -387,7 +436,7 @@ export function ReportsPageView() {
               id="reports-custom-start"
               type="date"
               value={customRangeStart}
-              max={customRangeEnd || undefined}
+              max={startDateMax}
               onChange={(event) =>
                 handleCustomRangeChange("start", event.target.value)
               }
@@ -400,6 +449,7 @@ export function ReportsPageView() {
               type="date"
               value={customRangeEnd}
               min={customRangeStart || undefined}
+              max={todayInput}
               onChange={(event) =>
                 handleCustomRangeChange("end", event.target.value)
               }
