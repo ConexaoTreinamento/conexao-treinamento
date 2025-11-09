@@ -1,17 +1,32 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useEffect } from "react"
+import {useEffect, useState} from "react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
-import { Menu, BarChart3, Users, Calendar, Dumbbell, User, Sun, Moon, LogOut, Shield, Crown } from "lucide-react"
-import { useTheme } from "next-themes"
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden"
+import {usePathname, useRouter} from "next/navigation"
+import {Button} from "@/components/ui/button"
+import {Sheet, SheetContent, SheetTitle, SheetTrigger} from "@/components/ui/sheet"
+import {
+	AlertTriangle,
+	BarChart3,
+	Calendar,
+	Crown,
+	Dumbbell,
+	LogOut,
+	Menu,
+	Moon,
+	Shield,
+	Sun,
+	User,
+	Users
+} from "lucide-react"
+import {useTheme} from "next-themes"
+import {VisuallyHidden} from "@radix-ui/react-visually-hidden"
 import Image from "next/image"
+import {useQuery} from "@tanstack/react-query"
 import ExpiringPlansModal from "@/components/plans/expiring-plans-modal"
+import {EXPIRING_LOOKAHEAD_DAYS} from "@/lib/students/constants"
+import {expiringPlanAssignmentsQueryOptions} from "@/lib/students/hooks/student-queries"
 
 const navigation = [
 	{ name: "Agenda", href: "/schedule", icon: Calendar },
@@ -24,6 +39,52 @@ const navigation = [
 	{ name: "Relatórios", href: "/reports", icon: BarChart3, adminOnly: true },
 ]
 
+const sidebarActionBaseClasses = "flex w-full items-center gap-3 px-3 py-2 text-sm transition-colors justify-start rounded-lg"
+const sidebarActionVariantClasses = {
+	default: "text-muted-foreground hover:text-foreground hover:bg-muted",
+	danger: "text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950",
+} as const
+
+type SidebarActionVariant = keyof typeof sidebarActionVariantClasses
+
+interface SidebarActionProps {
+	icon: React.ReactNode
+	label: string
+	href?: string
+	onClick?: () => void
+	variant?: SidebarActionVariant
+	className?: string
+}
+
+function SidebarAction({ icon, label, href, onClick, variant = "default", className }: SidebarActionProps) {
+	const combinedClassName = [sidebarActionBaseClasses, sidebarActionVariantClasses[variant], className]
+		.filter(Boolean)
+		.join(" ")
+
+	const content = (
+		<>
+			{icon}
+			<span className="truncate">{label}</span>
+		</>
+	)
+
+	if (href) {
+		return (
+			<Button variant="ghost" asChild className={combinedClassName}>
+				<Link href={href} onClick={onClick}>
+					{content}
+				</Link>
+			</Button>
+		)
+	}
+
+	return (
+		<Button variant="ghost" onClick={onClick} className={combinedClassName}>
+			{content}
+		</Button>
+	)
+}
+
 export default function Layout({ children }: { children: React.ReactNode }) {
 	const pathname = usePathname()
 	const router = useRouter()
@@ -32,6 +93,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 	const [userName, setUserName] = useState<string>("")
 	const [mounted, setMounted] = useState(false)
 	const [showExpiringPlansModal, setShowExpiringPlansModal] = useState(false)
+	const expiringAssignmentsPreviewQuery = useQuery({
+		...expiringPlanAssignmentsQueryOptions({ days: EXPIRING_LOOKAHEAD_DAYS }),
+		enabled: mounted,
+		staleTime: 60_000,
+	})
+	const hasExpiringPlans = (expiringAssignmentsPreviewQuery.data?.length ?? 0) > 0
+	const shouldShowExpiringPlansButton = expiringAssignmentsPreviewQuery.isSuccess && hasExpiringPlans
 
 	useEffect(() => {
 		setMounted(true)
@@ -131,31 +199,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 									})}
 								</nav>
 								<div className="p-4 border-t space-y-2 flex-shrink-0">
-									<Link
+									{shouldShowExpiringPlansButton ? (
+										<SidebarAction
+											icon={<AlertTriangle className="w-4 h-4 text-orange-500" />}
+											label="Planos vencendo"
+											onClick={() => setShowExpiringPlansModal(true)}
+										/>
+									) : null}
+									<SidebarAction
+										icon={<User className="w-4 h-4" />}
+										label="Perfil"
 										href="/profile"
-										className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-									>
-										<User className="w-4 h-4" />
-										Perfil
-									</Link>
-									<Button
-										variant="ghost"
-										size="sm"
+									/>
+									<SidebarAction
+										icon={theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+										label={theme === "dark" ? "Modo Claro" : "Modo Escuro"}
 										onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-										className="w-full justify-start gap-3 px-3"
-									>
-										{theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-										{theme === "dark" ? "Modo Claro" : "Modo Escuro"}
-									</Button>
-									<Button
-										variant="ghost"
-										size="sm"
+									/>
+									<SidebarAction
+										icon={<LogOut className="w-4 h-4" />}
+										label="Sair"
 										onClick={handleLogout}
-										className="w-full justify-start gap-3 px-3 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-									>
-										<LogOut className="w-4 h-4" />
-										Sair
-									</Button>
+										variant="danger"
+									/>
 								</div>
 							</div>
 						</SheetContent>
@@ -194,29 +260,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 						})}
 					</nav>
 					<div className="absolute bottom-0 left-0 w-64 bg-card border-t border-r p-4 space-y-2">
-						<Link
+						{shouldShowExpiringPlansButton ? (
+							<SidebarAction
+								icon={<AlertTriangle className="w-5 h-5 text-orange-500" />}
+								label="Planos vencendo"
+								onClick={() => setShowExpiringPlansModal(true)}
+							/>
+						) : null}
+						<SidebarAction
+							icon={<User className="w-5 h-5" />}
+							label="Perfil"
 							href="/profile"
-							className="flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-						>
-							<User className="w-5 h-5" />
-							Perfil
-						</Link>
-						<Button
-							variant="ghost"
+						/>
+						<SidebarAction
+							icon={theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+							label={theme === "dark" ? "Modo Claro" : "Modo Escuro"}
 							onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-							className="w-full justify-start gap-3 px-3"
-						>
-							{theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-							{theme === "dark" ? "Modo Claro" : "Modo Escuro"}
-						</Button>
-						<Button
-							variant="ghost"
+						/>
+						<SidebarAction
+							icon={<LogOut className="w-5 h-5" />}
+							label="Sair"
 							onClick={handleLogout}
-							className="w-full justify-start gap-3 px-3 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-						>
-							<LogOut className="w-5 h-5" />
-							Sair
-						</Button>
+							variant="danger"
+						/>
 					</div>
 				</div>
 
