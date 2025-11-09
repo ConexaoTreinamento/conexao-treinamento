@@ -11,6 +11,8 @@ public interface PhysicalEvaluationRepository extends JpaRepository<PhysicalEval
     List<PhysicalEvaluation> findByStudentIdAndDeletedAtIsNullOrderByDateDesc(UUID studentId);
     
     Optional<PhysicalEvaluation> findByIdAndDeletedAtIsNull(UUID id);
+
+    Optional<PhysicalEvaluation> findByIdAndStudentIdAndDeletedAtIsNull(UUID id, UUID studentId);
     
     boolean existsByIdAndStudentIdAndDeletedAtIsNull(UUID id, UUID studentId);
 }

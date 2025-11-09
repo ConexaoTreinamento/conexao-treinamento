@@ -86,10 +86,8 @@ public class PhysicalEvaluationService {
         return PhysicalEvaluationResponseDTO.fromEntity(savedEvaluation);
     }
 
-    public PhysicalEvaluationResponseDTO findById(UUID id) {
-        PhysicalEvaluation evaluation = evaluationRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Physical evaluation not found"));
-
+    public PhysicalEvaluationResponseDTO findById(UUID studentId, UUID id) {
+        PhysicalEvaluation evaluation = findActiveEvaluation(studentId, id);
         return PhysicalEvaluationResponseDTO.fromEntity(evaluation);
     }
 
@@ -105,9 +103,11 @@ public class PhysicalEvaluationService {
     }
 
     @Transactional
-    public PhysicalEvaluationResponseDTO update(UUID id, PhysicalEvaluationRequestDTO request) {
-        PhysicalEvaluation evaluation = evaluationRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Physical evaluation not found"));
+    public PhysicalEvaluationResponseDTO update(
+            UUID studentId,
+            UUID id,
+            PhysicalEvaluationRequestDTO request) {
+        PhysicalEvaluation evaluation = findActiveEvaluation(studentId, id);
 
         // Recalculate BMI
         double heightInMeters = request.height() / 100.0;
@@ -162,12 +162,17 @@ public class PhysicalEvaluationService {
     }
 
     @Transactional
-    public void delete(UUID id) {
-        PhysicalEvaluation evaluation = evaluationRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Physical evaluation not found"));
-
+    public void delete(UUID studentId, UUID id) {
+        PhysicalEvaluation evaluation = findActiveEvaluation(studentId, id);
         evaluation.deactivate();
         evaluationRepository.save(evaluation);
+    }
+
+    private PhysicalEvaluation findActiveEvaluation(UUID studentId, UUID evaluationId) {
+        return evaluationRepository
+                .findByIdAndStudentIdAndDeletedAtIsNull(evaluationId, studentId)
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.NOT_FOUND, "Physical evaluation not found"));
     }
 }
 

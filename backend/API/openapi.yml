@@ -8,7 +8,7 @@ servers:
 security:
 - bearerAuth: []
 paths:
-  /trainers/{id}:
+  "/trainers/{id}":
     get:
       tags:
       - trainer-controller
@@ -24,9 +24,9 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/TrainerListItemResponseDTO'
+                "$ref": "#/components/schemas/TrainerListItemResponseDTO"
     put:
       tags:
       - trainer-controller
@@ -42,15 +42,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TrainerCreateRequestDTO'
+              "$ref": "#/components/schemas/TrainerCreateRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/TrainerResponseDTO'
+                "$ref": "#/components/schemas/TrainerResponseDTO"
     delete:
       tags:
       - trainer-controller
@@ -65,7 +65,7 @@ paths:
       responses:
         '200':
           description: OK
-  /trainer-schedules/{id}:
+  "/trainer-schedules/{id}":
     get:
       tags:
       - trainer-schedule-controller
@@ -81,9 +81,9 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/TrainerScheduleResponseDTO'
+                "$ref": "#/components/schemas/TrainerScheduleResponseDTO"
     put:
       tags:
       - trainer-schedule-controller
@@ -99,15 +99,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TrainerScheduleRequestDTO'
+              "$ref": "#/components/schemas/TrainerScheduleRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/TrainerScheduleResponseDTO'
+                "$ref": "#/components/schemas/TrainerScheduleResponseDTO"
     delete:
       tags:
       - trainer-schedule-controller
@@ -122,12 +122,18 @@ paths:
       responses:
         '200':
           description: OK
-  /students/{studentId}/evaluations/{evaluationId}:
+  "/students/{studentId}/evaluations/{evaluationId}":
     get:
       tags:
       - physical-evaluation-controller
       operationId: getEvaluation
       parameters:
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       - name: evaluationId
         in: path
         required: true
@@ -138,14 +144,20 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/PhysicalEvaluationResponseDTO'
+                "$ref": "#/components/schemas/PhysicalEvaluationResponseDTO"
     put:
       tags:
       - physical-evaluation-controller
       operationId: updateEvaluation
       parameters:
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       - name: evaluationId
         in: path
         required: true
@@ -156,20 +168,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PhysicalEvaluationRequestDTO'
+              "$ref": "#/components/schemas/PhysicalEvaluationRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/PhysicalEvaluationResponseDTO'
+                "$ref": "#/components/schemas/PhysicalEvaluationResponseDTO"
     delete:
       tags:
       - physical-evaluation-controller
       operationId: deleteEvaluation
       parameters:
+      - name: studentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
       - name: evaluationId
         in: path
         required: true
@@ -179,7 +197,7 @@ paths:
       responses:
         '200':
           description: OK
-  /students/{id}:
+  "/students/{id}":
     get:
       tags:
       - student-controller
@@ -195,9 +213,9 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/StudentResponseDTO'
+                "$ref": "#/components/schemas/StudentResponseDTO"
     put:
       tags:
       - student-controller
@@ -213,15 +231,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/StudentRequestDTO'
+              "$ref": "#/components/schemas/StudentRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/StudentResponseDTO'
+                "$ref": "#/components/schemas/StudentResponseDTO"
     delete:
       tags:
       - student-controller
@@ -236,7 +254,7 @@ paths:
       responses:
         '200':
           description: OK
-  /exercises/{id}:
+  "/exercises/{id}":
     get:
       tags:
       - exercise-controller
@@ -252,9 +270,9 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/ExerciseResponseDTO'
+                "$ref": "#/components/schemas/ExerciseResponseDTO"
     put:
       tags:
       - exercise-controller
@@ -270,15 +288,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ExerciseRequestDTO'
+              "$ref": "#/components/schemas/ExerciseRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/ExerciseResponseDTO'
+                "$ref": "#/components/schemas/ExerciseResponseDTO"
     delete:
       tags:
       - exercise-controller
@@ -308,16 +326,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchExerciseRequestDTO'
+              "$ref": "#/components/schemas/PatchExerciseRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/ExerciseResponseDTO'
-  /events/{id}:
+                "$ref": "#/components/schemas/ExerciseResponseDTO"
+  "/events/{id}":
     get:
       tags:
       - event-controller
@@ -333,9 +351,9 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/EventResponseDTO'
+                "$ref": "#/components/schemas/EventResponseDTO"
     put:
       tags:
       - event-controller
@@ -351,15 +369,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EventRequestDTO'
+              "$ref": "#/components/schemas/EventRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/EventResponseDTO'
+                "$ref": "#/components/schemas/EventResponseDTO"
     delete:
       tags:
       - event-controller
@@ -389,16 +407,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchEventRequestDTO'
+              "$ref": "#/components/schemas/PatchEventRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/EventResponseDTO'
-  /administrators/{id}:
+                "$ref": "#/components/schemas/EventResponseDTO"
+  "/administrators/{id}":
     get:
       tags:
       - administrator-controller
@@ -414,9 +432,9 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/AdministratorListItemResponseDTO'
+                "$ref": "#/components/schemas/AdministratorListItemResponseDTO"
     put:
       tags:
       - administrator-controller
@@ -432,15 +450,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AdministratorCreateRequestDTO'
+              "$ref": "#/components/schemas/AdministratorCreateRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/AdministratorResponseDTO'
+                "$ref": "#/components/schemas/AdministratorResponseDTO"
     delete:
       tags:
       - administrator-controller
@@ -470,16 +488,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchAdministratorRequestDTO'
+              "$ref": "#/components/schemas/PatchAdministratorRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/AdministratorResponseDTO'
-  /users:
+                "$ref": "#/components/schemas/AdministratorResponseDTO"
+  "/users":
     get:
       tags:
       - user-controller
@@ -489,14 +507,14 @@ paths:
         in: query
         required: true
         schema:
-          $ref: '#/components/schemas/Pageable'
+          "$ref": "#/components/schemas/Pageable"
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/PageUserResponseDTO'
+                "$ref": "#/components/schemas/PageUserResponseDTO"
     post:
       tags:
       - user-controller
@@ -505,16 +523,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserCreateRequestDTO'
+              "$ref": "#/components/schemas/UserCreateRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/UserResponseDTO'
-  /users/me/change-password:
+                "$ref": "#/components/schemas/UserResponseDTO"
+  "/users/me/change-password":
     post:
       tags:
       - user-controller
@@ -523,12 +541,12 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ChangePasswordRequestDTO'
+              "$ref": "#/components/schemas/ChangePasswordRequestDTO"
         required: true
       responses:
         '200':
           description: OK
-  /trainers:
+  "/trainers":
     get:
       tags:
       - trainer-controller
@@ -537,11 +555,11 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/TrainerListItemResponseDTO'
+                  "$ref": "#/components/schemas/TrainerListItemResponseDTO"
     post:
       tags:
       - trainer-controller
@@ -550,16 +568,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TrainerCreateRequestDTO'
+              "$ref": "#/components/schemas/TrainerCreateRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/TrainerListItemResponseDTO'
-  /trainer-schedules:
+                "$ref": "#/components/schemas/TrainerListItemResponseDTO"
+  "/trainer-schedules":
     get:
       tags:
       - trainer-schedule-controller
@@ -568,11 +586,11 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/TrainerScheduleResponseDTO'
+                  "$ref": "#/components/schemas/TrainerScheduleResponseDTO"
     post:
       tags:
       - trainer-schedule-controller
@@ -581,16 +599,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TrainerScheduleRequestDTO'
+              "$ref": "#/components/schemas/TrainerScheduleRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/TrainerScheduleResponseDTO'
-  /students:
+                "$ref": "#/components/schemas/TrainerScheduleResponseDTO"
+  "/students":
     get:
       tags:
       - student-controller
@@ -606,7 +624,7 @@ paths:
         required: false
         schema:
           type: string
-          pattern: (?i)^[MFO]$
+          pattern: "(?i)^[MFO]$"
       - name: profession
         in: query
         required: false
@@ -650,14 +668,14 @@ paths:
         in: query
         required: true
         schema:
-          $ref: '#/components/schemas/Pageable'
+          "$ref": "#/components/schemas/Pageable"
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/PageStudentResponseDTO'
+                "$ref": "#/components/schemas/PageStudentResponseDTO"
     post:
       tags:
       - student-controller
@@ -666,16 +684,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/StudentRequestDTO'
+              "$ref": "#/components/schemas/StudentRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/StudentResponseDTO'
-  /students/{studentId}/evaluations:
+                "$ref": "#/components/schemas/StudentResponseDTO"
+  "/students/{studentId}/evaluations":
     get:
       tags:
       - physical-evaluation-controller
@@ -691,11 +709,11 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/PhysicalEvaluationResponseDTO'
+                  "$ref": "#/components/schemas/PhysicalEvaluationResponseDTO"
     post:
       tags:
       - physical-evaluation-controller
@@ -711,16 +729,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PhysicalEvaluationRequestDTO'
+              "$ref": "#/components/schemas/PhysicalEvaluationRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/PhysicalEvaluationResponseDTO'
-  /schedule/sessions/{sessionId}:
+                "$ref": "#/components/schemas/PhysicalEvaluationResponseDTO"
+  "/schedule/sessions/{sessionId}":
     get:
       tags:
       - schedule-controller
@@ -741,9 +759,9 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/SessionResponseDTO'
+                "$ref": "#/components/schemas/SessionResponseDTO"
     post:
       tags:
       - schedule-controller
@@ -758,16 +776,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SessionUpdateRequestDTO'
+              "$ref": "#/components/schemas/SessionUpdateRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
-  /schedule/sessions/{sessionId}/trainer:
+  "/schedule/sessions/{sessionId}/trainer":
     post:
       tags:
       - schedule-controller
@@ -782,16 +800,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SessionTrainerUpdateRequestDTO'
+              "$ref": "#/components/schemas/SessionTrainerUpdateRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
-  /schedule/sessions/{sessionId}/participants:
+  "/schedule/sessions/{sessionId}/participants":
     post:
       tags:
       - schedule-controller
@@ -806,16 +824,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SessionParticipantAddRequestDTO'
+              "$ref": "#/components/schemas/SessionParticipantAddRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
-  /schedule/sessions/{sessionId}/participants/{studentId}/presence:
+  "/schedule/sessions/{sessionId}/participants/{studentId}/presence":
     post:
       tags:
       - schedule-controller
@@ -836,16 +854,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SessionParticipantPresenceRequestDTO'
+              "$ref": "#/components/schemas/SessionParticipantPresenceRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
-  /schedule/sessions/{sessionId}/participants/{studentId}/exercises:
+  "/schedule/sessions/{sessionId}/participants/{studentId}/exercises":
     post:
       tags:
       - schedule-controller
@@ -866,17 +884,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ParticipantExerciseCreateRequestDTO'
+              "$ref": "#/components/schemas/ParticipantExerciseCreateRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
                 format: uuid
-  /schedule/sessions/{sessionId}/cancel:
+  "/schedule/sessions/{sessionId}/cancel":
     post:
       tags:
       - schedule-controller
@@ -891,16 +909,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SessionCancelRequestDTO'
+              "$ref": "#/components/schemas/SessionCancelRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
-  /schedule/sessions/one-off:
+  "/schedule/sessions/one-off":
     post:
       tags:
       - schedule-controller
@@ -909,29 +927,36 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/OneOffSessionCreateRequestDTO'
+              "$ref": "#/components/schemas/OneOffSessionCreateRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/SessionResponseDTO'
-  /plans:
+                "$ref": "#/components/schemas/SessionResponseDTO"
+  "/plans":
     get:
       tags:
       - student-plan-controller
       operationId: getAllPlans
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          default: active
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/StudentPlanResponseDTO'
+                  "$ref": "#/components/schemas/StudentPlanResponseDTO"
     post:
       tags:
       - student-plan-controller
@@ -940,16 +965,35 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/StudentPlanRequestDTO'
+              "$ref": "#/components/schemas/StudentPlanRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/StudentPlanResponseDTO'
-  /plans/students/{studentId}/assign:
+                "$ref": "#/components/schemas/StudentPlanResponseDTO"
+  "/plans/{planId}/restore":
+    post:
+      tags:
+      - student-plan-controller
+      operationId: restorePlan
+      parameters:
+      - name: planId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            "*/*":
+              schema:
+                "$ref": "#/components/schemas/StudentPlanResponseDTO"
+  "/plans/students/{studentId}/assign":
     post:
       tags:
       - student-plan-controller
@@ -965,16 +1009,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AssignPlanRequestDTO'
+              "$ref": "#/components/schemas/AssignPlanRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/StudentPlanAssignmentResponseDTO'
-  /exercises:
+                "$ref": "#/components/schemas/StudentPlanAssignmentResponseDTO"
+  "/exercises":
     get:
       tags:
       - exercise-controller
@@ -995,14 +1039,14 @@ paths:
         in: query
         required: true
         schema:
-          $ref: '#/components/schemas/Pageable'
+          "$ref": "#/components/schemas/Pageable"
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/PageExerciseResponseDTO'
+                "$ref": "#/components/schemas/PageExerciseResponseDTO"
     post:
       tags:
       - exercise-controller
@@ -1011,16 +1055,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ExerciseRequestDTO'
+              "$ref": "#/components/schemas/ExerciseRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/ExerciseResponseDTO'
-  /events:
+                "$ref": "#/components/schemas/ExerciseResponseDTO"
+  "/events":
     get:
       tags:
       - event-controller
@@ -1041,11 +1085,11 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/EventResponseDTO'
+                  "$ref": "#/components/schemas/EventResponseDTO"
     post:
       tags:
       - event-controller
@@ -1054,16 +1098,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EventRequestDTO'
+              "$ref": "#/components/schemas/EventRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/EventResponseDTO'
-  /events/{id}/participants/{studentId}:
+                "$ref": "#/components/schemas/EventResponseDTO"
+  "/events/{id}/participants/{studentId}":
     post:
       tags:
       - event-controller
@@ -1085,9 +1129,9 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/EventResponseDTO'
+                "$ref": "#/components/schemas/EventResponseDTO"
     delete:
       tags:
       - event-controller
@@ -1108,7 +1152,7 @@ paths:
       responses:
         '200':
           description: OK
-  /commitments/students/{studentId}/sessions/{sessionSeriesId}:
+  "/commitments/students/{studentId}/sessions/{sessionSeriesId}":
     post:
       tags:
       - student-commitment-controller
@@ -1130,16 +1174,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/StudentCommitmentRequestDTO'
+              "$ref": "#/components/schemas/StudentCommitmentRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/CommitmentDetailResponseDTO'
-  /commitments/students/{studentId}/bulk:
+                "$ref": "#/components/schemas/CommitmentDetailResponseDTO"
+  "/commitments/students/{studentId}/bulk":
     post:
       tags:
       - student-commitment-controller
@@ -1155,18 +1199,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BulkCommitmentRequestDTO'
+              "$ref": "#/components/schemas/BulkCommitmentRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/CommitmentDetailResponseDTO'
-  /auth/logout:
+                  "$ref": "#/components/schemas/CommitmentDetailResponseDTO"
+  "/auth/logout":
     post:
       tags:
       - auth-controller
@@ -1175,10 +1219,10 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
-  /auth/login:
+  "/auth/login":
     post:
       tags:
       - auth-controller
@@ -1187,17 +1231,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequestDTO'
+              "$ref": "#/components/schemas/LoginRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/JwtResponseDTO'
+                "$ref": "#/components/schemas/JwtResponseDTO"
       security: []
-  /administrators:
+  "/administrators":
     get:
       tags:
       - administrator-controller
@@ -1206,11 +1250,11 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/AdministratorListItemResponseDTO'
+                  "$ref": "#/components/schemas/AdministratorListItemResponseDTO"
     post:
       tags:
       - administrator-controller
@@ -1219,16 +1263,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AdministratorCreateRequestDTO'
+              "$ref": "#/components/schemas/AdministratorCreateRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/AdministratorListItemResponseDTO'
-  /users/{id}:
+                "$ref": "#/components/schemas/AdministratorListItemResponseDTO"
+  "/users/{id}":
     patch:
       tags:
       - user-controller
@@ -1244,16 +1288,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchUserRoleRequestDTO'
+              "$ref": "#/components/schemas/PatchUserRoleRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/UserResponseDTO'
-  /trainers/{id}/reset-password:
+                "$ref": "#/components/schemas/UserResponseDTO"
+  "/trainers/{id}/reset-password":
     patch:
       tags:
       - trainer-controller
@@ -1269,12 +1313,12 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TrainerPasswordResetRequestDTO'
+              "$ref": "#/components/schemas/TrainerPasswordResetRequestDTO"
         required: true
       responses:
         '200':
           description: OK
-  /students/{id}/restore:
+  "/students/{id}/restore":
     patch:
       tags:
       - student-controller
@@ -1290,10 +1334,10 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/StudentResponseDTO'
-  /schedule/sessions/participants/exercises/{exerciseRecordId}:
+                "$ref": "#/components/schemas/StudentResponseDTO"
+  "/schedule/sessions/participants/exercises/{exerciseRecordId}":
     delete:
       tags:
       - schedule-controller
@@ -1309,7 +1353,7 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
     patch:
@@ -1327,16 +1371,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ParticipantExerciseUpdateRequestDTO'
+              "$ref": "#/components/schemas/ParticipantExerciseUpdateRequestDTO"
         required: true
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
-  /exercises/{id}/restore:
+  "/exercises/{id}/restore":
     patch:
       tags:
       - exercise-controller
@@ -1352,10 +1396,10 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/ExerciseResponseDTO'
-  /events/{id}/restore:
+                "$ref": "#/components/schemas/ExerciseResponseDTO"
+  "/events/{id}/restore":
     patch:
       tags:
       - event-controller
@@ -1371,10 +1415,10 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/EventResponseDTO'
-  /events/{id}/participants/{studentId}/attendance:
+                "$ref": "#/components/schemas/EventResponseDTO"
+  "/events/{id}/participants/{studentId}/attendance":
     patch:
       tags:
       - event-controller
@@ -1396,10 +1440,10 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/EventResponseDTO'
-  /administrators/{id}/restore:
+                "$ref": "#/components/schemas/EventResponseDTO"
+  "/administrators/{id}/restore":
     patch:
       tags:
       - administrator-controller
@@ -1415,10 +1459,10 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/AdministratorResponseDTO'
-  /trainers/user-profile/{id}:
+                "$ref": "#/components/schemas/AdministratorResponseDTO"
+  "/trainers/user-profile/{id}":
     get:
       tags:
       - trainer-controller
@@ -1434,10 +1478,10 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/TrainerListItemResponseDTO'
-  /trainer-schedules/trainer/{trainerId}:
+                "$ref": "#/components/schemas/TrainerListItemResponseDTO"
+  "/trainer-schedules/trainer/{trainerId}":
     get:
       tags:
       - trainer-schedule-controller
@@ -1453,12 +1497,12 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/TrainerScheduleResponseDTO'
-  /schedule:
+                  "$ref": "#/components/schemas/TrainerScheduleResponseDTO"
+  "/schedule":
     get:
       tags:
       - schedule-controller
@@ -1480,10 +1524,10 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/ScheduleResponseDTO'
-  /reports:
+                "$ref": "#/components/schemas/ScheduleResponseDTO"
+  "/reports":
     get:
       tags:
       - reports-controller
@@ -1511,10 +1555,10 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/ReportsResponseDTO'
-  /plans/{planId}:
+                "$ref": "#/components/schemas/ReportsResponseDTO"
+  "/plans/{planId}":
     get:
       tags:
       - student-plan-controller
@@ -1530,9 +1574,9 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/StudentPlanResponseDTO'
+                "$ref": "#/components/schemas/StudentPlanResponseDTO"
     delete:
       tags:
       - student-plan-controller
@@ -1547,7 +1591,7 @@ paths:
       responses:
         '200':
           description: OK
-  /plans/students/{studentId}/history:
+  "/plans/students/{studentId}/history":
     get:
       tags:
       - student-plan-controller
@@ -1563,12 +1607,12 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/StudentPlanAssignmentResponseDTO'
-  /plans/students/{studentId}/current:
+                  "$ref": "#/components/schemas/StudentPlanAssignmentResponseDTO"
+  "/plans/students/{studentId}/current":
     get:
       tags:
       - student-plan-controller
@@ -1584,10 +1628,10 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/StudentPlanAssignmentResponseDTO'
-  /plans/assignments/expiring-soon:
+                "$ref": "#/components/schemas/StudentPlanAssignmentResponseDTO"
+  "/plans/assignments/expiring-soon":
     get:
       tags:
       - student-plan-controller
@@ -1604,12 +1648,12 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/StudentPlanAssignmentResponseDTO'
-  /plans/assignments/active:
+                  "$ref": "#/components/schemas/StudentPlanAssignmentResponseDTO"
+  "/plans/assignments/active":
     get:
       tags:
       - student-plan-controller
@@ -1618,12 +1662,12 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/StudentPlanAssignmentResponseDTO'
-  /events/lookup/trainers:
+                  "$ref": "#/components/schemas/StudentPlanAssignmentResponseDTO"
+  "/events/lookup/trainers":
     get:
       tags:
       - event-controller
@@ -1632,12 +1676,12 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/TrainerLookupResponseDTO'
-  /events/lookup/students:
+                  "$ref": "#/components/schemas/TrainerLookupResponseDTO"
+  "/events/lookup/students":
     get:
       tags:
       - event-controller
@@ -1646,12 +1690,12 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/StudentLookupResponseDTO'
-  /commitments/students/{studentId}:
+                  "$ref": "#/components/schemas/StudentLookupResponseDTO"
+  "/commitments/students/{studentId}":
     get:
       tags:
       - student-commitment-controller
@@ -1667,12 +1711,12 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/CommitmentDetailResponseDTO'
-  /commitments/students/{studentId}/sessions/{sessionSeriesId}/status:
+                  "$ref": "#/components/schemas/CommitmentDetailResponseDTO"
+  "/commitments/students/{studentId}/sessions/{sessionSeriesId}/status":
     get:
       tags:
       - student-commitment-controller
@@ -1700,14 +1744,14 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
                 enum:
                 - ATTENDING
                 - NOT_ATTENDING
                 - TENTATIVE
-  /commitments/students/{studentId}/sessions/{sessionSeriesId}/history:
+  "/commitments/students/{studentId}/sessions/{sessionSeriesId}/history":
     get:
       tags:
       - student-commitment-controller
@@ -1729,12 +1773,12 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/CommitmentDetailResponseDTO'
-  /commitments/students/{studentId}/active:
+                  "$ref": "#/components/schemas/CommitmentDetailResponseDTO"
+  "/commitments/students/{studentId}/active":
     get:
       tags:
       - student-commitment-controller
@@ -1756,12 +1800,12 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/CommitmentDetailResponseDTO'
-  /commitments/sessions/{sessionSeriesId}:
+                  "$ref": "#/components/schemas/CommitmentDetailResponseDTO"
+  "/commitments/sessions/{sessionSeriesId}":
     get:
       tags:
       - student-commitment-controller
@@ -1777,12 +1821,12 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/CommitmentDetailResponseDTO'
-  /commitments/available-sessions:
+                  "$ref": "#/components/schemas/CommitmentDetailResponseDTO"
+  "/commitments/available-sessions":
     get:
       tags:
       - student-commitment-controller
@@ -1791,12 +1835,12 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/TrainerSchedule'
-  /administrators/user-profile/{id}:
+                  "$ref": "#/components/schemas/TrainerSchedule"
+  "/administrators/user-profile/{id}":
     get:
       tags:
       - administrator-controller
@@ -1812,10 +1856,10 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/AdministratorListItemResponseDTO'
-  /administrators/test:
+                "$ref": "#/components/schemas/AdministratorListItemResponseDTO"
+  "/administrators/test":
     get:
       tags:
       - administrator-controller
@@ -1824,10 +1868,10 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
-  /administrators/paginated:
+  "/administrators/paginated":
     get:
       tags:
       - administrator-controller
@@ -1848,15 +1892,15 @@ paths:
         in: query
         required: true
         schema:
-          $ref: '#/components/schemas/Pageable'
+          "$ref": "#/components/schemas/Pageable"
       responses:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
-                $ref: '#/components/schemas/PageAdministratorListItemResponseDTO'
-  /schedule/sessions/{sessionId}/participants/{studentId}:
+                "$ref": "#/components/schemas/PageAdministratorListItemResponseDTO"
+  "/schedule/sessions/{sessionId}/participants/{studentId}":
     delete:
       tags:
       - schedule-controller
@@ -1877,7 +1921,7 @@ paths:
         '200':
           description: OK
           content:
-            '*/*':
+            "*/*":
               schema:
                 type: string
 components:
@@ -1936,9 +1980,6 @@ components:
         joinDate:
           type: string
           format: date-time
-        hoursWorked:
-          type: integer
-          format: int32
     TrainerScheduleRequestDTO:
       type: object
       properties:
@@ -1959,7 +2000,7 @@ components:
         seriesName:
           type: string
           minLength: 1
-          pattern: ^(?!.*__).*$
+          pattern: "^(?!.*__).*$"
       required:
       - seriesName
       - startTime
@@ -2052,11 +2093,11 @@ components:
           type: number
           format: double
         circumferences:
-          $ref: '#/components/schemas/CircumferencesDTO'
+          "$ref": "#/components/schemas/CircumferencesDTO"
         subcutaneousFolds:
-          $ref: '#/components/schemas/SubcutaneousFoldsDTO'
+          "$ref": "#/components/schemas/SubcutaneousFoldsDTO"
         diameters:
-          $ref: '#/components/schemas/DiametersDTO'
+          "$ref": "#/components/schemas/DiametersDTO"
       required:
       - height
       - weight
@@ -2106,11 +2147,11 @@ components:
           type: number
           format: double
         circumferences:
-          $ref: '#/components/schemas/CircumferencesDTO'
+          "$ref": "#/components/schemas/CircumferencesDTO"
         subcutaneousFolds:
-          $ref: '#/components/schemas/SubcutaneousFoldsDTO'
+          "$ref": "#/components/schemas/SubcutaneousFoldsDTO"
         diameters:
-          $ref: '#/components/schemas/DiametersDTO'
+          "$ref": "#/components/schemas/DiametersDTO"
         createdAt:
           type: string
           format: date-time
@@ -2248,11 +2289,11 @@ components:
         observations:
           type: string
         anamnesis:
-          $ref: '#/components/schemas/AnamnesisRequestDTO'
+          "$ref": "#/components/schemas/AnamnesisRequestDTO"
         physicalImpairments:
           type: array
           items:
-            $ref: '#/components/schemas/PhysicalImpairmentRequestDTO'
+            "$ref": "#/components/schemas/PhysicalImpairmentRequestDTO"
       required:
       - birthDate
       - email
@@ -2378,11 +2419,11 @@ components:
           type: string
           format: date-time
         anamnesis:
-          $ref: '#/components/schemas/AnamnesisResponseDTO'
+          "$ref": "#/components/schemas/AnamnesisResponseDTO"
         physicalImpairments:
           type: array
           items:
-            $ref: '#/components/schemas/PhysicalImpairmentResponseDTO'
+            "$ref": "#/components/schemas/PhysicalImpairmentResponseDTO"
     ExerciseRequestDTO:
       type: object
       properties:
@@ -2489,7 +2530,7 @@ components:
         participants:
           type: array
           items:
-            $ref: '#/components/schemas/EventParticipantResponseDTO'
+            "$ref": "#/components/schemas/EventParticipantResponseDTO"
         createdAt:
           type: string
           format: date-time
@@ -2627,9 +2668,6 @@ components:
         joinDate:
           type: string
           format: date-time
-        hoursWorked:
-          type: integer
-          format: int32
     Exercise:
       type: object
       properties:
@@ -2660,12 +2698,12 @@ components:
           type: string
           format: uuid
         sessionParticipant:
-          $ref: '#/components/schemas/SessionParticipant'
+          "$ref": "#/components/schemas/SessionParticipant"
         exerciseId:
           type: string
           format: uuid
         exercise:
-          $ref: '#/components/schemas/Exercise'
+          "$ref": "#/components/schemas/Exercise"
         setsCompleted:
           type: integer
           format: int32
@@ -2705,7 +2743,7 @@ components:
           type: string
           format: uuid
         trainer:
-          $ref: '#/components/schemas/Trainer'
+          "$ref": "#/components/schemas/Trainer"
         startTime:
           type: string
           format: date-time
@@ -2737,7 +2775,7 @@ components:
         participants:
           type: array
           items:
-            $ref: '#/components/schemas/SessionParticipant'
+            "$ref": "#/components/schemas/SessionParticipant"
     SessionParticipant:
       type: object
       properties:
@@ -2745,12 +2783,12 @@ components:
           type: string
           format: uuid
         scheduledSession:
-          $ref: '#/components/schemas/ScheduledSession'
+          "$ref": "#/components/schemas/ScheduledSession"
         studentId:
           type: string
           format: uuid
         student:
-          $ref: '#/components/schemas/Student'
+          "$ref": "#/components/schemas/Student"
         participationType:
           type: string
           enum:
@@ -2772,7 +2810,7 @@ components:
         exercises:
           type: array
           items:
-            $ref: '#/components/schemas/ParticipantExercise'
+            "$ref": "#/components/schemas/ParticipantExercise"
         present:
           type: boolean
         included:
@@ -2785,7 +2823,7 @@ components:
         participants:
           type: array
           items:
-            $ref: '#/components/schemas/SessionParticipant'
+            "$ref": "#/components/schemas/SessionParticipant"
         notes:
           type: string
     Student:
@@ -2986,7 +3024,7 @@ components:
         students:
           type: array
           items:
-            $ref: '#/components/schemas/StudentCommitmentResponseDTO'
+            "$ref": "#/components/schemas/StudentCommitmentResponseDTO"
         canceled:
           type: boolean
         presentCount:
@@ -3009,11 +3047,11 @@ components:
         exercises:
           type: array
           items:
-            $ref: '#/components/schemas/ExerciseResponseDTO'
+            "$ref": "#/components/schemas/ExerciseResponseDTO"
         participantExercises:
           type: array
           items:
-            $ref: '#/components/schemas/ParticipantExerciseResponseDTO'
+            "$ref": "#/components/schemas/ParticipantExerciseResponseDTO"
         present:
           type: boolean
         attendanceNotes:
@@ -3337,21 +3375,21 @@ components:
         content:
           type: array
           items:
-            $ref: '#/components/schemas/UserResponseDTO'
+            "$ref": "#/components/schemas/UserResponseDTO"
         number:
           type: integer
           format: int32
         sort:
-          $ref: '#/components/schemas/SortObject'
+          "$ref": "#/components/schemas/SortObject"
         numberOfElements:
           type: integer
           format: int32
-        pageable:
-          $ref: '#/components/schemas/PageableObject'
         first:
           type: boolean
         last:
           type: boolean
+        pageable:
+          "$ref": "#/components/schemas/PageableObject"
         empty:
           type: boolean
     PageableObject:
@@ -3361,7 +3399,7 @@ components:
           type: integer
           format: int64
         sort:
-          $ref: '#/components/schemas/SortObject'
+          "$ref": "#/components/schemas/SortObject"
         paged:
           type: boolean
         pageNumber:
@@ -3396,21 +3434,21 @@ components:
         content:
           type: array
           items:
-            $ref: '#/components/schemas/StudentResponseDTO'
+            "$ref": "#/components/schemas/StudentResponseDTO"
         number:
           type: integer
           format: int32
         sort:
-          $ref: '#/components/schemas/SortObject'
+          "$ref": "#/components/schemas/SortObject"
         numberOfElements:
           type: integer
           format: int32
-        pageable:
-          $ref: '#/components/schemas/PageableObject'
         first:
           type: boolean
         last:
           type: boolean
+        pageable:
+          "$ref": "#/components/schemas/PageableObject"
         empty:
           type: boolean
     ScheduleResponseDTO:
@@ -3419,7 +3457,7 @@ components:
         sessions:
           type: array
           items:
-            $ref: '#/components/schemas/SessionResponseDTO'
+            "$ref": "#/components/schemas/SessionResponseDTO"
     AgeDistributionResponseDTO:
       type: object
       properties:
@@ -3437,11 +3475,11 @@ components:
         trainerReports:
           type: array
           items:
-            $ref: '#/components/schemas/TrainerReportResponseDTO'
+            "$ref": "#/components/schemas/TrainerReportResponseDTO"
         ageDistribution:
           type: array
           items:
-            $ref: '#/components/schemas/AgeDistributionResponseDTO'
+            "$ref": "#/components/schemas/AgeDistributionResponseDTO"
     TrainerReportResponseDTO:
       type: object
       properties:
@@ -3483,21 +3521,21 @@ components:
         content:
           type: array
           items:
-            $ref: '#/components/schemas/ExerciseResponseDTO'
+            "$ref": "#/components/schemas/ExerciseResponseDTO"
         number:
           type: integer
           format: int32
         sort:
-          $ref: '#/components/schemas/SortObject'
+          "$ref": "#/components/schemas/SortObject"
         numberOfElements:
           type: integer
           format: int32
-        pageable:
-          $ref: '#/components/schemas/PageableObject'
         first:
           type: boolean
         last:
           type: boolean
+        pageable:
+          "$ref": "#/components/schemas/PageableObject"
         empty:
           type: boolean
     TrainerLookupResponseDTO:
@@ -3574,21 +3612,21 @@ components:
         content:
           type: array
           items:
-            $ref: '#/components/schemas/AdministratorListItemResponseDTO'
+            "$ref": "#/components/schemas/AdministratorListItemResponseDTO"
         number:
           type: integer
           format: int32
         sort:
-          $ref: '#/components/schemas/SortObject'
+          "$ref": "#/components/schemas/SortObject"
         numberOfElements:
           type: integer
           format: int32
-        pageable:
-          $ref: '#/components/schemas/PageableObject'
         first:
           type: boolean
         last:
           type: boolean
+        pageable:
+          "$ref": "#/components/schemas/PageableObject"
         empty:
           type: boolean
   securitySchemes:
@@ -3597,4 +3635,3 @@ components:
       name: bearerAuth
       scheme: bearer
       bearerFormat: JWT
-

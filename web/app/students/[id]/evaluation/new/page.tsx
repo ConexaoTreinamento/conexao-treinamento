@@ -24,8 +24,8 @@ export default function StudentEvaluationPage() {
       const requestData = toPhysicalEvaluationRequest(data)
 
       await createEvaluation.mutateAsync({
-        studentId,
-        data: requestData,
+        path: { studentId },
+        body: requestData,
       })
 
       toast.success("Avaliação criada com sucesso!")

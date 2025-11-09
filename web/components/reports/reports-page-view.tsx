@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Loader2, Search, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { apiClient } from "@/lib/client";
 import {
   getReportsOptions,
@@ -144,12 +144,17 @@ export function ReportsPageView() {
   });
 
   const selectedPeriod = (watch("period") ?? "month") as PeriodKey;
-  const watchedCustomRange = useMemo(
-    () => watch("customRange") ?? { start: "", end: "" },
-    [watch],
+  const watchedCustomRange = useWatch({
+    control,
+    name: "customRange",
+    defaultValue: { start: "", end: "" },
+  });
+  const customRange = useMemo(
+    () => watchedCustomRange ?? { start: "", end: "" },
+    [watchedCustomRange],
   );
-  const customRangeStart = watchedCustomRange.start ?? "";
-  const customRangeEnd = watchedCustomRange.end ?? "";
+  const customRangeStart = customRange?.start ?? "";
+  const customRangeEnd = customRange?.end ?? "";
   const selectedTrainer = watch("trainerId") ?? "all";
   const searchTerm = watch("searchTerm") ?? "";
   const router = useRouter();
@@ -164,32 +169,32 @@ export function ReportsPageView() {
   }, [router]);
 
   const periodRange = useMemo(
-    () => computePeriodRange(selectedPeriod, watchedCustomRange),
-    [selectedPeriod, watchedCustomRange],
+    () => computePeriodRange(selectedPeriod, customRange),
+    [selectedPeriod, customRange],
   );
 
   const customRangeError = useMemo(() => {
     if (
       selectedPeriod !== "custom" ||
-      !watchedCustomRange.start ||
-      !watchedCustomRange.end
+      !customRange.start ||
+      !customRange.end
     ) {
       return false;
     }
 
-    const startDate = createDateFromInput(watchedCustomRange.start);
-    const endDate = createDateFromInput(watchedCustomRange.end);
+    const startDate = createDateFromInput(customRange.start);
+    const endDate = createDateFromInput(customRange.end);
 
     if (!startDate || !endDate) return false;
 
     return startDate > endDate;
-  }, [watchedCustomRange.end, watchedCustomRange.start, selectedPeriod]);
+  }, [customRange?.end, customRange?.start, selectedPeriod]);
 
   const handlePeriodSelect = (
-    value: string,
+    value: PeriodKey,
     onChange: (value: PeriodKey) => void,
   ) => {
-    const period = value as PeriodKey;
+    const period = value;
     onChange(period);
 
     if (period === "custom") {
@@ -265,7 +270,7 @@ export function ReportsPageView() {
   }, [selectedTrainer, setValue, trainerOptions]);
 
   const trainerReports = useMemo<TrainerReportResponseDto[]>(
-    () => (reportsQuery.data?.trainerReports ?? []) as TrainerReportResponseDto[],
+    () => reportsQuery.data?.trainerReports ?? [],
     [reportsQuery.data],
   );
 
@@ -356,7 +361,7 @@ export function ReportsPageView() {
             <Select
               value={field.value}
               onValueChange={(value) =>
-                handlePeriodSelect(value, field.onChange)
+                handlePeriodSelect(value as PeriodKey, field.onChange)
               }
             >
               <SelectTrigger className="w-full sm:w-48">
