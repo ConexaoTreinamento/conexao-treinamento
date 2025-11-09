@@ -240,7 +240,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 						<p className="text-sm text-muted-foreground mt-1">{userName}</p>
 						<p className="text-xs text-muted-foreground capitalize">{userRole}</p>
 					</div>
-					<nav className="p-4 space-y-2 overflow-y-auto h-[calc(100vh-180px)]">
+					<nav className="p-4 space-y-2 overflow-y-auto h-[calc(100vh-322px)]">
 						{filteredNavigation.map((item) => {
 							const Icon = item.icon
 							return (
