@@ -62,9 +62,16 @@ const formatDateInput = (date: Date) => {
 };
 
 const createDateFromInput = (value: string, endOfDay = false) => {
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
+
   const [year, month, day] = value.split("-").map(Number);
-  if (!year || !month || !day) return null;
+
+  if (!year || !month || !day) {
+    return null;
+  }
+
   if (endOfDay) {
     return new Date(year, month - 1, day, 23, 59, 59, 999);
   }
@@ -74,6 +81,7 @@ const createDateFromInput = (value: string, endOfDay = false) => {
 const getEndOfToday = () => {
   const limit = new Date();
   limit.setHours(23, 59, 59, 999);
+
   return limit;
 };
 
@@ -83,9 +91,15 @@ const clampDateToEndOfToday = (date: Date) => {
 };
 
 const clampDateInputToToday = (value: string) => {
-  if (!value) return value;
+  if (!value) {
+    return value;
+  }
+
   const parsed = createDateFromInput(value);
-  if (!parsed) return value;
+  if (!parsed) {
+    return value;
+  }
+
   return formatDateInput(clampDateToEndOfToday(parsed));
 };
 
@@ -217,7 +231,9 @@ export function ReportsPageView() {
     const startDate = createDateFromInput(customRange.start);
     const endDate = createDateFromInput(customRange.end);
 
-    if (!startDate || !endDate) return false;
+    if (!startDate || !endDate) {
+      return false;
+    }
 
     return startDate > endDate;
   }, [customRange?.end, customRange?.start, selectedPeriod]);
