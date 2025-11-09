@@ -19,7 +19,9 @@ export default function EvaluationDetailPage() {
 
   // Get student and evaluation data
   const { data: student, isLoading: isLoadingStudent } = useStudent({ path: { id: studentId } })
-  const { data: evaluation, isLoading: isLoadingEvaluation } = useEvaluation(studentId, evaluationId)
+  const { data: evaluation, isLoading: isLoadingEvaluation } = useEvaluation({
+    path: { studentId, evaluationId },
+  })
 
   const loading = isLoadingStudent || isLoadingEvaluation
 
@@ -53,7 +55,11 @@ export default function EvaluationDetailPage() {
     return { text: "Obesidade", color: "bg-red-500" }
   }
 
-  const bmiStatus = getBMIStatus(evaluation.bmi)
+  const bmiValue = evaluation.bmi ?? null
+  const bmiStatus = bmiValue != null ? getBMIStatus(bmiValue) : null
+  const evaluationDateLabel = evaluation.date
+    ? new Date(evaluation.date).toLocaleDateString("pt-BR")
+    : "Data indisponível"
 
   return (
     <Layout>
@@ -74,7 +80,7 @@ export default function EvaluationDetailPage() {
             <p className="text-sm text-muted-foreground text-center sm:text-left">{`${student.name} ${student.surname}`}</p>
             <Badge variant="outline" className="flex items-center gap-1 w-fit">
               <Calendar className="w-3 h-3" />
-              {new Date(evaluation.date).toLocaleDateString("pt-BR")}
+              {evaluationDateLabel}
             </Badge>
           </div>
         </div>
@@ -90,20 +96,26 @@ export default function EvaluationDetailPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="text-center">
-                <p className="text-2xl font-bold text-primary">{evaluation.weight} kg</p>
+                <p className="text-2xl font-bold text-primary">
+                  {evaluation.weight != null ? `${evaluation.weight} kg` : "--"}
+                </p>
                 <p className="text-sm text-muted-foreground">Peso</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-primary">{evaluation.height} cm</p>
+                <p className="text-2xl font-bold text-primary">
+                  {evaluation.height != null ? `${evaluation.height} cm` : "--"}
+                </p>
                 <p className="text-sm text-muted-foreground">Altura</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-primary">{evaluation.bmi}</p>
+                <p className="text-2xl font-bold text-primary">
+                  {evaluation.bmi != null ? evaluation.bmi : "--"}
+                </p>
                 <p className="text-sm text-muted-foreground">IMC</p>
               </div>
               <div className="text-center">
-                <Badge className={`${bmiStatus.color} text-white`}>
-                  {bmiStatus.text}
+                <Badge className={`${bmiStatus?.color ?? "bg-muted"} text-white`}>
+                  {bmiStatus?.text ?? "IMC indisponível"}
                 </Badge>
               </div>
             </div>

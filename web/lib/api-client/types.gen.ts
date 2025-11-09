@@ -832,6 +832,7 @@ export type UpdateScheduleResponse = UpdateScheduleResponses[keyof UpdateSchedul
 export type DeleteEvaluationData = {
     body?: never;
     path: {
+        studentId: string;
         evaluationId: string;
     };
     query?: never;
@@ -848,6 +849,7 @@ export type DeleteEvaluationResponses = {
 export type GetEvaluationData = {
     body?: never;
     path: {
+        studentId: string;
         evaluationId: string;
     };
     query?: never;
@@ -866,6 +868,7 @@ export type GetEvaluationResponse = GetEvaluationResponses[keyof GetEvaluationRe
 export type UpdateEvaluationData = {
     body: PhysicalEvaluationRequestDto;
     path: {
+        studentId: string;
         evaluationId: string;
     };
     query?: never;
