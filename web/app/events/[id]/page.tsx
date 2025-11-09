@@ -3,12 +3,16 @@
 import { useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import ConfirmDeleteButton from "@/components/base/confirm-delete-button"
+import { EditButton } from "@/components/base/edit-button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { ArrowLeft, Calendar, CheckCircle, Clock, Edit, MapPin, Trophy, Users, X, XCircle, Loader2, Trash2, AlertTriangle} from "lucide-react"
+import { ConfirmDeleteDialog } from "@/components/base/confirm-delete-dialog"
+import { Calendar, CheckCircle, Clock, MapPin, Trophy, Users, X, XCircle, Loader2, Trash2 } from "lucide-react"
+import { PageHeader } from "@/components/base/page-header"
 import { Input } from "@/components/ui/input"
 import { useParams, useRouter } from "next/navigation"
 import Layout from "@/components/layout"
-import EventModal from "@/components/event-modal"
+import EventModal from "@/components/events/event-modal"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   findEventByIdOptions,
@@ -18,34 +22,33 @@ import {
   removeParticipantMutation as removeParticipantMutationFactory,
   deleteEventMutation as deleteEventMutationFactory,
 } from "@/lib/api-client/@tanstack/react-query.gen"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { apiClient } from "@/lib/client"
 import type { EventResponseDto, EventParticipantResponseDto } from "@/lib/api-client/types.gen"
-import type { EventFormData } from "@/components/event-modal"
-import type { StudentSummary } from "@/components/student-picker"
+import type { EventFormData } from "@/components/events/event-modal"
+import type { StudentSummary } from "@/components/students/student-picker"
+
+const formatTimeValue = (time?: string) => {
+  if (!time) return "--:--"
+  const [hours, minutes] = time.split(":")
+  if (hours === undefined || minutes === undefined) {
+    return time
+  }
+  return `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`
+}
 
 export default function EventDetailPage() {
   const router = useRouter()
   const params = useParams()
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [participantSearchTerm, setParticipantSearchTerm] = useState("")
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [removeParticipantConfirm, setRemoveParticipantConfirm] = useState<{ id: string; name?: string } | null>(null)
 
   const queryClient = useQueryClient()
 
   // React Query hooks
   const eventId = params.id as string
   const eventQuery = useQuery({
-    ...findEventByIdOptions({ client: apiClient, path: { eventId: eventId } }),
+    ...findEventByIdOptions({ client: apiClient, path: { id: eventId } }),
     enabled: Boolean(eventId),
   })
 
@@ -57,7 +60,7 @@ export default function EventDetailPage() {
     if (!eventId) return
 
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: findEventByIdQueryKey({ client: apiClient, path: { eventId: eventId } }) }),
+      queryClient.invalidateQueries({ queryKey: findEventByIdQueryKey({ client: apiClient, path: { id: eventId } }) }),
       queryClient.invalidateQueries({
         predicate: (query) =>
           Array.isArray(query.queryKey) && query.queryKey[0]?._id === "findAllEvents",
@@ -86,7 +89,8 @@ export default function EventDetailPage() {
 
   const deleteEventMutation = useMutation({
     ...deleteEventMutationFactory({ client: apiClient }),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await invalidateEventQueries()
       router.push('/events')
     },
   })
@@ -95,7 +99,7 @@ export default function EventDetailPage() {
   const handleToggleAttendance = async (participantId: string) => {
     try {
       await toggleAttendanceMutation.mutateAsync({
-        path: { eventId: eventId, studentId: participantId },
+        path: { id: eventId, studentId: participantId },
       })
     } catch (error) {
       console.error('Failed to toggle attendance:', error)
@@ -105,10 +109,12 @@ export default function EventDetailPage() {
   const handleRemoveParticipant = async (participantId: string) => {
     try {
       await removeParticipantMutation.mutateAsync({
-        path: { eventId: eventId, studentId: participantId },
+        path: { id: eventId, studentId: participantId },
       })
+      return true
     } catch (error) {
       console.error('Failed to remove participant:', error)
+      return false
     }
   }
 
@@ -128,7 +134,7 @@ export default function EventDetailPage() {
 
     try {
       await updateEventMutation.mutateAsync({
-        path: { eventId: eventId },
+        path: { id: eventId },
         body: {
           name: formData.name,
           date: formData.date,
@@ -144,7 +150,7 @@ export default function EventDetailPage() {
       for (const [studentId] of attendanceChanges) {
         try {
           await toggleAttendanceMutation.mutateAsync({
-            path: { eventId: eventId, studentId },
+            path: { id: eventId, studentId },
           })
         } catch (toggleError) {
           console.error(`Failed to toggle attendance for participant ${studentId}:`, toggleError)
@@ -160,7 +166,7 @@ export default function EventDetailPage() {
   const handleDeleteEvent = async () => {
     try {
       await deleteEventMutation.mutateAsync({
-        path: { eventId: eventId },
+        path: { id: eventId },
       })
     } catch (error) {
       console.error('Failed to delete event:', error)
@@ -251,72 +257,44 @@ export default function EventDetailPage() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="w-4 h-4"/>
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">{eventData.name}</h1>
-            <p className="text-muted-foreground">
-              {formatDate(eventData.date)} • {eventData.startTime} - {eventData.endTime}
-            </p>
-          </div>
-          <Button variant="outline" size="icon" onClick={() => setIsEditOpen(true)}>
-            <Edit className="w-4 h-4"/>
-          </Button>
-          <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setIsDeleteDialogOpen(true)}
-              disabled={deleteEventMutation.isPending}
-              className="text-destructive hover:text-destructive"
-          >
-            {deleteEventMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin"/>
-            ) : (
-                <Trash2 className="w-4 h-4"/>
-            )}
-          </Button>
-
-          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle className="flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5 text-destructive" />
-                  Confirmar exclusão do evento
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  Esta ação não pode ser desfeita. O evento será marcado como excluído
-                  e não aparecerá mais na lista de eventos ativos.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={deleteEventMutation.isPending}>
-                  Cancelar
-                </AlertDialogCancel>
-                <AlertDialogAction
-                    onClick={() => {
-                      handleDeleteEvent()
-                      setIsDeleteDialogOpen(false)
-                    }}
-                    disabled={deleteEventMutation.isPending}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {deleteEventMutation.isPending ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Excluindo...
-                      </>
-                  ) : (
-                      "Excluir evento"
-                  )}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
+        <div className="space-y-6">
+        <PageHeader
+          title={eventData.name}
+          description={(
+            <>
+              {formatDate(eventData.date)} • {formatTimeValue(eventData.startTime)} - {formatTimeValue(eventData.endTime)}
+            </>
+          )}
+          onBack={() => router.back()}
+          rightActions={(
+            <div className="flex flex-wrap gap-2 sm:justify-end">
+              <EditButton
+                variant="outline"
+                hideLabelBelow="sm"
+                onClick={() => setIsEditOpen(true)}
+                fullWidthOnDesktop={false}
+              />
+              <ConfirmDeleteButton
+                onConfirm={handleDeleteEvent}
+                disabled={deleteEventMutation.isPending}
+                title="Excluir evento"
+                description="Esta ação não pode ser desfeita. O evento será marcado como excluído e não aparecerá mais na lista de eventos ativos."
+                confirmText={deleteEventMutation.isPending ? "Excluindo..." : "Excluir evento"}
+                fullWidthOnDesktop={false}
+              >
+                {deleteEventMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                )}
+                <span className="hidden sm:inline">
+                  {deleteEventMutation.isPending ? "Excluindo..." : "Excluir"}
+                </span>
+                <span className="sr-only">Excluir evento</span>
+              </ConfirmDeleteButton>
+            </div>
+          )}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Event Info */}
@@ -336,7 +314,7 @@ export default function EventDetailPage() {
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="w-4 h-4 text-muted-foreground"/>
                   <span>
-                    {eventData.startTime} - {eventData.endTime}
+                    {formatTimeValue(eventData.startTime)} - {formatTimeValue(eventData.endTime)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
@@ -385,7 +363,17 @@ export default function EventDetailPage() {
                   return (
                       <div
                           key={participantId}
-                          className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 rounded-lg border gap-3"
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Ver perfil de ${participant.name ?? "aluno"}`}
+                          onClick={() => router.push(`/students/${participantId}`)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " " || event.key === "Space") {
+                              event.preventDefault()
+                              router.push(`/students/${participantId}`)
+                            }
+                          }}
+                          className="group flex cursor-pointer flex-col gap-3 rounded-lg border p-4 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring hover:bg-muted/70 sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           <Avatar className="flex-shrink-0">
@@ -405,12 +393,15 @@ export default function EventDetailPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <Button
-                              size="sm"
-                              variant={participant.present ? "default" : "outline"}
-                              onClick={() => handleToggleAttendance(participantId)}
-                              disabled={toggleAttendanceMutation.isPending}
-                              className={`h-8 text-xs flex-1 sm:flex-none min-w-0 ${
+              <Button
+                size="sm"
+                variant={participant.present ? "default" : "outline"}
+                onClick={(event) => {
+                event.stopPropagation()
+                void handleToggleAttendance(participantId)
+                }}
+                disabled={toggleAttendanceMutation.isPending}
+                className={`h-8 text-xs flex-1 sm:flex-none min-w-0 ${
                                   participant.present
                                       ? "bg-green-600 hover:bg-green-700 text-white"
                                       : "border-red-600 text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-950"
@@ -433,9 +424,15 @@ export default function EventDetailPage() {
                           <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => handleRemoveParticipant(participantId)}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                if (removeParticipantMutation.isPending) {
+                                  return
+                                }
+                                setRemoveParticipantConfirm({ id: participantId, name: participant.name ?? undefined })
+                              }}
                               disabled={removeParticipantMutation.isPending}
-                              className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
+                              className="h-8 w-8 flex-shrink-0 p-0 text-red-500 hover:bg-red-50 hover:text-red-700"
                           >
                             {removeParticipantMutation.isPending ? (
                                 <Loader2 className="w-3 h-3 animate-spin"/>
@@ -458,6 +455,34 @@ export default function EventDetailPage() {
             </CardContent>
           </Card>
         </div>
+
+        <ConfirmDeleteDialog
+          open={!!removeParticipantConfirm}
+          onOpenChange={(open) => {
+            if (!open) {
+              setRemoveParticipantConfirm(null)
+            }
+          }}
+          title="Remover participante?"
+          description={(
+            <>
+              Tem certeza que deseja remover {" "}
+              <strong>{removeParticipantConfirm?.name ?? "este participante"}</strong>{" "}
+              deste evento? Esta ação não pode ser desfeita.
+            </>
+          )}
+          confirmText="Remover"
+          confirmingText="Removendo..."
+          onConfirm={async () => {
+            if (!removeParticipantConfirm) {
+              return false
+            }
+
+            return handleRemoveParticipant(removeParticipantConfirm.id)
+          }}
+          confirmVariant="destructive"
+          confirmButtonClassName="bg-red-600 hover:bg-red-700"
+        />
 
         {/* Event Edit Modal - using new unified EventModal component */}
         <EventModal

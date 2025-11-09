@@ -10,11 +10,12 @@ import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Clock, Award, Eye, EyeOff } from 'lucide-react'
+import { User, Mail, Phone, MapPin, Calendar, Save, Shield, Eye, EyeOff } from 'lucide-react'
 import Layout from "@/components/layout"
+import { PageHeader } from "@/components/base/page-header"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
-import { findTrainerByUserIdOptions, findTrainerByIdOptions, updateTrainerMutation as updateTrainerMutationFn, findAdministratorByUserIdOptions, patchAdministratorMutation } from "@/lib/api-client/@tanstack/react-query.gen"
+import { findTrainerByUserIdOptions, findTrainerByIdOptions, updateTrainerAndUserMutation, findAdministratorByUserIdOptions, patchAdministratorMutation } from "@/lib/api-client/@tanstack/react-query.gen"
 import { apiClient } from "@/lib/client"
 import { changeOwnPasswordMutation } from "@/lib/api-client/@tanstack/react-query.gen";
 
@@ -25,9 +26,7 @@ export default function ProfilePage() {
   const [token, setToken] = useState<string>("")
   const [userId, setUserId] = useState<string>("")
   const [userRole, setUserRole] = useState<string>("")
-  const [userName, setUserName] = useState<string>("")
   //const [isLoading, setIsLoading] = useState(false)
-  const [specialtiesInput, setSpecialtiesInput] = useState("")
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -67,19 +66,17 @@ export default function ProfilePage() {
     const uToken = localStorage.getItem("token") || "";
     const uUserId = localStorage.getItem("userId") || "";
     const role = localStorage.getItem("userRole") || "";
-    const name = localStorage.getItem("userName") || "";
 
     setToken(uToken);
     setUserId(uUserId);
     setUserRole(role);
-    setUserName(name);
   }, []);
 
 
   // Admin integration
   const { data: adminDataByUser, isLoading: isLoadingAdminId } = useQuery({
     ...findAdministratorByUserIdOptions({
-      path: { userId: userId },
+      path: { userId },
       client: apiClient,
     }),
     enabled: !!userId && !!token && userRole === "admin",
@@ -107,7 +104,7 @@ export default function ProfilePage() {
   // Trainer integration
   const { data: trainerDataByUser, isLoading: isLoadingTrainerId } = useQuery({
     ...findTrainerByUserIdOptions({
-      path: { userId: userId },
+      path: { id: userId },
       client: apiClient,
     }),
     enabled: !!userId && !!token && userRole !== "admin",
@@ -117,14 +114,14 @@ export default function ProfilePage() {
 
   const { data: trainerData, isLoading: isLoadingTrainer } = useQuery({
     ...findTrainerByIdOptions({
-      path: { trainerId: String(trainerId) },
+      path: { id: String(trainerId) },
       client: apiClient,
     }),
     enabled: !!trainerId && userRole !== "admin",
   })
 
   const updateTrainerMutation = useMutation({
-    ...updateTrainerMutationFn({
+    ...updateTrainerAndUserMutation({
       client: apiClient,
     }),
     onSuccess: () => {
@@ -166,18 +163,8 @@ export default function ProfilePage() {
     }
   }, [userRole, trainerData, adminDataByUser])
 
-  useEffect(() => {
-    if (profileData.specialties) {
-      setSpecialtiesInput(profileData.specialties.join(", "))
-    }
-  }, [profileData.specialties])
-
   const handleInputChange = (field: string, value: string) => {
-    if (field === "specialties") {
-      setSpecialtiesInput(value)
-    } else {
-      setProfileData(prev => ({ ...prev, [field]: value }))
-    }
+    setProfileData(prev => ({ ...prev, [field]: value }))
   }
 
   const handlePasswordSubmit = () => {
@@ -202,16 +189,6 @@ export default function ProfilePage() {
 
   };
 
-  const handleSpecialtiesBlur = () => {
-    setProfileData(prev => ({
-      ...prev,
-      specialties: specialtiesInput
-        .split(",")
-        .map(s => s.trim())
-        .filter(s => s.length > 0)
-    }))
-  }
-
   const handleSave = () => {
     if (userRole === "admin") {
       if (!adminId) return
@@ -231,51 +208,9 @@ export default function ProfilePage() {
     }
     if (!trainerId) return
     updateTrainerMutation.mutate({
-      path: { trainerId: String(trainerId) },
+      path: { id: String(trainerId) },
       body: { ...profileData },
     })
-  }
-
-  const handleChangePassword = () => {
-    if (userRole === "admin") {
-      if (!adminId) return
-      if (newPassword !== confirmPassword) {
-        toast({
-          title: "Erro",
-          description: "As senhas não coincidem!",
-          variant: "destructive"
-        })
-        return
-      }
-      const [firstName = "", ...rest] = (profileData.name ?? "").split(" ")
-      const lastName = rest.join(" ")
-      updateAdminMutation.mutate({
-        path: { administratorId: String(adminId) },
-        body: {
-          firstName,
-          lastName,
-          email: profileData.email,
-        },
-      })
-      setNewPassword("")
-      setConfirmPassword("")
-      return
-    }
-    if (!trainerId) return
-    if (newPassword !== confirmPassword) {
-      toast({
-        title: "Erro",
-        description: "As senhas não coincidem!",
-        variant: "destructive"
-      })
-      return
-    }
-    updateTrainerMutation.mutate({
-      path: { trainerId: String(trainerId) },
-      body: { ...profileData, password: newPassword },
-    })
-    setNewPassword("")
-    setConfirmPassword("")
   }
 
   const isSaving = (updateAdminMutation.isPending || updateTrainerMutation.isPending)
@@ -285,18 +220,16 @@ export default function ProfilePage() {
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Meu Perfil</h1>
-            <p className="text-muted-foreground">
-              Gerencie suas informações pessoais e configurações
-            </p>
-          </div>
-          <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700" disabled={isLoading}>
-            <Save className="w-4 h-4 mr-2" />
-            {isLoading ? "Salvando..." : "Salvar Alterações"}
-          </Button>
-        </div>
+        <PageHeader
+          title="Meu perfil"
+          description="Gerencie suas informações pessoais e configurações"
+          rightActions={(
+            <Button onClick={handleSave} className="bg-green-600 hover:bg-green-700" disabled={isLoading}>
+              <Save className="w-4 h-4 mr-2" />
+              {isLoading ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+          )}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Profile Card */}
@@ -437,11 +370,11 @@ export default function ProfilePage() {
                     </CardTitle>
                     <CardDescription>
                       Gerencie suas configurações de segurança
-                    </CardDescription>
+                    </CardDescription>  
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="currentPassword">Senha Atual</Label>
+                      <Label htmlFor="currentPassword">Senha atual</Label>
                       <div className="relative">
                         <Input
                             id="currentPassword"
@@ -463,7 +396,7 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="newPassword">Nova Senha</Label>
+                      <Label htmlFor="newPassword">Nova senha</Label>
                       <div className="relative">
                         <Input
                             id="newPassword"
@@ -485,7 +418,7 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
+                      <Label htmlFor="confirmPassword">Confirmar nova senha</Label>
                       <div className="relative">
                         <Input
                             id="confirmPassword"

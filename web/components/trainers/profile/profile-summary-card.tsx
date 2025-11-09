@@ -1,0 +1,225 @@
+import { Badge } from "@/components/ui/badge";
+import ConfirmDeleteButton from "@/components/base/confirm-delete-button";
+import { EditButton } from "@/components/base/edit-button";
+import { ProfileActionButton } from "@/components/base/profile-action-button";
+import {
+  EntityProfile,
+  type EntityProfileMetadataItem,
+} from "@/components/base/entity-profile";
+import { StatusBadge } from "@/components/base/status-badge";
+import type { TrainerResponseDto } from "@/lib/api-client/types.gen";
+import { TrainerCompensationBadge } from "@/components/trainers/trainer-compensation-badge";
+import {
+  Calendar,
+  CalendarDays,
+  Mail,
+  MapPin,
+  Phone,
+  Trash2,
+} from "lucide-react";
+import type { ReactNode } from "react";
+
+interface TrainerProfileSummaryCardProps {
+  heading: string;
+  description?: string;
+  onBack: () => void;
+  trainer: TrainerResponseDto & { active?: boolean };
+  onEdit: () => void;
+  onOpenSchedule: () => void;
+  onDelete?: () => void | Promise<void>;
+  isDeleting?: boolean;
+}
+
+const getInitials = (name?: string | null) => {
+  if (!name) {
+    return "?";
+  }
+
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0]!)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+};
+
+const calculateAge = (birthDate?: string | null) => {
+  if (!birthDate) {
+    return "Data não informada";
+  }
+
+  const today = new Date();
+  const birth = new Date(birthDate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
+
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+
+  return `${age} anos`;
+};
+
+const formatAddress = (address?: string | null) => {
+  if (!address) {
+    return "Endereço não informado";
+  }
+
+  return address;
+};
+
+const formatJoinDate = (joinDate?: string | null) => {
+  if (!joinDate) {
+    return null;
+  }
+
+  try {
+    return new Date(joinDate).toLocaleDateString("pt-BR");
+  } catch {
+    return null;
+  }
+};
+
+const getSpecialtiesSection = (specialties?: string[] | null): ReactNode => {
+  if (!specialties?.length) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-medium text-muted-foreground">
+        Especialidades
+      </p>
+      <div className="flex flex-wrap gap-1">
+        {specialties.map((specialty) => (
+          <Badge key={specialty} variant="outline" className="text-xs">
+            {specialty}
+          </Badge>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export function TrainerProfileSummaryCard({
+  heading,
+  description,
+  onBack,
+  trainer,
+  onEdit,
+  onOpenSchedule,
+  onDelete,
+  isDeleting,
+}: TrainerProfileSummaryCardProps) {
+  const initials = getInitials(trainer.name);
+  const isActive = trainer.active ?? true;
+  const hasDeleteAction = Boolean(onDelete);
+
+  const metadata: EntityProfileMetadataItem[] = [
+    {
+      icon: (
+        <Mail
+          className="h-3.5 w-3.5 text-muted-foreground"
+          aria-hidden="true"
+        />
+      ),
+      content: trainer.email ?? "Sem e-mail",
+    },
+    {
+      icon: (
+        <Phone
+          className="h-3.5 w-3.5 text-muted-foreground"
+          aria-hidden="true"
+        />
+      ),
+      content: trainer.phone ?? "Sem telefone",
+    },
+    {
+      icon: (
+        <Calendar
+          className="h-3.5 w-3.5 text-muted-foreground"
+          aria-hidden="true"
+        />
+      ),
+      content: calculateAge(trainer.birthDate),
+    }
+  ];
+
+  const infoRows: ReactNode[] = [
+    <span
+      key="address"
+      className="flex items-start gap-2 text-sm text-muted-foreground"
+    >
+      <MapPin className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+      <span className="text-xs leading-relaxed">
+        {formatAddress(trainer.address)}
+      </span>
+    </span>,
+  ];
+
+  const joinDateLabel = formatJoinDate(trainer.joinDate);
+  if (joinDateLabel) {
+    infoRows.push(
+      <span
+        key="join-date"
+        className="flex items-center gap-2 text-sm text-muted-foreground"
+      >
+        <CalendarDays
+          className="h-3.5 w-3.5 flex-shrink-0"
+          aria-hidden="true"
+        />
+        <span className="text-xs">Ingressou em {joinDateLabel}</span>
+      </span>,
+    );
+  }
+
+  const badges: ReactNode[] = [
+    <StatusBadge key="status" active={isActive} className="h-6" />,
+    <TrainerCompensationBadge
+      key="compensation"
+      compensationType={trainer.compensationType}
+      fallbackLabel="Compensação não informada"
+    />,
+  ];
+
+  const actions: ReactNode[] = [
+    <ProfileActionButton key="schedule" onClick={onOpenSchedule}>
+      <CalendarDays className="h-4 w-4" aria-hidden="true" />
+      <span>Horários</span>
+    </ProfileActionButton>,
+    <EditButton key="edit" onClick={onEdit} />,
+    hasDeleteAction ? (
+      <ConfirmDeleteButton
+        key="delete"
+        onConfirm={onDelete!}
+        disabled={isDeleting}
+        title="Excluir professor"
+        description="Tem certeza que deseja excluir este professor? Ele será marcado como inativo."
+        fullWidthOnDesktop
+      >
+        <Trash2 className="h-4 w-4" aria-hidden="true" />
+        <span>Excluir</span>
+      </ConfirmDeleteButton>
+    ) : null,
+  ].filter(Boolean) as ReactNode[];
+
+  const specialtiesSection = getSpecialtiesSection(trainer.specialties);
+
+  return (
+    <EntityProfile
+      heading={heading}
+      description={description}
+      onBack={onBack}
+      title={trainer.name ?? "Professor"}
+      subtitle={trainer.email ?? undefined}
+      avatar={{ label: initials }}
+      badges={badges}
+      metadata={metadata}
+      infoRows={infoRows}
+      actions={actions}
+      footer={specialtiesSection}
+      muted={!isActive}
+    />
+  );
+}

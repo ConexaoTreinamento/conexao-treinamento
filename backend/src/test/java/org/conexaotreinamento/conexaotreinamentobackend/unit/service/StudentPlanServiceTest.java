@@ -82,17 +82,17 @@ class StudentPlanServiceTest {
     void createPlan_success_whenNameNotExists() {
         // Arrange
         StudentPlanRequestDTO req = new StudentPlanRequestDTO("Gold", 3, 30, "desc");
-        when(studentPlanRepository.existsByNameAndActiveTrue("Gold")).thenReturn(false);
+        when(studentPlanRepository.existsByName("Gold")).thenReturn(false);
         when(studentPlanRepository.save(any(StudentPlan.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
         StudentPlanResponseDTO dto = studentPlanService.createPlan(req);
 
         // Assert
-        assertEquals("Gold", dto.getName());
-        assertEquals(3, dto.getMaxDays());
-        assertEquals(30, dto.getDurationDays());
-        assertTrue(dto.getActive());
+        assertEquals("Gold", dto.name());
+        assertEquals(3, dto.maxDays());
+        assertEquals(30, dto.durationDays());
+        assertTrue(dto.active());
         verify(studentPlanRepository).save(any(StudentPlan.class));
     }
 
@@ -100,7 +100,7 @@ class StudentPlanServiceTest {
     void createPlan_conflict_whenNameExists() {
         // Arrange
         StudentPlanRequestDTO req = new StudentPlanRequestDTO("Gold", 3, 30, "desc");
-        when(studentPlanRepository.existsByNameAndActiveTrue("Gold")).thenReturn(true);
+        when(studentPlanRepository.existsByName("Gold")).thenReturn(true);
 
         // Act + Assert
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.createPlan(req));
@@ -113,7 +113,6 @@ class StudentPlanServiceTest {
         // Arrange
         StudentPlan plan = newPlan(planId, "Silver", 2, 14, true);
         when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(plan));
-        when(assignmentRepository.findAllCurrentlyActive()).thenReturn(List.of()); // no active assignments
         when(studentPlanRepository.save(any(StudentPlan.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
@@ -125,17 +124,17 @@ class StudentPlanServiceTest {
     }
 
     @Test
-    void deletePlan_conflict_whenActiveAssignmentsExist() {
+    void deletePlan_softDeletes_evenWhenActiveAssignmentsExist() {
         // Arrange
         StudentPlan plan = newPlan(planId, "Silver", 2, 14, true);
         when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(plan));
-        StudentPlanAssignment activeAssign = assignment(UUID.randomUUID(), studentId, planId, LocalDate.now(), LocalDate.now().plusDays(14), userId);
-        when(assignmentRepository.findAllCurrentlyActive()).thenReturn(List.of(activeAssign));
 
-        // Act + Assert
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.deletePlan(planId));
-        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
-        verify(studentPlanRepository, never()).save(any());
+        // Act
+        studentPlanService.deletePlan(planId);
+
+        // Assert
+        assertFalse(plan.isActive(), "Plan should be soft deleted even with active assignments");
+        verify(studentPlanRepository).save(plan);
     }
 
     @Test
@@ -146,6 +145,43 @@ class StudentPlanServiceTest {
         // Act + Assert
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.deletePlan(planId));
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+
+    @Test
+    void restorePlan_success_activatesInactivePlan() {
+        // Arrange
+        StudentPlan inactive = newPlan(planId, "Silver", 2, 14, false);
+        when(studentPlanRepository.findById(planId)).thenReturn(Optional.of(inactive));
+        when(studentPlanRepository.save(any(StudentPlan.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // Act
+        StudentPlanResponseDTO dto = studentPlanService.restorePlan(planId);
+
+        // Assert
+        assertTrue(dto.active());
+        verify(studentPlanRepository).save(inactive);
+    }
+
+    @Test
+    void restorePlan_notFound_throws404() {
+        // Arrange
+        when(studentPlanRepository.findById(planId)).thenReturn(Optional.empty());
+
+        // Act + Assert
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.restorePlan(planId));
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+
+    @Test
+    void restorePlan_alreadyActive_conflict() {
+        // Arrange
+        StudentPlan active = newPlan(planId, "Gold", 3, 30, true);
+        when(studentPlanRepository.findById(planId)).thenReturn(Optional.of(active));
+
+        // Act + Assert
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.restorePlan(planId));
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        verify(studentPlanRepository, never()).save(any());
     }
 
     @Test
@@ -160,8 +196,8 @@ class StudentPlanServiceTest {
 
         // Assert
         assertEquals(2, list.size());
-        assertEquals("A", list.get(0).getName());
-        assertEquals("B", list.get(1).getName());
+        assertEquals("A", list.get(0).name());
+        assertEquals("B", list.get(1).name());
     }
 
     @Test
@@ -174,9 +210,9 @@ class StudentPlanServiceTest {
         StudentPlanResponseDTO dto = studentPlanService.getPlanById(planId);
 
         // Assert
-        assertEquals(planId, dto.getId());
-        assertEquals("Prime", dto.getName());
-        assertTrue(dto.getActive());
+        assertEquals(planId, dto.id());
+        assertEquals("Prime", dto.name());
+        assertTrue(dto.active());
     }
 
     @Test
@@ -226,7 +262,7 @@ class StudentPlanServiceTest {
 
         // Assert
         assertEquals(1, list.size());
-        assertEquals(studentId, list.get(0).getStudentId());
+        assertEquals(studentId, list.get(0).studentId());
     }
 
     @Test
@@ -250,8 +286,8 @@ class StudentPlanServiceTest {
         StudentPlanAssignmentResponseDTO dto = studentPlanService.getCurrentStudentPlan(studentId);
 
         // Assert
-        assertEquals(studentId, dto.getStudentId());
-        assertTrue(dto.isActive());
+        assertEquals(studentId, dto.studentId());
+        assertTrue(dto.active());
     }
 
     @Test
@@ -290,7 +326,7 @@ class StudentPlanServiceTest {
 
         // Assert
         assertEquals(1, list.size());
-        assertEquals(planId, list.get(0).getPlanId());
+        assertEquals(planId, list.get(0).planId());
     }
 
     @Test
@@ -304,7 +340,7 @@ class StudentPlanServiceTest {
 
         // Assert
         assertEquals(1, list.size());
-        assertEquals(studentId, list.get(0).getStudentId());
+        assertEquals(studentId, list.get(0).studentId());
     }
 
     @Test
@@ -335,7 +371,7 @@ class StudentPlanServiceTest {
         StudentPlanAssignmentResponseDTO response = studentPlanService.assignPlanToStudent(studentId, request, userId);
 
         // Assert
-        assertEquals(20, response.getDurationDays());
+        assertEquals(20, response.durationDays());
         assertEquals(10, currentAssignment.getDurationDays());
         assertEquals(newStart, currentAssignment.getEndDateExclusive());
         verify(studentCommitmentService).resetScheduleIfExceedsPlan(studentId, newPlan.getMaxDays());
@@ -368,7 +404,7 @@ class StudentPlanServiceTest {
         StudentPlanAssignmentResponseDTO response = studentPlanService.assignPlanToStudent(studentId, request, userId);
 
         // Assert
-        assertEquals(newPlan.getDurationDays(), response.getDurationDays());
+        assertEquals(newPlan.getDurationDays(), response.durationDays());
         assertEquals(oldPlan.getDurationDays(), currentAssignment.getDurationDays());
         verify(studentCommitmentService).resetScheduleIfExceedsPlan(studentId, newPlan.getMaxDays());
     }

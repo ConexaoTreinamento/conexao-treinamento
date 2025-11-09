@@ -75,26 +75,26 @@ public class TrainerScheduleController {
     
     private TrainerSchedule convertToEntity(TrainerScheduleRequestDTO dto) {
         TrainerSchedule schedule = new TrainerSchedule();
-        schedule.setTrainerId(dto.getTrainerId());
-        schedule.setWeekday(dto.getWeekday());
-        schedule.setStartTime(dto.getStartTime());
-        schedule.setIntervalDuration(dto.getIntervalDuration());
-        schedule.setSeriesName(dto.getSeriesName());
+        schedule.setTrainerId(dto.trainerId());
+        schedule.setWeekday(dto.weekday());
+        schedule.setStartTime(dto.startTime());
+        schedule.setIntervalDuration(dto.intervalDuration());
+        schedule.setSeriesName(dto.seriesName());
         return schedule;
     }
     
     private TrainerScheduleResponseDTO convertToResponseDTO(TrainerSchedule schedule) {
-        TrainerScheduleResponseDTO dto = new TrainerScheduleResponseDTO();
-        dto.setId(schedule.getId());
-        dto.setTrainerId(schedule.getTrainerId());
-        dto.setWeekday(schedule.getWeekday());
-        dto.setStartTime(schedule.getStartTime());
-        dto.setIntervalDuration(schedule.getIntervalDuration());
-        dto.setSeriesName(schedule.getSeriesName());
-        dto.setEffectiveFromTimestamp(schedule.getEffectiveFromTimestamp());
-        dto.setCreatedAt(schedule.getCreatedAt());
-        dto.setUpdatedAt(schedule.getUpdatedAt());
-        dto.setActive(schedule.isActive());
-        return dto;
+        return new TrainerScheduleResponseDTO(
+            schedule.getId(),
+            schedule.getTrainerId(),
+            schedule.getWeekday(),
+            schedule.getStartTime(),
+            schedule.getIntervalDuration(),
+            schedule.getSeriesName(),
+            schedule.getEffectiveFromTimestamp(),
+            schedule.getCreatedAt(),
+            schedule.getUpdatedAt(),
+            schedule.isActive()
+        );
     }
 }

@@ -45,12 +45,12 @@ public class ScheduleController {
             @PathVariable String sessionId,
             @RequestBody SessionUpdateRequestDTO request) {
         
-        if (request.getParticipants() != null) {
-            scheduleService.updateSessionParticipants(sessionId, request.getParticipants());
+        if (request.participants() != null) {
+            scheduleService.updateSessionParticipants(sessionId, request.participants());
         }
         
-        if (request.getNotes() != null) {
-            scheduleService.updateSessionNotes(sessionId, request.getNotes());
+        if (request.notes() != null) {
+            scheduleService.updateSessionNotes(sessionId, request.notes());
         }
         
         return ResponseEntity.ok(scheduleService.getSessionById(sessionId));
@@ -58,19 +58,19 @@ public class ScheduleController {
 
     @PatchMapping("/sessions/{sessionId}/trainer")
     public ResponseEntity<SessionResponseDTO> updateSessionTrainer(@PathVariable String sessionId, @RequestBody SessionTrainerUpdateRequestDTO req) {
-        scheduleService.updateSessionTrainer(sessionId, req.getTrainerId());
+        scheduleService.updateSessionTrainer(sessionId, req.trainerId());
         return ResponseEntity.ok(scheduleService.getSessionById(sessionId));
     }
 
     @PatchMapping("/sessions/{sessionId}/cancel")
     public ResponseEntity<SessionResponseDTO> cancelOrRestoreSession(@PathVariable String sessionId, @RequestBody SessionCancelRequestDTO req) {
-        scheduleService.cancelOrRestoreSession(sessionId, req.isCancel());
+        scheduleService.cancelOrRestoreSession(sessionId, req.cancel());
         return ResponseEntity.ok(scheduleService.getSessionById(sessionId));
     }
 
     @PostMapping("/sessions/{sessionId}/participants")
     public ResponseEntity<MessageResponseDTO> addSessionParticipant(@PathVariable String sessionId, @RequestBody SessionParticipantAddRequestDTO req) {
-        scheduleService.addParticipant(sessionId, req.getStudentId());
+        scheduleService.addParticipant(sessionId, req.studentId());
         return ResponseEntity.ok(new MessageResponseDTO("Participant added", true));
     }
 
@@ -82,7 +82,7 @@ public class ScheduleController {
 
     @PatchMapping("/sessions/{sessionId}/participants/{studentId}/presence")
     public ResponseEntity<MessageResponseDTO> updatePresence(@PathVariable String sessionId, @PathVariable UUID studentId, @RequestBody SessionParticipantPresenceRequestDTO req) {
-        scheduleService.updateParticipantPresence(sessionId, studentId, req.isPresent(), req.getNotes());
+        scheduleService.updateParticipantPresence(sessionId, studentId, req.present(), req.notes());
         return ResponseEntity.ok(new MessageResponseDTO("Presence updated", true));
     }
 

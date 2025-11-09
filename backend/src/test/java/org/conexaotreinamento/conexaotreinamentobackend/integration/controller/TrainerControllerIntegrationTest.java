@@ -2,15 +2,14 @@ package org.conexaotreinamento.conexaotreinamentobackend.integration.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.conexaotreinamento.conexaotreinamentobackend.config.TestContainerConfig;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateTrainerDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.TrainerCreateRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerListItemResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.TrainerRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -111,7 +110,7 @@ class TrainerControllerIntegrationTest {
     void shouldReturnNotFoundWhenUpdatingNonExistentTrainer() throws Exception {
         // Given
         UUID nonExistentId = UUID.randomUUID();
-        CreateTrainerDTO updateRequest = new CreateTrainerDTO(
+        TrainerCreateRequestDTO updateRequest = new TrainerCreateRequestDTO(
             "Updated Name",
             "updated@test.com",
             "+5511999999999",
@@ -142,7 +141,7 @@ class TrainerControllerIntegrationTest {
     @DisplayName("Should create trainer with minimal required fields")
     void shouldCreateTrainerWithMinimalRequiredFields() throws Exception {
         // Given
-        CreateTrainerDTO request = new CreateTrainerDTO(
+        TrainerCreateRequestDTO request = new TrainerCreateRequestDTO(
             "Minimal Trainer",
             "minimal@test.com",
             "+5511444444444",
@@ -167,7 +166,7 @@ class TrainerControllerIntegrationTest {
     @DisplayName("Should create trainer with multiple specialties")
     void shouldCreateTrainerWithMultipleSpecialties() throws Exception {
         // Given
-        CreateTrainerDTO request = new CreateTrainerDTO(
+        TrainerCreateRequestDTO request = new TrainerCreateRequestDTO(
             "Multi Specialist",
             "multi@test.com",
             "+5511333333333",
@@ -186,6 +185,47 @@ class TrainerControllerIntegrationTest {
                 .andExpect(jsonPath("$.specialties", hasSize(5)))
                 .andExpect(jsonPath("$.specialties", containsInAnyOrder(
                     "Musculação", "Crossfit", "Yoga", "Pilates", "Natação")));
+    }
+
+    @Test
+    @DisplayName("Should restore trainer after soft delete")
+    void shouldRestoreTrainerAfterSoftDelete() throws Exception {
+        TrainerCreateRequestDTO request = new TrainerCreateRequestDTO(
+            "Restorable Trainer",
+            "restorable@test.com",
+            "+5511888888888",
+            "password123",
+            "Rua Restore, 987",
+            LocalDate.of(1991, 4, 15),
+            List.of("Crossfit"),
+            CompensationType.HOURLY
+        );
+
+        String creationResponse = mockMvc.perform(post("/trainers")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
+        TrainerListItemResponseDTO createdTrainer = objectMapper.readValue(creationResponse, TrainerListItemResponseDTO.class);
+
+        mockMvc.perform(delete("/trainers/{id}", createdTrainer.id()))
+            .andExpect(status().isNoContent());
+
+        mockMvc.perform(patch("/trainers/{id}/restore", createdTrainer.id()))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(createdTrainer.id().toString()))
+            .andExpect(jsonPath("$.active").value(true));
+    }
+
+    @Test
+    @DisplayName("Should return not found when restoring unknown trainer")
+    void shouldReturnNotFoundWhenRestoringUnknownTrainer() throws Exception {
+        mockMvc.perform(patch("/trainers/{id}/restore", UUID.randomUUID()))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.message").value("Trainer not found"));
     }
 
 

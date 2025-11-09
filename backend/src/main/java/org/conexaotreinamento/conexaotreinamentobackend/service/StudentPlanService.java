@@ -12,7 +12,6 @@ import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentPlanAssignmentRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentPlanRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentRepository;
-import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,22 +30,21 @@ public class StudentPlanService {
     private final StudentPlanRepository studentPlanRepository;
     private final StudentPlanAssignmentRepository assignmentRepository;
     private final StudentRepository studentRepository;
-    private final UserRepository userRepository;
     private final StudentCommitmentService studentCommitmentService;
     
     @Transactional
     public StudentPlanResponseDTO createPlan(StudentPlanRequestDTO requestDTO) {
         // Check if plan with same name already exists
-        if (studentPlanRepository.existsByNameAndActiveTrue(requestDTO.getName())) {
+        if (studentPlanRepository.existsByName(requestDTO.name())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, 
-                "Plan with name '" + requestDTO.getName() + "' already exists");
+                "Plan with name '" + requestDTO.name() + "' already exists");
         }
         
     StudentPlan plan = new StudentPlan(); // Leave id null so @GeneratedValue treats as new
-        plan.setName(requestDTO.getName());
-        plan.setMaxDays(requestDTO.getMaxDays());
-        plan.setDurationDays(requestDTO.getDurationDays());
-        plan.setDescription(requestDTO.getDescription());
+        plan.setName(requestDTO.name());
+        plan.setMaxDays(requestDTO.maxDays());
+        plan.setDurationDays(requestDTO.durationDays());
+        plan.setDescription(requestDTO.description());
         plan.setActive(true);
         
         StudentPlan savedPlan = studentPlanRepository.save(plan);
@@ -58,19 +56,24 @@ public class StudentPlanService {
         StudentPlan plan = studentPlanRepository.findByIdAndActiveTrue(planId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
                 "Plan not found or inactive"));
-        
-        // Check if plan is currently assigned to any students
-        boolean hasActiveAssignments = assignmentRepository.findAllCurrentlyActive()
-            .stream()
-            .anyMatch(assignment -> assignment.getPlanId().equals(planId));
-        
-        if (hasActiveAssignments) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, 
-                "Cannot delete plan that is currently assigned to students");
-        }
-        
+
         plan.softDelete();
         studentPlanRepository.save(plan);
+    }
+
+    @Transactional
+    public StudentPlanResponseDTO restorePlan(UUID planId) {
+        // Look up the plan regardless of active status
+        StudentPlan plan = studentPlanRepository.findById(planId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Plan not found"));
+
+        if (plan.isActive()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Plan is already active");
+        }
+
+        plan.restore();
+        StudentPlan saved = studentPlanRepository.save(plan);
+        return mapToResponseDTO(saved);
     }
     
     @Transactional(readOnly = true)
@@ -79,6 +82,24 @@ public class StudentPlanService {
             .stream()
             .map(this::mapToResponseDTO)
             .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<StudentPlanResponseDTO> getPlansByStatus(String status) {
+        String normalized = status == null ? "active" : status.trim().toLowerCase();
+        List<StudentPlan> plans;
+        switch (normalized) {
+            case "all":
+                plans = studentPlanRepository.findAllByOrderByNameAsc();
+                break;
+            case "inactive":
+                plans = studentPlanRepository.findByActiveFalseOrderByNameAsc();
+                break;
+            case "active":
+            default:
+                plans = studentPlanRepository.findByActiveTrueOrderByNameAsc();
+        }
+        return plans.stream().map(this::mapToResponseDTO).toList();
     }
     
     @Transactional(readOnly = true)
@@ -100,7 +121,7 @@ public class StudentPlanService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
         
         // Validate plan exists and is active
-        StudentPlan plan = studentPlanRepository.findByIdAndActiveTrue(requestDTO.getPlanId())
+        StudentPlan plan = studentPlanRepository.findByIdAndActiveTrue(requestDTO.planId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
                 "Plan not found or inactive"));
         
@@ -108,7 +129,7 @@ public class StudentPlanService {
 //        User assigningUser = userRepository.findById(assignedByUserId)
 //            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assigning user not found"));
         
-        LocalDate startDate = requestDTO.getStartDate();
+        LocalDate startDate = requestDTO.startDate();
         int durationDays = plan.getDurationDays();
         StudentPlanAssignment currentAssignment = null;
         StudentPlan oldPlan = null;
@@ -161,11 +182,11 @@ public class StudentPlanService {
 
         StudentPlanAssignment assignment = new StudentPlanAssignment();
         assignment.setStudentId(studentId);
-        assignment.setPlanId(requestDTO.getPlanId());
+        assignment.setPlanId(requestDTO.planId());
         assignment.setStartDate(startDate);
         assignment.setDurationDays(durationDays);
         assignment.setAssignedByUserId(assignedByUserId);
-        assignment.setAssignmentNotes(requestDTO.getAssignmentNotes());
+        assignment.setAssignmentNotes(requestDTO.assignmentNotes());
 
         StudentPlanAssignment savedAssignment = assignmentRepository.save(assignment);
 
@@ -224,15 +245,15 @@ public class StudentPlanService {
     
     // Mapping methods
     private StudentPlanResponseDTO mapToResponseDTO(StudentPlan plan) {
-        StudentPlanResponseDTO dto = new StudentPlanResponseDTO();
-        dto.setId(plan.getId());
-        dto.setName(plan.getName());
-        dto.setMaxDays(plan.getMaxDays());
-        dto.setDurationDays(plan.getDurationDays());
-        dto.setDescription(plan.getDescription());
-        dto.setActive(plan.isActive());
-        dto.setCreatedAt(plan.getCreatedAt());
-        return dto;
+        return new StudentPlanResponseDTO(
+            plan.getId(),
+            plan.getName(),
+            plan.getMaxDays(),
+            plan.getDurationDays(),
+            plan.getDescription(),
+            plan.isActive(),
+            plan.getCreatedAt()
+        );
     }
     
     private StudentPlanAssignmentResponseDTO mapToAssignmentResponseDTO(StudentPlanAssignment assignment) {
@@ -243,41 +264,44 @@ public class StudentPlanService {
                                                                        Student student,
                                                                        StudentPlan plan,
                                                                        User assigningUser) {
-        StudentPlanAssignmentResponseDTO dto = new StudentPlanAssignmentResponseDTO();
-        dto.setId(assignment.getId());
-        dto.setStudentId(assignment.getStudentId());
-        dto.setPlanId(assignment.getPlanId());
-        dto.setStartDate(assignment.getStartDate());
-    dto.setDurationDays(assignment.getDurationDays());
-        dto.setAssignedByUserId(assignment.getAssignedByUserId());
-        dto.setAssignmentNotes(assignment.getAssignmentNotes());
-        dto.setCreatedAt(assignment.getCreatedAt());
-        
-        // Set convenience fields if entities are loaded
+        String studentName = null;
         if (student != null) {
-            dto.setStudentName(student.getName() + " " + student.getSurname());
-        }
-        if (plan != null) {
-            dto.setPlanName(plan.getName());
-            dto.setPlanMaxDays(plan.getMaxDays());
-            dto.setPlanDurationDays(plan.getDurationDays()); 
-        }
-        if (assigningUser != null) {
-            dto.setAssignedByUserEmail(assigningUser.getEmail());
+            studentName = student.getName() + " " + student.getSurname();
         }
 
-        // Set computed fields
-        dto.setActive(assignment.isActive());
-        dto.setExpired(assignment.isExpired());
-        dto.setExpiringSoon(assignment.isExpiringSoon(7));
-        
-        // Calculate days remaining
-        if (assignment.isActive()) {
-            dto.setDaysRemaining(ChronoUnit.DAYS.between(LocalDate.now(), assignment.getEndDateExclusive()));
-        } else {
-            dto.setDaysRemaining(0);
+        String planName = null;
+        Integer planMaxDays = null;
+        Integer planDurationDays = null;
+        if (plan != null) {
+            planName = plan.getName();
+            planMaxDays = plan.getMaxDays();
+            planDurationDays = plan.getDurationDays();
         }
-        
-        return dto;
+
+        String assignedByUserEmail = assigningUser != null ? assigningUser.getEmail() : null;
+
+        long daysRemaining = assignment.isActive()
+            ? ChronoUnit.DAYS.between(LocalDate.now(), assignment.getEndDateExclusive())
+            : 0;
+
+        return new StudentPlanAssignmentResponseDTO(
+            assignment.getId(),
+            assignment.getStudentId(),
+            studentName,
+            assignment.getPlanId(),
+            planName,
+            planMaxDays,
+            planDurationDays,
+            assignment.getDurationDays(),
+            assignment.getStartDate(),
+            assignment.getAssignedByUserId(),
+            assignedByUserEmail,
+            assignment.getAssignmentNotes(),
+            assignment.getCreatedAt(),
+            assignment.isActive(),
+            assignment.isExpired(),
+            assignment.isExpiringSoon(7),
+            daysRemaining
+        );
     }
 }

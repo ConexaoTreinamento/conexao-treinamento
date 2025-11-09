@@ -44,7 +44,7 @@ public class StudentCommitmentController {
             @PathVariable UUID sessionSeriesId,
             @Valid @RequestBody StudentCommitmentRequestDTO request) {
         StudentCommitment commitment = studentCommitmentService.updateCommitment(
-            studentId, sessionSeriesId, request.getCommitmentStatus(), request.getEffectiveFromTimestamp());
+            studentId, sessionSeriesId, request.commitmentStatus(), request.effectiveFromTimestamp());
         CommitmentDetailResponseDTO response = convertToDetailResponseDTO(commitment);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -124,7 +124,7 @@ public class StudentCommitmentController {
             @PathVariable UUID studentId,
             @Valid @RequestBody BulkCommitmentRequestDTO request) {
         List<StudentCommitment> commitments = studentCommitmentService.bulkUpdateCommitments(
-            studentId, request.getSessionSeriesIds(), request.getCommitmentStatus(), request.getEffectiveFromTimestamp());
+            studentId, request.sessionSeriesIds(), request.commitmentStatus(), request.effectiveFromTimestamp());
         List<CommitmentDetailResponseDTO> response = commitments.stream()
             .map(this::convertToDetailResponseDTO)
             .collect(Collectors.toList());
@@ -140,22 +140,18 @@ public class StudentCommitmentController {
     
     // Convert entity to detailed response DTO
     private CommitmentDetailResponseDTO convertToDetailResponseDTO(StudentCommitment commitment) {
-        CommitmentDetailResponseDTO dto = new CommitmentDetailResponseDTO();
-        dto.setId(commitment.getId());
-        dto.setStudentId(commitment.getStudentId());
-        dto.setSessionSeriesId(commitment.getSessionSeriesId());
-        dto.setCommitmentStatus(commitment.getCommitmentStatus());
-        dto.setEffectiveFromTimestamp(commitment.getEffectiveFromTimestamp());
-        dto.setCreatedAt(commitment.getCreatedAt());
-        
-        // Enrich with student name
         Optional<Student> student = studentRepository.findById(commitment.getStudentId());
-        student.ifPresent(s -> dto.setStudentName(s.getName()));
-        
-        // Enrich with series name
         Optional<TrainerSchedule> schedule = trainerScheduleRepository.findById(commitment.getSessionSeriesId());
-        schedule.ifPresent(s -> dto.setSeriesName(s.getSeriesName()));
-        
-        return dto;
+
+        return new CommitmentDetailResponseDTO(
+            commitment.getId(),
+            commitment.getStudentId(),
+            student.map(Student::getName).orElse(null),
+            commitment.getSessionSeriesId(),
+            schedule.map(TrainerSchedule::getSeriesName).orElse(null),
+            commitment.getCommitmentStatus(),
+            commitment.getEffectiveFromTimestamp(),
+            commitment.getCreatedAt()
+        );
     }
 }

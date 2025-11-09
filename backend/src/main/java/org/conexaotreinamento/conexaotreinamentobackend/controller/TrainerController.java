@@ -3,9 +3,9 @@ package org.conexaotreinamento.conexaotreinamentobackend.controller;
 import java.util.List;
 import java.util.UUID;
 
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateTrainerDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.ResetTrainerPasswordDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListTrainersDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.TrainerCreateRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.TrainerPasswordResetRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerListItemResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.service.TrainerService;
 import org.springframework.http.HttpStatus;
@@ -22,51 +22,75 @@ import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/trainers")
 @RequiredArgsConstructor
+@Slf4j
 public class TrainerController {
     private final TrainerService trainerService;
 
     @PostMapping
-    public ResponseEntity<ListTrainersDTO> createTrainerAndUser(@RequestBody @Valid CreateTrainerDTO request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(trainerService.create(request));
+    public ResponseEntity<TrainerListItemResponseDTO> createTrainerAndUser(@RequestBody @Valid TrainerCreateRequestDTO request) {
+        log.info("Creating new trainer - Name: {}, Email: {}", request.name(), request.email());
+        TrainerListItemResponseDTO response = trainerService.create(request);
+        log.info("Trainer created successfully [ID: {}] - Name: {}", response.id(), response.name());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping("/{trainerId}")
-    public ResponseEntity<ListTrainersDTO> findTrainerById(@PathVariable UUID trainerId) {
-        return ResponseEntity.ok(trainerService.findById(trainerId));
+    @GetMapping("/{id}")
+    public ResponseEntity<TrainerListItemResponseDTO> findTrainerById(@PathVariable UUID id) {
+        log.debug("Fetching trainer by ID: {}", id);
+        return ResponseEntity.ok(trainerService.findById(id));
     }
 
-    @GetMapping("/user-profile/{userId}")
-    public ResponseEntity<ListTrainersDTO> findTrainerByUserId(@PathVariable UUID userId) {
-        return ResponseEntity.ok(trainerService.findByUserId(userId));
+    @GetMapping("/user-profile/{id}")
+    public ResponseEntity<TrainerListItemResponseDTO> findTrainerByUserId(@PathVariable UUID id) {
+        log.debug("Fetching trainer by user ID: {}", id);
+        return ResponseEntity.ok(trainerService.findByUserId(id));
     }
 
     @GetMapping
-    public ResponseEntity<List<ListTrainersDTO>> findAllTrainers() {
-        return ResponseEntity.ok(trainerService.findAll());
+    public ResponseEntity<List<TrainerListItemResponseDTO>> findAllTrainers() {
+        log.debug("Fetching all trainers");
+        List<TrainerListItemResponseDTO> response = trainerService.findAll();
+        log.debug("Retrieved {} trainers", response.size());
+        return ResponseEntity.ok(response);
     }
 
-
-    @PutMapping("/{trainerId}")
-    public ResponseEntity<TrainerResponseDTO> updateTrainer(@PathVariable UUID trainerId, @RequestBody @Valid CreateTrainerDTO request) {
-        return ResponseEntity.ok(trainerService.put(trainerId, request));
+    @PutMapping("/{id}")
+    public ResponseEntity<TrainerResponseDTO> updateTrainerAndUser(@PathVariable UUID id, @RequestBody @Valid TrainerCreateRequestDTO request) {
+        log.info("Updating trainer [ID: {}] - Name: {}", id, request.name());
+        TrainerResponseDTO response = trainerService.put(id, request);
+        log.info("Trainer updated successfully [ID: {}]", id);
+        return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/{trainerId}")
-    public ResponseEntity<Void> deleteTrainer(@PathVariable UUID trainerId) {
-        trainerService.delete(trainerId);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> softDeleteTrainerUser(@PathVariable UUID id) {
+        log.info("Deleting trainer [ID: {}]", id);
+        trainerService.delete(id);
+        log.info("Trainer deleted successfully [ID: {}]", id);
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{trainerId}/reset-password")
+    @PatchMapping("/{id}/restore")
+    public ResponseEntity<TrainerListItemResponseDTO> restoreTrainer(@PathVariable UUID id) {
+        log.info("Restoring trainer [ID: {}]", id);
+        TrainerListItemResponseDTO response = trainerService.restore(id);
+        log.info("Trainer restored successfully [ID: {}]", id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/{id}/reset-password")
     public ResponseEntity<Void> resetPassword(
-            @PathVariable UUID trainerId,
-            @RequestBody @Valid ResetTrainerPasswordDTO request
+            @PathVariable UUID id,
+            @RequestBody @Valid TrainerPasswordResetRequestDTO request
     ) {
-        trainerService.resetPassword(trainerId, request.newPassword());
+        log.info("Resetting password for trainer [ID: {}]", id);
+        trainerService.resetPassword(id, request.newPassword());
+        log.info("Password reset successfully for trainer [ID: {}]", id);
         return ResponseEntity.noContent().build();
     }
 }

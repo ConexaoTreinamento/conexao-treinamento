@@ -3,10 +3,11 @@
 import { useRouter, useParams } from "next/navigation"
 import { toast } from "sonner"
 import Layout from "@/components/layout"
-import EvaluationForm from "@/components/evaluation-form"
-import { useEvaluation } from "@/lib/hooks/evaluation-queries"
-import { useUpdateEvaluation } from "@/lib/hooks/evaluation-mutations"
-import { useStudent } from "@/lib/hooks/student-queries"
+import EvaluationForm, { type EvaluationData } from "@/components/students/evaluation-form"
+import { useEvaluation } from "@/lib/evaluations/hooks/evaluation-queries"
+import { useUpdateEvaluation } from "@/lib/evaluations/hooks/evaluation-mutations"
+import { useStudent } from "@/lib/students/hooks/student-queries"
+import { toPhysicalEvaluationRequest } from "@/lib/evaluations/transform"
 
 export default function EditEvaluationPage() {
   const router = useRouter()
@@ -15,50 +16,21 @@ export default function EditEvaluationPage() {
   const evaluationId = params.evaluationId as string
 
   // Get student and evaluation data
-  const { data: student, isLoading: isLoadingStudent } = useStudent({ path: { studentId: studentId } })
-  const { data: evaluation, isLoading: isLoadingEvaluation } = useEvaluation(studentId, evaluationId)
+  const { data: student, isLoading: isLoadingStudent } = useStudent({ path: { id: studentId } })
+  const { data: evaluation, isLoading: isLoadingEvaluation } = useEvaluation({
+    path: { studentId, evaluationId },
+  })
 
   // Update evaluation mutation
   const updateEvaluation = useUpdateEvaluation()
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: EvaluationData) => {
     try {
-      // Convert string values to numbers and prepare the request
-      const requestData = {
-        weight: parseFloat(data.weight),
-        height: parseFloat(data.height),
-        circumferences: data.circumferences ? {
-          rightArmRelaxed: data.circumferences.rightArmRelaxed ? parseFloat(data.circumferences.rightArmRelaxed) : null,
-          leftArmRelaxed: data.circumferences.leftArmRelaxed ? parseFloat(data.circumferences.leftArmRelaxed) : null,
-          rightArmFlexed: data.circumferences.rightArmFlexed ? parseFloat(data.circumferences.rightArmFlexed) : null,
-          leftArmFlexed: data.circumferences.leftArmFlexed ? parseFloat(data.circumferences.leftArmFlexed) : null,
-          waist: data.circumferences.waist ? parseFloat(data.circumferences.waist) : null,
-          abdomen: data.circumferences.abdomen ? parseFloat(data.circumferences.abdomen) : null,
-          hip: data.circumferences.hip ? parseFloat(data.circumferences.hip) : null,
-          rightThigh: data.circumferences.rightThigh ? parseFloat(data.circumferences.rightThigh) : null,
-          leftThigh: data.circumferences.leftThigh ? parseFloat(data.circumferences.leftThigh) : null,
-          rightCalf: data.circumferences.rightCalf ? parseFloat(data.circumferences.rightCalf) : null,
-          leftCalf: data.circumferences.leftCalf ? parseFloat(data.circumferences.leftCalf) : null,
-        } : undefined,
-        subcutaneousFolds: data.subcutaneousFolds ? {
-          triceps: data.subcutaneousFolds.triceps ? parseFloat(data.subcutaneousFolds.triceps) : null,
-          thorax: data.subcutaneousFolds.thorax ? parseFloat(data.subcutaneousFolds.thorax) : null,
-          subaxillary: data.subcutaneousFolds.subaxillary ? parseFloat(data.subcutaneousFolds.subaxillary) : null,
-          subscapular: data.subcutaneousFolds.subscapular ? parseFloat(data.subcutaneousFolds.subscapular) : null,
-          abdominal: data.subcutaneousFolds.abdominal ? parseFloat(data.subcutaneousFolds.abdominal) : null,
-          suprailiac: data.subcutaneousFolds.suprailiac ? parseFloat(data.subcutaneousFolds.suprailiac) : null,
-          thigh: data.subcutaneousFolds.thigh ? parseFloat(data.subcutaneousFolds.thigh) : null,
-        } : undefined,
-        diameters: data.diameters ? {
-          umerus: data.diameters.umerus ? parseFloat(data.diameters.umerus) : null,
-          femur: data.diameters.femur ? parseFloat(data.diameters.femur) : null,
-        } : undefined,
-      }
+      const requestData = toPhysicalEvaluationRequest(data)
 
       await updateEvaluation.mutateAsync({
-        studentId,
-        evaluationId,
-        data: requestData,
+        path: { studentId, evaluationId },
+        body: requestData,
       })
 
       toast.success("Avaliação atualizada com sucesso!")
@@ -97,11 +69,11 @@ export default function EditEvaluationPage() {
   }
 
   // Convert evaluation data to form format
-  const initialData = {
+  const initialData: EvaluationData = {
     id: evaluation.id,
-    weight: evaluation.weight.toString(),
-    height: evaluation.height.toString(),
-    bmi: evaluation.bmi.toString(),
+    weight: evaluation.weight != null ? evaluation.weight.toString() : "",
+    height: evaluation.height != null ? evaluation.height.toString() : "",
+    bmi: evaluation.bmi != null ? evaluation.bmi.toString() : "",
     circumferences: {
       rightArmRelaxed: evaluation.circumferences?.rightArmRelaxed?.toString() || "",
       leftArmRelaxed: evaluation.circumferences?.leftArmRelaxed?.toString() || "",

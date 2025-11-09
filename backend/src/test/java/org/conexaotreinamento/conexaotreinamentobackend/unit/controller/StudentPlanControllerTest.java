@@ -22,6 +22,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -64,35 +65,43 @@ class StudentPlanControllerTest {
     }
 
     private StudentPlanResponseDTO planDto(UUID id, String name, int maxDays, int durationDays, boolean active) {
-        StudentPlanResponseDTO dto = new StudentPlanResponseDTO();
-        dto.setId(id);
-        dto.setName(name);
-        dto.setMaxDays(maxDays);
-        dto.setDurationDays(durationDays);
-        dto.setDescription("desc");
-        dto.setActive(active);
-        return dto;
+        return new StudentPlanResponseDTO(
+                id,
+                name,
+                maxDays,
+                durationDays,
+                "desc",
+                active,
+                Instant.now()
+        );
     }
 
     private StudentPlanAssignmentResponseDTO assignDto(UUID assignmentId, UUID studentId, UUID planId, String studentName, String planName, String assignedByEmail) {
-        StudentPlanAssignmentResponseDTO dto = new StudentPlanAssignmentResponseDTO();
-        dto.setId(assignmentId);
-        dto.setStudentId(studentId);
-        dto.setPlanId(planId);
-        dto.setStudentName(studentName);
-        dto.setPlanName(planName);
-        dto.setAssignedByUserEmail(assignedByEmail);
-        dto.setStartDate(LocalDate.now());
-        dto.setDurationDays(10);
-        dto.setActive(true);
-        dto.setDaysRemaining(10);
-        return dto;
+        return new StudentPlanAssignmentResponseDTO(
+                assignmentId,
+                studentId,
+                studentName,
+                planId,
+                planName,
+                null,
+                null,
+                10,
+                LocalDate.now(),
+                null,
+                assignedByEmail,
+                null,
+                Instant.now(),
+                true,
+                false,
+                false,
+                10
+        );
     }
 
     @Test
     void getAllPlans_returnsOk_listOfPlans() throws Exception {
         // Arrange
-        when(studentPlanService.getAllActivePlans()).thenReturn(List.of(
+        when(studentPlanService.getPlansByStatus("active")).thenReturn(List.of(
                 planDto(UUID.randomUUID(), "Gold", 3, 30, true),
                 planDto(UUID.randomUUID(), "Silver", 2, 14, true)
         ));
@@ -147,6 +156,21 @@ class StudentPlanControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(studentPlanService).deletePlan(planId);
+    }
+
+    @Test
+    void restorePlan_returnsOk_andInvokesService() throws Exception {
+        // Arrange
+        StudentPlanResponseDTO restored = planDto(planId, "Silver", 2, 14, true);
+        when(studentPlanService.restorePlan(planId)).thenReturn(restored);
+
+        // Act + Assert
+        mockMvc.perform(post("/plans/{planId}/restore", planId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(planId.toString()))
+                .andExpect(jsonPath("$.active").value(true));
+
+        verify(studentPlanService).restorePlan(planId);
     }
 
     @Test

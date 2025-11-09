@@ -3,10 +3,10 @@ package org.conexaotreinamento.conexaotreinamentobackend.controller;
 import java.util.List;
 import java.util.UUID;
 
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.CreateAdministratorDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.AdministratorCreateRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchAdministratorRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AdministratorListItemResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AdministratorResponseDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ListAdministratorsDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.service.AdministratorService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -35,41 +35,36 @@ public class AdministratorController {
     private final AdministratorService administratorService;
 
     @PostMapping
-    public ResponseEntity<ListAdministratorsDTO> createAdministratorAndUser(@RequestBody @Valid CreateAdministratorDTO request) {
+    public ResponseEntity<AdministratorListItemResponseDTO> createAdministrator(@RequestBody @Valid AdministratorCreateRequestDTO request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(administratorService.create(request));
     }
 
-    @GetMapping
-    public ResponseEntity<List<ListAdministratorsDTO>> findAllAdministrators() {
-        return ResponseEntity.ok(administratorService.findAll());
-    }
-
-    @GetMapping("/{administratorId}")
-    public ResponseEntity<ListAdministratorsDTO> findAdministratorById(@PathVariable UUID administratorId) {
-        return ResponseEntity.ok(administratorService.findById(administratorId));
+    @GetMapping("/{id}")
+    public ResponseEntity<AdministratorListItemResponseDTO> findAdministratorById(@PathVariable UUID id) {
+        return ResponseEntity.ok(administratorService.findById(id));
     }
 
     @GetMapping("/user-profile/{userId}")
-    public ResponseEntity<ListAdministratorsDTO> findAdministratorByUserId(@PathVariable UUID userId) {
+    public ResponseEntity<AdministratorListItemResponseDTO> findAdministratorByUserId(@PathVariable UUID userId) {
         return ResponseEntity.ok(administratorService.findByUserId(userId));
     }
 
-    @GetMapping("/test")
-    public ResponseEntity<String> testEndpoint() {
-        return ResponseEntity.ok("Endpoint funcionando sem autenticação!");
+    @GetMapping
+    public ResponseEntity<List<AdministratorListItemResponseDTO>> findAllAdministrators() {
+        return ResponseEntity.ok(administratorService.findAll());
     }
 
     @GetMapping("/paginated")
-    public ResponseEntity<Page<ListAdministratorsDTO>> findAllPaginated(
+    public ResponseEntity<Page<AdministratorListItemResponseDTO>> findAllPaginated(
             @RequestParam(required = false) String search,
             @RequestParam(required = false, defaultValue = "false") boolean includeInactive,
             @PageableDefault(size = 20, sort = "joinDate", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(administratorService.findAll(search, pageable, includeInactive));
     }
 
-    @PutMapping("/{administratorId}")
-    public ResponseEntity<AdministratorResponseDTO> updateAdministrator(@PathVariable UUID administratorId, @RequestBody @Valid CreateAdministratorDTO request) {
-        return ResponseEntity.ok(administratorService.put(administratorId, request));
+    @PutMapping("/{id}")
+    public ResponseEntity<AdministratorResponseDTO> updateAdministrator(@PathVariable UUID id, @RequestBody @Valid AdministratorCreateRequestDTO request) {
+        return ResponseEntity.ok(administratorService.put(id, request));
     }
 
     @PatchMapping("/{administratorId}")

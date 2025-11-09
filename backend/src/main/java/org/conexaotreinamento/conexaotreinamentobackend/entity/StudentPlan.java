@@ -45,4 +45,9 @@ public class StudentPlan {
         this.active = false;
     }
 
+    // Restore a previously soft-deleted plan
+    public void restore() {
+        this.active = true;
+    }
+
 }
