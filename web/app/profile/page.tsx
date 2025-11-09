@@ -88,9 +88,18 @@ export default function ProfilePage() {
     ...patchAdministratorMutation({
       client: apiClient,
     }),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!", variant: "success" })
-      queryClient.invalidateQueries({ queryKey: ["findAdministratorByUserId"] })
+      if (!userId) {
+        return
+      }
+
+      await queryClient.invalidateQueries({
+        queryKey: findAdministratorByUserIdOptions({
+          path: { userId },
+          client: apiClient,
+        }).queryKey,
+      })
     },
     onError: () => {
       toast({
@@ -124,9 +133,36 @@ export default function ProfilePage() {
     ...updateTrainerAndUserMutation({
       client: apiClient,
     }),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({ title: "Sucesso", description: "Perfil atualizado com sucesso!", variant: "success" })
-      queryClient.invalidateQueries({ queryKey: ["findTrainerById"] })
+
+      const tasks: Promise<unknown>[] = []
+
+      if (trainerId) {
+        tasks.push(
+          queryClient.invalidateQueries({
+            queryKey: findTrainerByIdOptions({
+              path: { id: String(trainerId) },
+              client: apiClient,
+            }).queryKey,
+          })
+        )
+      }
+
+      if (userId) {
+        tasks.push(
+          queryClient.invalidateQueries({
+            queryKey: findTrainerByUserIdOptions({
+              path: { id: userId },
+              client: apiClient,
+            }).queryKey,
+          })
+        )
+      }
+
+      if (tasks.length > 0) {
+        await Promise.all(tasks)
+      }
     },
     onError: () => {
       toast({
