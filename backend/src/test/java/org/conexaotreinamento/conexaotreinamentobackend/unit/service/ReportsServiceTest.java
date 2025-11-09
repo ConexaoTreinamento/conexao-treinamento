@@ -180,6 +180,42 @@ class ReportsServiceTest {
     }
 
     @Test
+    @DisplayName("Excludes sessions where all participants are marked absent")
+    void shouldExcludeSessionsWhenAllParticipantsAreAbsent() {
+        Trainer trainer = createTrainer(trainerId, "Prof. Ausente", CompensationType.HOURLY, List.of());
+        UUID absentStudentId = UUID.randomUUID();
+
+        SessionResponseDTO absentSession = new SessionResponseDTO(
+                "session__" + trainerId + "__absent",
+                trainerId,
+                "Prof. Ausente",
+                LocalDateTime.of(2025, 10, 15, 14, 0),
+                LocalDateTime.of(2025, 10, 15, 15, 0),
+                "Series",
+                null,
+                false,
+                List.of(createParticipant(absentStudentId, false)),
+                false,
+                0
+        );
+
+        when(trainerRepository.findAll()).thenReturn(List.of(trainer));
+        when(scheduleService.getScheduledSessions(startDate.toLocalDate(), endDate.toLocalDate()))
+                .thenReturn(List.of(absentSession));
+        when(eventRepository.findActiveWithinDateRangeWithParticipants(startDate.toLocalDate(), endDate.toLocalDate()))
+                .thenReturn(Collections.emptyList());
+        when(studentRepository.findAllBirthDates()).thenReturn(Collections.emptyList());
+
+        ReportsResponseDTO response = reportsService.generateReports(startDate, endDate, null);
+
+        assertThat(response.trainerReports()).hasSize(1);
+        var report = response.trainerReports().get(0);
+        assertThat(report.hoursWorked()).isEqualTo(0.0);
+        assertThat(report.classesGiven()).isEqualTo(0);
+        assertThat(report.studentsManaged()).isEqualTo(0);
+    }
+
+    @Test
     @DisplayName("Calculates age distribution percentages")
     void shouldCalculateAgeDistribution() {
         Trainer trainer = createTrainer(trainerId, "Any Trainer", CompensationType.HOURLY, List.of());
@@ -223,15 +259,7 @@ class ReportsServiceTest {
                                             UUID... studentIds) {
         List<StudentCommitmentResponseDTO> participants = new ArrayList<>();
         for (UUID studentId : studentIds) {
-            participants.add(new StudentCommitmentResponseDTO(
-                    studentId,
-                    "Student " + studentId.toString().substring(0, 5),
-                    CommitmentStatus.ATTENDING,
-                    Collections.emptyList(),
-                    Collections.emptyList(),
-                    Boolean.TRUE,
-                    null
-            ));
+                        participants.add(createParticipant(studentId, true));
         }
         return new SessionResponseDTO(
                 "session__" + trainerId + "__" + start,
@@ -247,6 +275,18 @@ class ReportsServiceTest {
                 participants.size()
         );
     }
+
+        private StudentCommitmentResponseDTO createParticipant(UUID studentId, boolean present) {
+                return new StudentCommitmentResponseDTO(
+                                studentId,
+                                "Student " + studentId.toString().substring(0, 5),
+                                CommitmentStatus.ATTENDING,
+                                Collections.emptyList(),
+                                Collections.emptyList(),
+                                present,
+                                null
+                );
+        }
 
     private Event buildEvent(Trainer trainer,
                              LocalDateTime start,
