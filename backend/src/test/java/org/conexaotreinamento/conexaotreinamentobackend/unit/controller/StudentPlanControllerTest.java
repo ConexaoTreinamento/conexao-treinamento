@@ -198,7 +198,7 @@ class StudentPlanControllerTest {
                 + "}";
 
         // Act + Assert
-        mockMvc.perform(post("/plans/students/{studentId}/assign", studentId)
+    mockMvc.perform(post("/plans/students/{studentId}/plans/assignments", studentId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isCreated())
@@ -218,7 +218,7 @@ class StudentPlanControllerTest {
         when(studentPlanService.getStudentPlanHistory(studentId)).thenReturn(List.of(a));
 
         // Act + Assert
-        mockMvc.perform(get("/plans/students/{studentId}/history", studentId))
+    mockMvc.perform(get("/plans/students/{studentId}/plans/assignments", studentId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].studentId").value(studentId.toString()));
     }
@@ -230,7 +230,7 @@ class StudentPlanControllerTest {
         when(studentPlanService.getCurrentStudentPlan(studentId)).thenReturn(a);
 
         // Act + Assert
-        mockMvc.perform(get("/plans/students/{studentId}/current", studentId))
+    mockMvc.perform(get("/plans/students/{studentId}/plans/assignments/current", studentId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.planId").value(planId.toString()))
                 .andExpect(jsonPath("$.active").value(true));

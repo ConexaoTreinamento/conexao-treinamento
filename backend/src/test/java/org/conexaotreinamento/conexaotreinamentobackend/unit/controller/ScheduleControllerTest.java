@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -22,7 +23,7 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -63,7 +64,7 @@ class ScheduleControllerTest {
                 .thenReturn(sessions);
 
         // Act + Assert
-        mockMvc.perform(get("/schedule")
+    mockMvc.perform(get("/sessions")
                 .param("startDate", "2025-09-26")
                 .param("endDate", "2025-09-26"))
                 .andExpect(status().isOk())
@@ -78,18 +79,21 @@ class ScheduleControllerTest {
     void updateSession_withNotesOnly_callsUpdateNotes() throws Exception {
         // Arrange
         String sessionId = "yoga-basics__2025-09-26__09:00";
-        String body = "{ \"notes\": \"Bring water\" }";
+    String body = "{ \"notes\": \"Bring water\" }";
+    when(scheduleService.getSessionById(sessionId)).thenReturn(sampleSession(sessionId));
 
         // Act
-        mockMvc.perform(post("/schedule/sessions/{sessionId}", sessionId)
+    mockMvc.perform(patch("/sessions/{sessionId}", sessionId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
                 .andExpect(status().isOk())
-                .andExpect(content().string("Session updated successfully"));
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.sessionId").value(sessionId));
 
         // Assert
         verify(scheduleService, times(1)).updateSessionNotes(eq(sessionId), eq("Bring water"));
         verify(scheduleService, never()).updateSessionParticipants(anyString(), anyList());
+    verify(scheduleService).getSessionById(sessionId);
     }
 
     @Test
@@ -97,21 +101,24 @@ class ScheduleControllerTest {
         // Arrange
         String sessionId = "yoga-basics__2025-09-26__09:00";
         UUID studentId = UUID.randomUUID();
-        String body = "{ \"participants\": [ { \"studentId\": \"" + studentId + "\", \"participationType\": \"INCLUDED\", \"present\": true } ] }";
+    String body = "{ \"participants\": [ { \"studentId\": \"" + studentId + "\", \"participationType\": \"INCLUDED\", \"present\": true } ] }";
+    when(scheduleService.getSessionById(sessionId)).thenReturn(sampleSession(sessionId));
 
         // Act
-        mockMvc.perform(post("/schedule/sessions/{sessionId}", sessionId)
+    mockMvc.perform(patch("/sessions/{sessionId}", sessionId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
                 .andExpect(status().isOk())
-                .andExpect(content().string("Session updated successfully"));
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.sessionId").value(sessionId));
 
         // Assert
         verify(scheduleService, times(1)).updateSessionParticipants(eq(sessionId), argThat(list -> {
             // basic validation on participants mapping
             return list != null && list.size() == 1 && list.get(0) instanceof SessionParticipant;
         }));
-        verify(scheduleService, never()).updateSessionNotes(anyString(), anyString());
+    verify(scheduleService, never()).updateSessionNotes(anyString(), anyString());
+    verify(scheduleService).getSessionById(sessionId);
     }
 
     @Test
@@ -120,17 +127,20 @@ class ScheduleControllerTest {
         String sessionId = "yoga-basics__2025-09-26__09:00";
         UUID studentId = UUID.randomUUID();
         String body = "{ \"notes\": \"Bring towel\", \"participants\": [ { \"studentId\": \"" + studentId + "\", \"participationType\": \"INCLUDED\", \"present\": false } ] }";
+    when(scheduleService.getSessionById(sessionId)).thenReturn(sampleSession(sessionId));
 
         // Act
-        mockMvc.perform(post("/schedule/sessions/{sessionId}", sessionId)
+    mockMvc.perform(patch("/sessions/{sessionId}", sessionId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
                 .andExpect(status().isOk())
-                .andExpect(content().string("Session updated successfully"));
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.sessionId").value(sessionId));
 
         // Assert
         verify(scheduleService, times(1)).updateSessionNotes(eq(sessionId), eq("Bring towel"));
         verify(scheduleService, times(1)).updateSessionParticipants(eq(sessionId), anyList());
+        verify(scheduleService).getSessionById(sessionId);
     }
 
     @Test
@@ -138,16 +148,35 @@ class ScheduleControllerTest {
         // Arrange
         String sessionId = "yoga-basics__2025-09-26__09:00";
         String body = "{}";
+        when(scheduleService.getSessionById(sessionId)).thenReturn(sampleSession(sessionId));
 
         // Act
-        mockMvc.perform(post("/schedule/sessions/{sessionId}", sessionId)
+        mockMvc.perform(patch("/sessions/{sessionId}", sessionId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body))
                 .andExpect(status().isOk())
-                .andExpect(content().string("Session updated successfully"));
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.sessionId").value(sessionId));
 
         // Assert
         verify(scheduleService, never()).updateSessionNotes(anyString(), anyString());
         verify(scheduleService, never()).updateSessionParticipants(anyString(), anyList());
+        verify(scheduleService).getSessionById(sessionId);
+    }
+
+    private SessionResponseDTO sampleSession(String sessionId) {
+        return new SessionResponseDTO(
+                sessionId,
+                null,
+                null,
+                LocalDateTime.of(2025, 9, 26, 9, 0),
+                LocalDateTime.of(2025, 9, 26, 10, 0),
+                "Yoga Basics",
+                null,
+                false,
+                List.of(),
+                false,
+                0
+        );
     }
 }

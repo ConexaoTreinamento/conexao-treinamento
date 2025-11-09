@@ -65,7 +65,7 @@ class TrainerScheduleControllerTest {
         when(trainerScheduleService.getSchedulesByTrainer(trainerId)).thenReturn(List.of(ts));
 
         // Act + Assert
-        mockMvc.perform(get("/trainer-schedules/trainer/{trainerId}", trainerId))
+    mockMvc.perform(get("/trainers/{trainerId}/schedules", trainerId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].trainerId").value(trainerId.toString()))
                 .andExpect(jsonPath("$[0].seriesName").value("Pilates"));
@@ -80,7 +80,7 @@ class TrainerScheduleControllerTest {
         when(trainerScheduleService.getScheduleById(scheduleId)).thenReturn(Optional.of(ts));
 
         // Act + Assert
-        mockMvc.perform(get("/trainer-schedules/{id}", scheduleId))
+    mockMvc.perform(get("/schedules/{scheduleId}", scheduleId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(scheduleId.toString()))
                 .andExpect(jsonPath("$.seriesName").value("Strength"));
@@ -90,7 +90,7 @@ class TrainerScheduleControllerTest {
     void getScheduleById_notFound_returns404() throws Exception {
         when(trainerScheduleService.getScheduleById(scheduleId)).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/trainer-schedules/{id}", scheduleId))
+    mockMvc.perform(get("/schedules/{scheduleId}", scheduleId))
                 .andExpect(status().isNotFound());
     }
 
@@ -109,7 +109,7 @@ class TrainerScheduleControllerTest {
                 .thenThrow(new RuntimeException("TrainerSchedule not found"));
 
         // Act + Assert
-        mockMvc.perform(put("/trainer-schedules/{id}", scheduleId)
+    mockMvc.perform(put("/schedules/{scheduleId}", scheduleId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isNotFound());
@@ -118,7 +118,7 @@ class TrainerScheduleControllerTest {
     @Test
     void deleteSchedule_returns204_andInvokesService() throws Exception {
         // Act + Assert
-        mockMvc.perform(delete("/trainer-schedules/{id}", scheduleId))
+    mockMvc.perform(delete("/schedules/{scheduleId}", scheduleId))
                 .andExpect(status().isNoContent());
 
         verify(trainerScheduleService).deleteSchedule(scheduleId);
