@@ -42,6 +42,7 @@ import {
 import useDebounce from "@/hooks/use-debounce";
 import {useToast} from "@/hooks/use-toast";
 import {handleHttpError} from "@/lib/error-utils";
+import { shouldIncludeInactive } from "@/lib/entity-status";
 import type {
   AssignPlanToStudentMutationResponse,
   AssignPlanToStudentMutationVariables,
@@ -218,7 +219,7 @@ export function StudentsPageView() {
       debouncedFilters.endDate && {
         registrationPeriodMaxDate: debouncedFilters.endDate,
       }),
-    includeInactive: debouncedFilters.includeInactive,
+    includeInactive: shouldIncludeInactive(debouncedFilters.entityStatus),
     page: currentPage,
     pageSize,
   });
@@ -227,6 +228,10 @@ export function StudentsPageView() {
         DEFAULT_STUDENT_FILTERS.status,
     );
 
+  const previousEntityStatusRef = useRef<StudentFilters["entityStatus"]>(
+    DEFAULT_STUDENT_FILTERS.entityStatus,
+  );
+
     useEffect(() => {
         const previousStatus = previousStatusRef.current;
         previousStatusRef.current = debouncedFilters.status;
@@ -234,6 +239,14 @@ export function StudentsPageView() {
             setCurrentPage(0);
         }
     }, [debouncedFilters.status, setCurrentPage]);
+
+  useEffect(() => {
+    const previousStatus = previousEntityStatusRef.current;
+    previousEntityStatusRef.current = debouncedFilters.entityStatus;
+    if (previousStatus !== debouncedFilters.entityStatus) {
+      setCurrentPage(0);
+    }
+  }, [debouncedFilters.entityStatus, setCurrentPage]);
 
     const expiringAssignmentsQuery = useQuery(
     expiringPlanAssignmentsQueryOptions({ days: EXPIRING_LOOKAHEAD_DAYS }),
@@ -364,12 +377,24 @@ export function StudentsPageView() {
         [],
     );
 
-    const filteredStudents = useMemo(() => {
-      if (debouncedFilters.status === "all") {
+    const statusFilteredStudents = useMemo(() => {
+      if (debouncedFilters.entityStatus === "all") {
         return students;
       }
 
+      const shouldShowActive = debouncedFilters.entityStatus === "active";
       return students.filter((student) => {
+        const isInactive = Boolean(student.deletedAt);
+        return shouldShowActive ? !isInactive : isInactive;
+      });
+    }, [students, debouncedFilters.entityStatus]);
+
+    const filteredStudents = useMemo(() => {
+      if (debouncedFilters.status === "all") {
+        return statusFilteredStudents;
+      }
+
+      return statusFilteredStudents.filter((student) => {
         if (!student.id) {
           return false;
         }
@@ -382,7 +407,7 @@ export function StudentsPageView() {
         return resolvePlanStatus(assignment) === debouncedFilters.status;
       });
     }, [
-      students,
+      statusFilteredStudents,
       debouncedFilters.status,
       resolvePlanAssignmentState,
       resolvePlanStatus,
@@ -413,7 +438,7 @@ export function StudentsPageView() {
           maxAge: debouncedFilters.maxAge ?? null,
           startDate: debouncedFilters.startDate || "",
           endDate: debouncedFilters.endDate || "",
-          includeInactive: debouncedFilters.includeInactive,
+          entityStatus: debouncedFilters.entityStatus,
         }),
       [
         debouncedFilters.status,
@@ -423,7 +448,7 @@ export function StudentsPageView() {
         debouncedFilters.maxAge,
         debouncedFilters.startDate,
         debouncedFilters.endDate,
-        debouncedFilters.includeInactive,
+        debouncedFilters.entityStatus,
         debouncedSearchTerm,
       ],
     );

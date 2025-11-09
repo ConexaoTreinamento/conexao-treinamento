@@ -611,9 +611,9 @@ export type PageUserResponseDto = {
     content?: Array<UserResponseDto>;
     number?: number;
     sort?: SortObject;
+    numberOfElements?: number;
     first?: boolean;
     last?: boolean;
-    numberOfElements?: number;
     pageable?: PageableObject;
     empty?: boolean;
 };
@@ -622,8 +622,8 @@ export type PageableObject = {
     offset?: number;
     sort?: SortObject;
     paged?: boolean;
-    pageNumber?: number;
     pageSize?: number;
+    pageNumber?: number;
     unpaged?: boolean;
 };
 
@@ -640,9 +640,9 @@ export type PageStudentResponseDto = {
     content?: Array<StudentResponseDto>;
     number?: number;
     sort?: SortObject;
+    numberOfElements?: number;
     first?: boolean;
     last?: boolean;
-    numberOfElements?: number;
     pageable?: PageableObject;
     empty?: boolean;
 };
@@ -679,9 +679,9 @@ export type PageExerciseResponseDto = {
     content?: Array<ExerciseResponseDto>;
     number?: number;
     sort?: SortObject;
+    numberOfElements?: number;
     first?: boolean;
     last?: boolean;
-    numberOfElements?: number;
     pageable?: PageableObject;
     empty?: boolean;
 };
@@ -718,9 +718,9 @@ export type PageAdministratorListItemResponseDto = {
     content?: Array<AdministratorListItemResponseDto>;
     number?: number;
     sort?: SortObject;
+    numberOfElements?: number;
     first?: boolean;
     last?: boolean;
-    numberOfElements?: number;
     pageable?: PageableObject;
     empty?: boolean;
 };
@@ -1777,6 +1777,24 @@ export type PatchResponses = {
 };
 
 export type PatchResponse = PatchResponses[keyof PatchResponses];
+
+export type RestoreTrainerData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/trainers/{id}/restore';
+};
+
+export type RestoreTrainerResponses = {
+    /**
+     * OK
+     */
+    200: TrainerListItemResponseDto;
+};
+
+export type RestoreTrainerResponse = RestoreTrainerResponses[keyof RestoreTrainerResponses];
 
 export type ResetPasswordData = {
     body: TrainerPasswordResetRequestDto;

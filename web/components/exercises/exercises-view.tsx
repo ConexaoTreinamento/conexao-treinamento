@@ -11,14 +11,14 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { FilterToolbar } from "@/components/base/filter-toolbar";
 import { EntityCard } from "@/components/base/entity-card";
 import { EntityList } from "@/components/base/entity-list";
 import { StatusBadge } from "@/components/base/status-badge";
 import ConfirmDeleteButton from "@/components/base/confirm-delete-button";
 import { EditButton } from "@/components/base/edit-button";
+import { EntityStatusFilter } from "@/components/base/entity-status-filter";
+import type { EntityStatusFilterValue } from "@/lib/entity-status";
 
 export interface ExerciseCardData {
   id: string;
@@ -174,16 +174,16 @@ interface ExercisesToolbarProps {
   searchValue: string;
   onSearchChange: (value: string) => void;
   onClearSearch: () => void;
-  showInactive: boolean;
-  onToggleInactive: (value: boolean) => void;
+  status: EntityStatusFilterValue;
+  onStatusChange: (value: EntityStatusFilterValue) => void;
 }
 
 export function ExercisesToolbar({
   searchValue,
   onSearchChange,
   onClearSearch,
-  showInactive,
-  onToggleInactive,
+  status,
+  onStatusChange,
 }: ExercisesToolbarProps) {
   const toolbarActions = (
     <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
@@ -205,24 +205,12 @@ export function ExercisesToolbar({
       filterTitle="Filtrar exercícios"
       renderFilters={() => (
         <div className="space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <Label
-                htmlFor="show-inactive-exercises"
-                className="text-sm font-medium"
-              >
-                Mostrar exercícios excluídos
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                Inclui exercícios restauráveis na lista.
-              </p>
-            </div>
-            <Switch
-              id="show-inactive-exercises"
-              checked={showInactive}
-              onCheckedChange={onToggleInactive}
-            />
-          </div>
+          <EntityStatusFilter
+            id="exercise-status-filter"
+            value={status}
+            onChange={onStatusChange}
+            description="Selecione quais exercícios deseja visualizar."
+          />
         </div>
       )}
       className="gap-3"
@@ -249,12 +237,14 @@ export function ExercisesSkeletonList() {
 
 interface ExercisesEmptyStateProps {
   hasSearch: boolean;
+  hasStatusFilter: boolean;
   onCreate: () => void;
   onClearSearch?: () => void;
 }
 
 export function ExercisesEmptyState({
   hasSearch,
+  hasStatusFilter,
   onCreate,
   onClearSearch,
 }: ExercisesEmptyStateProps) {
@@ -262,13 +252,13 @@ export function ExercisesEmptyState({
     <EmptyState
       icon={<Activity className="h-12 w-12" aria-hidden="true" />}
       title={
-        hasSearch
+        hasSearch || hasStatusFilter
           ? "Nenhum exercício encontrado"
           : "Nenhum exercício cadastrado"
       }
       description={
-        hasSearch
-          ? "Tente ajustar o termo de busca para encontrar o exercício desejado."
+        hasSearch || hasStatusFilter
+          ? "Tente ajustar os filtros ou o termo de busca para encontrar o exercício desejado."
           : "Comece adicionando o primeiro exercício para montar planos de treino."
       }
       action={
