@@ -1,11 +1,12 @@
 package org.conexaotreinamento.conexaotreinamentobackend.unit.controller;
 
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.UserCreateRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.controller.UserController;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchUserRoleRequestDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.UserCreateRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.service.UserService;
-import org.conexaotreinamento.conexaotreinamentobackend.controller.UserController;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.dto.PageResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -101,13 +102,12 @@ class UserControllerTest {
         when(userService.findAll(pageable)).thenReturn(page);
 
         // When
-        ResponseEntity<Page<UserResponseDTO>> response = userController.getAllUsersSimple(pageable);
+        ResponseEntity<PageResponse<UserResponseDTO>> response = userController.getAllUsers(pageable);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo(page);
-        assertThat(response.getBody().getContent()).hasSize(1);
-        assertThat(response.getBody().getContent().get(0)).isEqualTo(userResponseDTO);
+        assertThat(response.getBody().content()).hasSize(1);
+        assertThat(response.getBody().content().get(0)).isEqualTo(userResponseDTO);
         verify(userService).findAll(pageable);
     }
 
@@ -123,15 +123,14 @@ class UserControllerTest {
         when(userService.findAll(customPageable)).thenReturn(page);
 
         // When
-        ResponseEntity<Page<UserResponseDTO>> response = userController.getAllUsersSimple(customPageable);
+        ResponseEntity<PageResponse<UserResponseDTO>> response = userController.getAllUsers(customPageable);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo(page);
-        assertThat(response.getBody().getContent()).hasSize(2);
-        assertThat(response.getBody().getTotalElements()).isEqualTo(10);
-        assertThat(response.getBody().getNumber()).isEqualTo(1);
-        assertThat(response.getBody().getSize()).isEqualTo(5);
+        assertThat(response.getBody().content()).hasSize(2);
+        assertThat(response.getBody().totalElements()).isEqualTo(10);
+        assertThat(response.getBody().page()).isEqualTo(1);
+        assertThat(response.getBody().size()).isEqualTo(5);
         verify(userService).findAll(customPageable);
     }
 
@@ -144,13 +143,13 @@ class UserControllerTest {
         when(userService.findAll(pageable)).thenReturn(emptyPage);
 
         // When
-        ResponseEntity<Page<UserResponseDTO>> response = userController.getAllUsersSimple(pageable);
+        ResponseEntity<PageResponse<UserResponseDTO>> response = userController.getAllUsers(pageable);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(emptyPage);
-        assertThat(response.getBody().getContent()).isEmpty();
-        assertThat(response.getBody().getTotalElements()).isZero();
+        assertThat(response.getBody().content()).isEmpty();
+        assertThat(response.getBody().totalElements()).isZero();
         verify(userService).findAll(pageable);
     }
 
@@ -162,7 +161,7 @@ class UserControllerTest {
         when(userService.patch(userId, patchUserRoleRequestDTO)).thenReturn(updatedUser);
 
         // When
-        ResponseEntity<UserResponseDTO> response = userController.patch(userId, patchUserRoleRequestDTO);
+        ResponseEntity<UserResponseDTO> response = userController.patchUserRole(userId, patchUserRoleRequestDTO);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -181,7 +180,7 @@ class UserControllerTest {
         when(userService.patch(userId, changeToAdmin)).thenReturn(adminUser);
 
         // When
-        ResponseEntity<UserResponseDTO> response = userController.patch(userId, changeToAdmin);
+        ResponseEntity<UserResponseDTO> response = userController.patchUserRole(userId, changeToAdmin);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -198,7 +197,7 @@ class UserControllerTest {
         when(userService.patch(userId, nullRoleRequest)).thenReturn(userResponseDTO);
 
         // When
-        ResponseEntity<UserResponseDTO> response = userController.patch(userId, nullRoleRequest);
+        ResponseEntity<UserResponseDTO> response = userController.patchUserRole(userId, nullRoleRequest);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -229,7 +228,7 @@ class UserControllerTest {
         when(userService.findAll(pageable)).thenThrow(new RuntimeException("Database error"));
 
         // When & Then
-        assertThatThrownBy(() -> userController.getAllUsersSimple(pageable))
+        assertThatThrownBy(() -> userController.getAllUsers(pageable))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Database error");
 
@@ -243,7 +242,7 @@ class UserControllerTest {
         when(userService.patch(userId, patchUserRoleRequestDTO)).thenThrow(new RuntimeException("User not found"));
 
         // When & Then
-        assertThatThrownBy(() -> userController.patch(userId, patchUserRoleRequestDTO))
+        assertThatThrownBy(() -> userController.patchUserRole(userId, patchUserRoleRequestDTO))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("User not found");
 
@@ -260,12 +259,11 @@ class UserControllerTest {
         when(userService.findAll(largePageable)).thenReturn(page);
 
         // When
-        ResponseEntity<Page<UserResponseDTO>> response = userController.getAllUsersSimple(largePageable);
+        ResponseEntity<PageResponse<UserResponseDTO>> response = userController.getAllUsers(largePageable);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo(page);
-        assertThat(response.getBody().getSize()).isEqualTo(1000);
+        assertThat(response.getBody().size()).isEqualTo(1000);
         verify(userService).findAll(largePageable);
     }
 
@@ -278,13 +276,13 @@ class UserControllerTest {
         when(userService.findAll(highPageable)).thenReturn(emptyPage);
 
         // When
-        ResponseEntity<Page<UserResponseDTO>> response = userController.getAllUsersSimple(highPageable);
+        ResponseEntity<PageResponse<UserResponseDTO>> response = userController.getAllUsers(highPageable);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(emptyPage);
-        assertThat(response.getBody().getContent()).isEmpty();
-        assertThat(response.getBody().getNumber()).isEqualTo(100);
+        assertThat(response.getBody().content()).isEmpty();
+        assertThat(response.getBody().page()).isEqualTo(100);
         verify(userService).findAll(highPageable);
     }
 

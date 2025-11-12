@@ -12,6 +12,7 @@ import org.conexaotreinamento.conexaotreinamentobackend.repository.AnamnesisRepo
 import org.conexaotreinamento.conexaotreinamentobackend.repository.PhysicalImpairmentRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.service.StudentService;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.dto.PageResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -207,10 +208,10 @@ class StudentServiceTest {
         when(studentRepository.findAll(ArgumentMatchers.<Specification<Student>>any(), any(Pageable.class))).thenReturn(page);
 
         // Act
-        Page<StudentResponseDTO> result = studentService.findAll(null, null, null, null, null, null, null, false, unsorted);
+        PageResponse<StudentResponseDTO> result = studentService.findAll(null, null, null, null, null, null, null, false, unsorted);
 
         // Assert
-        assertEquals(1, result.getTotalElements());
+        assertEquals(1, result.totalElements());
         // Capture pageable argument to verify sorting
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         verify(studentRepository).findAll(ArgumentMatchers.<Specification<Student>>any(), pageableCaptor.capture());

@@ -277,7 +277,7 @@ class TrainerServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         // When
-        TrainerResponseDTO result = trainerService.put(trainerId, updateTrainerDTO);
+        TrainerResponseDTO result = trainerService.update(trainerId, updateTrainerDTO);
 
         // Then
         assertThat(result).isNotNull();
@@ -316,7 +316,7 @@ class TrainerServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         // When
-        TrainerResponseDTO result = trainerService.put(trainerId, updateTrainerDTO);
+        TrainerResponseDTO result = trainerService.update(trainerId, updateTrainerDTO);
 
         // Then
         assertThat(result).isNotNull();
@@ -350,7 +350,7 @@ class TrainerServiceTest {
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> trainerService.put(trainerId, updateTrainerDTO))
+        assertThatThrownBy(() -> trainerService.update(trainerId, updateTrainerDTO))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Trainer not found")
                 .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
@@ -380,7 +380,7 @@ class TrainerServiceTest {
                 .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use"));
 
         // When & Then
-        assertThatThrownBy(() -> trainerService.put(trainerId, updateDTO))
+        assertThatThrownBy(() -> trainerService.update(trainerId, updateDTO))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("Email already in use")
                 .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
@@ -414,7 +414,7 @@ class TrainerServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         // When
-        TrainerResponseDTO result = trainerService.put(trainerId, updateTrainerDTO);
+        TrainerResponseDTO result = trainerService.update(trainerId, updateTrainerDTO);
 
         // Then
         assertThat(result).isNotNull();

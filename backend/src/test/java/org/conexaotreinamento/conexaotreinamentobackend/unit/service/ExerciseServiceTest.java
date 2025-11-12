@@ -4,6 +4,7 @@ import org.conexaotreinamento.conexaotreinamentobackend.dto.request.ExerciseRequ
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchExerciseRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ExerciseResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Exercise;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.dto.PageResponse;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.ExerciseRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.service.ExerciseService;
 import org.junit.jupiter.api.BeforeEach;
@@ -126,12 +127,12 @@ class ExerciseServiceTest {
         when(repository.findByDeletedAtIsNull(any(Pageable.class))).thenReturn(page);
 
         // When
-        Page<ExerciseResponseDTO> result = exerciseService.findAll(null, pageable, false);
+        PageResponse<ExerciseResponseDTO> result = exerciseService.findAll(null, pageable, false);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).name()).isEqualTo("Flexão de Braço");
+        assertThat(result.content()).hasSize(1);
+        assertThat(result.content().get(0).name()).isEqualTo("Flexão de Braço");
 
         verify(repository).findByDeletedAtIsNull(any(Pageable.class));
     }
@@ -147,11 +148,11 @@ class ExerciseServiceTest {
         when(repository.findBySearchTermAndDeletedAtIsNull(eq("%flexão%"), any(Pageable.class))).thenReturn(page);
 
         // When
-        Page<ExerciseResponseDTO> result = exerciseService.findAll("flexão", PageRequest.of(0, 20), false);
+        PageResponse<ExerciseResponseDTO> result = exerciseService.findAll("flexão", PageRequest.of(0, 20), false);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.content()).hasSize(1);
         verify(repository).findBySearchTermAndDeletedAtIsNull(eq("%flexão%"), any(Pageable.class));
     }
 
@@ -305,11 +306,11 @@ class ExerciseServiceTest {
         when(repository.findAll(any(Pageable.class))).thenReturn(page);
 
         // When
-        Page<ExerciseResponseDTO> result = exerciseService.findAll(null, pageable, true);
+        PageResponse<ExerciseResponseDTO> result = exerciseService.findAll(null, pageable, true);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.content()).hasSize(1);
         verify(repository).findAll(any(Pageable.class));
         verify(repository, never()).findByDeletedAtIsNull(any());
     }
@@ -326,11 +327,11 @@ class ExerciseServiceTest {
         when(repository.findBySearchTermIncludingInactive(anyString(), any(Pageable.class))).thenReturn(page);
 
         // When
-        Page<ExerciseResponseDTO> result = exerciseService.findAll(searchTerm, pageable, true);
+        PageResponse<ExerciseResponseDTO> result = exerciseService.findAll(searchTerm, pageable, true);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.content()).hasSize(1);
         verify(repository).findBySearchTermIncludingInactive(eq("%" + searchTerm.toLowerCase() + "%"), any(Pageable.class));
         verify(repository, never()).findBySearchTermAndDeletedAtIsNull(any(), any());
     }

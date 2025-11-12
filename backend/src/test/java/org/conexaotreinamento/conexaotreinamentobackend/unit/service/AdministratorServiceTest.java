@@ -248,7 +248,7 @@ class AdministratorServiceTest {
         when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.of(user));
 
         // When
-        AdministratorResponseDTO result = administratorService.put(administratorId, updateAdministratorDTO);
+        AdministratorResponseDTO result = administratorService.update(administratorId, updateAdministratorDTO);
 
         // Then
         assertThat(result).isNotNull();
@@ -281,7 +281,7 @@ class AdministratorServiceTest {
         when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.of(user));
 
         // When
-        AdministratorResponseDTO result = administratorService.put(administratorId, updateAdministratorDTO);
+        AdministratorResponseDTO result = administratorService.update(administratorId, updateAdministratorDTO);
 
         // Then
         assertThat(result).isNotNull();
