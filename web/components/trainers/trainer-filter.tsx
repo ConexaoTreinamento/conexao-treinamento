@@ -46,6 +46,7 @@ export function TrainerFilter({
         placeholder={placeholder}
         disabled={isError}
         className="w-full"
+        buttonClassName="h-9 px-3"
       />
     </div>
   );

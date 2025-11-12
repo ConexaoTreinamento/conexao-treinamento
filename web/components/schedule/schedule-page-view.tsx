@@ -411,7 +411,7 @@ export function SchedulePageView() {
             title="Agenda"
             description="Organize aulas e sessões da equipe"
           />
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
             <TrainerFilter
               trainers={trainerOptions}
               value={trainerFilter}
