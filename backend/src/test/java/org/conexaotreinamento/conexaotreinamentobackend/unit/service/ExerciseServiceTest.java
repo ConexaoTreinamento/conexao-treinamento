@@ -1,33 +1,44 @@
 package org.conexaotreinamento.conexaotreinamentobackend.unit.service;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.ExerciseRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchExerciseRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ExerciseResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Exercise;
-import org.conexaotreinamento.conexaotreinamentobackend.shared.dto.PageResponse;
+import org.conexaotreinamento.conexaotreinamentobackend.mapper.ExerciseMapper;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.ExerciseRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.service.ExerciseService;
+import org.conexaotreinamento.conexaotreinamentobackend.service.ExerciseValidationService;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.dto.PageResponse;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.BusinessException;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ExerciseService Unit Tests")
@@ -35,6 +46,11 @@ class ExerciseServiceTest {
 
     @Mock
     private ExerciseRepository repository;
+
+    private ExerciseMapper exerciseMapper = new ExerciseMapper();
+    
+    @Mock
+    private ExerciseValidationService validationService;
 
     @InjectMocks
     private ExerciseService exerciseService;
@@ -51,13 +67,16 @@ class ExerciseServiceTest {
 
         exerciseRequestDTO = new ExerciseRequestDTO("Flexão de Braço", "Exercício para peitoral");
         patchRequestDTO = new PatchExerciseRequestDTO("Flexão Modificada", null);
+        
+        // Inject real mapper into service
+        ReflectionTestUtils.setField(exerciseService, "exerciseMapper", exerciseMapper);
     }
 
     @Test
     @DisplayName("Should create exercise successfully")
     void shouldCreateExerciseSuccessfully() {
         // Given
-        when(repository.existsByNameIgnoringCaseAndDeletedAtIsNull("Flexão de Braço")).thenReturn(false);
+        doNothing().when(validationService).validateNameUniqueness(anyString());
         when(repository.save(any(Exercise.class))).thenReturn(exercise);
 
         // When
@@ -68,7 +87,7 @@ class ExerciseServiceTest {
         assertThat(result.name()).isEqualTo("Flexão de Braço");
         assertThat(result.description()).isEqualTo("Exercício para peitoral");
 
-        verify(repository).existsByNameIgnoringCaseAndDeletedAtIsNull("Flexão de Braço");
+        verify(validationService).validateNameUniqueness("Flexão de Braço");
         verify(repository).save(any(Exercise.class));
     }
 
@@ -76,14 +95,15 @@ class ExerciseServiceTest {
     @DisplayName("Should throw conflict when exercise name already exists")
     void shouldThrowConflictWhenExerciseNameAlreadyExists() {
         // Given
-        when(repository.existsByNameIgnoringCaseAndDeletedAtIsNull("Flexão de Braço")).thenReturn(true);
+        doThrow(new BusinessException("Exercise already exists"))
+                .when(validationService).validateNameUniqueness(anyString());
 
         // When & Then
         assertThatThrownBy(() -> exerciseService.create(exerciseRequestDTO))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Exercise already exists");
 
-        verify(repository).existsByNameIgnoringCaseAndDeletedAtIsNull("Flexão de Braço");
+        verify(validationService).validateNameUniqueness("Flexão de Braço");
         verify(repository, never()).save(any(Exercise.class));
     }
 
@@ -110,7 +130,7 @@ class ExerciseServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> exerciseService.findById(exerciseId))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Exercise not found");
 
         verify(repository).findByIdAndDeletedAtIsNull(exerciseId);
@@ -162,7 +182,8 @@ class ExerciseServiceTest {
         // Given
         ExerciseRequestDTO updateRequest = new ExerciseRequestDTO("Flexão Modificada", "Nova descrição");
         when(repository.findByIdAndDeletedAtIsNull(exerciseId)).thenReturn(Optional.of(exercise));
-        when(repository.existsByNameIgnoringCaseAndDeletedAtIsNull("Flexão Modificada")).thenReturn(false);
+        doNothing().when(validationService).validateNameUniqueness(anyString(), eq(exerciseId));
+        when(repository.save(any(Exercise.class))).thenReturn(exercise);
 
         // When
         ExerciseResponseDTO result = exerciseService.update(exerciseId, updateRequest);
@@ -173,7 +194,7 @@ class ExerciseServiceTest {
         assertThat(result.description()).isEqualTo("Nova descrição");
 
         verify(repository).findByIdAndDeletedAtIsNull(exerciseId);
-        verify(repository).existsByNameIgnoringCaseAndDeletedAtIsNull("Flexão Modificada");
+        verify(validationService).validateNameUniqueness("Flexão Modificada", exerciseId);
     }
 
     @Test
@@ -182,15 +203,16 @@ class ExerciseServiceTest {
         // Given
         ExerciseRequestDTO updateRequest = new ExerciseRequestDTO("Agachamento", "Nova descrição");
         when(repository.findByIdAndDeletedAtIsNull(exerciseId)).thenReturn(Optional.of(exercise));
-        when(repository.existsByNameIgnoringCaseAndDeletedAtIsNull("Agachamento")).thenReturn(true);
+        doThrow(new BusinessException("Exercise already exists"))
+                .when(validationService).validateNameUniqueness(anyString(), eq(exerciseId));
 
         // When & Then
         assertThatThrownBy(() -> exerciseService.update(exerciseId, updateRequest))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Exercise already exists");
 
         verify(repository).findByIdAndDeletedAtIsNull(exerciseId);
-        verify(repository).existsByNameIgnoringCaseAndDeletedAtIsNull("Agachamento");
+        verify(validationService).validateNameUniqueness("Agachamento", exerciseId);
     }
 
     @Test
@@ -198,7 +220,8 @@ class ExerciseServiceTest {
     void shouldPatchExerciseSuccessfully() {
         // Given
         when(repository.findByIdAndDeletedAtIsNull(exerciseId)).thenReturn(Optional.of(exercise));
-        when(repository.existsByNameIgnoringCaseAndDeletedAtIsNull("Flexão Modificada")).thenReturn(false);
+        doNothing().when(validationService).validateNameUniqueness(anyString(), eq(exerciseId));
+        when(repository.save(any(Exercise.class))).thenReturn(exercise);
 
         // When
         ExerciseResponseDTO result = exerciseService.patch(exerciseId, patchRequestDTO);
@@ -209,6 +232,7 @@ class ExerciseServiceTest {
         assertThat(result.description()).isEqualTo("Exercício para peitoral"); // Não mudou
 
         verify(repository).findByIdAndDeletedAtIsNull(exerciseId);
+        verify(validationService).validateNameUniqueness("Flexão Modificada", exerciseId);
     }
 
     @Test
@@ -217,6 +241,7 @@ class ExerciseServiceTest {
         // Given
         PatchExerciseRequestDTO patchWithNulls = new PatchExerciseRequestDTO(null, "Nova descrição");
         when(repository.findByIdAndDeletedAtIsNull(exerciseId)).thenReturn(Optional.of(exercise));
+        when(repository.save(any(Exercise.class))).thenReturn(exercise);
 
         // When
         ExerciseResponseDTO result = exerciseService.patch(exerciseId, patchWithNulls);
@@ -252,7 +277,7 @@ class ExerciseServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> exerciseService.delete(exerciseId))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Exercise not found");
 
         verify(repository).findByIdAndDeletedAtIsNull(exerciseId);
@@ -346,6 +371,7 @@ class ExerciseServiceTest {
 
         when(repository.findById(exerciseId)).thenReturn(Optional.of(deletedExercise));
         when(repository.existsByNameIgnoringCaseAndDeletedAtIsNull("Push-up")).thenReturn(false);
+        when(repository.save(any(Exercise.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         ExerciseResponseDTO result = exerciseService.restore(exerciseId);
@@ -367,7 +393,7 @@ class ExerciseServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> exerciseService.restore(exerciseId))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Exercise not found");
 
         verify(repository).findById(exerciseId);
@@ -385,8 +411,8 @@ class ExerciseServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> exerciseService.restore(exerciseId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Cannot restore exercise.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Exercise is already active");
 
         verify(repository).findById(exerciseId);
     }
@@ -404,8 +430,8 @@ class ExerciseServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> exerciseService.restore(exerciseId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Cannot restore exercise.");
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Cannot restore exercise");
 
         verify(repository).findById(exerciseId);
         verify(repository).existsByNameIgnoringCaseAndDeletedAtIsNull("Push-up");

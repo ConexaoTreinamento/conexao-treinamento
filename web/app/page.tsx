@@ -81,7 +81,7 @@ export default function HomePage() {
   const handleSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault()
-      login({ body: { email, password } } as any)
+      login({ body: { email, password } })
     },
     [email, login, password],
   )

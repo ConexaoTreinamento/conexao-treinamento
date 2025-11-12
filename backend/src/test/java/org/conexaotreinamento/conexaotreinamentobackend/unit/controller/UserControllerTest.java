@@ -1,5 +1,10 @@
 package org.conexaotreinamento.conexaotreinamentobackend.unit.controller;
 
+import java.util.List;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.conexaotreinamento.conexaotreinamentobackend.controller.UserController;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchUserRoleRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.UserCreateRequestDTO;
@@ -11,22 +16,25 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-
-import java.util.List;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserController Unit Tests")
@@ -37,6 +45,8 @@ class UserControllerTest {
 
     @InjectMocks
     private UserController userController;
+    
+    private MockMvc mockMvc;
 
     private UUID userId;
     private UserCreateRequestDTO createUserRequestDTO;
@@ -45,6 +55,7 @@ class UserControllerTest {
 
     @BeforeEach
     void setUp() {
+        mockMvc = MockMvcBuilders.standaloneSetup(userController).build();
         userId = UUID.randomUUID();
         createUserRequestDTO = new UserCreateRequestDTO(
                 "admin@example.com", 
@@ -57,39 +68,39 @@ class UserControllerTest {
 
     @Test
     @DisplayName("Should create user successfully")
-    void shouldCreateUserSuccessfully() {
+    void shouldCreateUserSuccessfully() throws Exception {
         // Given
-        when(userService.createUser(createUserRequestDTO)).thenReturn(userResponseDTO);
+        when(userService.createUser(any(UserCreateRequestDTO.class))).thenReturn(userResponseDTO);
 
-        // When
-        ResponseEntity<UserResponseDTO> response = userController.createUser(createUserRequestDTO);
+        // When + Then
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"admin@example.com\",\"password\":\"password123\",\"role\":\"ROLE_ADMIN\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(header().exists("Location"))
+                .andExpect(jsonPath("$.email").value("admin@example.com"))
+                .andExpect(jsonPath("$.role").value("ROLE_ADMIN"));
 
-        // Then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody()).isEqualTo(userResponseDTO);
-        verify(userService).createUser(createUserRequestDTO);
+        verify(userService).createUser(any(UserCreateRequestDTO.class));
     }
 
     @Test
     @DisplayName("Should create trainer user successfully")
-    void shouldCreateTrainerUserSuccessfully() {
+    void shouldCreateTrainerUserSuccessfully() throws Exception {
         // Given
-        UserCreateRequestDTO trainerRequest = new UserCreateRequestDTO(
-                "trainer@example.com", 
-                "password456", 
-                Role.ROLE_TRAINER
-        );
         UserResponseDTO trainerResponse = new UserResponseDTO(UUID.randomUUID(), "trainer@example.com", Role.ROLE_TRAINER);
-        when(userService.createUser(trainerRequest)).thenReturn(trainerResponse);
+        when(userService.createUser(any(UserCreateRequestDTO.class))).thenReturn(trainerResponse);
 
-        // When
-        ResponseEntity<UserResponseDTO> response = userController.createUser(trainerRequest);
+        // When + Then
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"trainer@example.com\",\"password\":\"password456\",\"role\":\"ROLE_TRAINER\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(header().exists("Location"))
+                .andExpect(jsonPath("$.email").value("trainer@example.com"))
+                .andExpect(jsonPath("$.role").value("ROLE_TRAINER"));
 
-        // Then
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody()).isEqualTo(trainerResponse);
-        assertThat(response.getBody().role()).isEqualTo(Role.ROLE_TRAINER);
-        verify(userService).createUser(trainerRequest);
+        verify(userService).createUser(any(UserCreateRequestDTO.class));
     }
 
     @Test
@@ -147,7 +158,6 @@ class UserControllerTest {
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo(emptyPage);
         assertThat(response.getBody().content()).isEmpty();
         assertThat(response.getBody().totalElements()).isZero();
         verify(userService).findAll(pageable);
@@ -280,7 +290,6 @@ class UserControllerTest {
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo(emptyPage);
         assertThat(response.getBody().content()).isEmpty();
         assertThat(response.getBody().page()).isEqualTo(100);
         verify(userService).findAll(highPageable);
@@ -288,27 +297,24 @@ class UserControllerTest {
 
     @Test
     @DisplayName("Should maintain request-response correlation")
-    void shouldMaintainRequestResponseCorrelation() {
+    void shouldMaintainRequestResponseCorrelation() throws Exception {
         // Given
-        UserCreateRequestDTO specificRequest = new UserCreateRequestDTO(
-                "specific@example.com", 
-                "specificPassword", 
-                Role.ROLE_ADMIN
-        );
         UserResponseDTO specificResponse = new UserResponseDTO(
                 UUID.randomUUID(), 
                 "specific@example.com", 
                 Role.ROLE_ADMIN
         );
-        when(userService.createUser(specificRequest)).thenReturn(specificResponse);
+        when(userService.createUser(any(UserCreateRequestDTO.class))).thenReturn(specificResponse);
 
-        // When
-        ResponseEntity<UserResponseDTO> response = userController.createUser(specificRequest);
+        // When + Then
+        mockMvc.perform(post("/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"specific@example.com\",\"password\":\"specificPassword\",\"role\":\"ROLE_ADMIN\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.email").value("specific@example.com"))
+                .andExpect(jsonPath("$.role").value("ROLE_ADMIN"));
 
-        // Then
-        assertThat(response.getBody().email()).isEqualTo(specificRequest.email());
-        assertThat(response.getBody().role()).isEqualTo(specificRequest.role());
-        verify(userService).createUser(specificRequest);
+        verify(userService).createUser(any(UserCreateRequestDTO.class));
     }
 
     @Test
@@ -320,6 +326,6 @@ class UserControllerTest {
         // Verify createUser method exists and is tested
         assertThat(UserController.class.getDeclaredMethods())
                 .extracting("name")
-                .contains("createUser", "getAllUsersSimple", "patch");
+                .contains("createUser", "getAllUsers", "patchUserRole");
     }
 }

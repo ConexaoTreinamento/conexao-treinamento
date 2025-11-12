@@ -8,16 +8,20 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.AdministratorCreateRequestDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AdministratorResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AdministratorListItemResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AdministratorResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Administrator;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
+import org.conexaotreinamento.conexaotreinamentobackend.mapper.AdministratorMapper;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.AdministratorRepository;
-import org.conexaotreinamento.conexaotreinamentobackend.service.AdministratorService;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.service.AdministratorService;
+import org.conexaotreinamento.conexaotreinamentobackend.service.AdministratorValidationService;
 import org.conexaotreinamento.conexaotreinamentobackend.service.UserService;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.BusinessException;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,8 +34,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AdministratorService Unit Tests")
@@ -45,6 +48,11 @@ class AdministratorServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    private AdministratorMapper administratorMapper = new AdministratorMapper();
+    
+    @Mock
+    private AdministratorValidationService validationService;
 
     @InjectMocks
     private AdministratorService administratorService;
@@ -75,6 +83,9 @@ class AdministratorServiceTest {
             "joao@example.com",
             "password123"
         );
+        
+        // Inject real mapper into service
+        ReflectionTestUtils.setField(administratorService, "administratorMapper", administratorMapper);
 
         listAdministratorsDTO = new AdministratorListItemResponseDTO(
             administratorId,
@@ -118,7 +129,7 @@ class AdministratorServiceTest {
             Instant.now()
         );
 
-        when(administratorRepository.existsByEmailIgnoreCase("joao@test.com")).thenReturn(false);
+        doNothing().when(validationService).validateEmailUniqueness("joao@test.com");
         when(userService.createUser(any())).thenReturn(userResponse);
         when(administratorRepository.save(any(Administrator.class))).thenReturn(savedAdministrator);
         when(administratorRepository.findActiveAdministratorProfileById(newAdministratorId)).thenReturn(Optional.of(expectedResult));
@@ -136,7 +147,7 @@ class AdministratorServiceTest {
         assertThat(result.active()).isTrue();
         assertThat(result.joinDate()).isNotNull();
 
-        verify(administratorRepository).existsByEmailIgnoreCase("joao@test.com");
+        verify(validationService).validateEmailUniqueness("joao@test.com");
         verify(userService).createUser(any());
         verify(administratorRepository).save(any(Administrator.class));
         verify(administratorRepository).findActiveAdministratorProfileById(newAdministratorId);
@@ -146,14 +157,12 @@ class AdministratorServiceTest {
     @DisplayName("Should throw conflict when user email already exists")
     void shouldThrowConflictWhenUserEmailAlreadyExists() {
         // Given
-        when(userService.createUser(any())).thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "User with this email already exists"));
+        when(userService.createUser(any())).thenThrow(new BusinessException("User with this email already exists"));
 
         // When & Then
         assertThatThrownBy(() -> administratorService.create(createAdministratorDTO))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("User with this email already exists")
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
-                .isEqualTo(HttpStatus.CONFLICT);
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("User with this email already exists");
 
         verify(userService).createUser(any());
         verify(administratorRepository, never()).save(any());
@@ -187,10 +196,8 @@ class AdministratorServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> administratorService.findById(administratorId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Administrator not found")
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
-                .isEqualTo(HttpStatus.NOT_FOUND);
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Administrator not found");
 
         verify(administratorRepository).findActiveAdministratorProfileById(administratorId);
     }
@@ -236,16 +243,22 @@ class AdministratorServiceTest {
         AdministratorCreateRequestDTO updateAdministratorDTO = new AdministratorCreateRequestDTO(
                 "João Updated",
                 "Silva Updated",
-                "joao@example.com",
+                "joao.updated@example.com",
                 "newpassword123");
 
-        UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "joao@example.com", Role.ROLE_ADMIN);
+        UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "joao.updated@example.com", Role.ROLE_ADMIN);
+        
+        User updatedUser = new User("joao.updated@example.com", "newpassword123", Role.ROLE_ADMIN);
+        ReflectionTestUtils.setField(updatedUser, "id", userId);
 
         when(administratorRepository.findById(administratorId)).thenReturn(Optional.of(administrator));
-        when(userService.updateUserEmail(userId, "joao@example.com")).thenReturn(updatedUserResponse);
+        when(userRepository.findById(userId))
+                .thenReturn(Optional.of(user)) // First call: get current user
+                .thenReturn(Optional.of(updatedUser)); // Second call: refresh after update
+        doNothing().when(validationService).validateEmailUniqueness("joao.updated@example.com", userId);
+        when(userService.updateUserEmail(userId, "joao.updated@example.com")).thenReturn(updatedUserResponse);
         when(userService.resetUserPassword(userId, "newpassword123")).thenReturn(updatedUserResponse);
         when(administratorRepository.save(administrator)).thenReturn(administrator);
-        when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.of(user));
 
         // When
         AdministratorResponseDTO result = administratorService.update(administratorId, updateAdministratorDTO);
@@ -253,13 +266,14 @@ class AdministratorServiceTest {
         // Then
         assertThat(result).isNotNull();
         assertThat(result.id()).isEqualTo(administratorId);
-        assertThat(result.email()).isEqualTo("joao@example.com");
+        assertThat(result.email()).isEqualTo("joao.updated@example.com");
 
         verify(administratorRepository).findById(administratorId);
-        verify(userService).updateUserEmail(userId, "joao@example.com");
+        verify(userRepository, org.mockito.Mockito.times(2)).findById(userId); // Called at start and for refresh
+        verify(validationService).validateEmailUniqueness("joao.updated@example.com", userId);
+        verify(userService).updateUserEmail(userId, "joao.updated@example.com");
         verify(userService).resetUserPassword(userId, "newpassword123");
         verify(administratorRepository).save(administrator);
-        verify(userRepository).findByIdAndDeletedAtIsNull(userId);
     }
 
     @Test
@@ -274,11 +288,17 @@ class AdministratorServiceTest {
         );
 
         UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "joao.updated@example.com", Role.ROLE_ADMIN);
+        
+        User updatedUser = new User("joao.updated@example.com", "password123", Role.ROLE_ADMIN);
+        ReflectionTestUtils.setField(updatedUser, "id", userId);
 
         when(administratorRepository.findById(administratorId)).thenReturn(Optional.of(administrator));
+        when(userRepository.findById(userId))
+                .thenReturn(Optional.of(user)) // First call: get current user
+                .thenReturn(Optional.of(updatedUser)); // Second call: refresh after update
+        doNothing().when(validationService).validateEmailUniqueness("joao.updated@example.com", userId);
         when(userService.updateUserEmail(userId, "joao.updated@example.com")).thenReturn(updatedUserResponse);
         when(administratorRepository.save(administrator)).thenReturn(administrator);
-        when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.of(user));
 
         // When
         AdministratorResponseDTO result = administratorService.update(administratorId, updateAdministratorDTO);
@@ -289,10 +309,11 @@ class AdministratorServiceTest {
         assertThat(result.email()).isEqualTo("joao.updated@example.com");
 
         verify(administratorRepository).findById(administratorId);
+        verify(userRepository, org.mockito.Mockito.times(2)).findById(userId); // Called at start and for refresh
+        verify(validationService).validateEmailUniqueness("joao.updated@example.com", userId);
         verify(userService).updateUserEmail(userId, "joao.updated@example.com");
         verify(userService, never()).resetUserPassword(any(), any());
         verify(administratorRepository).save(administrator);
-        verify(userRepository).findByIdAndDeletedAtIsNull(userId);
     }
 
     @Test
@@ -346,10 +367,8 @@ class AdministratorServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> administratorService.restore(administratorId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Administrator not found")
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
-                .isEqualTo(HttpStatus.NOT_FOUND);
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Administrator not found");
         
         verify(administratorRepository).findById(administratorId);
         verify(userService, never()).restore(any());
@@ -361,15 +380,13 @@ class AdministratorServiceTest {
         // Given
         when(administratorRepository.findById(administratorId)).thenReturn(Optional.of(administrator));
         when(userService.restore(userId)).thenThrow(
-            new ResponseStatusException(HttpStatus.CONFLICT, "User is already active")
+            new BusinessException("User is already active")
         );
 
         // When & Then
         assertThatThrownBy(() -> administratorService.restore(administratorId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("User is already active")
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
-                .isEqualTo(HttpStatus.CONFLICT);
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("User is already active");
         
         verify(administratorRepository).findById(administratorId);
         verify(userService).restore(userId);
@@ -381,15 +398,13 @@ class AdministratorServiceTest {
         // Given
         when(administratorRepository.findById(administratorId)).thenReturn(Optional.of(administrator));
         when(userService.restore(userId)).thenThrow(
-            new ResponseStatusException(HttpStatus.CONFLICT, "Cannot restore user due to email conflict with another active user")
+            new BusinessException("Cannot restore user due to email conflict with another active user")
         );
 
         // When & Then
         assertThatThrownBy(() -> administratorService.restore(administratorId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Cannot restore user due to email conflict")
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
-                .isEqualTo(HttpStatus.CONFLICT);
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Cannot restore user due to email conflict");
         
         verify(administratorRepository).findById(administratorId);
         verify(userService).restore(userId);

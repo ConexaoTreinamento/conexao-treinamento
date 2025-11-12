@@ -1,6 +1,10 @@
 package org.conexaotreinamento.conexaotreinamentobackend.unit.service;
+import java.lang.reflect.Field;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
-import jakarta.persistence.EntityManager;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.AnamnesisRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PhysicalImpairmentRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.StudentRequestDTO;
@@ -8,32 +12,45 @@ import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentResp
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Anamnesis;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.PhysicalImpairment;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
+import org.conexaotreinamento.conexaotreinamentobackend.mapper.StudentMapper;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.AnamnesisRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.PhysicalImpairmentRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.service.StudentService;
+import org.conexaotreinamento.conexaotreinamentobackend.service.StudentValidationService;
 import org.conexaotreinamento.conexaotreinamentobackend.shared.dto.PageResponse;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.BusinessException;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.ResourceNotFoundException;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.validation.AgeRangeValidator;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.validation.DateRangeValidator;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.lang.reflect.Field;
-import java.time.LocalDate;
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class StudentServiceTest {
@@ -47,8 +64,16 @@ class StudentServiceTest {
     @Mock
     private PhysicalImpairmentRepository physicalImpairmentRepository;
 
+    private StudentMapper studentMapper = new StudentMapper();
+
     @Mock
-    private EntityManager entityManager;
+    private StudentValidationService validationService;
+
+    @Mock
+    private AgeRangeValidator ageRangeValidator;
+
+    @Mock
+    private DateRangeValidator dateRangeValidator;
 
     @InjectMocks
     private StudentService studentService;
@@ -58,7 +83,9 @@ class StudentServiceTest {
     @BeforeEach
     void setUp() {
         studentId = UUID.randomUUID();
-        ReflectionTestUtils.setField(studentService, "entityManager", entityManager);
+        
+        // Inject real mapper into service
+        ReflectionTestUtils.setField(studentService, "studentMapper", studentMapper);
     }
 
     private StudentRequestDTO sampleRequest(boolean includeAnamnesis, boolean includeImpairments) {
@@ -98,7 +125,7 @@ class StudentServiceTest {
         // Arrange
         StudentRequestDTO req = sampleRequest(true, true);
 
-        when(studentRepository.existsByEmailIgnoringCaseAndDeletedAtIsNull(req.email())).thenReturn(false);
+        doNothing().when(validationService).validateEmailUniqueness(req.email());
         when(studentRepository.save(any(Student.class))).thenAnswer(invocation -> {
             Student s = invocation.getArgument(0);
             // registrationDate should be set
@@ -117,6 +144,7 @@ class StudentServiceTest {
         // Assert
         assertNotNull(dto);
         assertEquals(req.email(), dto.email());
+        verify(validationService).validateEmailUniqueness(req.email());
         verify(studentRepository).save(any(Student.class));
         verify(anamnesisRepository, times(1)).save(any(Anamnesis.class));
         @SuppressWarnings("unchecked")
@@ -130,7 +158,7 @@ class StudentServiceTest {
         // Arrange
         StudentRequestDTO req = sampleRequest(false, false);
 
-        when(studentRepository.existsByEmailIgnoringCaseAndDeletedAtIsNull(req.email())).thenReturn(false);
+        doNothing().when(validationService).validateEmailUniqueness(req.email());
         when(studentRepository.save(any(Student.class))).thenAnswer(invocation -> {
             Student s = invocation.getArgument(0);
             setIdViaReflection(s, studentId);
@@ -142,6 +170,7 @@ class StudentServiceTest {
 
         // Assert
         assertNotNull(dto);
+        verify(validationService).validateEmailUniqueness(req.email());
         verify(anamnesisRepository, never()).save(any(Anamnesis.class));
         verify(physicalImpairmentRepository, never()).saveAll(anyList());
     }
@@ -150,11 +179,13 @@ class StudentServiceTest {
     void create_conflict_whenEmailExists() {
         // Arrange
         StudentRequestDTO req = sampleRequest(false, false);
-        when(studentRepository.existsByEmailIgnoringCaseAndDeletedAtIsNull(req.email())).thenReturn(true);
+        doThrow(new BusinessException("Student with email '" + req.email() + "' already exists"))
+                .when(validationService).validateEmailUniqueness(req.email());
 
         // Act + Assert
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentService.create(req));
-        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        BusinessException ex = assertThrows(BusinessException.class, () -> studentService.create(req));
+        // Business exception doesn't have status code
+        verify(validationService).validateEmailUniqueness(req.email());
         verify(studentRepository, never()).save(any());
     }
 
@@ -192,8 +223,8 @@ class StudentServiceTest {
         when(studentRepository.findByIdAndDeletedAtIsNull(studentId)).thenReturn(Optional.empty());
 
         // Act + Assert
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentService.findById(studentId));
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> studentService.findById(studentId));
+        // Resource not found exception
     }
 
     @Test
@@ -204,7 +235,7 @@ class StudentServiceTest {
         s.setRegistrationDate(LocalDate.now());
         setIdViaReflection(s, studentId);
 
-        Page<Student> page = new PageImpl<>(List.of(s), PageRequest.of(0, 10), 1);
+        Page<Student> page = new PageImpl<>(List.of(s), PageRequest.of(0, 10, Sort.by("createdAt").descending()), 1);
         when(studentRepository.findAll(ArgumentMatchers.<Specification<Student>>any(), any(Pageable.class))).thenReturn(page);
 
         // Act
@@ -212,12 +243,13 @@ class StudentServiceTest {
 
         // Assert
         assertEquals(1, result.totalElements());
-        // Capture pageable argument to verify sorting
+        // Note: StudentService doesn't apply default sort - that's done in the controller with @PageableDefault
+        // The service just passes the pageable as-is to the repository
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
         verify(studentRepository).findAll(ArgumentMatchers.<Specification<Student>>any(), pageableCaptor.capture());
         Pageable used = pageableCaptor.getValue();
-        assertFalse(used.getSort().isUnsorted(), "Sort should be applied");
-        assertEquals(Sort.by("createdAt").descending(), used.getSort(), "Expected sort by createdAt desc");
+        // The pageable passed to repository should be the same as the one passed to the service
+        assertEquals(unsorted, used);
     }
 
     @Test
@@ -228,7 +260,8 @@ class StudentServiceTest {
         setIdViaReflection(existing, studentId);
 
         when(studentRepository.findByIdAndDeletedAtIsNull(studentId)).thenReturn(Optional.of(existing));
-        when(studentRepository.existsByEmailIgnoringCaseAndDeletedAtIsNull("new@example.com")).thenReturn(true);
+        doThrow(new BusinessException("Student with email 'new@example.com' already exists"))
+                .when(validationService).validateEmailUniqueness("new@example.com", studentId);
 
         StudentRequestDTO req = sampleRequest(false, false);
         // override email
@@ -241,8 +274,9 @@ class StudentServiceTest {
 
         // Act + Assert
         StudentRequestDTO finalReq = req;
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentService.update(studentId, finalReq));
-        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        BusinessException ex = assertThrows(BusinessException.class, () -> studentService.update(studentId, finalReq));
+        // Business exception doesn't have status code
+        verify(validationService).validateEmailUniqueness("new@example.com", studentId);
     }
 
     @Test
@@ -251,8 +285,8 @@ class StudentServiceTest {
         when(studentRepository.findByIdAndDeletedAtIsNull(studentId)).thenReturn(Optional.empty());
 
         // Act + Assert
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentService.update(studentId, sampleRequest(false, false)));
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> studentService.update(studentId, sampleRequest(false, false)));
+        // Resource not found exception
     }
 
     @Test
@@ -274,9 +308,8 @@ class StudentServiceTest {
         studentService.update(studentId, request);
 
         // Assert
-        verify(anamnesisRepository).deleteById(studentId);
-        verify(anamnesisRepository, never()).saveAndFlush(any(Anamnesis.class));
-        verify(entityManager).flush();
+        verify(anamnesisRepository).delete(any(Anamnesis.class));
+        verify(anamnesisRepository, never()).save(any(Anamnesis.class));
     }
 
     @Test
@@ -306,8 +339,8 @@ class StudentServiceTest {
         when(studentRepository.findByIdAndDeletedAtIsNull(studentId)).thenReturn(Optional.empty());
 
         // Act + Assert
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentService.delete(studentId));
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        ResourceNotFoundException ex = assertThrows(ResourceNotFoundException.class, () -> studentService.delete(studentId));
+        // Resource not found exception
     }
 
     @Test
@@ -341,8 +374,8 @@ class StudentServiceTest {
         when(studentRepository.findById(studentId)).thenReturn(Optional.of(existing));
 
         // Act + Assert
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentService.restore(studentId));
-        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        BusinessException ex = assertThrows(BusinessException.class, () -> studentService.restore(studentId));
+        // Business exception doesn't have status code
     }
 
     @Test
@@ -357,7 +390,7 @@ class StudentServiceTest {
         when(studentRepository.existsByEmailIgnoringCaseAndDeletedAtIsNull(existing.getEmail())).thenReturn(true);
 
         // Act + Assert
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentService.restore(studentId));
-        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        BusinessException ex = assertThrows(BusinessException.class, () -> studentService.restore(studentId));
+        // Business exception doesn't have status code
     }
 }

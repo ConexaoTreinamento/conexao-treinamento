@@ -55,7 +55,7 @@ export function StudentPicker({
   const students = pageData?.content ?? [];
   const totalPages = Math.max(1, pageData?.totalPages ?? 1);
   const filteredStudents = students.filter(
-    (student: any) => student.id && !excludedIds.has(student.id),
+    (student: StudentResponseDto) => student.id && !excludedIds.has(student.id),
   );
 
   const handleSelect = (student: StudentSummary) => {
@@ -88,7 +88,7 @@ export function StudentPicker({
           </div>
         )}
 
-        {filteredStudents.map((student: any) => {
+        {filteredStudents.map((student: StudentResponseDto) => {
           const fullName =
             `${student.name ?? ""} ${student.surname ?? ""}`.trim() ||
             student.id!;

@@ -332,7 +332,7 @@ export function SessionDetailView({
     entries.forEach(([key, data]) => {
       if (!data) return;
       const content = data.content ?? [];
-      if (content.some((entry: any) => entry.id === exercise.id)) return;
+      if (content.some((entry: ExerciseResponseDto) => entry.id === exercise.id)) return;
       qc.setQueryData(key, { ...data, content: [exercise, ...content] });
     });
   };

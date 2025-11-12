@@ -1,5 +1,16 @@
 package org.conexaotreinamento.conexaotreinamentobackend.unit.service;
 
+import java.lang.reflect.Field;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.fail;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.EventRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchEventRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.EventResponseDTO;
@@ -7,32 +18,27 @@ import org.conexaotreinamento.conexaotreinamentobackend.entity.Event;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.EventParticipant;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
+import org.conexaotreinamento.conexaotreinamentobackend.mapper.EventMapper;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.EventParticipantRepository;
-import org.conexaotreinamento.conexaotreinamentobackend.service.EventService;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.EventRepository;
-import org.conexaotreinamento.conexaotreinamentobackend.service.EventService;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentRepository;
-import org.conexaotreinamento.conexaotreinamentobackend.service.EventService;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.TrainerRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.service.EventService;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.BusinessException;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.ResourceNotFoundException;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.ValidationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.lang.reflect.Field;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.*;
-
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("EventService Unit Tests")
@@ -49,6 +55,11 @@ class EventServiceTest {
 
     @Mock
     private TrainerRepository trainerRepository;
+
+    @Mock
+    private EventMapper eventMapper;
+    
+    private final EventMapper realEventMapper = new EventMapper();
 
     @InjectMocks
     private EventService eventService;
@@ -112,6 +123,18 @@ class EventServiceTest {
                 null,
                 null
         );
+        
+        // Configure event mapper mock to use the real implementation (lenient to avoid unnecessary stubbing errors)
+        lenient().when(eventMapper.toResponse(any(Event.class))).thenAnswer(inv -> 
+            EventResponseDTO.fromEntity(inv.getArgument(0))
+        );
+        lenient().doAnswer(inv -> {
+            realEventMapper.patchEntity(inv.getArgument(0), inv.getArgument(1), inv.getArgument(2));
+            return null;
+        }).when(eventMapper).patchEntity(any(PatchEventRequestDTO.class), any(Event.class), any());
+        
+        // Inject real mapper for patchEntity to work correctly
+        org.springframework.test.util.ReflectionTestUtils.setField(eventService, "eventMapper", realEventMapper);
     }
 
     private void setIdViaReflection(Object entity, UUID id) {
@@ -130,8 +153,18 @@ class EventServiceTest {
         // Given
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
         when(studentRepository.findById(studentId)).thenReturn(Optional.of(student));
-        when(eventRepository.save(any(Event.class))).thenReturn(event);
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+        lenient().when(eventRepository.save(any(Event.class))).thenAnswer(inv -> {
+            Event e = inv.getArgument(0);
+            setIdViaReflection(e, eventId);
+            return e;
+        });
+        when(eventRepository.findById(any(UUID.class))).thenAnswer(inv -> {
+            UUID id = inv.getArgument(0);
+            if (id.equals(eventId)) {
+                return Optional.of(event);
+            }
+            return Optional.empty();
+        });
         when(participantRepository.existsByEventIdAndStudentId(eventId, studentId)).thenReturn(false);
 
         // When
@@ -168,8 +201,18 @@ class EventServiceTest {
         );
 
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
-        when(eventRepository.save(any(Event.class))).thenReturn(event);
-        when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+        lenient().when(eventRepository.save(any(Event.class))).thenAnswer(inv -> {
+            Event e = inv.getArgument(0);
+            setIdViaReflection(e, eventId);
+            return e;
+        });
+        when(eventRepository.findById(any(UUID.class))).thenAnswer(inv -> {
+            UUID id = inv.getArgument(0);
+            if (id.equals(eventId)) {
+                return Optional.of(event);
+            }
+            return Optional.empty();
+        });
 
         // When
         EventResponseDTO result = eventService.createEvent(requestWithoutParticipants);
@@ -190,8 +233,7 @@ class EventServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> eventService.createEvent(eventRequestDTO))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Trainer not found");
     }
 
@@ -212,9 +254,8 @@ class EventServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> eventService.createEvent(requestWithNullTrainer))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
-                .hasMessageContaining("Trainer is required");
+                .isInstanceOf(ValidationException.class)
+                .hasMessageContaining("Trainer ID is required");
     }
 
     @Test
@@ -222,14 +263,24 @@ class EventServiceTest {
     void shouldThrowExceptionWhenStudentNotFound() {
         // Given
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        lenient().when(eventRepository.save(any(Event.class))).thenAnswer(inv -> {
+            Event e = inv.getArgument(0);
+            setIdViaReflection(e, eventId);
+            return e;
+        });
+        lenient().when(eventRepository.findById(any(UUID.class))).thenAnswer(inv -> {
+            UUID id = inv.getArgument(0);
+            if (id.equals(eventId)) {
+                return Optional.of(event);
+            }
+            return Optional.empty();
+        });
         when(studentRepository.findById(studentId)).thenReturn(Optional.empty());
-        when(eventRepository.save(any(Event.class))).thenReturn(event);
 
         // When & Then
         assertThatThrownBy(() -> eventService.createEvent(eventRequestDTO))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND)
-                .hasMessageContaining("Student not found: " + studentId);
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Student not found");
     }
 
     @Test
@@ -257,8 +308,7 @@ class EventServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> eventService.findEventById(eventId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Event not found");
     }
 
@@ -322,6 +372,7 @@ class EventServiceTest {
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
         when(studentRepository.findById(studentId)).thenReturn(Optional.of(student));
         when(participantRepository.existsByEventIdAndStudentId(eventId, studentId)).thenReturn(false);
+        when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // When
         EventResponseDTO result = eventService.updateEvent(eventId, eventRequestDTO);
@@ -331,6 +382,7 @@ class EventServiceTest {
         assertThat(result.name()).isEqualTo("Test Event");
 
         verify(eventRepository).findByIdAndDeletedAtIsNull(eventId);
+        verify(eventRepository).save(any(Event.class));
         verify(participantRepository).save(any(EventParticipant.class));
     }
 
@@ -339,6 +391,10 @@ class EventServiceTest {
     void shouldPatchEventSuccessfully() {
         // Given
         when(eventRepository.findByIdAndDeletedAtIsNull(eventId)).thenReturn(Optional.of(event));
+        when(eventRepository.save(any(Event.class))).thenAnswer(inv -> {
+            Event e = inv.getArgument(0);
+            return e; // Return the modified event
+        });
 
         // When
         EventResponseDTO result = eventService.patchEvent(eventId, patchRequestDTO);
@@ -350,6 +406,11 @@ class EventServiceTest {
         assertThat(result.description()).isEqualTo("Updated Description");
 
         verify(eventRepository).findByIdAndDeletedAtIsNull(eventId);
+        verify(eventRepository).save(any(Event.class));
+        // Verify the event was actually modified
+        assertThat(event.getName()).isEqualTo("Updated Event");
+        assertThat(event.getLocation()).isEqualTo("Updated Location");
+        assertThat(event.getDescription()).isEqualTo("Updated Description");
     }
 
     @Test
@@ -373,6 +434,7 @@ class EventServiceTest {
         // Given
         event.deactivate();
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
+        when(eventRepository.save(any(Event.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // When
         EventResponseDTO result = eventService.restoreEvent(eventId);
@@ -391,8 +453,7 @@ class EventServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> eventService.restoreEvent(eventId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Event is already active");
     }
 
@@ -403,6 +464,7 @@ class EventServiceTest {
         when(eventRepository.findByIdAndDeletedAtIsNull(eventId)).thenReturn(Optional.of(event));
         when(studentRepository.findById(studentId)).thenReturn(Optional.of(student));
         when(participantRepository.existsByEventIdAndStudentId(eventId, studentId)).thenReturn(false);
+        when(participantRepository.save(any(EventParticipant.class))).thenAnswer(inv -> inv.getArgument(0));
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
 
         // When
@@ -423,8 +485,7 @@ class EventServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> eventService.addParticipant(eventId, studentId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.CONFLICT)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Student already enrolled in this event");
     }
 
@@ -450,8 +511,7 @@ class EventServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> eventService.removeParticipant(eventId, studentId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Event not found");
     }
 
@@ -464,9 +524,8 @@ class EventServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> eventService.removeParticipant(eventId, studentId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND)
-                .hasMessageContaining("Student not enrolled in this event");
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Participant not found");
     }
 
     @Test
@@ -496,8 +555,7 @@ class EventServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> eventService.toggleAttendance(eventId, studentId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Participant not found");
     }
 }

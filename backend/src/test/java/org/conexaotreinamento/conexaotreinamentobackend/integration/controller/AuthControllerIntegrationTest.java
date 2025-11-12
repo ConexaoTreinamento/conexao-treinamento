@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.hamcrest.Matchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -171,9 +172,7 @@ class AuthControllerIntegrationTest {
     @DisplayName("Should logout successfully")
     void shouldLogoutSuccessfully() throws Exception {
         mockMvc.perform(post("/auth/logout"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.TEXT_PLAIN_VALUE + ";charset=UTF-8"))
-                .andExpect(content().string("Logout realizado com sucesso!"));
+                .andExpect(status().isNoContent());
     }
 
     @Test

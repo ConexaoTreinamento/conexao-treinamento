@@ -54,7 +54,7 @@ export const useCreateStudent = () => {
   });
 };
 
-export const useUpdateStudent = (options: UseMutationOptions<StudentResponseDto, any, Options<UpdateStudentData>>) => {
+export const useUpdateStudent = (options: UseMutationOptions<StudentResponseDto, Error, Options<UpdateStudentData>>) => {
   const queryClient = useQueryClient();
   const base = updateStudentMutation({ client: apiClient });
   const baseOnSuccess = base.onSuccess;

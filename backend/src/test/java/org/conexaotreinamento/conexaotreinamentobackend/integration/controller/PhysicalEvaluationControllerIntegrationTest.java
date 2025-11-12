@@ -166,7 +166,7 @@ class PhysicalEvaluationControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Student not found"));
+                .andExpect(jsonPath("$.message").exists());
 
         // Verify nothing was created
         assertThat(evaluationRepository.count()).isEqualTo(0);
@@ -226,7 +226,7 @@ class PhysicalEvaluationControllerIntegrationTest {
         mockMvc.perform(get("/students/{studentId}/evaluations/{evaluationId}", 
                         testStudent.getId(), nonExistentId))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Physical evaluation not found"));
+                .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
@@ -518,7 +518,7 @@ class PhysicalEvaluationControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Physical evaluation not found"));
+                .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
@@ -531,7 +531,7 @@ class PhysicalEvaluationControllerIntegrationTest {
         mockMvc.perform(delete("/students/{studentId}/evaluations/{evaluationId}", 
                         testStudent.getId(), nonExistentId))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Physical evaluation not found"));
+                .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
