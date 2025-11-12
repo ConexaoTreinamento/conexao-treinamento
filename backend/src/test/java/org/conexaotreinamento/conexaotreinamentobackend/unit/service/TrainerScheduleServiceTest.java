@@ -57,21 +57,21 @@ class TrainerScheduleServiceTest {
         // Arrange
         TrainerSchedule a = newSchedule(UUID.randomUUID(), trainerId, 1, "Yoga", "09:00", 60);
         TrainerSchedule b = newSchedule(UUID.randomUUID(), trainerId, 2, "Pilates", "11:00", 60);
-        when(trainerScheduleRepository.findByActiveTrue()).thenReturn(List.of(a, b));
+        when(trainerScheduleRepository.findByIsActiveTrue()).thenReturn(List.of(a, b));
 
         // Act
         List<TrainerSchedule> result = trainerScheduleService.getAllActiveSchedules();
 
         // Assert
         assertEquals(2, result.size());
-        verify(trainerScheduleRepository).findByActiveTrue();
+        verify(trainerScheduleRepository).findByIsActiveTrue();
     }
 
     @Test
     void getSchedulesByTrainer_returnsRepositoryResult() {
         // Arrange
         TrainerSchedule a = newSchedule(UUID.randomUUID(), trainerId, 1, "Yoga", "09:00", 60);
-        when(trainerScheduleRepository.findByTrainerIdAndActiveTrue(trainerId)).thenReturn(List.of(a));
+        when(trainerScheduleRepository.findByTrainerIdAndIsActiveTrue(trainerId)).thenReturn(List.of(a));
 
         // Act
         List<TrainerSchedule> result = trainerScheduleService.getSchedulesByTrainer(trainerId);
@@ -79,7 +79,7 @@ class TrainerScheduleServiceTest {
         // Assert
         assertEquals(1, result.size());
         assertEquals(trainerId, result.get(0).getTrainerId());
-        verify(trainerScheduleRepository).findByTrainerIdAndActiveTrue(trainerId);
+        verify(trainerScheduleRepository).findByTrainerIdAndIsActiveTrue(trainerId);
     }
 
     @Test

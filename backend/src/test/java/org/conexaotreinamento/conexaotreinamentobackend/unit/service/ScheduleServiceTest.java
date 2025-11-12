@@ -91,7 +91,7 @@ class ScheduleServiceTest {
 
         when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(anyInt(), any(Instant.class)))
                 .thenReturn(List.of(schedule));
-        when(scheduledSessionRepository.findByStartTimeBetweenAndActiveTrue(any(LocalDateTime.class), any(LocalDateTime.class)))
+        when(scheduledSessionRepository.findByStartTimeBetweenAndIsActiveTrue(any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(List.of());
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
         when(studentCommitmentRepository.findBySessionSeriesId(schedule.getId())).thenReturn(List.of());
@@ -134,7 +134,7 @@ class ScheduleServiceTest {
         String legacySessionId = "yoga-basics__" + date + "__09:00";
         ScheduledSession existing = buildExistingSession(UUID.randomUUID(), legacySessionId, schedule.getId(), trainerId, date, start, end, "Bring water bottle", true);
 
-        when(scheduledSessionRepository.findByStartTimeBetweenAndActiveTrue(any(LocalDateTime.class), any(LocalDateTime.class)))
+        when(scheduledSessionRepository.findByStartTimeBetweenAndIsActiveTrue(any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(List.of(existing));
 
         // Act
@@ -154,7 +154,7 @@ class ScheduleServiceTest {
     void getScheduledSessions_passesSundayAsWeekdayZero() {
         // Arrange
         LocalDate date = LocalDate.of(2025, 9, 28); // Sunday
-        when(scheduledSessionRepository.findByStartTimeBetweenAndActiveTrue(any(LocalDateTime.class), any(LocalDateTime.class)))
+        when(scheduledSessionRepository.findByStartTimeBetweenAndIsActiveTrue(any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(List.of());
         when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(anyInt(), any(Instant.class)))
                 .thenReturn(List.of());
@@ -177,7 +177,7 @@ class ScheduleServiceTest {
         existing.setSessionId(sessionId);
         existing.setInstanceOverride(false);
 
-        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(sessionId)).thenReturn(Optional.of(existing));
+        when(scheduledSessionRepository.findBySessionIdAndIsActiveTrue(sessionId)).thenReturn(Optional.of(existing));
         when(scheduledSessionRepository.save(any(ScheduledSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
@@ -205,8 +205,8 @@ class ScheduleServiceTest {
         oldP.setId(UUID.randomUUID());
         oldP.setScheduledSession(existing);
 
-        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(sessionId)).thenReturn(Optional.of(existing));
-        when(sessionParticipantRepository.findByScheduledSession_IdAndActiveTrue(existingSessionId)).thenReturn(List.of(oldP));
+        when(scheduledSessionRepository.findBySessionIdAndIsActiveTrue(sessionId)).thenReturn(Optional.of(existing));
+        when(sessionParticipantRepository.findByScheduledSession_IdAndIsActiveTrue(existingSessionId)).thenReturn(List.of(oldP));
         when(scheduledSessionRepository.save(any(ScheduledSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // New participants to add
@@ -238,7 +238,7 @@ class ScheduleServiceTest {
     void getOrCreateSessionInstance_throws_whenSessionIdInvalid() {
         // Arrange
         String badId = "not-enough-parts";
-        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(badId)).thenReturn(Optional.empty());
+        when(scheduledSessionRepository.findBySessionIdAndIsActiveTrue(badId)).thenReturn(Optional.empty());
 
         // Act + Assert
         RuntimeException ex = assertThrows(RuntimeException.class, () -> {
@@ -255,7 +255,7 @@ class ScheduleServiceTest {
         TrainerSchedule s1 = buildSchedule(UUID.randomUUID(), trainerId, "Morning Flow", LocalTime.of(8, 0), 60);
         TrainerSchedule s2 = buildSchedule(UUID.randomUUID(), trainerId, "Power Yoga", LocalTime.of(7, 0), 60);
 
-        when(scheduledSessionRepository.findByStartTimeBetweenAndActiveTrue(any(LocalDateTime.class), any(LocalDateTime.class)))
+        when(scheduledSessionRepository.findByStartTimeBetweenAndIsActiveTrue(any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(List.of());
         when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(anyInt(), any(Instant.class)))
                 .thenReturn(List.of(s1, s2));

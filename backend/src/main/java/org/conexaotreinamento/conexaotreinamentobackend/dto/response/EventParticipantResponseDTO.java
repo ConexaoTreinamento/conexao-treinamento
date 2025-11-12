@@ -22,7 +22,7 @@ public record EventParticipantResponseDTO(
                 fullName,
                 null, // Avatar not implemented yet
                 participant.getEnrolledAt(),
-                participant.getPresent()
+                participant.getIsPresent()
         );
     }
 }

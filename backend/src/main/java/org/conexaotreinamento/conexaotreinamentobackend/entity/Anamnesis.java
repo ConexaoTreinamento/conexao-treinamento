@@ -90,9 +90,9 @@ public class Anamnesis {
     @Setter
     private String smokingDuration;
 
-    @Column(name = "altered_cholesterol")
+    @Column(name = "has_altered_cholesterol")
     @Setter
-    private boolean alteredCholesterol;
+    private boolean hasAlteredCholesterol;
 
     @Column(name = "osteoporosis_location", length = 255)
     @Setter

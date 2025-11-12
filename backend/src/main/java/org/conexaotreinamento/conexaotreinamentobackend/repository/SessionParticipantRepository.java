@@ -10,9 +10,9 @@ import java.util.UUID;
 @Repository
 public interface SessionParticipantRepository extends JpaRepository<SessionParticipant, UUID> {
     
-    List<SessionParticipant> findByScheduledSession_IdAndActiveTrue(UUID scheduledSessionId);
+    List<SessionParticipant> findByScheduledSession_IdAndIsActiveTrue(UUID scheduledSessionId);
     
-    List<SessionParticipant> findByStudentIdAndActiveTrue(UUID studentId);
+    List<SessionParticipant> findByStudentIdAndIsActiveTrue(UUID studentId);
     
-    List<SessionParticipant> findByScheduledSession_IdAndStudentIdAndActiveTrue(UUID scheduledSessionId, UUID studentId);
+    List<SessionParticipant> findByScheduledSession_IdAndStudentIdAndIsActiveTrue(UUID scheduledSessionId, UUID studentId);
 }

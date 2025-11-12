@@ -304,7 +304,7 @@ class ReportsServiceTest {
         for (int i = 0; i < participantIds.length; i++) {
             EventParticipant participant = new TestEventParticipant();
             participant.setEvent(event);
-            participant.setPresent(attendanceFlags[i]);
+            participant.setIsPresent(attendanceFlags[i]);
             Student student = mock(Student.class);
             when(student.getId()).thenReturn(participantIds[i]);
             participant.setStudent(student);

@@ -240,8 +240,8 @@ public class EventService {
         EventParticipant participant = participantRepository.findByEventIdAndStudentId(eventId, studentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Participant not found"));
 
-        boolean newAttendanceStatus = !participant.getPresent();
-        participant.setPresent(newAttendanceStatus);
+        boolean newAttendanceStatus = !participant.getIsPresent();
+        participant.setIsPresent(newAttendanceStatus);
         participantRepository.save(participant);
         
         log.info("Attendance toggled successfully - Student [ID: {}] in Event [ID: {}] - Present: {}", 

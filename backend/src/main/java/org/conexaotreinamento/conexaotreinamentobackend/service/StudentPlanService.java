@@ -53,7 +53,7 @@ public class StudentPlanService {
     
     @Transactional
     public void deletePlan(UUID planId) {
-        StudentPlan plan = studentPlanRepository.findByIdAndActiveTrue(planId)
+        StudentPlan plan = studentPlanRepository.findByIdAndIsActiveTrue(planId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
                 "Plan not found or inactive"));
 
@@ -78,7 +78,7 @@ public class StudentPlanService {
     
     @Transactional(readOnly = true)
     public List<StudentPlanResponseDTO> getAllActivePlans() {
-        return studentPlanRepository.findByActiveTrueOrderByNameAsc()
+        return studentPlanRepository.findByIsActiveTrueOrderByNameAsc()
             .stream()
             .map(this::mapToResponseDTO)
             .toList();
@@ -93,18 +93,18 @@ public class StudentPlanService {
                 plans = studentPlanRepository.findAllByOrderByNameAsc();
                 break;
             case "inactive":
-                plans = studentPlanRepository.findByActiveFalseOrderByNameAsc();
+                plans = studentPlanRepository.findByIsActiveFalseOrderByNameAsc();
                 break;
             case "active":
             default:
-                plans = studentPlanRepository.findByActiveTrueOrderByNameAsc();
+                plans = studentPlanRepository.findByIsActiveTrueOrderByNameAsc();
         }
         return plans.stream().map(this::mapToResponseDTO).toList();
     }
     
     @Transactional(readOnly = true)
     public StudentPlanResponseDTO getPlanById(UUID planId) {
-        StudentPlan plan = studentPlanRepository.findByIdAndActiveTrue(planId)
+        StudentPlan plan = studentPlanRepository.findByIdAndIsActiveTrue(planId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
                 "Plan not found or inactive"));
         
@@ -121,7 +121,7 @@ public class StudentPlanService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
         
         // Validate plan exists and is active
-        StudentPlan plan = studentPlanRepository.findByIdAndActiveTrue(requestDTO.planId())
+        StudentPlan plan = studentPlanRepository.findByIdAndIsActiveTrue(requestDTO.planId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
                 "Plan not found or inactive"));
         

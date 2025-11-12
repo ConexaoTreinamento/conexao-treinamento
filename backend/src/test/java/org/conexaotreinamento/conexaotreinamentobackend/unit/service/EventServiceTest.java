@@ -474,7 +474,7 @@ class EventServiceTest {
     void shouldToggleAttendanceSuccessfully() {
         // Given
         EventParticipant participant = new EventParticipant(event, student);
-        participant.setPresent(false);
+        participant.setIsPresent(false);
         
         when(participantRepository.findByEventIdAndStudentId(eventId, studentId)).thenReturn(Optional.of(participant));
         when(eventRepository.findById(eventId)).thenReturn(Optional.of(event));
@@ -484,7 +484,7 @@ class EventServiceTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(participant.getPresent()).isTrue();
+        assertThat(participant.getIsPresent()).isTrue();
         verify(participantRepository).save(participant);
     }
 

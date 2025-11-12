@@ -11,8 +11,8 @@ import java.util.UUID;
 
 @Repository
 public interface ParticipantExerciseRepository extends JpaRepository<ParticipantExercise, UUID> {
-    List<ParticipantExercise> findBySessionParticipant_IdAndActiveTrue(UUID sessionParticipantId);
+    List<ParticipantExercise> findBySessionParticipant_IdAndIsActiveTrue(UUID sessionParticipantId);
 
-    @Query("select pe from ParticipantExercise pe left join fetch pe.exercise e where pe.sessionParticipant.id = :sessionParticipantId and pe.active = true")
-    List<ParticipantExercise> findActiveWithExerciseBySessionParticipantId(@Param("sessionParticipantId") UUID sessionParticipantId);
+    @Query("select pe from ParticipantExercise pe left join fetch pe.exercise e where pe.sessionParticipant.id = :sessionParticipantId and pe.isActive = true")
+    List<ParticipantExercise> findIsActiveWithExerciseBySessionParticipantId(@Param("sessionParticipantId") UUID sessionParticipantId);
 }
