@@ -21,7 +21,6 @@ import { ScheduleClassCard } from "@/components/schedule/schedule-class-card";
 import { ScheduleClassSkeletonList } from "@/components/schedule/schedule-class-skeleton";
 import { TrainerFilter } from "@/components/trainers/trainer-filter";
 import type { TrainerOption } from "@/components/trainers/trainer-select";
-import type { TrainerLookupResponseDto } from "@/lib/api-client/types.gen";
 import type {
   ScheduleClassItem,
   ScheduleDayItem,
@@ -202,7 +201,7 @@ export function SchedulePageView() {
 
   const trainerOptions = useMemo<TrainerOption[]>(() => {
     const list = Array.isArray(trainersQuery.data)
-      ? (trainersQuery.data as TrainerLookupResponseDto[])
+      ? (trainersQuery.data)
       : [];
 
     const normalized = list
