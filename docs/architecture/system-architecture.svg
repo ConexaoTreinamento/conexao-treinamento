@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 800">
+  <defs>
+    <style>
+      .title { font: bold 28px sans-serif; fill: #1a1a1a; }
+      .subtitle { font: 16px sans-serif; fill: #666; }
+      .layer-title { font: bold 18px sans-serif; fill: #fff; }
+      .tech-text { font: 14px sans-serif; fill: #fff; }
+      .label { font: 13px sans-serif; fill: #444; }
+      .arrow { stroke: #666; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .arrow-label { font: 12px sans-serif; fill: #666; }
+      
+      .frontend-box { fill: #0ea5e9; stroke: #0284c7; stroke-width: 2; }
+      .backend-box { fill: #10b981; stroke: #059669; stroke-width: 2; }
+      .database-box { fill: #8b5cf6; stroke: #7c3aed; stroke-width: 2; }
+      .component-box { fill: #fff; stroke: #cbd5e1; stroke-width: 1.5; }
+      .component-text { font: 13px sans-serif; fill: #1e293b; }
+      .badge { font: bold 11px sans-serif; fill: #fff; }
+    </style>
+    
+    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <polygon points="0 0, 10 3, 0 6" fill="#666" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text x="500" y="40" text-anchor="middle" class="title">Conexão Treinamento - Arquitetura</text>
+  <text x="500" y="65" text-anchor="middle" class="subtitle">Sistema de Gerenciamento de Academia</text>
+  
+  <!-- Frontend Layer -->
+  <rect x="100" y="100" width="800" height="180" rx="10" class="frontend-box" />
+  <text x="120" y="130" class="layer-title">Frontend Layer - Next.js 15 (React 19)</text>
+  
+  <!-- Frontend Components -->
+  <g>
+    <!-- App Router -->
+    <rect x="120" y="150" width="180" height="110" rx="5" class="component-box" />
+    <text x="210" y="175" text-anchor="middle" class="component-text" font-weight="bold">App Router</text>
+    <text x="210" y="195" text-anchor="middle" class="component-text">• Pages (RSC)</text>
+    <text x="210" y="213" text-anchor="middle" class="component-text">• Layouts</text>
+    <text x="210" y="231" text-anchor="middle" class="component-text">• Middleware</text>
+    <text x="210" y="249" text-anchor="middle" class="component-text">• Edge Auth</text>
+    
+    <!-- Components -->
+    <rect x="320" y="150" width="180" height="110" rx="5" class="component-box" />
+    <text x="410" y="175" text-anchor="middle" class="component-text" font-weight="bold">UI Components</text>
+    <text x="410" y="195" text-anchor="middle" class="component-text">• shadcn/ui</text>
+    <text x="410" y="213" text-anchor="middle" class="component-text">• Radix UI</text>
+    <text x="410" y="231" text-anchor="middle" class="component-text">• Tailwind CSS</text>
+    <text x="410" y="249" text-anchor="middle" class="component-text">• Forms (RHF + Zod)</text>
+    
+    <!-- State Management -->
+    <rect x="520" y="150" width="180" height="110" rx="5" class="component-box" />
+    <text x="610" y="175" text-anchor="middle" class="component-text" font-weight="bold">State Management</text>
+    <text x="610" y="195" text-anchor="middle" class="component-text">• TanStack Query</text>
+    <text x="610" y="213" text-anchor="middle" class="component-text">• API Client</text>
+    <text x="610" y="231" text-anchor="middle" class="component-text">• OpenAPI Gen</text>
+    <text x="610" y="249" text-anchor="middle" class="component-text">• JWT Interceptor</text>
+    
+    <!-- Tech Badge -->
+    <rect x="720" y="150" width="160" height="110" rx="5" class="component-box" />
+    <text x="800" y="175" text-anchor="middle" class="component-text" font-weight="bold">TypeScript 5</text>
+    <text x="800" y="200" text-anchor="middle" class="component-text">⚡ SSR + CSR</text>
+    <text x="800" y="220" text-anchor="middle" class="component-text">🎨 Responsive</text>
+    <text x="800" y="240" text-anchor="middle" class="component-text">🔒 Secure</text>
+  </g>
+  
+  <!-- Arrow: Frontend -> Backend -->
+  <line x1="500" y1="290" x2="500" y2="340" class="arrow" />
+  <text x="520" y="320" class="arrow-label">REST API</text>
+  <text x="520" y="335" class="arrow-label">JWT Bearer Token</text>
+  
+  <!-- Backend Layer -->
+  <rect x="100" y="350" width="800" height="220" rx="10" class="backend-box" />
+  <text x="120" y="380" class="layer-title">Backend Layer - Spring Boot 3.2 (Java 21)</text>
+  
+  <!-- Backend Components -->
+  <g>
+    <!-- Controllers -->
+    <rect x="120" y="400" width="150" height="150" rx="5" class="component-box" />
+    <text x="195" y="425" text-anchor="middle" class="component-text" font-weight="bold">Controllers</text>
+    <text x="195" y="445" text-anchor="middle" class="component-text">• REST APIs</text>
+    <text x="195" y="463" text-anchor="middle" class="component-text">• Validation</text>
+    <text x="195" y="481" text-anchor="middle" class="component-text">• OpenAPI</text>
+    <text x="195" y="499" text-anchor="middle" class="component-text">• Error Handling</text>
+    <text x="195" y="517" text-anchor="middle" class="component-text">• DTO Mapping</text>
+    <text x="195" y="535" text-anchor="middle" class="component-text" font-size="11">9 domínios</text>
+    
+    <!-- Services -->
+    <rect x="290" y="400" width="150" height="150" rx="5" class="component-box" />
+    <text x="365" y="425" text-anchor="middle" class="component-text" font-weight="bold">Services</text>
+    <text x="365" y="445" text-anchor="middle" class="component-text">• Business Logic</text>
+    <text x="365" y="463" text-anchor="middle" class="component-text">• Transactions</text>
+    <text x="365" y="481" text-anchor="middle" class="component-text">• Validation</text>
+    <text x="365" y="499" text-anchor="middle" class="component-text">• Mappers</text>
+    <text x="365" y="517" text-anchor="middle" class="component-text">• Exception Handling</text>
+    
+    <!-- Security -->
+    <rect x="460" y="400" width="150" height="150" rx="5" class="component-box" />
+    <text x="535" y="425" text-anchor="middle" class="component-text" font-weight="bold">Security</text>
+    <text x="535" y="445" text-anchor="middle" class="component-text">• JWT Auth</text>
+    <text x="535" y="463" text-anchor="middle" class="component-text">• RBAC</text>
+    <text x="535" y="481" text-anchor="middle" class="component-text">• BCrypt</text>
+    <text x="535" y="499" text-anchor="middle" class="component-text">• CORS</text>
+    <text x="535" y="517" text-anchor="middle" class="component-text">• Filters</text>
+    <text x="535" y="535" text-anchor="middle" class="component-text" font-size="11">Admin/Trainer</text>
+    
+    <!-- Data Access -->
+    <rect x="630" y="400" width="150" height="150" rx="5" class="component-box" />
+    <text x="705" y="425" text-anchor="middle" class="component-text" font-weight="bold">Data Access</text>
+    <text x="705" y="445" text-anchor="middle" class="component-text">• Spring Data JPA</text>
+    <text x="705" y="463" text-anchor="middle" class="component-text">• Repositories</text>
+    <text x="705" y="481" text-anchor="middle" class="component-text">• Entities</text>
+    <text x="705" y="499" text-anchor="middle" class="component-text">• Soft Deletes</text>
+    <text x="705" y="517" text-anchor="middle" class="component-text">• Auditing</text>
+  </g>
+  
+  <!-- Arrow: Backend -> Database -->
+  <line x1="500" y1="580" x2="500" y2="630" class="arrow" />
+  <text x="520" y="610" class="arrow-label">JPA / Hibernate</text>
+  <text x="520" y="625" class="arrow-label">JDBC Connection Pool</text>
+  
+  <!-- Database Layer -->
+  <rect x="100" y="640" width="800" height="120" rx="10" class="database-box" />
+  <text x="120" y="670" class="layer-title">Database Layer - PostgreSQL 16</text>
+  
+  <!-- Database Components -->
+  <g>
+    <rect x="120" y="690" width="180" height="50" rx="5" class="component-box" />
+    <text x="210" y="713" text-anchor="middle" class="component-text" font-weight="bold">Schema</text>
+    <text x="210" y="730" text-anchor="middle" class="component-text">• 15+ Tables</text>
+    
+    <rect x="320" y="690" width="180" height="50" rx="5" class="component-box" />
+    <text x="410" y="713" text-anchor="middle" class="component-text" font-weight="bold">Migrations</text>
+    <text x="410" y="730" text-anchor="middle" class="component-text">• Flyway</text>
+    
+    <rect x="520" y="690" width="180" height="50" rx="5" class="component-box" />
+    <text x="610" y="713" text-anchor="middle" class="component-text" font-weight="bold">Features</text>
+    <text x="610" y="730" text-anchor="middle" class="component-text">• JSONB • UUID • Indexes</text>
+    
+    <rect x="720" y="690" width="160" height="50" rx="5" class="component-box" />
+    <text x="800" y="713" text-anchor="middle" class="component-text" font-weight="bold">Backup</text>
+    <text x="800" y="730" text-anchor="middle" class="component-text">• pg_dump</text>
+  </g>
+  
+  <!-- Legend -->
+  <g transform="translate(100, 770)">
+    <text x="0" y="0" class="label" font-weight="bold">Domains:</text>
+    <text x="70" y="0" class="label">Students • Trainers • Administrators • Exercises • Events • Schedules • Plans • Evaluations • Users</text>
+  </g>
+</svg>
+
