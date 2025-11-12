@@ -37,7 +37,6 @@ export default function ProfilePage() {
 
   const { mutate: changePassword, isPending: isChangingPassword } = useMutation({
     ...changeOwnPasswordMutation({ client: apiClient }),
-
     onSuccess: () => {
       setSecurityMessage({ type: "success", text: "Senha alterada com sucesso!" });
       setCurrentPassword("");
@@ -45,11 +44,42 @@ export default function ProfilePage() {
       setConfirmPassword("");
     },
 
-    onError: (error) => {
-      setSecurityMessage({ type: "error", text: "Falha ao alterar a senha." });
-      console.error(error);
+    onError: (error: any) => {
+      const respData = error?.response?.data ?? error?.data ?? error?.body ?? null;
+      let errMsg: string | null = null;
+
+      if (respData) {
+        if (typeof respData === "string") {
+          errMsg = respData;
+        } else if (typeof respData.message === "string") {
+          errMsg = respData.message;
+        } else if (typeof respData.error === "string") {
+          errMsg = respData.error;
+        } else if (Array.isArray(respData?.errors) && respData.errors.length > 0) {
+          const first = respData.errors[0];
+          errMsg = typeof first === "string" ? first : first?.message ?? JSON.stringify(first);
+        } else {
+          errMsg = JSON.stringify(respData);
+        }
+      } else if (typeof error?.message === "string") {
+        errMsg = error.message;
+      } else {
+        try {
+          errMsg = String(error);
+        } catch (e) {
+          errMsg = "Falha ao alterar a senha.";
+        }
+      }
+      
+      if (typeof errMsg === "string" && /old password is incorrect|the old password is incorrect|senha atual não confere/i.test(errMsg)) {
+        setSecurityMessage({ type: "error", text: "A senha atual não confere." });
+      } else {
+        setSecurityMessage({ type: "error", text: typeof errMsg === "string" ? errMsg : "Falha ao alterar a senha." });
+      }
+
+      console.error("Change password error:", error);
     },
-  });
+  })
 
   const [profileData, setProfileData] = useState({
     name: "",
