@@ -144,7 +144,7 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui.html").permitAll()
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
-                        .requestMatchers("/administrators/**").permitAll()
+                        // CRITICAL FIX: Administrators endpoints now require authentication
                         .anyRequest().authenticated());
 
         return http.build();

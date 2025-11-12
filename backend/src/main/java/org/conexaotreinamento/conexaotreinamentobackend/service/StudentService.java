@@ -1,140 +1,129 @@
 package org.conexaotreinamento.conexaotreinamentobackend.service;
 
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.AnamnesisRequestDTO;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
+
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.StudentRequestDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AnamnesisResponseDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.PhysicalImpairmentResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Anamnesis;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.PhysicalImpairment;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
+import org.conexaotreinamento.conexaotreinamentobackend.mapper.StudentMapper;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.AnamnesisRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.PhysicalImpairmentRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.dto.PageResponse;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.BusinessException;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.ResourceNotFoundException;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.validation.AgeRangeValidator;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.validation.DateRangeValidator;
 import org.conexaotreinamento.conexaotreinamentobackend.specification.StudentSpecifications;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Service for managing Student entities.
+ * Handles all business logic related to students.
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class StudentService {
 
     private final StudentRepository studentRepository;
     private final AnamnesisRepository anamnesisRepository;
     private final PhysicalImpairmentRepository physicalImpairmentRepository;
+    private final StudentMapper studentMapper;
+    private final StudentValidationService validationService;
+    private final AgeRangeValidator ageRangeValidator;
+    private final DateRangeValidator dateRangeValidator;
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
-    @Transactional
+    /**
+     * Creates a new student with anamnesis and physical impairments.
+     * 
+     * @param request Student creation request
+     * @return Created student details
+     */
     public StudentResponseDTO create(StudentRequestDTO request) {
-        log.debug("Attempting to create student with email: {}", request.email());
+        log.info("Creating student: {}", request.email());
         
-        if (studentRepository.existsByEmailIgnoringCaseAndDeletedAtIsNull(request.email())) {
-            log.warn("Student creation failed - Email already exists: {}", request.email());
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Student with this email already exists");
-        }
-
-        // Build student entity from request
-        Student student = new Student(request.email(), request.name(), request.surname(), request.gender(), request.birthDate());
-        applyDTOFields(request, student);
-
-        // registrationDate is defaulted by DB; set it here to keep entity consistent
-        student.setRegistrationDate(LocalDate.now());
-
-        // Persist student first to generate UUID (used by Anamnesis and PhysicalImpairments)
+        // Validate email uniqueness
+        validationService.validateEmailUniqueness(request.email());
+        
+        // Map and save student
+        Student student = studentMapper.toEntity(request);
         Student savedStudent = studentRepository.save(student);
-        log.info("Student created successfully [ID: {}] - Name: {} {}, Email: {}", 
-                savedStudent.getId(), savedStudent.getName(), savedStudent.getSurname(), savedStudent.getEmail());
-
+        
+        log.info("Student created successfully [ID: {}] - Name: {} {}", 
+                savedStudent.getId(), savedStudent.getName(), savedStudent.getSurname());
+        
         // Save anamnesis if provided
+        Anamnesis anamnesis = null;
         if (request.anamnesis() != null) {
             log.debug("Creating anamnesis for student [ID: {}]", savedStudent.getId());
-            AnamnesisRequestDTO dto = request.anamnesis();
-            Anamnesis anamnesis = new Anamnesis(savedStudent);
-            createOrEditAnamnesis(dto, anamnesis);
-
-            anamnesisRepository.save(anamnesis);
+            anamnesis = studentMapper.toAnamnesisEntity(request.anamnesis(), savedStudent);
+            anamnesis = anamnesisRepository.save(anamnesis);
             log.debug("Anamnesis created for student [ID: {}]", savedStudent.getId());
         }
-
+        
         // Save physical impairments if provided
-        return createOrEditPhysicalImpairments(request, savedStudent);
+        List<PhysicalImpairment> impairments = null;
+        if (request.physicalImpairments() != null && !request.physicalImpairments().isEmpty()) {
+            log.debug("Creating {} physical impairments for student [ID: {}]", 
+                    request.physicalImpairments().size(), savedStudent.getId());
+            
+            impairments = request.physicalImpairments().stream()
+                    .map(dto -> studentMapper.toImpairmentEntity(dto, savedStudent))
+                    .toList();
+            impairments = physicalImpairmentRepository.saveAll(impairments);
+            
+            log.debug("Physical impairments created for student [ID: {}]", savedStudent.getId());
+        }
+        
+        return studentMapper.toResponse(savedStudent, anamnesis, impairments);
     }
 
-    private void applyDTOFields(StudentRequestDTO request, Student student) {
-        student.setPhone(request.phone());
-        student.setProfession(request.profession());
-        student.setStreet(request.street());
-        student.setNumber(request.number());
-        student.setComplement(request.complement());
-        student.setNeighborhood(request.neighborhood());
-        student.setCep(request.cep());
-        student.setEmergencyContactName(request.emergencyContactName());
-        student.setEmergencyContactPhone(request.emergencyContactPhone());
-        student.setEmergencyContactRelationship(request.emergencyContactRelationship());
-        student.setObjectives(request.objectives());
-    }
-
+    /**
+     * Finds a student by ID.
+     * 
+     * @param id Student ID
+     * @return Student details
+     * @throws ResourceNotFoundException if student not found
+     */
     public StudentResponseDTO findById(UUID id) {
-        Student student = studentRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
-
-        Anamnesis anamnesisEntity = anamnesisRepository.findById(student.getId()).orElse(null);
-        AnamnesisResponseDTO anamnesisDto = AnamnesisResponseDTO.fromEntity(anamnesisEntity);
-
-        java.util.List<PhysicalImpairmentResponseDTO> physicalImpairments =
-                physicalImpairmentRepository.findByStudentId(student.getId())
-                        .stream()
-                        .map(PhysicalImpairmentResponseDTO::fromEntity)
-                        .toList();
-
-        return new StudentResponseDTO(
-                student.getId(),
-                student.getEmail(),
-                student.getName(),
-                student.getSurname(),
-                student.getGender(),
-                student.getBirthDate(),
-                student.getPhone(),
-                student.getProfession(),
-                student.getStreet(),
-                student.getNumber(),
-                student.getComplement(),
-                student.getNeighborhood(),
-                student.getCep(),
-                student.getEmergencyContactName(),
-                student.getEmergencyContactPhone(),
-                student.getEmergencyContactRelationship(),
-                student.getObjectives(),
-                student.getObservations(),
-                student.getRegistrationDate(),
-                student.getCreatedAt(),
-                student.getUpdatedAt(),
-                student.getDeletedAt(),
-                anamnesisDto,
-                physicalImpairments
-        );
+        log.debug("Finding student by ID: {}", id);
+        
+        Student student = findEntityById(id);
+        Anamnesis anamnesis = anamnesisRepository.findById(student.getId()).orElse(null);
+        List<PhysicalImpairment> impairments = physicalImpairmentRepository.findByStudentId(student.getId());
+        
+        return studentMapper.toResponse(student, anamnesis, impairments);
     }
 
-    public Page<StudentResponseDTO> findAll(
+    /**
+     * Finds all students with optional filters and pagination.
+     * 
+     * @param search Search term for name/email
+     * @param gender Gender filter
+     * @param profession Profession filter
+     * @param minAge Minimum age
+     * @param maxAge Maximum age
+     * @param startDate Registration start date
+     * @param endDate Registration end date
+     * @param includeInactive Include soft-deleted students
+     * @param pageable Pagination parameters
+     * @return Paginated list of students
+     */
+    public PageResponse<StudentResponseDTO> findAll(
             String search, 
             Student.Gender gender, 
             String profession, 
@@ -145,15 +134,14 @@ public class StudentService {
             boolean includeInactive, 
             Pageable pageable) {
         
-        if (pageable.getSort().isUnsorted()) {
-            pageable = PageRequest.of(
-                pageable.getPageNumber(),
-                pageable.getPageSize(),
-                Sort.by("createdAt").descending()
-            );
-        }
+        log.debug("Finding all students with filters - search: {}, gender: {}, minAge: {}, maxAge: {}",
+                search, gender, minAge, maxAge);
         
-        // Use specifications for dynamic filtering
+        // Validate age and date ranges
+        ageRangeValidator.validate(minAge, maxAge);
+        dateRangeValidator.validate(startDate, endDate);
+        
+        // Build specification for dynamic filtering
         Specification<Student> spec = StudentSpecifications.withFilters(
             search,
             gender,
@@ -165,136 +153,140 @@ public class StudentService {
             includeInactive
         );
         
-        Page<Student> students = studentRepository.findAll(spec, pageable);
+        Page<Student> page = studentRepository.findAll(spec, pageable);
         
-        return students.map(StudentResponseDTO::fromEntity);
+        log.debug("Found {} students (page {}/{})", 
+                page.getNumberOfElements(), page.getNumber() + 1, page.getTotalPages());
+        
+        return PageResponse.of(page, studentMapper::toResponse);
     }
 
-    @Transactional
+    /**
+     * Updates an existing student.
+     * 
+     * @param id Student ID
+     * @param request Updated student data
+     * @return Updated student details
+     * @throws ResourceNotFoundException if student not found
+     * @throws BusinessException if email already exists
+     */
     public StudentResponseDTO update(UUID id, StudentRequestDTO request) {
-        Student student = studentRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
-
-        // If the email is different, check if the new email already exists
+        log.info("Updating student [ID: {}]", id);
+        
+        Student student = findEntityById(id);
+        
+        // Validate email uniqueness if changed
         if (!student.getEmail().equalsIgnoreCase(request.email())) {
-            if (studentRepository.existsByEmailIgnoringCaseAndDeletedAtIsNull(request.email())) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Student with this email already exists");
-            }
+            validationService.validateEmailUniqueness(request.email(), id);
         }
-
-        // Update basic fields
-        student.setEmail(request.email());
-        student.setName(request.name());
-        student.setSurname(request.surname());
-        student.setGender(request.gender());
-        student.setBirthDate(request.birthDate());
-        applyDTOFields(request, student);
-
+        
+        // Update student entity
+        studentMapper.updateEntity(request, student);
         Student savedStudent = studentRepository.save(student);
-
-        Optional<Anamnesis> existingAnamnesis =
-                anamnesisRepository.findById(savedStudent.getId());
-
-        // Update, create, or delete anamnesis based on request payload
+        
+        log.info("Student updated successfully [ID: {}]", id);
+        
+        // Update or create anamnesis
+        Anamnesis anamnesis = anamnesisRepository.findById(savedStudent.getId()).orElse(null);
         if (request.anamnesis() != null) {
-            AnamnesisRequestDTO dto = request.anamnesis();
-            // To avoid Hibernate StaleObjectStateException caused by merging a detached Anamnesis,
-            // delete the existing row, flush the persistence context, then persist a fresh instance.
-            if (existingAnamnesis.isPresent()) {
-                anamnesisRepository.deleteById(savedStudent.getId());
-                entityManager.flush();
+            if (anamnesis == null) {
+                anamnesis = studentMapper.toAnamnesisEntity(request.anamnesis(), savedStudent);
+            } else {
+                studentMapper.updateAnamnesisEntity(request.anamnesis(), anamnesis);
             }
-
-            Anamnesis anamnesis = createAnamnesis(savedStudent, dto);
-            anamnesisRepository.saveAndFlush(anamnesis);
-        } else if (existingAnamnesis.isPresent()) {
-            // No anamnesis provided in the request and an existing record is present: remove it
-            anamnesisRepository.deleteById(savedStudent.getId());
-            entityManager.flush();
+            anamnesis = anamnesisRepository.save(anamnesis);
+        } else if (anamnesis != null) {
+            // Remove anamnesis if not provided
+            anamnesisRepository.delete(anamnesis);
+            anamnesis = null;
         }
-
+        
         // Replace physical impairments
         physicalImpairmentRepository.deleteAllByStudentId(savedStudent.getId());
-        return createOrEditPhysicalImpairments(request, savedStudent);
-    }
-
-    private static Anamnesis createAnamnesis(Student savedStudent, AnamnesisRequestDTO dto) {
-        Anamnesis anamnesis = new Anamnesis(savedStudent);
-        createOrEditAnamnesis(dto, anamnesis);
-        return anamnesis;
-    }
-
-    private static void createOrEditAnamnesis(AnamnesisRequestDTO dto, Anamnesis anamnesis) {
-        anamnesis.setMedication(dto.medication());
-        anamnesis.setDoctorAwareOfPhysicalActivity(dto.isDoctorAwareOfPhysicalActivity());
-        anamnesis.setFavoritePhysicalActivity(dto.favoritePhysicalActivity());
-        anamnesis.setHasInsomnia(dto.hasInsomnia());
-        anamnesis.setDietOrientedBy(dto.dietOrientedBy());
-        anamnesis.setCardiacProblems(dto.cardiacProblems());
-        anamnesis.setHasHypertension(dto.hasHypertension());
-        anamnesis.setChronicDiseases(dto.chronicDiseases());
-        anamnesis.setDifficultiesInPhysicalActivities(dto.difficultiesInPhysicalActivities());
-        anamnesis.setMedicalOrientationsToAvoidPhysicalActivity(dto.medicalOrientationsToAvoidPhysicalActivity());
-        anamnesis.setSurgeriesInTheLast12Months(dto.surgeriesInTheLast12Months());
-        anamnesis.setRespiratoryProblems(dto.respiratoryProblems());
-        anamnesis.setJointMuscularBackPain(dto.jointMuscularBackPain());
-        anamnesis.setSpinalDiscProblems(dto.spinalDiscProblems());
-        anamnesis.setDiabetes(dto.diabetes());
-        anamnesis.setSmokingDuration(dto.smokingDuration());
-        anamnesis.setAlteredCholesterol(dto.alteredCholesterol());
-        anamnesis.setOsteoporosisLocation(dto.osteoporosisLocation());
-    }
-
-    private StudentResponseDTO createOrEditPhysicalImpairments(StudentRequestDTO request, Student savedStudent) {
-        if (request.physicalImpairments() != null && !request.physicalImpairments().isEmpty()) {
-            List<PhysicalImpairment> toSave = request.physicalImpairments().stream().map(pi -> new PhysicalImpairment(
-                    savedStudent,
-                    pi.type(),
-                    pi.name(),
-                    pi.observations()
-            )).toList();
-            physicalImpairmentRepository.saveAll(toSave);
-        }
-
-        return StudentResponseDTO.fromEntity(savedStudent);
-    }
-
-    @Transactional
-    public void delete(UUID id) {
-        log.debug("Attempting to delete student [ID: {}]", id);
         
-        Student student = studentRepository.findByIdAndDeletedAtIsNull(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
+        List<PhysicalImpairment> impairments = null;
+        if (request.physicalImpairments() != null && !request.physicalImpairments().isEmpty()) {
+            impairments = request.physicalImpairments().stream()
+                    .map(dto -> studentMapper.toImpairmentEntity(dto, savedStudent))
+                    .toList();
+            impairments = physicalImpairmentRepository.saveAll(impairments);
+        }
+        
+        return studentMapper.toResponse(savedStudent, anamnesis, impairments);
+    }
 
-        student.deactivate();
+    /**
+     * Soft deletes a student.
+     * 
+     * @param id Student ID
+     * @throws ResourceNotFoundException if student not found
+     */
+    public void delete(UUID id) {
+        log.info("Deleting student [ID: {}]", id);
+        
+        Student student = findEntityById(id);
+        student.setDeletedAt(Instant.now());
         studentRepository.save(student);
         
-        log.info("Student deactivated successfully [ID: {}] - Name: {} {}", 
-                id, student.getName(), student.getSurname());
+        log.info("Student deleted successfully [ID: {}]", id);
     }
 
-    @Transactional
+    /**
+     * Restores a soft-deleted student.
+     * 
+     * @param id Student ID
+     * @return Restored student details
+     * @throws ResourceNotFoundException if student not found
+     * @throws BusinessException if student is not deleted or email conflict
+     */
     public StudentResponseDTO restore(UUID id) {
-        log.debug("Attempting to restore student [ID: {}]", id);
+        log.info("Restoring student [ID: {}]", id);
         
         Student student = studentRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Student", id));
+
+        if (student.getDeletedAt() == null) {
+            throw new BusinessException("Student is not deleted", "NOT_DELETED");
+        }
         
-        if (student.isActive() || studentRepository.existsByEmailIgnoringCaseAndDeletedAtIsNull(student.getEmail())) {
-            log.warn("Student restoration failed [ID: {}] - Email conflict or already active", id);
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot restore student due to email conflict or already active.");
+        // Check for email conflict
+        if (studentRepository.existsByEmailIgnoringCaseAndDeletedAtIsNull(student.getEmail())) {
+            log.warn("Student restoration failed [ID: {}] - Email conflict", id);
+            throw new BusinessException(
+                    "Cannot restore student: email already in use by another active student",
+                    "EMAIL_CONFLICT"
+            );
         }
 
-        student.activate();
-        studentRepository.save(student);
-        
-        log.info("Student restored successfully [ID: {}] - Name: {} {}", 
-                id, student.getName(), student.getSurname());
+        student.setDeletedAt(null);
+        student = studentRepository.save(student);
 
-        return StudentResponseDTO.fromEntity(student);
+        log.info("Student restored successfully [ID: {}]", id);
+
+        Anamnesis anamnesis = anamnesisRepository.findById(id).orElse(null);
+        List<PhysicalImpairment> impairments = physicalImpairmentRepository.findByStudentId(id);
+        
+        return studentMapper.toResponse(student, anamnesis, impairments);
     }
 
+    /**
+     * Finds all active (non-deleted) students.
+     * 
+     * @return List of active students
+     */
     public List<Student> findAllActive() {
         return studentRepository.findByDeletedAtIsNull();
+    }
+    
+    /**
+     * Helper method to find a student entity by ID.
+     * 
+     * @param id Student ID
+     * @return Student entity
+     * @throws ResourceNotFoundException if not found
+     */
+    private Student findEntityById(UUID id) {
+        return studentRepository.findByIdAndDeletedAtIsNull(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Student", id));
     }
 }
