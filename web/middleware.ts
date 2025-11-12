@@ -88,7 +88,7 @@ export function middleware(request: NextRequest) {
     if (userRole !== 'ADMIN' && userRole !== 'ROLE_ADMIN') {
       // Forbidden - redirect to dashboard with error
       const url = request.nextUrl.clone()
-      url.pathname = '/dashboard'
+      url.pathname = '/schedule'
       url.searchParams.set('error', 'forbidden')
       return NextResponse.redirect(url)
     }
