@@ -16,7 +16,7 @@ import { ConfirmDeleteDialog } from "@/components/base/confirm-delete-dialog";
 import { formatISODateToDisplay } from "@/lib/formatters/time";
 import {
   exercisesQueryOptions,
-  type PageResponseExerciseResponseDto,
+  type PageResponse,
   scheduleByDateQueryOptions,
   sessionQueryOptions,
   type SessionResponseDto,
@@ -72,7 +72,7 @@ export function SessionDetailView({
   const trainersQuery = useQuery(trainersLookupQueryOptions());
   const exercisesQuery = useQuery(exercisesQueryOptions());
   const allExercises: ExerciseResponseDto[] = useMemo(() => {
-    const page = exercisesQuery.data as PageResponseExerciseResponseDto | undefined;
+    const page = exercisesQuery.data as PageResponse | undefined;
     return page?.content ?? [];
   }, [exercisesQuery.data]);
 
@@ -319,7 +319,7 @@ export function SessionDetailView({
   };
 
   const addToExercisesCaches = (exercise: ExerciseResponseDto) => {
-    const entries = qc.getQueriesData<PageResponseExerciseResponseDto>({
+    const entries = qc.getQueriesData<PageResponse>({
       predicate: (query) => {
         const root = (query.queryKey as unknown[])?.[0] as
           | { _id?: string }

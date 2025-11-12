@@ -1,10 +1,11 @@
 package org.conexaotreinamento.conexaotreinamentobackend.shared.exception;
 
-import lombok.Getter;
+import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-import java.util.UUID;
+import lombok.Getter;
 
 /**
  * Exception thrown when a requested resource is not found.
