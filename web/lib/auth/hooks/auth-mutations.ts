@@ -18,5 +18,5 @@ export const useLoginMutation = (
   return useMutation({
     ...base,
     ...options,
-  })
+  } as any)
 }

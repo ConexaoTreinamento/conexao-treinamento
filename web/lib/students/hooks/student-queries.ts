@@ -68,7 +68,7 @@ export const useStudents = (params: {
         size: pageSize,
         sort: ["name,ASC"],
       },
-    },
+    } as any,
   };
 
   return useQuery({

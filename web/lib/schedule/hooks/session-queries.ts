@@ -1,4 +1,4 @@
-import type { PageExerciseResponseDto, SessionResponseDto, TrainerResponseDto } from "@/lib/api-client"
+import type { PageResponseExerciseResponseDto, SessionResponseDto, TrainerResponseDto } from "@/lib/api-client"
 import {
   findAllExercisesOptions,
   findAllTrainersOptions,
@@ -30,7 +30,7 @@ export const trainersLookupQueryOptions = () =>
 export const exercisesQueryOptions = () =>
   findAllExercisesOptions({
     client: apiClient,
-    query: { pageable: { page: 0, size: 200 } },
+    query: { pageable: { page: 0, size: 200 } } as any,
   })
 
 export type SessionQueryOptions = ReturnType<typeof sessionQueryOptions>
@@ -45,4 +45,4 @@ export type TrainersQueryKey = TrainersQueryOptions["queryKey"]
 export type ExercisesQueryOptions = ReturnType<typeof exercisesQueryOptions>
 export type ExercisesQueryKey = ExercisesQueryOptions["queryKey"]
 
-export type { SessionResponseDto, TrainerResponseDto, PageExerciseResponseDto }
+export type { SessionResponseDto, TrainerResponseDto, PageResponseExerciseResponseDto }
