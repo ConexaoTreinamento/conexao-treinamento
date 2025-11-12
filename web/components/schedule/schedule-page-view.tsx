@@ -19,6 +19,9 @@ import { ScheduleMonthNavigation } from "@/components/schedule/schedule-month-na
 import { ScheduleDayPicker } from "@/components/schedule/schedule-day-picker";
 import { ScheduleClassCard } from "@/components/schedule/schedule-class-card";
 import { ScheduleClassSkeletonList } from "@/components/schedule/schedule-class-skeleton";
+import { TrainerFilter } from "@/components/trainers/trainer-filter";
+import type { TrainerOption } from "@/components/trainers/trainer-select";
+import type { TrainerLookupResponseDto } from "@/lib/api-client/types.gen";
 import type {
   ScheduleClassItem,
   ScheduleDayItem,
@@ -67,6 +70,7 @@ export function SchedulePageView() {
     startTime: "",
     endTime: "",
   });
+  const [trainerFilter, setTrainerFilter] = useState<string>("all");
   const router = useRouter();
 
   useEffect(() => {
@@ -184,14 +188,6 @@ export function SchedulePageView() {
     [apiSessions, selectedIso],
   );
 
-  const classesForSelectedDate = useMemo(
-    () =>
-      backendClasses
-        .filter((classItem) => classItem.dateIso === selectedIso)
-        .sort((a, b) => (a.time || "").localeCompare(b.time || "")),
-    [backendClasses, selectedIso],
-  );
-
   const trainersQuery = useQuery(trainersLookupQueryOptions());
   const trainersById = useMemo(() => {
     const map: Record<string, string> = {};
@@ -203,6 +199,44 @@ export function SchedulePageView() {
     }
     return map;
   }, [trainersQuery.data]);
+
+  const trainerOptions = useMemo<TrainerOption[]>(() => {
+    const list = Array.isArray(trainersQuery.data)
+      ? (trainersQuery.data as TrainerLookupResponseDto[])
+      : [];
+
+    const normalized = list
+      .map<TrainerOption | null>((trainer) => {
+        const id = trainer?.id;
+        if (!id) {
+          return null;
+        }
+        return { id, name: trainer?.name ?? undefined };
+      })
+      .filter((trainer): trainer is TrainerOption => Boolean(trainer));
+
+    return [...normalized, { id: "__none__", name: "Sem professor" }];
+  }, [trainersQuery.data]);
+
+  const filteredClasses = useMemo(() => {
+    if (trainerFilter === "all") {
+      return backendClasses;
+    }
+    if (trainerFilter === "__none__") {
+      return backendClasses.filter((classItem) => !classItem.trainerId);
+    }
+    return backendClasses.filter(
+      (classItem) => classItem.trainerId === trainerFilter,
+    );
+  }, [backendClasses, trainerFilter]);
+
+  const classesForSelectedDate = useMemo(
+    () =>
+      filteredClasses
+        .filter((classItem) => classItem.dateIso === selectedIso)
+        .sort((a, b) => (a.time || "").localeCompare(b.time || "")),
+    [filteredClasses, selectedIso],
+  );
 
   const createOneOffSession = useMutation(createOneOffSessionMutationOptions());
 
@@ -220,7 +254,7 @@ export function SchedulePageView() {
 
   const daySessionCounts = useMemo(() => {
     const map: Record<string, { total: number; present: number }> = {};
-    backendClasses.forEach((classItem) => {
+    filteredClasses.forEach((classItem) => {
       const key = classItem.dateIso;
       if (!map[key]) {
         map[key] = { total: 0, present: 0 };
@@ -231,7 +265,7 @@ export function SchedulePageView() {
       ).length;
     });
     return map;
-  }, [backendClasses]);
+  }, [filteredClasses]);
 
   const todayIso = useMemo(() => formatLocalDate(new Date()), []);
 
@@ -378,11 +412,22 @@ export function SchedulePageView() {
             title="Agenda"
             description="Organize aulas e sessões da equipe"
           />
-          <ScheduleToolbar
-            onGoToday={goToToday}
-            canCreateClass={canCreateClass}
-            onCreateClass={handleOpenClassModal}
-          />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <TrainerFilter
+              trainers={trainerOptions}
+              value={trainerFilter}
+              onValueChange={setTrainerFilter}
+              isLoading={trainersQuery.isLoading}
+              isError={Boolean(trainersQuery.error)}
+              allLabel="Todos os professores"
+              placeholder="Selecione ou busque"
+            />
+            <ScheduleToolbar
+              onGoToday={goToToday}
+              canCreateClass={canCreateClass}
+              onCreateClass={handleOpenClassModal}
+            />
+          </div>
         </div>
 
         <div className="space-y-3">
