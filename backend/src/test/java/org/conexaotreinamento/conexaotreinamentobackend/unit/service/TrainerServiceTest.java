@@ -2,10 +2,7 @@ package org.conexaotreinamento.conexaotreinamentobackend.unit.service;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -98,8 +95,7 @@ class TrainerServiceTest {
             Arrays.asList("Strength Training", "Cardio"),
             CompensationType.HOURLY,
             true,
-            Instant.now(),
-            120
+            Instant.now()
         );
     }
 
@@ -132,8 +128,6 @@ class TrainerServiceTest {
         savedTrainer.setSpecialties(List.of("Musculação", "Crossfit"));
         savedTrainer.setCompensationType(CompensationType.HOURLY);
 
-        User savedUser = new User("joao@test.com", "password123", Role.ROLE_TRAINER);
-
         TrainerListItemResponseDTO expectedResult = new TrainerListItemResponseDTO(
             newTrainerId,
             "João Silva",
@@ -144,8 +138,7 @@ class TrainerServiceTest {
             List.of("Musculação", "Crossfit"),
             CompensationType.HOURLY,
             true,
-            Instant.now(),
-            120
+            Instant.now()
         );
 
         when(trainerRepository.existsByEmailIgnoreCase("joao@test.com")).thenReturn(false);
@@ -168,7 +161,6 @@ class TrainerServiceTest {
         assertThat(result.compensationType()).isEqualTo(CompensationType.HOURLY);
         assertThat(result.active()).isTrue();
         assertThat(result.joinDate()).isNotNull();
-        assertThat(result.hoursWorked()).isEqualTo(120);
 
         verify(trainerRepository).existsByEmailIgnoreCase("joao@test.com");
         verify(userService).createUser(any());
@@ -232,7 +224,7 @@ class TrainerServiceTest {
     @DisplayName("Should find all trainers successfully")
     void shouldFindAllTrainersSuccessfully() {
         // Given
-        List<TrainerListItemResponseDTO> trainers = Arrays.asList(listTrainersDTO);
+        List<TrainerListItemResponseDTO> trainers = Collections.singletonList(listTrainersDTO);
         when(trainerRepository.findAllTrainerProfiles(true)).thenReturn(trainers);
 
         // When
@@ -465,5 +457,123 @@ class TrainerServiceTest {
 
         verify(trainerRepository).findById(trainerId);
         verify(userService).delete(userId);
+    }
+
+    @Test
+    @DisplayName("Should find trainer by user id successfully")
+    void shouldFindTrainerByUserIdSuccessfully() {
+        when(trainerRepository.findTrainerByUserId(userId)).thenReturn(Optional.of(listTrainersDTO));
+
+        TrainerListItemResponseDTO result = trainerService.findByUserId(userId);
+
+        assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(trainerId);
+        assertThat(result.active()).isTrue();
+
+        verify(trainerRepository).findTrainerByUserId(userId);
+    }
+
+    @Test
+    @DisplayName("Should throw not found when trainer is missing for user id")
+    void shouldThrowNotFoundWhenTrainerIsMissingForUserId() {
+        when(trainerRepository.findTrainerByUserId(userId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> trainerService.findByUserId(userId))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Trainer not found")
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
+
+        verify(trainerRepository).findTrainerByUserId(userId);
+    }
+
+    @Test
+    @DisplayName("Should reset password successfully for trainer")
+    void shouldResetPasswordSuccessfullyForTrainer() {
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        when(userService.resetUserPassword(userId, "newSecret123"))
+                .thenReturn(new UserResponseDTO(userId, "john@example.com", Role.ROLE_TRAINER));
+
+        trainerService.resetPassword(trainerId, "newSecret123");
+
+        verify(trainerRepository).findById(trainerId);
+        verify(userService).resetUserPassword(userId, "newSecret123");
+    }
+
+    @Test
+    @DisplayName("Should throw not found when resetting password for missing trainer")
+    void shouldThrowNotFoundWhenResettingPasswordForMissingTrainer() {
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> trainerService.resetPassword(trainerId, "any"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Trainer not found")
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
+
+        verify(trainerRepository).findById(trainerId);
+        verify(userService, never()).resetUserPassword(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should restore trainer successfully")
+    void shouldRestoreTrainerSuccessfully() {
+        TrainerListItemResponseDTO restoredTrainer = new TrainerListItemResponseDTO(
+                trainerId,
+                trainer.getName(),
+                "john@example.com",
+                trainer.getPhone(),
+                trainer.getAddress(),
+                trainer.getBirthDate(),
+                trainer.getSpecialties(),
+                trainer.getCompensationType(),
+                true,
+                Instant.now()
+        );
+
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        when(userService.restore(userId)).thenReturn(new UserResponseDTO(userId, "john@example.com", Role.ROLE_TRAINER));
+        when(trainerRepository.findActiveTrainerProfileById(trainerId)).thenReturn(Optional.of(restoredTrainer));
+
+        TrainerListItemResponseDTO result = trainerService.restore(trainerId);
+
+        assertThat(result).isEqualTo(restoredTrainer);
+
+        verify(trainerRepository).findById(trainerId);
+        verify(userService).restore(userId);
+        verify(trainerRepository).findActiveTrainerProfileById(trainerId);
+    }
+
+    @Test
+    @DisplayName("Should throw not found when restoring missing trainer")
+    void shouldThrowNotFoundWhenRestoringMissingTrainer() {
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> trainerService.restore(trainerId))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Trainer not found")
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
+
+        verify(trainerRepository).findById(trainerId);
+        verify(userService, never()).restore(any(UUID.class));
+    }
+
+    @Test
+    @DisplayName("Should throw internal error when restored trainer projection is missing")
+    void shouldThrowInternalErrorWhenRestoredTrainerProjectionIsMissing() {
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        when(userService.restore(userId)).thenReturn(new UserResponseDTO(userId, "john@example.com", Role.ROLE_TRAINER));
+        when(trainerRepository.findActiveTrainerProfileById(trainerId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> trainerService.restore(trainerId))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Restored trainer not found")
+                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
+                .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+
+        verify(trainerRepository).findById(trainerId);
+        verify(userService).restore(userId);
+        verify(trainerRepository).findActiveTrainerProfileById(trainerId);
     }
 }

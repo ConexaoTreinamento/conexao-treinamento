@@ -1,0 +1,1 @@
+export const EXPIRING_LOOKAHEAD_DAYS = 7;

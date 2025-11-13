@@ -94,14 +94,12 @@ public class StudentCommitmentService {
     
     // Validate plan limits before allowing new ATTENDING commitments
     private void validatePlanLimitsForSingle(UUID studentId, UUID targetSeriesId) {
-    Optional<StudentPlanAssignment> currentPlan = studentPlanAssignmentRepository.findCurrentActiveAssignment(studentId);
+        Optional<StudentPlanAssignment> currentPlan = studentPlanAssignmentRepository.findCurrentActiveAssignment(studentId);
         if (currentPlan.isEmpty()) {
             throw new RuntimeException("Student has no active plan");
         }
         // Fetch plan without touching lazy relation on assignment
-        int maxDays = studentPlanRepository.findByIdAndActiveTrue(currentPlan.get().getPlanId())
-            .map(org.conexaotreinamento.conexaotreinamentobackend.entity.StudentPlan::getMaxDays)
-            .orElseThrow(() -> new RuntimeException("Plano associado não encontrado ou inativo"));
+        int maxDays = resolvePlanMaxDays(currentPlan.get());
         Instant now = Instant.now();
 
         Map<UUID, StudentCommitment> latestPerSeries = buildLatestPerSeries(studentId, now);
@@ -144,13 +142,11 @@ public class StudentCommitmentService {
     }
     
     private void validateBulkPlanLimits(UUID studentId, List<UUID> sessionSeriesIds) {
-    Optional<StudentPlanAssignment> currentPlan = studentPlanAssignmentRepository.findCurrentActiveAssignment(studentId);
+        Optional<StudentPlanAssignment> currentPlan = studentPlanAssignmentRepository.findCurrentActiveAssignment(studentId);
         if (currentPlan.isEmpty()) {
             throw new RuntimeException("Student has no active plan");
         }
-        int maxDays = studentPlanRepository.findByIdAndActiveTrue(currentPlan.get().getPlanId())
-            .map(org.conexaotreinamento.conexaotreinamentobackend.entity.StudentPlan::getMaxDays)
-            .orElseThrow(() -> new RuntimeException("Plano associado não encontrado ou inativo"));
+        int maxDays = resolvePlanMaxDays(currentPlan.get());
         Instant now = Instant.now();
 
         Map<UUID, StudentCommitment> latestPerSeries = buildLatestPerSeries(studentId, now);
@@ -176,6 +172,13 @@ public class StudentCommitmentService {
                 }
             }
         }
+    }
+
+    private int resolvePlanMaxDays(StudentPlanAssignment assignment) {
+        UUID planId = assignment.getPlanId();
+        return studentPlanRepository.findById(planId)
+            .map(org.conexaotreinamento.conexaotreinamentobackend.entity.StudentPlan::getMaxDays)
+            .orElseThrow(() -> new RuntimeException("Plano associado não encontrado"));
     }
 
     // Helper to build latest event per session series with tie-breaking on createdAt then id
