@@ -51,7 +51,7 @@ public class ScheduleService {
         
         // First, check for existing scheduled session instances
         List<ScheduledSession> existingSessions = scheduledSessionRepository
-            .findByStartTimeBetweenAndActiveTrue(startDateTime, endDateTime);
+            .findByStartTimeBetweenAndIsActiveTrue(startDateTime, endDateTime);
         
         // Create a map to track which dates/schedules already have instances
         // Map by both the persisted sessionId (legacy 3-part or new 4-part) AND the canonical 4-part key
@@ -184,7 +184,7 @@ public class ScheduleService {
         
         // Clear existing participants
         List<SessionParticipant> existing = sessionParticipantRepository
-            .findByScheduledSession_IdAndActiveTrue(session.getId());
+            .findByScheduledSession_IdAndIsActiveTrue(session.getId());
         existing.forEach(p -> {
             p.softDelete();
             sessionParticipantRepository.save(p);
@@ -214,7 +214,7 @@ public class ScheduleService {
 
     public SessionResponseDTO getSessionById(String sessionId, UUID preferredTrainerId) {
         // 1) If an instance already exists, return it
-        Optional<ScheduledSession> existingOpt = scheduledSessionRepository.findBySessionIdAndActiveTrue(sessionId);
+        Optional<ScheduledSession> existingOpt = scheduledSessionRepository.findBySessionIdAndIsActiveTrue(sessionId);
         if (existingOpt.isPresent()) {
             ScheduledSession sessionEntity = existingOpt.get();
             LocalDate date = sessionEntity.getStartTime().toLocalDate();
@@ -264,7 +264,7 @@ public class ScheduleService {
             Instant sessionInstant = date.atStartOfDay().toInstant(ZoneOffset.UTC);
             // If multiple persisted instances exist for this timestamp (edge), prefer one matching trainer override
             List<ScheduledSession> persistedSameStart = scheduledSessionRepository
-                .findByStartTimeBetweenAndActiveTrue(LocalDateTime.of(date, time), LocalDateTime.of(date, time));
+                .findByStartTimeBetweenAndIsActiveTrue(LocalDateTime.of(date, time), LocalDateTime.of(date, time));
             if (!persistedSameStart.isEmpty()) {
                 UUID trainerPref = preferredTrainerId != null ? preferredTrainerId : providedTrainerId;
                 if (trainerPref != null) {
@@ -383,7 +383,7 @@ public class ScheduleService {
         ScheduledSession session = getOrCreateSessionInstance(sessionId);
         // If there is an EXCLUDED override for this student in this instance, remove it
         List<SessionParticipant> existing = sessionParticipantRepository
-            .findByScheduledSession_IdAndStudentIdAndActiveTrue(session.getId(), studentId);
+            .findByScheduledSession_IdAndStudentIdAndIsActiveTrue(session.getId(), studentId);
         for (SessionParticipant sp : existing) {
             if (sp.isExcluded()) {
                 sessionParticipantRepository.delete(sp);
@@ -405,7 +405,7 @@ public class ScheduleService {
     public void removeParticipant(String sessionId, UUID studentId) {
         ScheduledSession session = getOrCreateSessionInstance(sessionId);
         List<SessionParticipant> existing = sessionParticipantRepository
-            .findByScheduledSession_IdAndStudentIdAndActiveTrue(session.getId(), studentId);
+            .findByScheduledSession_IdAndStudentIdAndIsActiveTrue(session.getId(), studentId);
         // Remove any INCLUDED overrides
         existing.stream().filter(SessionParticipant::isIncluded).forEach(sessionParticipantRepository::delete);
         // Add EXCLUDED override if not already present
@@ -424,13 +424,13 @@ public class ScheduleService {
     public void updateParticipantPresence(String sessionId, UUID studentId, boolean present, String notes) {
         ScheduledSession session = getOrCreateSessionInstance(sessionId);
         List<SessionParticipant> participants = sessionParticipantRepository
-            .findByScheduledSession_IdAndStudentIdAndActiveTrue(session.getId(), studentId);
+            .findByScheduledSession_IdAndStudentIdAndIsActiveTrue(session.getId(), studentId);
         // If there is an EXCLUDED override, remove it since we are explicitly setting presence
         participants.stream().filter(SessionParticipant::isExcluded).forEach(sessionParticipantRepository::delete);
         if (participants.stream().noneMatch(SessionParticipant::isIncluded)) {
             addParticipant(sessionId, studentId);
             participants = sessionParticipantRepository
-                .findByScheduledSession_IdAndStudentIdAndActiveTrue(session.getId(), studentId);
+                .findByScheduledSession_IdAndStudentIdAndIsActiveTrue(session.getId(), studentId);
         }
         for (SessionParticipant participant : participants) {
             if (participant.isIncluded()) {
@@ -447,11 +447,11 @@ public class ScheduleService {
     public ParticipantExercise addParticipantExercise(String sessionId, UUID studentId, ParticipantExerciseCreateRequestDTO req) {
         ScheduledSession session = getOrCreateSessionInstance(sessionId);
         List<SessionParticipant> participants = sessionParticipantRepository
-            .findByScheduledSession_IdAndStudentIdAndActiveTrue(session.getId(), studentId);
+            .findByScheduledSession_IdAndStudentIdAndIsActiveTrue(session.getId(), studentId);
         if (participants.isEmpty()) {
             addParticipant(sessionId, studentId);
             participants = sessionParticipantRepository
-                .findByScheduledSession_IdAndStudentIdAndActiveTrue(session.getId(), studentId);
+                .findByScheduledSession_IdAndStudentIdAndIsActiveTrue(session.getId(), studentId);
         }
         SessionParticipant participant = participants.get(0);
         ParticipantExercise pe = new ParticipantExercise();
@@ -543,7 +543,7 @@ public class ScheduleService {
     }
     
     private ScheduledSession getOrCreateSessionInstance(String sessionId) {
-        return scheduledSessionRepository.findBySessionIdAndActiveTrue(sessionId)
+        return scheduledSessionRepository.findBySessionIdAndIsActiveTrue(sessionId)
             .orElseGet(() -> {
                 // Parse sessionId to extract date and find the schedule
                 String[] parts = sessionId.split("__");
@@ -660,7 +660,7 @@ public class ScheduleService {
         Set<UUID> excludedInInstance = new HashSet<>();
         Map<UUID, SessionParticipant> includedInInstance = new HashMap<>();
         if (existingSession != null) {
-            List<SessionParticipant> overrides = sessionParticipantRepository.findByScheduledSession_IdAndActiveTrue(existingSession.getId());
+            List<SessionParticipant> overrides = sessionParticipantRepository.findByScheduledSession_IdAndIsActiveTrue(existingSession.getId());
             for (SessionParticipant sp : overrides) {
                 if (sp.isExcluded()) excludedInInstance.add(sp.getStudentId());
                 if (sp.isIncluded()) includedInInstance.put(sp.getStudentId(), sp);
@@ -688,7 +688,7 @@ public class ScheduleService {
                     present = participant.isPresent();
                     attendanceNotes = participant.getAttendanceNotes();
                     List<ParticipantExercise> pes = participantExerciseRepository
-                            .findActiveWithExerciseBySessionParticipantId(participant.getId());
+                            .findIsActiveWithExerciseBySessionParticipantId(participant.getId());
                     for (ParticipantExercise participantExercise : pes) {
                         if (participantExercise.getExercise() != null) {
                             exercises.add(ExerciseResponseDTO.fromEntity(participantExercise.getExercise()));
@@ -738,7 +738,7 @@ public class ScheduleService {
                         .map(Student::getName)
                         .orElse(null);
                     List<ParticipantExercise> pes = participantExerciseRepository
-                        .findActiveWithExerciseBySessionParticipantId(sp.getId());
+                        .findIsActiveWithExerciseBySessionParticipantId(sp.getId());
                     List<ExerciseResponseDTO> exercises = new ArrayList<>();
                     List<ParticipantExerciseResponseDTO> participantExerciseDtos = new ArrayList<>();
                     for (ParticipantExercise participantExercise : pes) {

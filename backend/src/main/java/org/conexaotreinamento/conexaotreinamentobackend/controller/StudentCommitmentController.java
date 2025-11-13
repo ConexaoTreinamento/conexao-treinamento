@@ -135,7 +135,7 @@ public class StudentCommitmentController {
     // Utility endpoint: Get all available session series (for booking UI)
     @GetMapping("/available-sessions")
     public ResponseEntity<List<TrainerSchedule>> getAvailableSessionSeries() {
-        List<TrainerSchedule> activeSeries = trainerScheduleRepository.findByActiveTrue();
+        List<TrainerSchedule> activeSeries = trainerScheduleRepository.findByIsActiveTrue();
         return ResponseEntity.ok(activeSeries);
     }
     

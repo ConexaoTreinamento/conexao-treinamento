@@ -37,9 +37,9 @@ public class EventParticipant {
     @Setter
     private Instant enrolledAt;
 
-    @Column(name = "present")
+    @Column(name = "is_present")
     @Setter
-    private Boolean present = false;
+    private Boolean isPresent = false;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -53,6 +53,6 @@ public class EventParticipant {
         this.event = event;
         this.student = student;
         this.enrolledAt = Instant.now();
-        this.present = false;
+        this.isPresent = false;
     }
 }

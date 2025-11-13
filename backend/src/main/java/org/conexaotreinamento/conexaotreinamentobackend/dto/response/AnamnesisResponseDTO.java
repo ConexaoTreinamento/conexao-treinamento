@@ -42,7 +42,7 @@ public record AnamnesisResponseDTO(
                 anamnesis.getSpinalDiscProblems(),
                 anamnesis.getDiabetes(),
                 anamnesis.getSmokingDuration(),
-                anamnesis.isAlteredCholesterol(),
+                anamnesis.isHasAlteredCholesterol(),
                 anamnesis.getOsteoporosisLocation()
         );
     }

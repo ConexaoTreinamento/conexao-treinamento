@@ -61,12 +61,12 @@ public class TrainerSchedule {
     @Column(name = "deleted_at")
     private Instant deletedAt;
     
-    @Column(name = "active", nullable = false)
-    private boolean active = true;
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
     
     // Soft delete methods
     public void softDelete() {
-        this.active = false;
+        this.isActive = false;
         this.deletedAt = Instant.now();
         this.updatedAt = Instant.now();
     }

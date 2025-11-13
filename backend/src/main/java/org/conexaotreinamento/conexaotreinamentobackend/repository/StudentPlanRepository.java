@@ -13,20 +13,20 @@ import java.util.UUID;
 @Repository
 public interface StudentPlanRepository extends JpaRepository<StudentPlan, UUID> {
     
-    @Query("SELECT sp FROM StudentPlan sp WHERE sp.active = true ORDER BY sp.createdAt DESC")
-    List<StudentPlan> findAllActive();
+    @Query("SELECT sp FROM StudentPlan sp WHERE sp.isActive = true ORDER BY sp.createdAt DESC")
+    List<StudentPlan> findAllIsActive();
     
-    @Query("SELECT sp FROM StudentPlan sp WHERE sp.active = true AND sp.name = :name")
-    StudentPlan findActiveByName(@Param("name") String name);
+    @Query("SELECT sp FROM StudentPlan sp WHERE sp.isActive = true AND sp.name = :name")
+    StudentPlan findIsActiveByName(@Param("name") String name);
     
     boolean existsByName(String name);
     
-    Optional<StudentPlan> findByIdAndActiveTrue(UUID id);
-    Optional<StudentPlan> findByIdAndActiveFalse(UUID id);
+    Optional<StudentPlan> findByIdAndIsActiveTrue(UUID id);
+    Optional<StudentPlan> findByIdAndIsActiveFalse(UUID id);
     
-    List<StudentPlan> findByActiveTrueOrderByNameAsc();
+    List<StudentPlan> findByIsActiveTrueOrderByNameAsc();
 
-    List<StudentPlan> findByActiveFalseOrderByNameAsc();
+    List<StudentPlan> findByIsActiveFalseOrderByNameAsc();
 
     List<StudentPlan> findAllByOrderByNameAsc();
 }

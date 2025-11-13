@@ -17,11 +17,11 @@ public class TrainerScheduleService {
     private TrainerScheduleRepository trainerScheduleRepository;
     
     public List<TrainerSchedule> getAllActiveSchedules() {
-        return trainerScheduleRepository.findByActiveTrue();
+        return trainerScheduleRepository.findByIsActiveTrue();
     }
     
     public List<TrainerSchedule> getSchedulesByTrainer(UUID trainerId) {
-        return trainerScheduleRepository.findByTrainerIdAndActiveTrue(trainerId);
+        return trainerScheduleRepository.findByTrainerIdAndIsActiveTrue(trainerId);
     }
     
     public Optional<TrainerSchedule> getScheduleById(UUID id) {

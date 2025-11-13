@@ -121,7 +121,7 @@ public class ReportsService {
             }
 
             List<EventParticipant> presentParticipants = participants.stream()
-                    .filter(ep -> Boolean.TRUE.equals(ep.getPresent()))
+                    .filter(ep -> Boolean.TRUE.equals(ep.getIsPresent()))
                     .collect(Collectors.toList());
 
             if (presentParticipants.isEmpty()) {

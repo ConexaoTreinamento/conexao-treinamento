@@ -112,7 +112,7 @@ class StudentPlanServiceTest {
     void deletePlan_success_softDeletes_whenNoActiveAssignments() {
         // Arrange
         StudentPlan plan = newPlan(planId, "Silver", 2, 14, true);
-        when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(plan));
+        when(studentPlanRepository.findByIdAndIsActiveTrue(planId)).thenReturn(Optional.of(plan));
         when(studentPlanRepository.save(any(StudentPlan.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
@@ -127,7 +127,7 @@ class StudentPlanServiceTest {
     void deletePlan_softDeletes_evenWhenActiveAssignmentsExist() {
         // Arrange
         StudentPlan plan = newPlan(planId, "Silver", 2, 14, true);
-        when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(plan));
+        when(studentPlanRepository.findByIdAndIsActiveTrue(planId)).thenReturn(Optional.of(plan));
 
         // Act
         studentPlanService.deletePlan(planId);
@@ -140,7 +140,7 @@ class StudentPlanServiceTest {
     @Test
     void deletePlan_notFound_throws404() {
         // Arrange
-        when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.empty());
+        when(studentPlanRepository.findByIdAndIsActiveTrue(planId)).thenReturn(Optional.empty());
 
         // Act + Assert
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.deletePlan(planId));
@@ -189,7 +189,7 @@ class StudentPlanServiceTest {
         // Arrange
         StudentPlan p1 = newPlan(UUID.randomUUID(), "A", 2, 14, true);
         StudentPlan p2 = newPlan(UUID.randomUUID(), "B", 4, 30, true);
-        when(studentPlanRepository.findByActiveTrueOrderByNameAsc()).thenReturn(List.of(p1, p2));
+        when(studentPlanRepository.findByIsActiveTrueOrderByNameAsc()).thenReturn(List.of(p1, p2));
 
         // Act
         List<StudentPlanResponseDTO> list = studentPlanService.getAllActivePlans();
@@ -204,7 +204,7 @@ class StudentPlanServiceTest {
     void getPlanById_success_returnsDTO() {
         // Arrange
         StudentPlan p = newPlan(planId, "Prime", 5, 60, true);
-        when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(p));
+        when(studentPlanRepository.findByIdAndIsActiveTrue(planId)).thenReturn(Optional.of(p));
 
         // Act
         StudentPlanResponseDTO dto = studentPlanService.getPlanById(planId);
@@ -218,7 +218,7 @@ class StudentPlanServiceTest {
     @Test
     void getPlanById_notFound_throws404() {
         // Arrange
-        when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.empty());
+        when(studentPlanRepository.findByIdAndIsActiveTrue(planId)).thenReturn(Optional.empty());
 
         // Act + Assert
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.getPlanById(planId));
@@ -241,7 +241,7 @@ class StudentPlanServiceTest {
     void assignPlanToStudent_notFoundPlan_throws404() {
         // Arrange
         when(studentRepository.findById(studentId)).thenReturn(Optional.of(new Student("s@example.com", "Stu", "Dent", Student.Gender.M, LocalDate.of(1990, 1, 1))));
-        when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.empty());
+        when(studentPlanRepository.findByIdAndIsActiveTrue(planId)).thenReturn(Optional.empty());
 
         AssignPlanRequestDTO req = new AssignPlanRequestDTO(planId, LocalDate.now(), "notes");
 
@@ -360,7 +360,7 @@ class StudentPlanServiceTest {
         AssignPlanRequestDTO request = new AssignPlanRequestDTO(planId, newStart, "upgrade");
 
         when(studentRepository.findById(studentId)).thenReturn(Optional.of(student));
-        when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(newPlan));
+        when(studentPlanRepository.findByIdAndIsActiveTrue(planId)).thenReturn(Optional.of(newPlan));
         when(studentPlanRepository.findById(oldPlanId)).thenReturn(Optional.of(oldPlan));
         when(assignmentRepository.findCurrentActiveAssignment(studentId)).thenReturn(Optional.of(currentAssignment));
         when(assignmentRepository.findOverlappingAssignments(eq(studentId), any(LocalDate.class), any(LocalDate.class)))
@@ -393,7 +393,7 @@ class StudentPlanServiceTest {
         AssignPlanRequestDTO request = new AssignPlanRequestDTO(planId, newStart, "upgrade");
 
         when(studentRepository.findById(studentId)).thenReturn(Optional.of(student));
-        when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(newPlan));
+        when(studentPlanRepository.findByIdAndIsActiveTrue(planId)).thenReturn(Optional.of(newPlan));
         when(studentPlanRepository.findById(oldPlanId)).thenReturn(Optional.of(oldPlan));
         when(assignmentRepository.findCurrentActiveAssignment(studentId)).thenReturn(Optional.of(currentAssignment));
         when(assignmentRepository.findOverlappingAssignments(eq(studentId), any(LocalDate.class), any(LocalDate.class)))

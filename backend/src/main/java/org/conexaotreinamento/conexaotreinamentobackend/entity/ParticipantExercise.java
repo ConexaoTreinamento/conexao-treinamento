@@ -43,8 +43,8 @@ public class ParticipantExercise {
     @Column(name = "exercise_notes", columnDefinition = "TEXT")
     private String exerciseNotes;
 
-    @Column(name = "done", nullable = false)
-    private boolean done = false;
+    @Column(name = "is_done", nullable = false)
+    private boolean isDone = false;
     
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -57,18 +57,18 @@ public class ParticipantExercise {
     @Column(name = "deleted_at")
     private Instant deletedAt;
     
-    @Column(name = "active", nullable = false)
-    private boolean active = true;
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
     
     // Soft delete methods
     public void softDelete() {
-        this.active = false;
+        this.isActive = false;
         this.deletedAt = Instant.now();
         this.updatedAt = Instant.now();
     }
     
     public void restore() {
-        this.active = true;
+        this.isActive = true;
         this.deletedAt = null;
         this.updatedAt = Instant.now();
     }

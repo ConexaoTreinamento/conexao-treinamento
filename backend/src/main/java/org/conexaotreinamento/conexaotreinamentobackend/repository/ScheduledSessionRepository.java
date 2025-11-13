@@ -14,18 +14,18 @@ import java.util.UUID;
 @Repository
 public interface ScheduledSessionRepository extends JpaRepository<ScheduledSession, UUID> {
     
-    Optional<ScheduledSession> findBySessionIdAndActiveTrue(String sessionId);
+    Optional<ScheduledSession> findBySessionIdAndIsActiveTrue(String sessionId);
     
-    List<ScheduledSession> findBySessionSeriesIdAndActiveTrue(UUID sessionSeriesId);
+    List<ScheduledSession> findBySessionSeriesIdAndIsActiveTrue(UUID sessionSeriesId);
     
-    @Query("SELECT ss FROM ScheduledSession ss WHERE ss.startTime >= :startTime AND ss.endTime <= :endTime AND ss.active = true ORDER BY ss.startTime")
-    List<ScheduledSession> findByStartTimeBetweenAndActiveTrue(
+    @Query("SELECT ss FROM ScheduledSession ss WHERE ss.startTime >= :startTime AND ss.endTime <= :endTime AND ss.isActive = true ORDER BY ss.startTime")
+    List<ScheduledSession> findByStartTimeBetweenAndIsActiveTrue(
         @Param("startTime") LocalDateTime startTime, 
         @Param("endTime") LocalDateTime endTime
     );
     
-    @Query("SELECT ss FROM ScheduledSession ss WHERE ss.trainerId = :trainerId AND ss.startTime >= :startTime AND ss.endTime <= :endTime AND ss.active = true ORDER BY ss.startTime")
-    List<ScheduledSession> findByTrainerIdAndStartTimeBetweenAndActiveTrue(
+    @Query("SELECT ss FROM ScheduledSession ss WHERE ss.trainerId = :trainerId AND ss.startTime >= :startTime AND ss.endTime <= :endTime AND ss.isActive = true ORDER BY ss.startTime")
+    List<ScheduledSession> findByTrainerIdAndStartTimeBetweenAndIsActiveTrue(
         @Param("trainerId") UUID trainerId,
         @Param("startTime") LocalDateTime startTime, 
         @Param("endTime") LocalDateTime endTime

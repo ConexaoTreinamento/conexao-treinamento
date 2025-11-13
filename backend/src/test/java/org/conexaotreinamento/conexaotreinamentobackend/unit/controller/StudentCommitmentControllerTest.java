@@ -258,13 +258,13 @@ class StudentCommitmentControllerTest {
         TrainerSchedule ts = new TrainerSchedule();
         ts.setId(UUID.randomUUID());
         ts.setSeriesName("Public Series");
-        when(trainerScheduleRepository.findByActiveTrue()).thenReturn(List.of(ts));
+        when(trainerScheduleRepository.findByIsActiveTrue()).thenReturn(List.of(ts));
 
         // Act + Assert
         mockMvc.perform(get("/commitments/available-sessions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].seriesName").value("Public Series"));
 
-        verify(trainerScheduleRepository).findByActiveTrue();
+        verify(trainerScheduleRepository).findByIsActiveTrue();
     }
 }
