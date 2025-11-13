@@ -24,10 +24,11 @@ import { FilterToolbar } from "@/components/base/filter-toolbar";
 import {
   createTrainerAndUserMutation,
   findAllTrainersOptions,
+  restoreTrainerMutation,
   softDeleteTrainerUserMutation,
   updateTrainerAndUserMutation,
 } from "@/lib/api-client/@tanstack/react-query.gen";
-import type { ListTrainersDto, TrainerResponseDto } from "@/lib/api-client";
+import type { TrainerListItemResponseDto, TrainerResponseDto } from "@/lib/api-client";
 import { apiClient } from "@/lib/client";
 import { handleHttpError } from "@/lib/error-utils";
 import { useToast } from "@/hooks/use-toast";
@@ -47,9 +48,10 @@ export function TrainersPageView() {
   const [userRole, setUserRole] = useState<string>("admin");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("create");
-  const [editingTrainer, setEditingTrainer] = useState<ListTrainersDto | null>(
+  const [editingTrainer, setEditingTrainer] = useState<TrainerListItemResponseDto | null>(
     null,
   );
+  const [pendingRestoreId, setPendingRestoreId] = useState<string | null>(null);
 
   const router = useRouter();
   const { toast } = useToast();
@@ -86,7 +88,7 @@ export function TrainersPageView() {
     }
 
     return trainersData
-      .filter((trainer): trainer is ListTrainersDto & { id: string } =>
+      .filter((trainer): trainer is TrainerListItemResponseDto & { id: string } =>
         Boolean(trainer?.id),
       )
       .map((trainer) => {
@@ -104,7 +106,6 @@ export function TrainersPageView() {
           email: trainer.email ?? null,
           phone: trainer.phone ?? null,
           joinDate: trainer.joinDate ?? null,
-          hoursWorked: trainer.hoursWorked ?? null,
           active: Boolean(trainer.active),
           compensationType: trainer.compensationType ?? null,
           specialties,
@@ -114,7 +115,7 @@ export function TrainersPageView() {
   }, [trainersData]);
 
   const trainerMap = useMemo(() => {
-    const map = new Map<string, ListTrainersDto>();
+    const map = new Map<string, TrainerListItemResponseDto>();
     trainersData?.forEach((trainer) => {
       if (trainer?.id) {
         map.set(trainer.id, trainer);
@@ -131,7 +132,7 @@ export function TrainersPageView() {
       const matchesStatus =
         filters.status === "all"
           ? true
-          : filters.status === "Ativo"
+          : filters.status === "active"
             ? trainer.active
             : !trainer.active;
       const matchesCompensation =
@@ -201,6 +202,10 @@ export function TrainersPageView() {
   const { mutateAsync: deleteTrainer } = useMutation(
     softDeleteTrainerUserMutation({ client: apiClient }),
   );
+  const {
+    mutateAsync: restoreTrainer,
+    isPending: isRestoringTrainer,
+  } = useMutation(restoreTrainerMutation({ client: apiClient }));
 
   const handleFiltersChange = useCallback((nextFilters: TrainerFilters) => {
     setFilters(nextFilters);
@@ -314,6 +319,34 @@ export function TrainersPageView() {
     [deleteTrainer, invalidateTrainersQueries, toast],
   );
 
+  const handleRestoreTrainer = useCallback(
+    async (trainerId: string) => {
+      try {
+        setPendingRestoreId(trainerId);
+        await restoreTrainer({
+          client: apiClient,
+          path: { id: String(trainerId) },
+        });
+        toast({
+          title: "Professor restaurado",
+          description: "O professor voltou a ficar ativo.",
+          variant: "success",
+          duration: 3000,
+        });
+        await invalidateTrainersQueries();
+      } catch (restoreError) {
+        handleHttpError(
+          restoreError,
+          "restaurar treinador",
+          "Não foi possível restaurar o professor. Tente novamente.",
+        );
+      } finally {
+        setPendingRestoreId(null);
+      }
+    },
+    [invalidateTrainersQueries, restoreTrainer, toast],
+  );
+
   const canManageTrainers = userRole === "admin";
   const hasSearchTerm = Boolean(searchTerm.trim());
 
@@ -382,6 +415,10 @@ export function TrainersPageView() {
             onOpen={handleOpenTrainerDetails}
             onEdit={handleEditTrainer}
             onDelete={handleDeleteTrainer}
+            onRestore={handleRestoreTrainer}
+            restoringTrainerId={
+              isRestoringTrainer ? pendingRestoreId : null
+            }
           />
         ) : null}
 

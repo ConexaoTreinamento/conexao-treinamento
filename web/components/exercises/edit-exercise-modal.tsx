@@ -17,6 +17,7 @@ import { patchExerciseMutation } from "@/lib/api-client/@tanstack/react-query.ge
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/client";
 import { ExerciseResponseDto } from "@/lib/api-client";
+import { invalidateExercisesQueries } from "@/lib/exercises/query-utils";
 
 interface EditExerciseModalProps {
   isOpen: boolean;
@@ -50,10 +51,15 @@ export default function EditExerciseModal({
     if (!exercise) return;
 
     try {
+      const trimmedName = name.trim();
+      const trimmedDescription = description.trim();
+
       await editExercise({
-        path: { id: String(exercise?.id) },
-        client: apiClient,
-        body: { name, description },
+        path: { id: String(exercise.id) },
+        body: {
+          name: trimmedName,
+          description: trimmedDescription ? trimmedDescription : undefined,
+        },
       });
 
       toast({
@@ -61,11 +67,7 @@ export default function EditExerciseModal({
         description: "O exercício foi atualizado com sucesso.",
       });
 
-      await queryClient.invalidateQueries({
-        predicate: (q) =>
-          Array.isArray(q.queryKey) &&
-          q.queryKey[0]?._id === "findAllExercises",
-      });
+      await invalidateExercisesQueries(queryClient);
       onClose();
     } catch (error: unknown) {
       handleHttpError(

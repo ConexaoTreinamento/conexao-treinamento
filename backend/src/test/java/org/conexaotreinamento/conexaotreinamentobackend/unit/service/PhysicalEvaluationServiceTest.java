@@ -5,7 +5,6 @@ import org.conexaotreinamento.conexaotreinamentobackend.dto.response.PhysicalEva
 import org.conexaotreinamento.conexaotreinamentobackend.entity.PhysicalEvaluation;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.PhysicalEvaluationRepository;
-import org.conexaotreinamento.conexaotreinamentobackend.service.PhysicalEvaluationService;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.service.PhysicalEvaluationService;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
@@ -71,6 +71,7 @@ class PhysicalEvaluationServiceTest {
                 175.0,
                 22.9
         );
+        ReflectionTestUtils.setField(student, "id", studentId);
     }
 
     @Test
@@ -103,23 +104,25 @@ class PhysicalEvaluationServiceTest {
     @Test
     void findById_ShouldReturnEvaluation_WhenExists() {
         // Given
-        when(evaluationRepository.findByIdAndDeletedAtIsNull(evaluationId)).thenReturn(Optional.of(evaluation));
+        when(evaluationRepository.findByIdAndStudentIdAndDeletedAtIsNull(evaluationId, studentId))
+                .thenReturn(Optional.of(evaluation));
 
         // When
-        PhysicalEvaluationResponseDTO result = evaluationService.findById(evaluationId);
+        PhysicalEvaluationResponseDTO result = evaluationService.findById(studentId, evaluationId);
 
         // Then
         assertNotNull(result);
-        verify(evaluationRepository).findByIdAndDeletedAtIsNull(evaluationId);
+        verify(evaluationRepository).findByIdAndStudentIdAndDeletedAtIsNull(evaluationId, studentId);
     }
 
     @Test
     void findById_ShouldThrowException_WhenNotFound() {
         // Given
-        when(evaluationRepository.findByIdAndDeletedAtIsNull(evaluationId)).thenReturn(Optional.empty());
+        when(evaluationRepository.findByIdAndStudentIdAndDeletedAtIsNull(evaluationId, studentId))
+                .thenReturn(Optional.empty());
 
         // When & Then
-        assertThrows(ResponseStatusException.class, () -> evaluationService.findById(evaluationId));
+        assertThrows(ResponseStatusException.class, () -> evaluationService.findById(studentId, evaluationId));
     }
 
     @Test
@@ -141,7 +144,8 @@ class PhysicalEvaluationServiceTest {
     @Test
     void update_ShouldUpdateEvaluationSuccessfully() {
         // Given
-        when(evaluationRepository.findByIdAndDeletedAtIsNull(evaluationId)).thenReturn(Optional.of(evaluation));
+    when(evaluationRepository.findByIdAndStudentIdAndDeletedAtIsNull(evaluationId, studentId))
+        .thenReturn(Optional.of(evaluation));
         when(evaluationRepository.save(any(PhysicalEvaluation.class))).thenReturn(evaluation);
 
         PhysicalEvaluationRequestDTO updateRequest = new PhysicalEvaluationRequestDTO(
@@ -153,26 +157,36 @@ class PhysicalEvaluationServiceTest {
         );
 
         // When
-        PhysicalEvaluationResponseDTO result = evaluationService.update(evaluationId, updateRequest);
+    PhysicalEvaluationResponseDTO result = evaluationService.update(studentId, evaluationId, updateRequest);
 
         // Then
         assertNotNull(result);
-        verify(evaluationRepository).findByIdAndDeletedAtIsNull(evaluationId);
+    verify(evaluationRepository).findByIdAndStudentIdAndDeletedAtIsNull(evaluationId, studentId);
         verify(evaluationRepository).save(any(PhysicalEvaluation.class));
     }
 
     @Test
     void delete_ShouldSoftDeleteEvaluation() {
         // Given
-        when(evaluationRepository.findByIdAndDeletedAtIsNull(evaluationId)).thenReturn(Optional.of(evaluation));
+    when(evaluationRepository.findByIdAndStudentIdAndDeletedAtIsNull(evaluationId, studentId))
+        .thenReturn(Optional.of(evaluation));
 
         // When
-        evaluationService.delete(evaluationId);
+        evaluationService.delete(studentId, evaluationId);
 
         // Then
-        verify(evaluationRepository).findByIdAndDeletedAtIsNull(evaluationId);
+    verify(evaluationRepository).findByIdAndStudentIdAndDeletedAtIsNull(evaluationId, studentId);
         verify(evaluationRepository).save(evaluation);
         assertNotNull(evaluation.getDeletedAt());
+    }
+
+    @Test
+    void delete_ShouldThrowException_WhenEvaluationDoesNotBelongToStudent() {
+    when(evaluationRepository.findByIdAndStudentIdAndDeletedAtIsNull(evaluationId, studentId))
+        .thenReturn(Optional.empty());
+
+        assertThrows(ResponseStatusException.class, () -> evaluationService.delete(studentId, evaluationId));
+        verify(evaluationRepository, never()).save(any());
     }
 
     @Test

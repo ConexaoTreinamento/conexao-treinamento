@@ -1,12 +1,14 @@
 package org.conexaotreinamento.conexaotreinamentobackend.repository;
 
-import org.conexaotreinamento.conexaotreinamentobackend.entity.Event;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import org.conexaotreinamento.conexaotreinamentobackend.entity.Event;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface EventRepository extends JpaRepository<Event, UUID> {
     @Query("select distinct e from Event e left join fetch e.participants p left join fetch p.student left join fetch e.trainer where e.deletedAt is null order by e.createdAt desc")
@@ -25,4 +27,16 @@ public interface EventRepository extends JpaRepository<Event, UUID> {
 
     @Query("select distinct e from Event e left join fetch e.participants p left join fetch p.student left join fetch e.trainer where e.deletedAt is null and (lower(e.name) like :term or lower(e.location) like :term) order by e.createdAt desc")
     List<Event> findBySearchTermAndDeletedAtIsNullOrderByCreatedAtDesc(String term);
+
+    @Query("""
+        select distinct e from Event e
+        left join fetch e.participants p
+        left join fetch p.student s
+        left join fetch e.trainer t
+        where e.deletedAt is null
+          and e.date between :startDate and :endDate
+        """)
+    List<Event> findActiveWithinDateRangeWithParticipants(
+        @Param("startDate") LocalDate startDate,
+        @Param("endDate") LocalDate endDate);
 }

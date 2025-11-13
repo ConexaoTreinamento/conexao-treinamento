@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import type { KeyboardEventHandler } from "react";
 import { cn } from "@/lib/utils";
 import type { ScheduleDayItem } from "@/lib/schedule/types";
@@ -11,6 +14,9 @@ export function ScheduleDayPicker({
   days,
   onSelectDay,
 }: ScheduleDayPickerProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const scrollSignatureRef = useRef<string>("");
+
   const handleKeyNavigation: KeyboardEventHandler<HTMLDivElement> = (event) => {
     const navigableKeys = ["ArrowRight", "ArrowLeft", "Home", "End"];
     if (!navigableKeys.includes(event.key)) {
@@ -54,8 +60,46 @@ export function ScheduleDayPicker({
     }
   };
 
+  useEffect(() => {
+    const signature = days.map((day) => `${day.iso}:${Number(day.isToday)}`).join("|");
+    if (signature === scrollSignatureRef.current) {
+      return;
+    }
+
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const todayButton = container.querySelector<HTMLButtonElement>(
+      "button[data-day-today='1']",
+    );
+
+    if (!todayButton) {
+      scrollSignatureRef.current = signature;
+      return;
+    }
+
+    const scrollStart = container.scrollLeft;
+    const scrollEnd = scrollStart + container.clientWidth;
+    const buttonStart = todayButton.offsetLeft;
+    const buttonEnd = buttonStart + todayButton.clientWidth;
+
+    if (buttonStart < scrollStart || buttonEnd > scrollEnd) {
+      const target =
+        buttonStart - container.clientWidth / 2 + todayButton.clientWidth / 2;
+      container.scrollTo({
+        left: Math.max(target, 0),
+        behavior: "auto",
+      });
+    }
+
+    scrollSignatureRef.current = signature;
+  }, [days]);
+
   return (
     <div
+      ref={containerRef}
       className="flex gap-2 overflow-x-auto pb-2"
       style={{ scrollbarWidth: "thin" }}
       aria-label="Selecionar dia do mês"
@@ -86,6 +130,7 @@ export function ScheduleDayPicker({
             aria-pressed={item.isSelected}
             aria-label={`Selecionar ${fullLabel}${hasSessions ? `; ${item.stats?.total} aula${(item.stats?.total ?? 0) > 1 ? "s" : ""}` : ""}`}
             data-day-pill="1"
+            data-day-today={item.isToday ? "1" : undefined}
           >
             <span className="text-[10px] font-medium uppercase leading-none tracking-wide">
               {item.date.toLocaleDateString("pt-BR", { weekday: "short" })}
