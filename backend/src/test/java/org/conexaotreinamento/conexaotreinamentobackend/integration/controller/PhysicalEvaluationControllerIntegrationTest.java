@@ -386,39 +386,6 @@ class PhysicalEvaluationControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return 404 when deleting evaluation for another student")
-    void shouldReturnNotFoundWhenDeletingEvaluationForAnotherStudent() throws Exception {
-        // Given
-        PhysicalEvaluation evaluation = new PhysicalEvaluation(
-                testStudent,
-                LocalDate.now(),
-                70.0,
-                175.0,
-                22.9
-        );
-        PhysicalEvaluation savedEvaluation = evaluationRepository.save(evaluation);
-
-        Student otherStudent = new Student(
-                "other@example.com",
-                "Maria",
-                "Oliveira",
-                Student.Gender.F,
-                LocalDate.of(1995, 5, 5)
-        );
-        otherStudent.setRegistrationDate(LocalDate.now());
-        otherStudent = studentRepository.save(otherStudent);
-
-        // When & Then
-        mockMvc.perform(delete("/students/{studentId}/evaluations/{evaluationId}",
-                        otherStudent.getId(), savedEvaluation.getId()))
-                .andExpect(status().isNotFound());
-
-        // Verify evaluation remains active
-        PhysicalEvaluation persistedEvaluation = evaluationRepository.findById(savedEvaluation.getId()).orElseThrow();
-        assertThat(persistedEvaluation.getDeletedAt()).isNull();
-    }
-
-    @Test
     @DisplayName("Should not include deleted evaluations in list")
     void shouldNotIncludeDeletedEvaluationsInList() throws Exception {
         // Given

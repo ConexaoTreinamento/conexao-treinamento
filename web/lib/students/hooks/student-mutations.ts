@@ -8,8 +8,6 @@ import {
   updateStudentMutation
 } from "@/lib/api-client/@tanstack/react-query.gen";
 import {apiClient} from "@/lib/client";
-import {expiringPlanAssignmentsQueryOptions} from "@/lib/students/hooks/student-queries";
-import {EXPIRING_LOOKAHEAD_DAYS} from "@/lib/students/constants";
 import type {
   AssignPlanToStudentData,
   AssignPlanToStudentResponse,
@@ -105,14 +103,9 @@ export const useDeleteStudent = () => {
           // ignore
         }
       }
-      await Promise.all([
-        queryClient.invalidateQueries({
-          predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === "findAllStudents",
-        }),
-        queryClient.invalidateQueries({
-          queryKey: expiringPlanAssignmentsQueryOptions({ days: EXPIRING_LOOKAHEAD_DAYS }).queryKey,
-        }),
-      ]);
+      await queryClient.invalidateQueries({
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === "findAllStudents",
+      });
     },
   });
 };
@@ -132,14 +125,9 @@ export const useRestoreStudent = () => {
           // ignore
         }
       }
-      await Promise.all([
-        queryClient.invalidateQueries({
-          predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === "findAllStudents",
-        }),
-        queryClient.invalidateQueries({
-          queryKey: expiringPlanAssignmentsQueryOptions({ days: EXPIRING_LOOKAHEAD_DAYS }).queryKey,
-        }),
-      ]);
+      await queryClient.invalidateQueries({
+        predicate: (q) => Array.isArray(q.queryKey) && q.queryKey[0]?._id === "findAllStudents",
+      });
     },
   });
 };

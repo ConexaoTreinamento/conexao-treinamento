@@ -1,16 +1,26 @@
 "use client";
 
-import {useMemo} from "react";
-import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-import {AlertTriangle} from "lucide-react";
-import {useQueries, useQuery} from "@tanstack/react-query";
-import type {StudentResponseDto} from "@/lib/api-client/types.gen";
-import {expiringPlanAssignmentsQueryOptions} from "@/lib/students/hooks/student-queries";
-import {findStudentByIdOptions} from "@/lib/api-client/@tanstack/react-query.gen";
-import {apiClient} from "@/lib/client";
-import {EXPIRING_LOOKAHEAD_DAYS} from "@/lib/students/constants";
-import {ExpiringPlansBody, type AssignmentWithStudent} from "./expiring-plans-body";
-import {ExpiringPlansFooter} from "./expiring-plans-footer";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, Calendar, Mail, Phone, User } from "lucide-react";
+import Link from "next/link";
+import { UnifiedStatusBadge } from "./expiring-plans";
+
+interface Student {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  planExpirationDate: string;
+  daysUntilExpiration: number;
+}
 
 interface ExpiringPlansModalProps {
   isOpen: boolean;
@@ -21,103 +31,112 @@ export default function ExpiringPlansModal({
   isOpen,
   onClose,
 }: ExpiringPlansModalProps) {
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      onClose();
-    }
+  const [expiringStudents] = useState<Student[]>([]);
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("pt-BR");
   };
 
-  const expiringAssignmentsQuery = useQuery({
-    ...expiringPlanAssignmentsQueryOptions({days: EXPIRING_LOOKAHEAD_DAYS}),
-    enabled: isOpen,
-  });
-
-  const expiringAssignments = useMemo(
-      () =>
-          expiringAssignmentsQuery.data ??
-              [],
-      [expiringAssignmentsQuery.data],
-  );
-
-  const studentIds = useMemo(
-      () =>
-          Array.from(
-              new Set(
-                  expiringAssignments
-                      .map((assignment) => assignment.studentId)
-                      .filter((id): id is string => Boolean(id)),
-              ),
-          ),
-      [expiringAssignments],
-  );
-
-  const studentQueries = useQueries({
-    queries: studentIds.map((studentId) => ({
-      ...findStudentByIdOptions({
-        client: apiClient,
-        path: {id: studentId},
-      }),
-      enabled: isOpen,
-      staleTime: 60_000,
-    })),
-  });
-
-  const studentMap = useMemo(() => {
-    const map = new Map<string, StudentResponseDto>();
-    studentQueries.forEach((query, index) => {
-      const studentId = studentIds[index];
-      if (studentId && query.data) {
-        map.set(studentId, query.data);
-      }
-    });
-    return map;
-  }, [studentQueries, studentIds]);
-
-  const assignmentsWithDetails = useMemo(
-      () =>
-          expiringAssignments.map((assignment) => {
-            const student = assignment.studentId ? studentMap.get(assignment.studentId) : undefined;
-            return { assignment, student } satisfies AssignmentWithStudent;
-          }),
-      [expiringAssignments, studentMap],
-  );
-
-  const isLoading =
-      expiringAssignmentsQuery.isLoading || expiringAssignmentsQuery.isFetching;
-  const isError = expiringAssignmentsQuery.isError;
-  const studentsLoading = studentQueries.some(
-      (query) => query.isLoading || query.isFetching,
-  );
-  const showStatusSpinner = expiringAssignmentsQuery.isRefetching || studentsLoading;
-
   return (
-      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="w-full max-w-2xl max-h-[90vh] md:h-[90vh] flex flex-col">
-          <DialogHeader className="flex-shrink-0">
-            <DialogTitle className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
-              <AlertTriangle className="w-5 h-5" />
-              Planos próximos ao vencimento
-            </DialogTitle>
-            <DialogDescription>
-              Alunos com planos que vencem nos próximos {EXPIRING_LOOKAHEAD_DAYS} dias ou já expirados
-            </DialogDescription>
-          </DialogHeader>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
+            <AlertTriangle className="w-5 h-5" />
+            Planos próximos ao vencimento
+          </DialogTitle>
+          <DialogDescription>
+            Alunos com planos que vencem nos próximos 7 dias ou já vencidos
+          </DialogDescription>
+        </DialogHeader>
 
-          <div className="flex-1 overflow-hidden flex flex-col space-y-4">
-            <ExpiringPlansBody
-                assignments={assignmentsWithDetails}
-                isLoading={isLoading}
-                isError={isError}
-                onRetry={() => {
-                  void expiringAssignmentsQuery.refetch();
-                }}
-                onClose={onClose}
-                showStatusSpinner={showStatusSpinner}
-            />
-          </div>
+        <div className="flex-1 overflow-hidden flex flex-col space-y-4">
+          {expiringStudents.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-green-500" />
+                <p className="text-lg font-medium text-green-600 dark:text-green-400">
+                  Nenhum plano próximo ao vencimento
+                </p>
+                <p className="text-sm">Todos os planos estão em dia!</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 flex-shrink-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertTriangle className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                  <span className="font-medium text-orange-800 dark:text-orange-200">
+                    {expiringStudents.length} aluno(s) necessitam atenção
+                  </span>
+                </div>
+                <p className="text-sm text-orange-700 dark:text-orange-300">
+                  Entre em contato para renovação dos planos
+                </p>
+              </div>
 
-          <ExpiringPlansFooter onClose={onClose} />
-        </DialogContent>
-      </Dialog>
+              <div className="flex-1 overflow-y-auto space-y-3 pr-2">
+                {expiringStudents.map((student) => (
+                  <Link
+                    key={student.id}
+                    href={`/students/${student.id}`}
+                    onClick={onClose}
+                    className="block"
+                  >
+                    <div className="border rounded-lg p-4 bg-card hover:shadow-md transition-shadow cursor-pointer">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-muted-foreground" />
+                          <span className="font-medium">{student.name}</span>
+                        </div>
+                        <UnifiedStatusBadge
+                          expirationDate={student.planExpirationDate}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground mb-3">
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-3 h-3" />
+                          <span className="hover:underline">
+                            {student.email}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-3 h-3" />
+                          <span className="hover:underline">
+                            {student.phone}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-sm">
+                        <Calendar className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">
+                          Vencimento:
+                        </span>
+                        <span className="font-medium">
+                          {formatDate(student.planExpirationDate)}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0">
+          <Button variant="outline" onClick={onClose}>
+            Fechar
+          </Button>
+          <Button asChild>
+            <Link href="/students" onClick={onClose}>
+              Ver todos os alunos
+            </Link>
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

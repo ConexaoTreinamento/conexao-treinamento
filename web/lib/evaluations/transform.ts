@@ -1,54 +1,46 @@
 import type { EvaluationData } from "@/components/students/evaluation-form";
 import type { PhysicalEvaluationResponse } from "@/lib/evaluations/hooks/evaluation-queries";
-import type { PhysicalEvaluationRequest } from "@/lib/evaluations/hooks/evaluation-mutations";
 
-const normalizeNumber = (value?: string): string =>
-  value?.replace(",", ".").trim() ?? "";
-
-const parseOptionalNumber = (value?: string): number | undefined => {
-  const normalized = normalizeNumber(value);
-  if (!normalized) {
-    return undefined;
+const parseDecimal = (value: string | undefined): number | null => {
+  if (!value) {
+    return null;
   }
 
-  const parsed = Number(normalized);
-  return Number.isFinite(parsed) ? parsed : undefined;
+  const parsed = Number.parseFloat(value);
+  if (Number.isNaN(parsed)) {
+    return null;
+  }
+
+  return parsed;
 };
 
-const parseRequiredNumber = (value: string): number => {
-  const parsed = Number(normalizeNumber(value));
-  return Number.isFinite(parsed) ? parsed : NaN;
-};
-
-const mapNumericSection = <T extends Record<string, string | undefined>>(
+const normalizeSection = <T extends Record<string, string | undefined>>(
   section: T | undefined,
-): Partial<Record<keyof T, number>> | undefined => {
+): { [K in keyof T]?: number | null } | undefined => {
   if (!section) {
     return undefined;
   }
 
-  const result = Object.entries(section).reduce(
-    (acc, [key, raw]) => {
-      const parsed = parseOptionalNumber(raw);
-      if (parsed !== undefined) {
-        acc[key as keyof T] = parsed;
-      }
-      return acc;
-    },
-    {} as Partial<Record<keyof T, number>>,
-  );
+  const entries = Object.entries(section).map(([key, value]) => [
+    key,
+    parseDecimal(value),
+  ]);
+  const hasAnyValue = entries.some(([, parsed]) => parsed !== null);
+  if (!hasAnyValue) {
+    return undefined;
+  }
 
-  return Object.keys(result).length > 0 ? result : undefined;
+  return Object.fromEntries(entries) as { [K in keyof T]?: number | null };
 };
 
 export const buildEvaluationRequestPayload = (
   values: EvaluationData,
 ): PhysicalEvaluationRequest => ({
-  weight: parseRequiredNumber(values.weight),
-  height: parseRequiredNumber(values.height),
-  circumferences: mapNumericSection(values.circumferences),
-  subcutaneousFolds: mapNumericSection(values.subcutaneousFolds),
-  diameters: mapNumericSection(values.diameters),
+  weight: parseDecimal(values.weight) ?? 0,
+  height: parseDecimal(values.height) ?? 0,
+  circumferences: normalizeSection(values.circumferences),
+  subcutaneousFolds: normalizeSection(values.subcutaneousFolds),
+  diameters: normalizeSection(values.diameters),
 });
 
 export const mapEvaluationResponseToFormValues = (
@@ -151,13 +143,57 @@ export const mapEvaluationResponseToFormValues = (
     },
   };
 };
+import type { PhysicalEvaluationRequest } from "@/lib/evaluations/hooks/evaluation-mutations";
+
+const normalizeNumber = (value: string): string =>
+  value.replace(",", ".").trim();
+
+const parseRequiredNumber = (value: string): number => {
+  const parsed = Number(normalizeNumber(value));
+  return Number.isFinite(parsed) ? parsed : NaN;
+};
+
+const parseOptionalNumber = (value: string): number | null => {
+  const normalized = normalizeNumber(value);
+  if (!normalized) {
+    return null;
+  }
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const mapGroup = <T extends Record<string, string>>(
+  group: T
+): { [K in keyof T]: number | null } => {
+  return Object.fromEntries(
+    Object.entries(group).map(([key, rawValue]) => [
+      key,
+      parseOptionalNumber(rawValue),
+    ])
+  ) as { [K in keyof T]: number | null };
+};
+
+const sanitizeGroup = <T extends Record<string, number | null>>(
+  group: T
+): T | undefined => {
+  return Object.values(group).some((value) => value !== null)
+    ? group
+    : undefined;
+};
 
 export const toPhysicalEvaluationRequest = (
-  data: EvaluationData,
-): PhysicalEvaluationRequest => ({
-  weight: parseRequiredNumber(data.weight),
-  height: parseRequiredNumber(data.height),
-  circumferences: mapNumericSection(data.circumferences),
-  subcutaneousFolds: mapNumericSection(data.subcutaneousFolds),
-  diameters: mapNumericSection(data.diameters),
-});
+  data: EvaluationData
+): PhysicalEvaluationRequest => {
+  const circumferences = sanitizeGroup(mapGroup(data.circumferences));
+  const subcutaneousFolds = sanitizeGroup(mapGroup(data.subcutaneousFolds));
+  const diameters = sanitizeGroup(mapGroup(data.diameters));
+
+  return {
+    weight: parseRequiredNumber(data.weight),
+    height: parseRequiredNumber(data.height),
+    circumferences,
+    subcutaneousFolds,
+    diameters,
+  };
+};

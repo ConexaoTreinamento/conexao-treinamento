@@ -17,9 +17,7 @@ export default function EditEvaluationPage() {
 
   // Get student and evaluation data
   const { data: student, isLoading: isLoadingStudent } = useStudent({ path: { id: studentId } })
-  const { data: evaluation, isLoading: isLoadingEvaluation } = useEvaluation({
-    path: { studentId, evaluationId },
-  })
+  const { data: evaluation, isLoading: isLoadingEvaluation } = useEvaluation(studentId, evaluationId)
 
   // Update evaluation mutation
   const updateEvaluation = useUpdateEvaluation()
@@ -29,8 +27,9 @@ export default function EditEvaluationPage() {
       const requestData = toPhysicalEvaluationRequest(data)
 
       await updateEvaluation.mutateAsync({
-        path: { studentId, evaluationId },
-        body: requestData,
+        studentId,
+        evaluationId,
+        data: requestData,
       })
 
       toast.success("Avaliação atualizada com sucesso!")
@@ -71,9 +70,9 @@ export default function EditEvaluationPage() {
   // Convert evaluation data to form format
   const initialData: EvaluationData = {
     id: evaluation.id,
-    weight: evaluation.weight != null ? evaluation.weight.toString() : "",
-    height: evaluation.height != null ? evaluation.height.toString() : "",
-    bmi: evaluation.bmi != null ? evaluation.bmi.toString() : "",
+    weight: evaluation.weight.toString(),
+    height: evaluation.height.toString(),
+    bmi: evaluation.bmi.toString(),
     circumferences: {
       rightArmRelaxed: evaluation.circumferences?.rightArmRelaxed?.toString() || "",
       leftArmRelaxed: evaluation.circumferences?.leftArmRelaxed?.toString() || "",

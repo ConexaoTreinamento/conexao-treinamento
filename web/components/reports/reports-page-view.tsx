@@ -21,24 +21,20 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Loader2, Search, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { apiClient } from "@/lib/client";
 import {
   getReportsOptions,
   getTrainersForLookupOptions,
 } from "@/lib/api-client/@tanstack/react-query.gen";
 import type {
-  AgeDistributionResponseDto,
-  TrainerLookupResponseDto,
-  TrainerReportResponseDto,
+  AgeDistributionDto,
+  TrainerLookupDto,
+  TrainerReportDto,
 } from "@/lib/api-client/types.gen";
 import { TrainerSelect } from "@/components/trainers/trainer-select";
 import { PageHeader } from "@/components/base/page-header";
 import { formatDurationHours } from "@/lib/formatters/time";
-import {
-  TrainerCompensationBadge,
-  getTrainerCompensationLabel,
-} from "@/components/trainers/trainer-compensation-badge";
 
 type PeriodKey = "week" | "month" | "quarter" | "year" | "custom";
 
@@ -62,45 +58,13 @@ const formatDateInput = (date: Date) => {
 };
 
 const createDateFromInput = (value: string, endOfDay = false) => {
-  if (!value) {
-    return null;
-  }
-
+  if (!value) return null;
   const [year, month, day] = value.split("-").map(Number);
-
-  if (!year || !month || !day) {
-    return null;
-  }
-
+  if (!year || !month || !day) return null;
   if (endOfDay) {
     return new Date(year, month - 1, day, 23, 59, 59, 999);
   }
   return new Date(year, month - 1, day, 0, 0, 0, 0);
-};
-
-const getEndOfToday = () => {
-  const limit = new Date();
-  limit.setHours(23, 59, 59, 999);
-
-  return limit;
-};
-
-const clampDateToEndOfToday = (date: Date) => {
-  const limit = getEndOfToday();
-  return date.getTime() > limit.getTime() ? new Date(limit) : new Date(date);
-};
-
-const clampDateInputToToday = (value: string) => {
-  if (!value) {
-    return value;
-  }
-
-  const parsed = createDateFromInput(value);
-  if (!parsed) {
-    return value;
-  }
-
-  return formatDateInput(clampDateToEndOfToday(parsed));
 };
 
 const computePeriodRange = (period: PeriodKey, customRange?: CustomRange) => {
@@ -108,11 +72,9 @@ const computePeriodRange = (period: PeriodKey, customRange?: CustomRange) => {
     const startDate = customRange?.start
       ? createDateFromInput(customRange.start, false)
       : null;
-    const endDateRaw = customRange?.end
+    const endDate = customRange?.end
       ? createDateFromInput(customRange.end, true)
       : null;
-
-    const endDate = endDateRaw ? clampDateToEndOfToday(endDateRaw) : null;
 
     if (!startDate || !endDate || startDate > endDate) {
       return { start: "", end: "" };
@@ -156,15 +118,16 @@ const computePeriodRange = (period: PeriodKey, customRange?: CustomRange) => {
   start.setHours(0, 0, 0, 0);
   end.setHours(23, 59, 59, 999);
 
-  const endLimit = getEndOfToday();
-  if (end.getTime() > endLimit.getTime()) {
-    end.setTime(endLimit.getTime());
-  }
-
   return {
     start: start.toISOString(),
     end: end.toISOString(),
   };
+};
+
+const formatCompensation = (value?: "HOURLY" | "MONTHLY") => {
+  if (value === "MONTHLY") return "Mensalista";
+  if (value === "HOURLY") return "Horista";
+  return "—";
 };
 
 const formatNumber = (value: number, maximumFractionDigits = 0) =>
@@ -183,24 +146,12 @@ export function ReportsPageView() {
   });
 
   const selectedPeriod = (watch("period") ?? "month") as PeriodKey;
-  const watchedCustomRange = useWatch({
-    control,
-    name: "customRange",
-    defaultValue: { start: "", end: "" },
-  });
-  const customRange = useMemo(
-    () => watchedCustomRange ?? { start: "", end: "" },
-    [watchedCustomRange],
+  const watchedCustomRange = useMemo(
+    () => watch("customRange") ?? { start: "", end: "" },
+    [watch],
   );
-  const customRangeStart = customRange?.start ?? "";
-  const customRangeEnd = customRange?.end ?? "";
-  const todayInput = useMemo(() => formatDateInput(new Date()), []);
-  const startDateMax = useMemo(() => {
-    if (customRangeEnd && customRangeEnd < todayInput) {
-      return customRangeEnd;
-    }
-    return todayInput;
-  }, [customRangeEnd, todayInput]);
+  const customRangeStart = watchedCustomRange.start ?? "";
+  const customRangeEnd = watchedCustomRange.end ?? "";
   const selectedTrainer = watch("trainerId") ?? "all";
   const searchTerm = watch("searchTerm") ?? "";
   const router = useRouter();
@@ -215,34 +166,32 @@ export function ReportsPageView() {
   }, [router]);
 
   const periodRange = useMemo(
-    () => computePeriodRange(selectedPeriod, customRange),
-    [selectedPeriod, customRange],
+    () => computePeriodRange(selectedPeriod, watchedCustomRange),
+    [selectedPeriod, watchedCustomRange],
   );
 
   const customRangeError = useMemo(() => {
     if (
       selectedPeriod !== "custom" ||
-      !customRange.start ||
-      !customRange.end
+      !watchedCustomRange.start ||
+      !watchedCustomRange.end
     ) {
       return false;
     }
 
-    const startDate = createDateFromInput(customRange.start);
-    const endDate = createDateFromInput(customRange.end);
+    const startDate = createDateFromInput(watchedCustomRange.start);
+    const endDate = createDateFromInput(watchedCustomRange.end);
 
-    if (!startDate || !endDate) {
-      return false;
-    }
+    if (!startDate || !endDate) return false;
 
     return startDate > endDate;
-  }, [customRange?.end, customRange?.start, selectedPeriod]);
+  }, [watchedCustomRange.end, watchedCustomRange.start, selectedPeriod]);
 
   const handlePeriodSelect = (
-    value: PeriodKey,
+    value: string,
     onChange: (value: PeriodKey) => void,
   ) => {
-    const period = value;
+    const period = value as PeriodKey;
     onChange(period);
 
     if (period === "custom") {
@@ -268,12 +217,11 @@ export function ReportsPageView() {
 
   const handleCustomRangeChange = (key: keyof CustomRange, value: string) => {
     const currentRange = getValues("customRange") ?? { start: "", end: "" };
-    const clampedValue = clampDateInputToToday(value);
     setValue(
       "customRange",
       {
         ...currentRange,
-        [key]: clampedValue,
+        [key]: value,
       },
       { shouldDirty: true, shouldValidate: true },
     );
@@ -302,7 +250,7 @@ export function ReportsPageView() {
   const trainerOptions = useMemo(
     () =>
       (trainersQuery.data ?? []).filter(
-        (trainer): trainer is TrainerLookupResponseDto & { id: string } =>
+        (trainer): trainer is TrainerLookupDto & { id: string } =>
           Boolean(trainer?.id),
       ),
     [trainersQuery.data],
@@ -318,12 +266,12 @@ export function ReportsPageView() {
     }
   }, [selectedTrainer, setValue, trainerOptions]);
 
-  const trainerReports = useMemo<TrainerReportResponseDto[]>(
-    () => reportsQuery.data?.trainerReports ?? [],
+  const trainerReports = useMemo<TrainerReportDto[]>(
+    () => (reportsQuery.data?.trainerReports ?? []) as TrainerReportDto[],
     [reportsQuery.data],
   );
 
-  const filteredReports = useMemo<TrainerReportResponseDto[]>(() => {
+  const filteredReports = useMemo<TrainerReportDto[]>(() => {
     const search = searchTerm.trim().toLowerCase();
     if (!search) return trainerReports;
     return trainerReports.filter((trainer) =>
@@ -410,7 +358,7 @@ export function ReportsPageView() {
             <Select
               value={field.value}
               onValueChange={(value) =>
-                handlePeriodSelect(value as PeriodKey, field.onChange)
+                handlePeriodSelect(value, field.onChange)
               }
             >
               <SelectTrigger className="w-full sm:w-48">
@@ -436,7 +384,7 @@ export function ReportsPageView() {
               id="reports-custom-start"
               type="date"
               value={customRangeStart}
-              max={startDateMax}
+              max={customRangeEnd || undefined}
               onChange={(event) =>
                 handleCustomRangeChange("start", event.target.value)
               }
@@ -449,7 +397,6 @@ export function ReportsPageView() {
               type="date"
               value={customRangeEnd}
               min={customRangeStart || undefined}
-              max={todayInput}
               onChange={(event) =>
                 handleCustomRangeChange("end", event.target.value)
               }
@@ -618,10 +565,9 @@ export function ReportsPageView() {
                             {formatNumber(trainer?.studentsManaged ?? 0)}
                           </td>
                           <td className="p-3">
-                              <TrainerCompensationBadge
-                                compensationType={trainer?.compensation}
-                                fallbackLabel="Não informado"
-                              />
+                            <Badge className="bg-muted text-xs font-medium">
+                              {formatCompensation(trainer?.compensation)}
+                            </Badge>
                           </td>
                           <td className="p-3">
                             <div className="flex flex-wrap gap-1">
@@ -675,9 +621,7 @@ export function ReportsPageView() {
                         <div>
                           <p className="font-semibold leading-tight">{name}</p>
                           <p className="text-xs text-muted-foreground">
-                            {getTrainerCompensationLabel(
-                              trainer?.compensation,
-                            ) ?? "Não informado"}
+                            {formatCompensation(trainer?.compensation)}
                           </p>
                         </div>
                       </div>
@@ -758,7 +702,7 @@ export function ReportsPageView() {
                 Nenhum dado disponível para o período selecionado.
               </p>
             ) : (
-              ageDistribution.map((profile: AgeDistributionResponseDto, index) => {
+              ageDistribution.map((profile: AgeDistributionDto, index) => {
                 const percentage = profile?.percentage ?? 0;
                 const count = profile?.count ?? 0;
                 const percentageLabel = Number.isFinite(percentage)

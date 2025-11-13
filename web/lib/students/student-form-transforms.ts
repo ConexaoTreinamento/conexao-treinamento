@@ -79,7 +79,6 @@ export const mapStudentResponseToForm = (
   }
 
   return {
-    includeAnamnesis: Boolean(student.anamnesis),
     name: student.name ?? "",
     surname: student.surname ?? "",
     email: student.email ?? "",
@@ -175,58 +174,48 @@ const hasAnamnesisData = (formData: StudentFormData) =>
 
 export const buildStudentRequestPayload = (
   formData: StudentFormData,
-): StudentRequestDto => {
-  const shouldIncludeAnamnesis =
-    (formData.includeAnamnesis ?? false) && hasAnamnesisData(formData);
-
-  const request: StudentRequestDto = {
-    email: formData.email ?? "",
-    name: formData.name ?? "",
-    surname: formData.surname ?? "",
-    gender: normalizeGender(formData.sex),
-    birthDate: formData.birthDate ?? "",
-    phone: formData.phone,
-    profession: formData.profession,
-    street: formData.street,
-    number: formData.number,
-    complement: formData.complement,
-    neighborhood: formData.neighborhood,
-    cep: formData.cep,
-    emergencyContactName: formData.emergencyName,
-    emergencyContactPhone: formData.emergencyPhone,
-    emergencyContactRelationship: formData.emergencyRelationship,
-    objectives: formData.objectives,
-    observations: formData.impairmentObservations,
-    physicalImpairments: mapPhysicalImpairments(formData),
-  };
-
-  if (shouldIncludeAnamnesis) {
-    const anamnesisPayload: AnamnesisRequestDto = {
-      medication: formData.medication,
-      isDoctorAwareOfPhysicalActivity:
-        formData.isDoctorAwareOfPhysicalActivity,
-      favoritePhysicalActivity: formData.favoritePhysicalActivity,
-      hasInsomnia: normalizeHasInsomnia(formData.hasInsomnia),
-      dietOrientedBy: formData.dietOrientedBy,
-      cardiacProblems: formData.cardiacProblems,
-      hasHypertension: formData.hasHypertension,
-      chronicDiseases: formData.chronicDiseases,
-      difficultiesInPhysicalActivities:
-        formData.difficultiesInPhysicalActivities,
-      medicalOrientationsToAvoidPhysicalActivity:
-        formData.medicalOrientationsToAvoidPhysicalActivity,
-      surgeriesInTheLast12Months: formData.surgeriesInTheLast12Months,
-      respiratoryProblems: formData.respiratoryProblems,
-      jointMuscularBackPain: formData.jointMuscularBackPain,
-      spinalDiscProblems: formData.spinalDiscProblems,
-      diabetes: formData.diabetes,
-      smokingDuration: formData.smokingDuration,
-      alteredCholesterol: formData.alteredCholesterol,
-      osteoporosisLocation: formData.osteoporosisLocation,
-    };
-
-    request.anamnesis = anamnesisPayload;
-  }
-
-  return request;
-};
+): StudentRequestDto => ({
+  email: formData.email ?? "",
+  name: formData.name ?? "",
+  surname: formData.surname ?? "",
+  gender: normalizeGender(formData.sex),
+  birthDate: formData.birthDate ?? "",
+  phone: formData.phone,
+  profession: formData.profession,
+  street: formData.street,
+  number: formData.number,
+  complement: formData.complement,
+  neighborhood: formData.neighborhood,
+  cep: formData.cep,
+  emergencyContactName: formData.emergencyName,
+  emergencyContactPhone: formData.emergencyPhone,
+  emergencyContactRelationship: formData.emergencyRelationship,
+  objectives: formData.objectives,
+  observations: formData.impairmentObservations,
+  anamnesis: hasAnamnesisData(formData)
+    ? {
+        medication: formData.medication,
+        isDoctorAwareOfPhysicalActivity:
+          formData.isDoctorAwareOfPhysicalActivity,
+        favoritePhysicalActivity: formData.favoritePhysicalActivity,
+        hasInsomnia: normalizeHasInsomnia(formData.hasInsomnia),
+        dietOrientedBy: formData.dietOrientedBy,
+        cardiacProblems: formData.cardiacProblems,
+        hasHypertension: formData.hasHypertension,
+        chronicDiseases: formData.chronicDiseases,
+        difficultiesInPhysicalActivities:
+          formData.difficultiesInPhysicalActivities,
+        medicalOrientationsToAvoidPhysicalActivity:
+          formData.medicalOrientationsToAvoidPhysicalActivity,
+        surgeriesInTheLast12Months: formData.surgeriesInTheLast12Months,
+        respiratoryProblems: formData.respiratoryProblems,
+        jointMuscularBackPain: formData.jointMuscularBackPain,
+        spinalDiscProblems: formData.spinalDiscProblems,
+        diabetes: formData.diabetes,
+        smokingDuration: formData.smokingDuration,
+        alteredCholesterol: formData.alteredCholesterol,
+        osteoporosisLocation: formData.osteoporosisLocation,
+      }
+    : undefined,
+  physicalImpairments: mapPhysicalImpairments(formData),
+});

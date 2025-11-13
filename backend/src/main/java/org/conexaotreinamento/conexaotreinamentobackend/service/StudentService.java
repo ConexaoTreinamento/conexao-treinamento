@@ -192,25 +192,19 @@ public class StudentService {
 
         Student savedStudent = studentRepository.save(student);
 
-        Optional<Anamnesis> existingAnamnesis =
-                anamnesisRepository.findById(savedStudent.getId());
-
-        // Update, create, or delete anamnesis based on request payload
+        // Update or create anamnesis
         if (request.anamnesis() != null) {
             AnamnesisRequestDTO dto = request.anamnesis();
+            Optional<Anamnesis> existing = anamnesisRepository.findById(savedStudent.getId());
             // To avoid Hibernate StaleObjectStateException caused by merging a detached Anamnesis,
             // delete the existing row, flush the persistence context, then persist a fresh instance.
-            if (existingAnamnesis.isPresent()) {
+            if (existing.isPresent()) {
                 anamnesisRepository.deleteById(savedStudent.getId());
                 entityManager.flush();
             }
 
             Anamnesis anamnesis = createAnamnesis(savedStudent, dto);
             anamnesisRepository.saveAndFlush(anamnesis);
-        } else if (existingAnamnesis.isPresent()) {
-            // No anamnesis provided in the request and an existing record is present: remove it
-            anamnesisRepository.deleteById(savedStudent.getId());
-            entityManager.flush();
         }
 
         // Replace physical impairments

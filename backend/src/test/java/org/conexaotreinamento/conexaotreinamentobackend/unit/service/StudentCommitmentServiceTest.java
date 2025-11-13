@@ -190,13 +190,9 @@ class StudentCommitmentServiceTest {
     }
 
     private StudentPlanAssignment buildAssignmentWithPlan(UUID planId, int maxDays) {
-        return buildAssignmentWithPlan(planId, maxDays, true);
-    }
-
-    private StudentPlanAssignment buildAssignmentWithPlan(UUID planId, int maxDays, boolean active) {
         StudentPlan plan = new StudentPlan();
         plan.setId(planId);
-        plan.setActive(active);
+        plan.setActive(true);
         plan.setMaxDays(maxDays);
         plan.setName("Test Plan");
         plan.setDurationDays(30);
@@ -220,7 +216,7 @@ class StudentCommitmentServiceTest {
     plan.setMaxDays(5);
     plan.setName("Test Plan");
     plan.setDurationDays(30);
-    when(studentPlanRepository.findById(planId)).thenReturn(Optional.of(plan));
+    when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(plan));
     when(studentCommitmentRepository.findByStudentId(studentId)).thenReturn(List.of());
     // Return same weekday to avoid exceeding limit
     when(trainerScheduleRepository.findById(any(UUID.class))).thenAnswer(inv -> {
@@ -270,7 +266,7 @@ class StudentCommitmentServiceTest {
     plan3.setMaxDays(3);
     plan3.setName("Plan3");
     plan3.setDurationDays(30);
-    when(studentPlanRepository.findById(planId)).thenReturn(Optional.of(plan3));
+    when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(plan3));
     // already has 1 active on weekday 1
     UUID existingSeries = UUID.randomUUID();
     when(studentCommitmentRepository.findByStudentId(studentId))
@@ -328,7 +324,7 @@ class StudentCommitmentServiceTest {
     plan5.setMaxDays(5);
     plan5.setName("Plan5");
     plan5.setDurationDays(30);
-    when(studentPlanRepository.findById(planId)).thenReturn(Optional.of(plan5));
+    when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(plan5));
     when(studentCommitmentRepository.findByStudentId(studentId)).thenReturn(List.of());
     when(trainerScheduleRepository.findById(any(UUID.class))).thenAnswer(inv -> {
         UUID id = inv.getArgument(0);
@@ -344,35 +340,5 @@ class StudentCommitmentServiceTest {
 
         // Assert: saved successfully under plan validation
         assertEquals(CommitmentStatus.ATTENDING, saved.getCommitmentStatus());
-    }
-
-    @Test
-    void updateCommitment_attending_allowsSoftDeletedPlan() {
-        UUID planId = UUID.randomUUID();
-        when(studentPlanAssignmentRepository.findCurrentActiveAssignment(studentId))
-            .thenReturn(Optional.of(buildAssignmentWithPlan(planId, 4, false)));
-
-        StudentPlan inactivePlan = new StudentPlan();
-        inactivePlan.setId(planId);
-        inactivePlan.setActive(false);
-        inactivePlan.setMaxDays(4);
-        inactivePlan.setName("Inactive Plan");
-        inactivePlan.setDurationDays(30);
-        when(studentPlanRepository.findById(planId)).thenReturn(Optional.of(inactivePlan));
-
-        when(studentCommitmentRepository.findByStudentId(studentId)).thenReturn(List.of());
-        when(trainerScheduleRepository.findById(any(UUID.class))).thenAnswer(inv -> {
-            UUID id = inv.getArgument(0);
-            org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule ts = new org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule();
-            ts.setId(id);
-            ts.setWeekday(1);
-            return Optional.of(ts);
-        });
-        when(studentCommitmentRepository.save(any(StudentCommitment.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        StudentCommitment saved = studentCommitmentService.updateCommitment(studentId, seriesId, CommitmentStatus.ATTENDING);
-
-        assertEquals(CommitmentStatus.ATTENDING, saved.getCommitmentStatus());
-        verify(studentPlanRepository).findById(planId);
     }
 }

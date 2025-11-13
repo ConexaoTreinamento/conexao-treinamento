@@ -27,11 +27,6 @@ import {
 } from "@/lib/api-client/@tanstack/react-query.gen";
 import { apiClient } from "@/lib/client";
 import type { ExerciseResponseDto } from "@/lib/api-client";
-import { invalidateExercisesQueries } from "@/lib/exercises/query-utils";
-import {
-  shouldIncludeInactive,
-  type EntityStatusFilterValue,
-} from "@/lib/entity-status";
 
 export function ExercisesPageView() {
   const [searchValue, setSearchValue] = useState("");
@@ -45,9 +40,7 @@ export function ExercisesPageView() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedExercise, setSelectedExercise] =
     useState<ExerciseResponseDto | null>(null);
-  const [statusFilter, setStatusFilter] = useState<EntityStatusFilterValue>(
-    "active",
-  );
+  const [showInactive, setShowInactive] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -59,8 +52,8 @@ export function ExercisesPageView() {
       client: apiClient,
       query: {
         pageable: { page: currentPage },
-    ...(debouncedSearchTerm ? { search: debouncedSearchTerm } : {}),
-    includeInactive: shouldIncludeInactive(statusFilter),
+        ...(debouncedSearchTerm ? { search: debouncedSearchTerm } : {}),
+        includeInactive: showInactive,
       },
     }),
   });
@@ -103,24 +96,13 @@ export function ExercisesPageView() {
     [exercises],
   );
 
-  const filteredExercises = useMemo(() => {
-    if (statusFilter === "all") {
-      return normalizedExercises;
-    }
-
-    const shouldShowActive = statusFilter === "active";
-    return normalizedExercises.filter((exercise) =>
-      shouldShowActive ? !exercise.isDeleted : exercise.isDeleted,
-    );
-  }, [normalizedExercises, statusFilter]);
-
   const totalPages = exercisesData?.totalPages ?? 0;
   const totalElements = exercisesData?.totalElements ?? 0;
   const currentPageLabel = totalPages > 0 ? currentPage + 1 : 0;
 
   useEffect(() => {
     setCurrentPage(0);
-  }, [debouncedSearchTerm, statusFilter]);
+  }, [debouncedSearchTerm, showInactive]);
 
   const handleSelectExercise = useCallback(
     (exerciseId: string) => {
@@ -160,7 +142,11 @@ export function ExercisesPageView() {
           variant: "success",
         });
 
-        await invalidateExercisesQueries(queryClient);
+        await queryClient.invalidateQueries({
+          predicate: (query) =>
+            Array.isArray(query.queryKey) &&
+            query.queryKey[0]?._id === "findAllExercises",
+        });
       } catch (deleteError) {
         console.error("Erro ao excluir exercício:", deleteError);
         toast({
@@ -178,14 +164,18 @@ export function ExercisesPageView() {
   const handleRestoreExercise = useCallback(
     async (exerciseId: string) => {
       try {
-        await restoreExercise({ path: { id: exerciseId } });
+        await restoreExercise({ path: { id: exerciseId }, client: apiClient });
 
         toast({
           title: "Exercício restaurado",
           description: "O exercício foi restaurado com sucesso.",
         });
 
-        await invalidateExercisesQueries(queryClient);
+        await queryClient.invalidateQueries({
+          predicate: (query) =>
+            Array.isArray(query.queryKey) &&
+            query.queryKey[0]?._id === "findAllExercises",
+        });
       } catch (restoreError) {
         console.error("Erro ao restaurar exercício:", restoreError);
         toast({
@@ -202,12 +192,9 @@ export function ExercisesPageView() {
     setSearchValue(value);
   }, []);
 
-  const handleStatusChange = useCallback(
-    (value: EntityStatusFilterValue) => {
-      setStatusFilter(value);
-    },
-    [],
-  );
+  const handleToggleInactive = useCallback((value: boolean) => {
+    setShowInactive(value);
+  }, []);
 
   const handleClearSearch = useCallback(() => {
     setSearchValue("");
@@ -227,31 +214,15 @@ export function ExercisesPageView() {
       return "Não foi possível carregar os exercícios.";
     }
 
-    if (!normalizedExercises.length) {
-      return searchValue || statusFilter !== "active"
-        ? "Ajuste a busca ou os filtros para encontrar exercícios."
+    if (!totalElements) {
+      return searchValue || showInactive
+        ? "Ajuste a busca ou a visualização para encontrar exercícios."
         : "Nenhum exercício cadastrado ainda.";
-    }
-
-    if (!filteredExercises.length) {
-      if (statusFilter === "inactive") {
-        return "Nenhum exercício inativo encontrado nos critérios atuais.";
-      }
-      if (statusFilter === "active") {
-        return "Nenhum exercício ativo encontrado nos critérios atuais.";
-      }
-      return "Ajuste a busca ou os filtros para encontrar exercícios.";
     }
 
     const safeTotalPages = totalPages || 1;
     const safeCurrentPage = currentPageLabel > 0 ? currentPageLabel : 1;
-    const statusLabel =
-      statusFilter === "all"
-        ? `${totalElements} exercícios`
-        : `${filteredExercises.length} exercícios ${
-            statusFilter === "active" ? "ativos" : "inativos"
-          }`;
-    return `Página ${safeCurrentPage} de ${safeTotalPages} • ${statusLabel}`;
+    return `Página ${safeCurrentPage} de ${safeTotalPages} • ${totalElements} exercícios`;
   })();
 
   return (
@@ -274,8 +245,8 @@ export function ExercisesPageView() {
         searchValue={searchValue}
         onSearchChange={handleSearchChange}
         onClearSearch={handleClearSearch}
-        status={statusFilter}
-        onStatusChange={handleStatusChange}
+        showInactive={showInactive}
+        onToggleInactive={handleToggleInactive}
       />
 
       <Section title="Resultados" description={resultsSummary}>
@@ -290,10 +261,10 @@ export function ExercisesPageView() {
           />
         ) : null}
 
-        {!isLoading && !error && filteredExercises.length > 0 ? (
+        {!isLoading && !error && normalizedExercises.length > 0 ? (
           <>
             <ExercisesList
-              exercises={filteredExercises}
+              exercises={normalizedExercises}
               onSelect={handleSelectExercise}
               onEdit={handleEditExercise}
               onDelete={handleDeleteExercise}
@@ -304,23 +275,19 @@ export function ExercisesPageView() {
                   : null
               }
             />
+            <ExercisesPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
           </>
         ) : null}
 
-        {!isLoading && !error && filteredExercises.length === 0 ? (
+        {!isLoading && !error && normalizedExercises.length === 0 ? (
           <ExercisesEmptyState
             hasSearch={Boolean(searchValue)}
-            hasStatusFilter={statusFilter !== "active"}
             onCreate={() => setIsNewExerciseOpen(true)}
             onClearSearch={searchValue ? handleClearSearch : undefined}
-          />
-        ) : null}
-
-        {!isLoading && !error && totalPages > 1 ? (
-          <ExercisesPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
           />
         ) : null}
       </Section>

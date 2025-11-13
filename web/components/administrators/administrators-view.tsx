@@ -8,7 +8,7 @@ import { FilterToolbar } from "@/components/base/filter-toolbar";
 import { AdministratorList } from "@/components/administrators/administrator-list";
 import { AdministratorCreateDialog } from "@/components/administrators/administrator-create-dialog";
 import { apiClient } from "@/lib/client";
-import type { AdministratorListItemResponseDto } from "@/lib/api-client";
+import type { ListAdministratorsDto } from "@/lib/api-client";
 import { findAllAdministratorsOptions } from "@/lib/api-client/@tanstack/react-query.gen";
 
 export function AdministratorsView() {
@@ -33,7 +33,7 @@ export function AdministratorsView() {
     (administratorsQuery.data) ?? [];
   const { isLoading, error } = administratorsQuery;
 
-  const handleAdministratorOpen = (administrator: AdministratorListItemResponseDto) => {
+  const handleAdministratorOpen = (administrator: ListAdministratorsDto) => {
     if (administrator.id) {
       router.push(`/administrators/${administrator.id}`);
     }

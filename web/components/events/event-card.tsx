@@ -1,13 +1,11 @@
 import type { MouseEvent } from "react";
-import { Calendar, Clock, Loader2, MapPin, RotateCcw, Trash2, Users } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Calendar, Clock, Loader2, MapPin, Trash2, Users } from "lucide-react";
 import ConfirmDeleteButton from "@/components/base/confirm-delete-button";
 import { EditButton } from "@/components/base/edit-button";
 import {
   EntityCard,
   type EntityCardMetadataItem,
 } from "@/components/base/entity-card";
-import { StatusBadge } from "@/components/base/status-badge";
 
 export interface EventCardData {
   id: string;
@@ -18,7 +16,6 @@ export interface EventCardData {
   participantsLabel: string;
   description?: string;
   instructorLabel?: string;
-  isDeleted: boolean;
 }
 
 interface EventCardProps {
@@ -26,9 +23,7 @@ interface EventCardProps {
   onSelect: (id: string) => void;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => Promise<void> | void;
-  onRestore?: (id: string) => Promise<void> | void;
   deletingEventId?: string | null;
-  restoringEventId?: string | null;
 }
 
 export function EventCard({
@@ -36,9 +31,7 @@ export function EventCard({
   onSelect,
   onEdit,
   onDelete,
-  onRestore,
   deletingEventId,
-  restoringEventId,
 }: EventCardProps) {
   const metadata: EntityCardMetadataItem[] = [
     {
@@ -82,8 +75,6 @@ export function EventCard({
   ) : undefined;
 
   const isDeleting = Boolean(deletingEventId && deletingEventId === event.id);
-  const isRestoring = Boolean(restoringEventId && restoringEventId === event.id);
-  const isDeleted = event.isDeleted;
 
   const handleEditClick = (clickEvent: MouseEvent<HTMLButtonElement>) => {
     clickEvent.stopPropagation();
@@ -91,133 +82,75 @@ export function EventCard({
   };
 
   const handleDelete = () => onDelete?.(event.id);
-  const handleRestore = (clickEvent: MouseEvent<HTMLButtonElement>) => {
-    clickEvent.stopPropagation();
-    void onRestore?.(event.id);
-  };
 
-  const hasRestoreAction = Boolean(onRestore) && isDeleted;
-  const hasManageActions = !isDeleted && Boolean(onEdit || onDelete);
-  const shouldShowActions = hasRestoreAction || hasManageActions;
-  const badges = [
-    <StatusBadge
-      key="status"
-      active={!event.isDeleted}
-      activeLabel="Ativo"
-      inactiveLabel="Inativo"
-    />,
-  ];
+  const shouldShowActions = Boolean(onEdit || onDelete);
 
-  const mobileActions = shouldShowActions
-    ? hasRestoreAction
-      ? (
-          <Button
-            size="icon"
-            variant="outline"
-            className="h-8 w-8"
-            onClick={handleRestore}
-            disabled={isRestoring}
-            aria-label="Restaurar evento"
-          >
-            {isRestoring ? (
-              <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
-            ) : (
-              <RotateCcw className="h-3 w-3" aria-hidden="true" />
-            )}
-          </Button>
-        )
-      : (
-          <>
-            {onEdit ? (
-              <EditButton
-                key="edit"
-                size="icon"
-                variant="outline"
-                fullWidthOnDesktop={false}
-                onClick={handleEditClick}
-              />
-            ) : null}
-            {onDelete ? (
-              <ConfirmDeleteButton
-                key="delete"
-                size="icon"
-                variant="destructive"
-                onConfirm={handleDelete}
-                disabled={isDeleting}
-                title="Excluir evento"
-                description={`Tem certeza que deseja excluir o evento "${event.name}"? Esta ação não pode ser desfeita.`}
-                confirmText={isDeleting ? "Excluindo..." : "Excluir"}
-              >
-                {isDeleting ? (
-                  <Loader2
-                    className="h-3 w-3 animate-spin"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <Trash2 className="h-3 w-3" aria-hidden="true" />
-                )}
-                <span className="sr-only">Excluir evento</span>
-              </ConfirmDeleteButton>
-            ) : null}
-          </>
-        )
-    : undefined;
+  const mobileActions = shouldShowActions ? (
+    <>
+      {onEdit ? (
+        <EditButton
+          key="edit"
+          size="icon"
+          variant="outline"
+          fullWidthOnDesktop={false}
+          onClick={handleEditClick}
+        />
+      ) : null}
+      {onDelete ? (
+        <ConfirmDeleteButton
+          key="delete"
+          size="icon"
+          variant="destructive"
+          onConfirm={handleDelete}
+          disabled={isDeleting}
+          title="Excluir evento"
+          description={`Tem certeza que deseja excluir o evento "${event.name}"? Esta ação não pode ser desfeita.`}
+          confirmText={isDeleting ? "Excluindo..." : "Excluir"}
+        >
+          {isDeleting ? (
+            <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+          ) : (
+            <Trash2 className="h-3 w-3" aria-hidden="true" />
+          )}
+          <span className="sr-only">Excluir evento</span>
+        </ConfirmDeleteButton>
+      ) : null}
+    </>
+  ) : undefined;
 
-  const desktopActions = shouldShowActions
-    ? hasRestoreAction
-      ? (
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 px-3 text-sm"
-            onClick={handleRestore}
-            disabled={isRestoring}
-          >
-            {isRestoring ? (
-              <Loader2 className="mr-1 h-3 w-3 animate-spin" aria-hidden="true" />
-            ) : (
-              <RotateCcw className="mr-1 h-3 w-3" aria-hidden="true" />
-            )}
-            Restaurar
-          </Button>
-        )
-      : (
-          <>
-            {onEdit ? (
-              <EditButton
-                key="edit"
-                size="sm"
-                variant="outline"
-                fullWidthOnDesktop={false}
-                onClick={handleEditClick}
-              />
-            ) : null}
-            {onDelete ? (
-              <ConfirmDeleteButton
-                key="delete"
-                size="sm"
-                variant="destructive"
-                onConfirm={handleDelete}
-                disabled={isDeleting}
-                title="Excluir evento"
-                description={`Tem certeza que deseja excluir o evento "${event.name}"? Esta ação não pode ser desfeita.`}
-                confirmText={isDeleting ? "Excluindo..." : "Excluir evento"}
-                className="gap-2"
-              >
-                {isDeleting ? (
-                  <Loader2
-                    className="h-4 w-4 animate-spin"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <Trash2 className="h-4 w-4" aria-hidden="true" />
-                )}
-                <span>Excluir</span>
-              </ConfirmDeleteButton>
-            ) : null}
-          </>
-        )
-    : undefined;
+  const desktopActions = shouldShowActions ? (
+    <>
+      {onEdit ? (
+        <EditButton
+          key="edit"
+          size="sm"
+          variant="outline"
+          fullWidthOnDesktop={false}
+          onClick={handleEditClick}
+        />
+      ) : null}
+      {onDelete ? (
+        <ConfirmDeleteButton
+          key="delete"
+          size="sm"
+          variant="destructive"
+          onConfirm={handleDelete}
+          disabled={isDeleting}
+          title="Excluir evento"
+          description={`Tem certeza que deseja excluir o evento "${event.name}"? Esta ação não pode ser desfeita.`}
+          confirmText={isDeleting ? "Excluindo..." : "Excluir evento"}
+          className="gap-2"
+        >
+          {isDeleting ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+          )}
+          <span>Excluir</span>
+        </ConfirmDeleteButton>
+      ) : null}
+    </>
+  ) : undefined;
 
   return (
     <EntityCard
@@ -236,8 +169,6 @@ export function EventCard({
       infoRows={infoRows}
       body={descriptionBody}
       onClick={() => onSelect(event.id)}
-      badges={badges}
-      muted={event.isDeleted}
       mobileActions={mobileActions}
       desktopActions={desktopActions}
     />

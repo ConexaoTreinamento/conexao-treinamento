@@ -30,7 +30,7 @@ import type {
 } from "@/lib/students/hooks/student-mutations"
 import { scheduleByDateQueryOptions } from "@/lib/schedule/hooks/session-queries"
 import type { TrainerSchedule } from "@/lib/api-client"
-import type { TrainerLookupResponseDto } from "@/lib/api-client/types.gen"
+import type { TrainerLookupDto } from "@/lib/api-client/types.gen"
 import type { NormalizedSeries } from "@/lib/students/class-schedule/types"
 
 const weekdayMap: Record<number, string> = {
@@ -174,7 +174,7 @@ export default function ClassSchedulePage() {
 
   const trainerOptions = useMemo(() => {
     const raw = trainersQuery.data ?? []
-    return raw.filter((trainer): trainer is TrainerLookupResponseDto & { id: string } => Boolean(trainer?.id))
+    return raw.filter((trainer): trainer is TrainerLookupDto & { id: string } => Boolean(trainer?.id))
   }, [trainersQuery.data])
 
   const trainerNameById = useMemo(() => {

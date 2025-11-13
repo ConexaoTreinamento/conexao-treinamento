@@ -16,7 +16,6 @@ import { handleHttpError } from "@/lib/error-utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createExerciseMutation } from "@/lib/api-client/@tanstack/react-query.gen";
 import { apiClient } from "@/lib/client";
-import { invalidateExercisesQueries } from "@/lib/exercises/query-utils";
 
 interface CreateExerciseModalProps {
   isOpen: boolean;
@@ -40,15 +39,7 @@ export default function CreateExerciseModal({
     e.preventDefault();
 
     try {
-      const trimmedName = name.trim();
-      const trimmedDescription = description.trim();
-
-      await createExercise({
-        body: {
-          name: trimmedName,
-          description: trimmedDescription ? trimmedDescription : undefined,
-        },
-      });
+      createExercise({ client: apiClient, body: { name, description } });
 
       toast({
         title: "Exercício criado",
@@ -58,7 +49,11 @@ export default function CreateExerciseModal({
       setName("");
       setDescription("");
       onClose();
-      await invalidateExercisesQueries(queryClient);
+      await queryClient.invalidateQueries({
+        predicate: (q) =>
+          Array.isArray(q.queryKey) &&
+          q.queryKey[0]?._id === "findAllExercises",
+      });
     } catch (error: unknown) {
       handleHttpError(
         error,

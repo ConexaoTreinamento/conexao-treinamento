@@ -27,10 +27,8 @@ public class PhysicalEvaluationController {
     }
 
     @GetMapping("/{evaluationId}")
-    public ResponseEntity<PhysicalEvaluationResponseDTO> getEvaluation(
-            @PathVariable UUID studentId,
-            @PathVariable UUID evaluationId) {
-        return ResponseEntity.ok(evaluationService.findById(studentId, evaluationId));
+    public ResponseEntity<PhysicalEvaluationResponseDTO> getEvaluation(@PathVariable UUID evaluationId) {
+        return ResponseEntity.ok(evaluationService.findById(evaluationId));
     }
 
     @GetMapping
@@ -40,17 +38,14 @@ public class PhysicalEvaluationController {
 
     @PutMapping("/{evaluationId}")
     public ResponseEntity<PhysicalEvaluationResponseDTO> updateEvaluation(
-            @PathVariable UUID studentId,
             @PathVariable UUID evaluationId,
             @RequestBody @Valid PhysicalEvaluationRequestDTO request) {
-        return ResponseEntity.ok(evaluationService.update(studentId, evaluationId, request));
+        return ResponseEntity.ok(evaluationService.update(evaluationId, request));
     }
 
     @DeleteMapping("/{evaluationId}")
-    public ResponseEntity<Void> deleteEvaluation(
-            @PathVariable UUID studentId,
-            @PathVariable UUID evaluationId) {
-        evaluationService.delete(studentId, evaluationId);
+    public ResponseEntity<Void> deleteEvaluation(@PathVariable UUID evaluationId) {
+        evaluationService.delete(evaluationId);
         return ResponseEntity.noContent().build();
     }
 }

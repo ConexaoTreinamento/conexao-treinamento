@@ -1,10 +1,11 @@
 "use client";
 
-import { TrainerFilter } from "@/components/trainers/trainer-filter";
-import type { TrainerLookupResponseDto } from "@/lib/api-client/types.gen";
+import { Label } from "@/components/ui/label";
+import { TrainerSelect } from "@/components/trainers/trainer-select";
+import type { TrainerLookupDto } from "@/lib/api-client/types.gen";
 
 interface ClassScheduleTrainerFilterProps {
-  trainers: Array<TrainerLookupResponseDto & { id: string }>;
+  trainers: Array<TrainerLookupDto & { id: string }>;
   value: string;
   onValueChange: (value: string) => void;
   isLoading: boolean;
@@ -19,13 +20,19 @@ export function ClassScheduleTrainerFilter({
   isError,
 }: ClassScheduleTrainerFilterProps) {
   return (
-    <TrainerFilter
-      trainers={trainers}
-      value={value}
-      onValueChange={onValueChange}
-      isLoading={isLoading}
-      isError={isError}
-      placeholder="Selecione ou busque"
-    />
+    <div className="w-full space-y-1 sm:w-72">
+      <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        Instrutor
+      </Label>
+      <TrainerSelect
+        value={value}
+        onValueChange={onValueChange}
+        trainers={trainers}
+        isLoading={isLoading}
+        disabled={isError}
+        placeholder="Selecione ou busque"
+        className="w-full"
+      />
+    </div>
   );
 }

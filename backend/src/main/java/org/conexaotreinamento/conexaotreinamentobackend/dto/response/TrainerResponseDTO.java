@@ -17,7 +17,8 @@ public record TrainerResponseDTO(
         LocalDate birthDate,
         List<String> specialties,
         CompensationType compensationType,
-        Instant joinDate
+        Instant joinDate,
+        Integer hoursWorked
 ) {
 
     public static TrainerResponseDTO fromEntity(Trainer trainer, String email, Instant joinDate) {
@@ -30,7 +31,8 @@ public record TrainerResponseDTO(
                 trainer.getBirthDate(),
                 trainer.getSpecialties(),
                 trainer.getCompensationType(),
-                joinDate
+                joinDate,
+                120 // hoursWorked mockado
         );
     }
 }

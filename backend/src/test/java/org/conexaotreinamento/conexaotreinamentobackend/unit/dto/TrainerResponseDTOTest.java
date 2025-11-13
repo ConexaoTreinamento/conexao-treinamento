@@ -29,9 +29,10 @@ class TrainerResponseDTOTest {
         List<String> specialties = List.of("Musculação", "Crossfit");
         CompensationType compensationType = CompensationType.HOURLY;
         Instant joinDate = Instant.now();
+        Integer hoursWorked = 120;
 
         // When
-        TrainerResponseDTO dto = new TrainerResponseDTO(id, name, email, phone, address, birthDate, specialties, compensationType, joinDate);
+        TrainerResponseDTO dto = new TrainerResponseDTO(id, name, email, phone, address, birthDate, specialties, compensationType, joinDate, hoursWorked);
 
         // Then
         assertThat(dto.id()).isEqualTo(id);
@@ -43,13 +44,14 @@ class TrainerResponseDTOTest {
         assertThat(dto.specialties()).isEqualTo(specialties);
         assertThat(dto.compensationType()).isEqualTo(compensationType);
         assertThat(dto.joinDate()).isEqualTo(joinDate);
+        assertThat(dto.hoursWorked()).isEqualTo(hoursWorked);
     }
 
     @Test
     @DisplayName("Should create DTO with null values")
     void shouldCreateDTOWithNullValues() {
         // When
-        TrainerResponseDTO dto = new TrainerResponseDTO(null, null, null, null, null, null, null, null, null);
+        TrainerResponseDTO dto = new TrainerResponseDTO(null, null, null, null, null, null, null, null, null, null);
 
         // Then
         assertThat(dto.id()).isNull();
@@ -61,6 +63,7 @@ class TrainerResponseDTOTest {
         assertThat(dto.specialties()).isNull();
         assertThat(dto.compensationType()).isNull();
         assertThat(dto.joinDate()).isNull();
+        assertThat(dto.hoursWorked()).isNull();
     }
 
     @Test
@@ -95,6 +98,7 @@ class TrainerResponseDTOTest {
         assertThat(dto.specialties()).containsExactlyInAnyOrder("Yoga", "Pilates");
         assertThat(dto.compensationType()).isEqualTo(CompensationType.MONTHLY);
         assertThat(dto.joinDate()).isEqualTo(joinDate);
+        assertThat(dto.hoursWorked()).isEqualTo(120);
     }
 
     @Test
@@ -125,6 +129,7 @@ class TrainerResponseDTOTest {
         assertThat(dto.compensationType()).isEqualTo(CompensationType.HOURLY);
         assertThat(dto.address()).isEqualTo("Rua Central, 789");
         assertThat(dto.birthDate()).isEqualTo(LocalDate.of(1992, 8, 10));
+        assertThat(dto.hoursWorked()).isEqualTo(120);
     }
 
     @Test
@@ -270,6 +275,7 @@ class TrainerResponseDTOTest {
         assertThat(dto.specialties()).isEqualTo(specialties);
         assertThat(dto.compensationType()).isEqualTo(compensationType);
         assertThat(dto.joinDate()).isEqualTo(joinDate);
+        assertThat(dto.hoursWorked()).isEqualTo(120);
     }
 
     @Test
@@ -299,5 +305,32 @@ class TrainerResponseDTOTest {
         assertThat(dto.specialties()).isNull();
         assertThat(dto.address()).isEqualTo("Rua Nula, 600");
         assertThat(dto.birthDate()).isEqualTo(LocalDate.of(1993, 9, 12));
+        assertThat(dto.hoursWorked()).isEqualTo(120);
+    }
+
+    @Test
+    @DisplayName("Should always return 120 as hoursWorked")
+    void shouldAlwaysReturn120AsHoursWorked() {
+        // Given
+        UUID trainerId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        String email = "hours@test.com";
+        Instant joinDate = Instant.now();
+        
+        Trainer trainer = new Trainer();
+        trainer.setId(trainerId);
+        trainer.setUserId(userId);
+        trainer.setName("Hours Trainer");
+        trainer.setPhone("+5511999999999");
+        trainer.setAddress("Rua das Horas, 700");
+        trainer.setBirthDate(LocalDate.of(1986, 2, 28));
+        trainer.setSpecialties(List.of("Testing"));
+        trainer.setCompensationType(CompensationType.MONTHLY);
+
+        // When
+        TrainerResponseDTO dto = TrainerResponseDTO.fromEntity(trainer, email, joinDate);
+
+        // Then
+        assertThat(dto.hoursWorked()).isEqualTo(120);
     }
 }

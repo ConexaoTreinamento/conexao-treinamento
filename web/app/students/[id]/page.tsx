@@ -14,7 +14,6 @@ import {
   allPlansQueryOptions,
   allSchedulesQueryOptions,
   currentStudentPlanQueryOptions,
-  expiringPlanAssignmentsQueryOptions,
   studentCommitmentsQueryOptions,
   studentPlanHistoryQueryOptions,
   useStudent,
@@ -47,7 +46,6 @@ import {
   toPlanHistoryViews,
   getLastRenewalLabel,
 } from "@/lib/students/profile/utils"
-import {EXPIRING_LOOKAHEAD_DAYS} from "@/lib/students/constants"
 
 export default function StudentProfilePage() {
   const router = useRouter()
@@ -118,12 +116,9 @@ export default function StudentProfilePage() {
     enabled: hasStudentId,
   })
 
-  const { data: evaluations, isLoading: isLoadingEvaluations } = useEvaluations(
-    { path: { studentId } },
-    {
-      enabled: hasStudentId,
-    },
-  )
+  const { data: evaluations, isLoading: isLoadingEvaluations } = useEvaluations(studentId, {
+    enabled: hasStudentId,
+  })
 
   const assignPlanMutation = useMutation(assignPlanToStudentMutationOptions())
   const { mutateAsync: deleteStudent, isPending: isDeleting } = useDeleteStudent()
@@ -251,9 +246,6 @@ export default function StudentProfilePage() {
         queryClient.invalidateQueries({ queryKey: currentPlanQueryOptions.queryKey }),
         queryClient.invalidateQueries({ queryKey: planHistoryQueryOptions.queryKey }),
         queryClient.invalidateQueries({ queryKey: commitmentsQueryOptions.queryKey }),
-        queryClient.invalidateQueries({
-          queryKey: expiringPlanAssignmentsQueryOptions({ days: EXPIRING_LOOKAHEAD_DAYS }).queryKey,
-        }),
       ])
     } catch (error: unknown) {
       handleHttpError(error, "atribuir plano", "Não foi possível atribuir o plano. Tente novamente.")

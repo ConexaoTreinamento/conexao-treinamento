@@ -4,8 +4,6 @@ import { EmptyState } from "@/components/base/empty-state";
 import { Button } from "@/components/ui/button";
 import { FilterToolbar } from "@/components/base/filter-toolbar";
 import { EntityList } from "@/components/base/entity-list";
-import { EntityStatusFilter } from "@/components/base/entity-status-filter";
-import type { EntityStatusFilterValue } from "@/lib/entity-status";
 import { EventCard, type EventCardData } from "./event-card";
 
 export type { EventCardData } from "./event-card";
@@ -17,8 +15,6 @@ interface EventsGridProps {
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => Promise<void> | void;
   deletingEventId?: string | null;
-  onRestore?: (id: string) => Promise<void> | void;
-  restoringEventId?: string | null;
 }
 
 export function EventsList({
@@ -28,8 +24,6 @@ export function EventsList({
   onEdit,
   onDelete,
   deletingEventId,
-  onRestore,
-  restoringEventId,
 }: EventsGridProps) {
   if (!events.length) {
     return (
@@ -52,8 +46,6 @@ export function EventsList({
           onEdit={onEdit}
           onDelete={onDelete}
           deletingEventId={deletingEventId}
-          onRestore={onRestore}
-          restoringEventId={restoringEventId}
         />
       ))}
     </EntityList>
@@ -89,26 +81,18 @@ interface EventsToolbarProps {
   value: string;
   onValueChange: (value: string) => void;
   onReset: () => void;
-  status: EntityStatusFilterValue;
-  onStatusChange: (value: EntityStatusFilterValue) => void;
 }
 
 export function EventsToolbar({
   value,
   onValueChange,
   onReset,
-  status,
-  onStatusChange,
 }: EventsToolbarProps) {
-  const hasSearch = Boolean(value.trim().length);
-  const hasStatusFilter = status !== "active";
-  const activeFilterCount = hasStatusFilter ? 1 : 0;
-
   const toolbarActions = (
     <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:flex-nowrap">
-      {hasSearch || hasStatusFilter ? (
+      {value ? (
         <Button variant="outline" onClick={onReset}>
-          Limpar filtros
+          Limpar
         </Button>
       ) : null}
     </div>
@@ -121,16 +105,6 @@ export function EventsToolbar({
       searchPlaceholder="Buscar eventos..."
       searchLabel="Buscar eventos"
       toolbarActions={toolbarActions}
-      activeFilterCount={activeFilterCount}
-      filterTitle="Filtros de eventos"
-      renderFilters={() => (
-        <EntityStatusFilter
-          id="event-status-filter"
-          value={status}
-          onChange={onStatusChange}
-          description="Escolha quais eventos deseja visualizar."
-        />
-      )}
     />
   );
 }

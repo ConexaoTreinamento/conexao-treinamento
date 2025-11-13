@@ -9,24 +9,25 @@ import org.conexaotreinamento.conexaotreinamentobackend.entity.Anamnesis;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.PhysicalImpairment;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.AnamnesisRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.service.StudentService;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.PhysicalImpairmentRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.service.StudentService;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.service.StudentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.lang.reflect.Field;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -57,7 +58,6 @@ class StudentServiceTest {
     @BeforeEach
     void setUp() {
         studentId = UUID.randomUUID();
-        ReflectionTestUtils.setField(studentService, "entityManager", entityManager);
     }
 
     private StudentRequestDTO sampleRequest(boolean includeAnamnesis, boolean includeImpairments) {
@@ -118,31 +118,9 @@ class StudentServiceTest {
         assertEquals(req.email(), dto.email());
         verify(studentRepository).save(any(Student.class));
         verify(anamnesisRepository, times(1)).save(any(Anamnesis.class));
-        @SuppressWarnings("unchecked")
         ArgumentCaptor<List<PhysicalImpairment>> piCaptor = ArgumentCaptor.forClass(List.class);
         verify(physicalImpairmentRepository).saveAll(piCaptor.capture());
         assertEquals(2, piCaptor.getValue().size());
-    }
-
-    @Test
-    void create_success_withoutAnamnesis() {
-        // Arrange
-        StudentRequestDTO req = sampleRequest(false, false);
-
-        when(studentRepository.existsByEmailIgnoringCaseAndDeletedAtIsNull(req.email())).thenReturn(false);
-        when(studentRepository.save(any(Student.class))).thenAnswer(invocation -> {
-            Student s = invocation.getArgument(0);
-            setIdViaReflection(s, studentId);
-            return s;
-        });
-
-        // Act
-        StudentResponseDTO dto = studentService.create(req);
-
-        // Assert
-        assertNotNull(dto);
-        verify(anamnesisRepository, never()).save(any(Anamnesis.class));
-        verify(physicalImpairmentRepository, never()).saveAll(anyList());
     }
 
     @Test
@@ -204,7 +182,7 @@ class StudentServiceTest {
         setIdViaReflection(s, studentId);
 
         Page<Student> page = new PageImpl<>(List.of(s), PageRequest.of(0, 10), 1);
-        when(studentRepository.findAll(ArgumentMatchers.<Specification<Student>>any(), any(Pageable.class))).thenReturn(page);
+        when(studentRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
         // Act
         Page<StudentResponseDTO> result = studentService.findAll(null, null, null, null, null, null, null, false, unsorted);
@@ -213,7 +191,7 @@ class StudentServiceTest {
         assertEquals(1, result.getTotalElements());
         // Capture pageable argument to verify sorting
         ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
-        verify(studentRepository).findAll(ArgumentMatchers.<Specification<Student>>any(), pageableCaptor.capture());
+        verify(studentRepository).findAll(any(Specification.class), pageableCaptor.capture());
         Pageable used = pageableCaptor.getValue();
         assertFalse(used.getSort().isUnsorted(), "Sort should be applied");
         assertEquals(Sort.by("createdAt").descending(), used.getSort(), "Expected sort by createdAt desc");
@@ -252,30 +230,6 @@ class StudentServiceTest {
         // Act + Assert
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentService.update(studentId, sampleRequest(false, false)));
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
-    }
-
-    @Test
-    void update_removesAnamnesis_whenPayloadOmitsSection() {
-        // Arrange
-        Student existing = new Student("alice@example.com", "Alice", "Doe", Student.Gender.F, LocalDate.of(2000, 1, 1));
-        existing.setRegistrationDate(LocalDate.now());
-        setIdViaReflection(existing, studentId);
-
-        Anamnesis existingAnamnesis = new Anamnesis(existing);
-
-        when(studentRepository.findByIdAndDeletedAtIsNull(studentId)).thenReturn(Optional.of(existing));
-        when(studentRepository.save(any(Student.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(anamnesisRepository.findById(studentId)).thenReturn(Optional.of(existingAnamnesis));
-
-        StudentRequestDTO request = sampleRequest(false, false);
-
-        // Act
-        studentService.update(studentId, request);
-
-        // Assert
-        verify(anamnesisRepository).deleteById(studentId);
-        verify(anamnesisRepository, never()).saveAndFlush(any(Anamnesis.class));
-        verify(entityManager).flush();
     }
 
     @Test

@@ -2,19 +2,11 @@ package org.conexaotreinamento.conexaotreinamentobackend.unit.service;
 
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AgeDistributionResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ReportsResponseDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.SessionResponseDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentCommitmentResponseDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.entity.Event;
-import org.conexaotreinamento.conexaotreinamentobackend.entity.EventParticipant;
-import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
-import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
-import org.conexaotreinamento.conexaotreinamentobackend.enums.CommitmentStatus;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerReportResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;
-import org.conexaotreinamento.conexaotreinamentobackend.repository.EventRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.repository.ScheduledSessionRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentRepository;
-import org.conexaotreinamento.conexaotreinamentobackend.repository.TrainerRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.service.ReportsService;
-import org.conexaotreinamento.conexaotreinamentobackend.service.ScheduleService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,33 +14,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("ReportsService Unit Tests")
 class ReportsServiceTest {
 
     @Mock
-    private ScheduleService scheduleService;
-
-    @Mock
-    private EventRepository eventRepository;
-
-    @Mock
-    private TrainerRepository trainerRepository;
+    private ScheduledSessionRepository scheduledSessionRepository;
 
     @Mock
     private StudentRepository studentRepository;
@@ -68,262 +47,414 @@ class ReportsServiceTest {
     }
 
     @Test
-    @DisplayName("Aggregates sessions and events, including non-materialized schedule sessions")
-    void shouldAggregateSessionsAndEventsIncludingNonMaterializedSessions() {
-        Trainer trainer = createTrainer(trainerId, "Prof. Ana", CompensationType.HOURLY, List.of("Pilates"));
+    @DisplayName("Should generate complete reports with trainer and age distribution data")
+    void shouldGenerateCompleteReports() {
+        // Arrange
+        List<Object[]> mockTrainerData = createMockTrainerData();
+        List<LocalDate> mockBirthDates = createMockBirthDates();
 
-        SessionResponseDTO sessionWithParticipants = buildSession(
-                trainerId,
-                LocalDateTime.of(2025, 10, 10, 10, 0),
-                LocalDateTime.of(2025, 10, 10, 11, 0),
-                false,
+        when(scheduledSessionRepository.findTrainerReportsRaw(startDate, endDate, trainerId))
+                .thenReturn(mockTrainerData);
+        when(studentRepository.findAllBirthDates())
+                .thenReturn(mockBirthDates);
+
+        // Act
+        ReportsResponseDTO result = reportsService.generateReports(startDate, endDate, trainerId);
+
+        // Assert
+        assertThat(result).isNotNull();
+        assertThat(result.trainerReports()).hasSize(2);
+        assertThat(result.ageDistribution()).hasSize(4);
+
+        verify(scheduledSessionRepository).findTrainerReportsRaw(startDate, endDate, trainerId);
+        verify(studentRepository).findAllBirthDates();
+    }
+
+    @Test
+    @DisplayName("Should map trainer raw data correctly to TrainerReportResponseDTO")
+    void shouldMapTrainerDataCorrectly() {
+        // Arrange
+        UUID trainer1Id = UUID.randomUUID();
+        Object[] rawData = new Object[]{
+                trainer1Id,
+                "Prof. Ana Silva",
+                15.5,
+                10,
+                5,
+                "HOURLY",
+                new String[]{"Pilates", "Yoga"}
+        };
+
+        List<Object[]> mockData = new ArrayList<>();
+        mockData.add(rawData);
+        
+        when(scheduledSessionRepository.findTrainerReportsRaw(startDate, endDate, trainerId))
+                .thenReturn(mockData);
+        when(studentRepository.findAllBirthDates())
+                .thenReturn(Collections.emptyList());
+
+        // Act
+        ReportsResponseDTO result = reportsService.generateReports(startDate, endDate, trainerId);
+
+        // Assert
+        assertThat(result.trainerReports()).hasSize(1);
+        TrainerReportResponseDTO trainer = result.trainerReports().get(0);
+        
+        assertThat(trainer.id()).isEqualTo(trainer1Id);
+        assertThat(trainer.name()).isEqualTo("Prof. Ana Silva");
+        assertThat(trainer.hoursWorked()).isEqualTo(15.5);
+        assertThat(trainer.classesGiven()).isEqualTo(10);
+        assertThat(trainer.studentsManaged()).isEqualTo(5);
+        assertThat(trainer.compensation()).isEqualTo(CompensationType.HOURLY);
+        assertThat(trainer.specialties()).containsExactly("Pilates", "Yoga");
+    }
+
+    @Test
+    @DisplayName("Should handle trainer with null specialties")
+    void shouldHandleNullSpecialties() {
+        // Arrange
+        Object[] rawData = new Object[]{
                 UUID.randomUUID(),
-                UUID.randomUUID()
-        );
+                "Prof. Carlos Santos",
+                20.0,
+                15,
+                8,
+                "MONTHLY",
+                null
+        };
 
-        SessionResponseDTO sessionWithoutParticipants = buildSession(
-                trainerId,
-                LocalDateTime.of(2025, 10, 11, 10, 0),
-                LocalDateTime.of(2025, 10, 11, 11, 0),
-                false
-        );
+        List<Object[]> mockData = new ArrayList<>();
+        mockData.add(rawData);
+        
+        when(scheduledSessionRepository.findTrainerReportsRaw(startDate, endDate, trainerId))
+                .thenReturn(mockData);
+        when(studentRepository.findAllBirthDates())
+                .thenReturn(Collections.emptyList());
 
-        UUID studentShared = sessionWithParticipants.students().get(0).studentId();
-        UUID studentExclusive = UUID.randomUUID();
+        // Act
+        ReportsResponseDTO result = reportsService.generateReports(startDate, endDate, trainerId);
 
-        Event event = buildEvent(
-                trainer,
-                LocalDateTime.of(2025, 10, 12, 9, 0),
-                LocalDateTime.of(2025, 10, 12, 10, 30),
-                new UUID[]{studentShared, studentExclusive},
-                new boolean[]{true, true}
-        );
-
-        when(trainerRepository.findAll()).thenReturn(List.of(trainer));
-        when(scheduleService.getScheduledSessions(startDate.toLocalDate(), endDate.toLocalDate()))
-                .thenReturn(List.of(sessionWithParticipants, sessionWithoutParticipants));
-        when(eventRepository.findActiveWithinDateRangeWithParticipants(startDate.toLocalDate(), endDate.toLocalDate()))
-                .thenReturn(List.of(event));
-        when(studentRepository.findAllBirthDates()).thenReturn(Collections.emptyList());
-
-        ReportsResponseDTO response = reportsService.generateReports(startDate, endDate, null);
-
-        assertThat(response.trainerReports()).hasSize(1);
-        assertThat(response.ageDistribution()).hasSize(4);
-
-        var report = response.trainerReports().get(0);
-        assertThat(report.id()).isEqualTo(trainerId);
-        assertThat(report.name()).isEqualTo("Prof. Ana");
-        assertThat(report.compensation()).isEqualTo(CompensationType.HOURLY);
-        assertThat(report.specialties()).containsExactly("Pilates");
-        assertThat(report.classesGiven()).isEqualTo(2);
-        assertThat(report.studentsManaged()).isEqualTo(3);
-        assertThat(report.hoursWorked()).isEqualTo(2.5);
+        // Assert
+        assertThat(result.trainerReports()).hasSize(1);
+        TrainerReportResponseDTO trainer = result.trainerReports().get(0);
+        assertThat(trainer.specialties()).isEmpty();
     }
 
     @Test
-    @DisplayName("Filters aggregation when trainerId is provided")
-    void shouldFilterReportByTrainerId() {
-        UUID otherTrainerId = UUID.randomUUID();
-        Trainer targetTrainer = createTrainer(trainerId, "Target Trainer", CompensationType.MONTHLY, List.of());
+    @DisplayName("Should handle trainer with empty specialties array")
+    void shouldHandleEmptySpecialtiesArray() {
+        // Arrange
+        Object[] rawData = new Object[]{
+                UUID.randomUUID(),
+                "Prof. Marina Costa",
+                12.0,
+                8,
+                3,
+                "HOURLY",
+                new String[]{}
+        };
 
-        SessionResponseDTO targetSession = buildSession(
-                trainerId,
-                LocalDateTime.of(2025, 10, 5, 8, 0),
-                LocalDateTime.of(2025, 10, 5, 9, 0),
-                false,
-                UUID.randomUUID()
-        );
-        SessionResponseDTO otherSession = buildSession(
-                otherTrainerId,
-                LocalDateTime.of(2025, 10, 6, 8, 0),
-                LocalDateTime.of(2025, 10, 6, 9, 0),
-                false,
-                UUID.randomUUID()
-        );
-
-        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(targetTrainer));
-        when(scheduleService.getScheduledSessions(startDate.toLocalDate(), endDate.toLocalDate()))
-                .thenReturn(List.of(targetSession, otherSession));
-        when(eventRepository.findActiveWithinDateRangeWithParticipants(startDate.toLocalDate(), endDate.toLocalDate()))
+        List<Object[]> mockData = new ArrayList<>();
+        mockData.add(rawData);
+        
+        when(scheduledSessionRepository.findTrainerReportsRaw(startDate, endDate, trainerId))
+                .thenReturn(mockData);
+        when(studentRepository.findAllBirthDates())
                 .thenReturn(Collections.emptyList());
-        when(studentRepository.findAllBirthDates()).thenReturn(Collections.emptyList());
 
-        ReportsResponseDTO response = reportsService.generateReports(startDate, endDate, trainerId);
+        // Act
+        ReportsResponseDTO result = reportsService.generateReports(startDate, endDate, trainerId);
 
-        assertThat(response.trainerReports()).hasSize(1);
-        var report = response.trainerReports().get(0);
-        assertThat(report.id()).isEqualTo(trainerId);
-        assertThat(report.classesGiven()).isEqualTo(1);
-        assertThat(report.hoursWorked()).isEqualTo(1.0);
+        // Assert
+        assertThat(result.trainerReports()).hasSize(1);
+        TrainerReportResponseDTO trainer = result.trainerReports().get(0);
+        assertThat(trainer.specialties()).isEmpty();
     }
 
     @Test
-    @DisplayName("Returns zero metrics when trainer has no qualifying activities")
-    void shouldReturnZeroMetricsForTrainerWithoutActivities() {
-        Trainer trainer = createTrainer(trainerId, "Inactive Trainer", CompensationType.HOURLY, List.of());
-
-        when(trainerRepository.findAll()).thenReturn(List.of(trainer));
-        when(scheduleService.getScheduledSessions(startDate.toLocalDate(), endDate.toLocalDate()))
+    @DisplayName("Should return empty trainer reports when no data exists")
+    void shouldReturnEmptyTrainerReports() {
+        // Arrange
+        when(scheduledSessionRepository.findTrainerReportsRaw(startDate, endDate, trainerId))
                 .thenReturn(Collections.emptyList());
-        when(eventRepository.findActiveWithinDateRangeWithParticipants(startDate.toLocalDate(), endDate.toLocalDate()))
+        when(studentRepository.findAllBirthDates())
                 .thenReturn(Collections.emptyList());
-        when(studentRepository.findAllBirthDates()).thenReturn(Collections.emptyList());
 
-        ReportsResponseDTO response = reportsService.generateReports(startDate, endDate, null);
+        // Act
+        ReportsResponseDTO result = reportsService.generateReports(startDate, endDate, trainerId);
 
-        assertThat(response.trainerReports()).hasSize(1);
-        var report = response.trainerReports().get(0);
-        assertThat(report.hoursWorked()).isEqualTo(0.0);
-        assertThat(report.classesGiven()).isEqualTo(0);
-        assertThat(report.studentsManaged()).isEqualTo(0);
+        // Assert
+        assertThat(result.trainerReports()).isEmpty();
+        assertThat(result.ageDistribution()).hasSize(4); // Always returns 4 age groups
     }
 
     @Test
-    @DisplayName("Excludes sessions where all participants are marked absent")
-    void shouldExcludeSessionsWhenAllParticipantsAreAbsent() {
-        Trainer trainer = createTrainer(trainerId, "Prof. Ausente", CompensationType.HOURLY, List.of());
-        UUID absentStudentId = UUID.randomUUID();
-
-        SessionResponseDTO absentSession = new SessionResponseDTO(
-                "session__" + trainerId + "__absent",
-                trainerId,
-                "Prof. Ausente",
-                LocalDateTime.of(2025, 10, 15, 14, 0),
-                LocalDateTime.of(2025, 10, 15, 15, 0),
-                "Series",
-                null,
-                false,
-                List.of(createParticipant(absentStudentId, false)),
-                false,
-                0
-        );
-
-        when(trainerRepository.findAll()).thenReturn(List.of(trainer));
-        when(scheduleService.getScheduledSessions(startDate.toLocalDate(), endDate.toLocalDate()))
-                .thenReturn(List.of(absentSession));
-        when(eventRepository.findActiveWithinDateRangeWithParticipants(startDate.toLocalDate(), endDate.toLocalDate()))
-                .thenReturn(Collections.emptyList());
-        when(studentRepository.findAllBirthDates()).thenReturn(Collections.emptyList());
-
-        ReportsResponseDTO response = reportsService.generateReports(startDate, endDate, null);
-
-        assertThat(response.trainerReports()).hasSize(1);
-        var report = response.trainerReports().get(0);
-        assertThat(report.hoursWorked()).isEqualTo(0.0);
-        assertThat(report.classesGiven()).isEqualTo(0);
-        assertThat(report.studentsManaged()).isEqualTo(0);
-    }
-
-    @Test
-    @DisplayName("Calculates age distribution percentages")
-    void shouldCalculateAgeDistribution() {
-        Trainer trainer = createTrainer(trainerId, "Any Trainer", CompensationType.HOURLY, List.of());
-        when(trainerRepository.findAll()).thenReturn(List.of(trainer));
-        when(scheduleService.getScheduledSessions(startDate.toLocalDate(), endDate.toLocalDate()))
-                .thenReturn(Collections.emptyList());
-        when(eventRepository.findActiveWithinDateRangeWithParticipants(startDate.toLocalDate(), endDate.toLocalDate()))
-                .thenReturn(Collections.emptyList());
-
+    @DisplayName("Should calculate age distribution correctly")
+    void shouldCalculateAgeDistributionCorrectly() {
+        // Arrange
         List<LocalDate> birthDates = Arrays.asList(
-                LocalDate.now().minusYears(20),
-                LocalDate.now().minusYears(30),
-                LocalDate.now().minusYears(40),
-                LocalDate.now().minusYears(50)
+                LocalDate.now().minusYears(20), // 18-25
+                LocalDate.now().minusYears(22), // 18-25
+                LocalDate.now().minusYears(30), // 26-35
+                LocalDate.now().minusYears(32), // 26-35
+                LocalDate.now().minusYears(35), // 26-35
+                LocalDate.now().minusYears(40), // 36-45
+                LocalDate.now().minusYears(50), // 46+
+                LocalDate.now().minusYears(60)  // 46+
         );
-        when(studentRepository.findAllBirthDates()).thenReturn(birthDates);
 
-        ReportsResponseDTO response = reportsService.generateReports(startDate, endDate, null);
-        List<AgeDistributionResponseDTO> distribution = response.ageDistribution();
+        when(scheduledSessionRepository.findTrainerReportsRaw(startDate, endDate, trainerId))
+                .thenReturn(Collections.emptyList());
+        when(studentRepository.findAllBirthDates())
+                .thenReturn(birthDates);
 
-        assertThat(distribution).hasSize(4);
-        assertThat(distribution.get(0).count()).isEqualTo(1);
-        assertThat(distribution.get(1).count()).isEqualTo(1);
-        assertThat(distribution.get(2).count()).isEqualTo(1);
-        assertThat(distribution.get(3).count()).isEqualTo(1);
+        // Act
+        ReportsResponseDTO result = reportsService.generateReports(startDate, endDate, trainerId);
+
+        // Assert
+        List<AgeDistributionResponseDTO> ageDistribution = result.ageDistribution();
+        assertThat(ageDistribution).hasSize(4);
+
+        // Verify counts
+        assertThat(ageDistribution.get(0).ageRange()).isEqualTo("18-25");
+        assertThat(ageDistribution.get(0).count()).isEqualTo(2);
+        assertThat(ageDistribution.get(0).percentage()).isEqualTo(25.0);
+
+        assertThat(ageDistribution.get(1).ageRange()).isEqualTo("26-35");
+        assertThat(ageDistribution.get(1).count()).isEqualTo(3);
+        assertThat(ageDistribution.get(1).percentage()).isEqualTo(37.5);
+
+        assertThat(ageDistribution.get(2).ageRange()).isEqualTo("36-45");
+        assertThat(ageDistribution.get(2).count()).isEqualTo(1);
+        assertThat(ageDistribution.get(2).percentage()).isEqualTo(12.5);
+
+        assertThat(ageDistribution.get(3).ageRange()).isEqualTo("46+");
+        assertThat(ageDistribution.get(3).count()).isEqualTo(2);
+        assertThat(ageDistribution.get(3).percentage()).isEqualTo(25.0);
     }
 
-    private Trainer createTrainer(UUID id, String name, CompensationType compensationType, List<String> specialties) {
-        Trainer trainer = new Trainer();
-        ReflectionTestUtils.setField(trainer, "id", id);
-        trainer.setName(name);
-        trainer.setCompensationType(compensationType);
-        trainer.setSpecialties(specialties);
-        return trainer;
+    @Test
+    @DisplayName("Should handle empty birth dates list")
+    void shouldHandleEmptyBirthDates() {
+        // Arrange
+        when(scheduledSessionRepository.findTrainerReportsRaw(startDate, endDate, trainerId))
+                .thenReturn(Collections.emptyList());
+        when(studentRepository.findAllBirthDates())
+                .thenReturn(Collections.emptyList());
+
+        // Act
+        ReportsResponseDTO result = reportsService.generateReports(startDate, endDate, trainerId);
+
+        // Assert
+        List<AgeDistributionResponseDTO> ageDistribution = result.ageDistribution();
+        assertThat(ageDistribution).hasSize(4);
+        
+        // All groups should have 0 count and 0% percentage
+        ageDistribution.forEach(group -> {
+            assertThat(group.count()).isEqualTo(0);
+            assertThat(group.percentage()).isEqualTo(0.0);
+        });
     }
 
-    private SessionResponseDTO buildSession(UUID trainerId,
-                                            LocalDateTime start,
-                                            LocalDateTime end,
-                                            boolean canceled,
-                                            UUID... studentIds) {
-        List<StudentCommitmentResponseDTO> participants = new ArrayList<>();
-        for (UUID studentId : studentIds) {
-                        participants.add(createParticipant(studentId, true));
-        }
-        return new SessionResponseDTO(
-                "session__" + trainerId + "__" + start,
-                trainerId,
-                "Trainer",
-                start,
-                end,
-                "Series",
-                null,
-                false,
-                participants,
-                canceled,
-                participants.size()
+    @Test
+    @DisplayName("Should calculate percentages with proper rounding")
+    void shouldCalculatePercentagesWithProperRounding() {
+        // Arrange - 3 students total
+        List<LocalDate> birthDates = Arrays.asList(
+                LocalDate.now().minusYears(20), // 18-25
+                LocalDate.now().minusYears(30), // 26-35
+                LocalDate.now().minusYears(40)  // 36-45
+        );
+
+        when(scheduledSessionRepository.findTrainerReportsRaw(startDate, endDate, trainerId))
+                .thenReturn(Collections.emptyList());
+        when(studentRepository.findAllBirthDates())
+                .thenReturn(birthDates);
+
+        // Act
+        ReportsResponseDTO result = reportsService.generateReports(startDate, endDate, trainerId);
+
+        // Assert
+        List<AgeDistributionResponseDTO> ageDistribution = result.ageDistribution();
+        
+        // Each group has 1 student out of 3 = 33.33%
+        assertThat(ageDistribution.get(0).percentage()).isEqualTo(33.33);
+        assertThat(ageDistribution.get(1).percentage()).isEqualTo(33.33);
+        assertThat(ageDistribution.get(2).percentage()).isEqualTo(33.33);
+        assertThat(ageDistribution.get(3).percentage()).isEqualTo(0.0);
+    }
+
+    @Test
+    @DisplayName("Should handle students under 18 (not counted in any group)")
+    void shouldHandleStudentsUnder18() {
+        // Arrange
+        List<LocalDate> birthDates = Arrays.asList(
+                LocalDate.now().minusYears(16), // Under 18 - not counted
+                LocalDate.now().minusYears(20), // 18-25
+                LocalDate.now().minusYears(30)  // 26-35
+        );
+
+        when(scheduledSessionRepository.findTrainerReportsRaw(startDate, endDate, trainerId))
+                .thenReturn(Collections.emptyList());
+        when(studentRepository.findAllBirthDates())
+                .thenReturn(birthDates);
+
+        // Act
+        ReportsResponseDTO result = reportsService.generateReports(startDate, endDate, trainerId);
+
+        // Assert
+        List<AgeDistributionResponseDTO> ageDistribution = result.ageDistribution();
+        
+        // Total should be 3 (including under 18), but only 2 are counted in groups
+        int totalCounted = ageDistribution.stream()
+                .mapToInt(AgeDistributionResponseDTO::count)
+                .sum();
+        assertThat(totalCounted).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("Should handle boundary ages correctly")
+    void shouldHandleBoundaryAgesCorrectly() {
+        // Arrange
+        List<LocalDate> birthDates = Arrays.asList(
+                LocalDate.now().minusYears(18), // Exactly 18 -> 18-25
+                LocalDate.now().minusYears(25), // Exactly 25 -> 18-25
+                LocalDate.now().minusYears(26), // Exactly 26 -> 26-35
+                LocalDate.now().minusYears(35), // Exactly 35 -> 26-35
+                LocalDate.now().minusYears(36), // Exactly 36 -> 36-45
+                LocalDate.now().minusYears(45), // Exactly 45 -> 36-45
+                LocalDate.now().minusYears(46)  // Exactly 46 -> 46+
+        );
+
+        when(scheduledSessionRepository.findTrainerReportsRaw(startDate, endDate, trainerId))
+                .thenReturn(Collections.emptyList());
+        when(studentRepository.findAllBirthDates())
+                .thenReturn(birthDates);
+
+        // Act
+        ReportsResponseDTO result = reportsService.generateReports(startDate, endDate, trainerId);
+
+        // Assert
+        List<AgeDistributionResponseDTO> ageDistribution = result.ageDistribution();
+        
+        assertThat(ageDistribution.get(0).count()).isEqualTo(2); // 18-25
+        assertThat(ageDistribution.get(1).count()).isEqualTo(2); // 26-35
+        assertThat(ageDistribution.get(2).count()).isEqualTo(2); // 36-45
+        assertThat(ageDistribution.get(3).count()).isEqualTo(1); // 46+
+    }
+
+    @Test
+    @DisplayName("Should handle multiple trainers with different compensation types")
+    void shouldHandleMultipleTrainersWithDifferentCompensationTypes() {
+        // Arrange
+        List<Object[]> mockData = Arrays.asList(
+                new Object[]{
+                        UUID.randomUUID(), "Trainer 1", 10.0, 5, 3,
+                        "HOURLY", new String[]{"Yoga"}
+                },
+                new Object[]{
+                        UUID.randomUUID(), "Trainer 2", 20.0, 10, 8,
+                        "MONTHLY", new String[]{"CrossFit"}
+                },
+                new Object[]{
+                        UUID.randomUUID(), "Trainer 3", 15.0, 8, 5,
+                        "HOURLY", new String[]{"Pilates", "Dança"}
+                }
+        );
+
+        when(scheduledSessionRepository.findTrainerReportsRaw(startDate, endDate, null))
+                .thenReturn(mockData);
+        when(studentRepository.findAllBirthDates())
+                .thenReturn(Collections.emptyList());
+
+        // Act
+        ReportsResponseDTO result = reportsService.generateReports(startDate, endDate, null);
+
+        // Assert
+        assertThat(result.trainerReports()).hasSize(3);
+        
+        long hourlyCount = result.trainerReports().stream()
+                .filter(t -> t.compensation() == CompensationType.HOURLY)
+                .count();
+        long monthlyCount = result.trainerReports().stream()
+                .filter(t -> t.compensation() == CompensationType.MONTHLY)
+                .count();
+        
+        assertThat(hourlyCount).isEqualTo(2);
+        assertThat(monthlyCount).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Should handle trainers with zero hours and classes")
+    void shouldHandleTrainersWithZeroHoursAndClasses() {
+        // Arrange
+        Object[] rawData = new Object[]{
+                UUID.randomUUID(),
+                "Inactive Trainer",
+                0.0,
+                0,
+                0,
+                "HOURLY",
+                new String[]{"Yoga"}
+        };
+
+        List<Object[]> mockData = new ArrayList<>();
+        mockData.add(rawData);
+        
+        when(scheduledSessionRepository.findTrainerReportsRaw(startDate, endDate, trainerId))
+                .thenReturn(mockData);
+        when(studentRepository.findAllBirthDates())
+                .thenReturn(Collections.emptyList());
+
+        // Act
+        ReportsResponseDTO result = reportsService.generateReports(startDate, endDate, trainerId);
+
+        // Assert
+        assertThat(result.trainerReports()).hasSize(1);
+        TrainerReportResponseDTO trainer = result.trainerReports().get(0);
+        
+        assertThat(trainer.hoursWorked()).isEqualTo(0.0);
+        assertThat(trainer.classesGiven()).isEqualTo(0);
+        assertThat(trainer.studentsManaged()).isEqualTo(0);
+    }
+
+    // Helper methods
+
+    private List<Object[]> createMockTrainerData() {
+        UUID trainer1Id = UUID.randomUUID();
+        UUID trainer2Id = UUID.randomUUID();
+
+        return Arrays.asList(
+                new Object[]{
+                        trainer1Id,
+                        "Prof. Ana Silva",
+                        15.5,
+                        10,
+                        5,
+                        "HOURLY",
+                        new String[]{"Pilates", "Yoga"}
+                },
+                new Object[]{
+                        trainer2Id,
+                        "Prof. Carlos Santos",
+                        20.0,
+                        15,
+                        8,
+                        "MONTHLY",
+                        new String[]{"Musculação", "CrossFit"}
+                }
         );
     }
 
-        private StudentCommitmentResponseDTO createParticipant(UUID studentId, boolean present) {
-                return new StudentCommitmentResponseDTO(
-                                studentId,
-                                "Student " + studentId.toString().substring(0, 5),
-                                CommitmentStatus.ATTENDING,
-                                Collections.emptyList(),
-                                Collections.emptyList(),
-                                present,
-                                null
-                );
-        }
-
-    private Event buildEvent(Trainer trainer,
-                             LocalDateTime start,
-                             LocalDateTime end,
-                             UUID[] participantIds,
-                             boolean[] attendanceFlags) {
-        Event event = new TestEvent();
-        event.setTrainer(trainer);
-        event.setName("Evento Teste");
-        event.setDate(start.toLocalDate());
-        event.setStartTime(start.toLocalTime());
-        event.setEndTime(end.toLocalTime());
-
-        List<EventParticipant> participants = new ArrayList<>();
-        for (int i = 0; i < participantIds.length; i++) {
-            EventParticipant participant = new TestEventParticipant();
-            participant.setEvent(event);
-            participant.setPresent(attendanceFlags[i]);
-            Student student = mock(Student.class);
-            when(student.getId()).thenReturn(participantIds[i]);
-            participant.setStudent(student);
-            participants.add(participant);
-        }
-
-        ReflectionTestUtils.setField(event, "participants", participants);
-        return event;
+    private List<LocalDate> createMockBirthDates() {
+        return Arrays.asList(
+                LocalDate.now().minusYears(20), // 18-25
+                LocalDate.now().minusYears(22), // 18-25
+                LocalDate.now().minusYears(24), // 18-25
+                LocalDate.now().minusYears(30), // 26-35
+                LocalDate.now().minusYears(32), // 26-35
+                LocalDate.now().minusYears(40), // 36-45
+                LocalDate.now().minusYears(50)  // 46+
+        );
     }
-
-        private static final class TestEvent extends Event {
-                TestEvent() {
-                        super();
-                }
-        }
-
-        private static final class TestEventParticipant extends EventParticipant {
-                TestEventParticipant() {
-                        super();
-                }
-        }
 }

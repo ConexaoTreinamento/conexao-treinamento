@@ -121,19 +121,4 @@ public class TrainerService {
         
         log.info("Password reset successfully for trainer [ID: {}] - Name: {}", trainerId, trainer.getName());
     }
-
-    @Transactional
-    public TrainerListItemResponseDTO restore(UUID trainerId) {
-        log.debug("Attempting to restore trainer [ID: {}]", trainerId);
-
-        Trainer trainer = trainerRepository.findById(trainerId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Trainer not found"));
-
-        userService.restore(trainer.getUserId());
-
-        return trainerRepository.findActiveTrainerProfileById(trainerId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.INTERNAL_SERVER_ERROR,
-                        "Restored trainer not found"));
-    }
 }
