@@ -17,26 +17,14 @@ public interface TrainerScheduleRepository extends JpaRepository<TrainerSchedule
     
     List<TrainerSchedule> findByTrainerIdAndActiveTrue(UUID trainerId);
     
-    @Query("""
-        SELECT ts FROM TrainerSchedule ts
-        WHERE ts.trainerId = :trainerId
-          AND ts.weekday = :weekday
-          AND ts.effectiveFromTimestamp <= :timestamp
-          AND (ts.active = true OR (ts.deletedAt IS NOT NULL AND ts.deletedAt > :timestamp))
-        ORDER BY ts.effectiveFromTimestamp DESC
-        """)
+    @Query("SELECT ts FROM TrainerSchedule ts WHERE ts.trainerId = :trainerId AND ts.weekday = :weekday AND ts.active = true AND ts.effectiveFromTimestamp <= :timestamp ORDER BY ts.effectiveFromTimestamp DESC")
     List<TrainerSchedule> findByTrainerIdAndWeekdayAndEffectiveFromTimestampLessThanEqualOrderByEffectiveFromTimestampDesc(
         @Param("trainerId") UUID trainerId, 
         @Param("weekday") int weekday, 
         @Param("timestamp") Instant timestamp
     );
     
-    @Query("""
-        SELECT ts FROM TrainerSchedule ts
-        WHERE ts.weekday = :weekday
-          AND ts.effectiveFromTimestamp <= :timestamp
-          AND (ts.active = true OR (ts.deletedAt IS NOT NULL AND ts.deletedAt > :timestamp))
-        """)
+    @Query("SELECT ts FROM TrainerSchedule ts WHERE ts.weekday = :weekday AND ts.active = true AND ts.effectiveFromTimestamp <= :timestamp")
     List<TrainerSchedule> findByWeekdayAndEffectiveFromTimestampLessThanEqual(
         @Param("weekday") int weekday, 
         @Param("timestamp") Instant timestamp
