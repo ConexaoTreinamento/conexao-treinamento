@@ -11,6 +11,40 @@ export type TrainerCreateRequestDto = {
     compensationType?: 'HOURLY' | 'MONTHLY';
 };
 
+/**
+ * Standard error response
+ */
+export type ErrorResponse = {
+    /**
+     * Timestamp when the error occurred
+     */
+    timestamp?: string;
+    /**
+     * HTTP status code
+     */
+    status?: number;
+    /**
+     * HTTP status reason phrase
+     */
+    error?: string;
+    /**
+     * Detailed error message
+     */
+    message?: string;
+    /**
+     * Request path that caused the error
+     */
+    path?: string;
+    /**
+     * Optional error code for client handling
+     */
+    errorCode?: string;
+    /**
+     * Optional trace ID for debugging
+     */
+    traceId?: string;
+};
+
 export type TrainerResponseDto = {
     id?: string;
     name?: string;
@@ -23,6 +57,9 @@ export type TrainerResponseDto = {
     joinDate?: string;
 };
 
+/**
+ * Schedule creation request
+ */
 export type TrainerScheduleRequestDto = {
     trainerId: string;
     weekday: number;
@@ -64,6 +101,9 @@ export type DiametersDto = {
     femur?: number;
 };
 
+/**
+ * Physical evaluation data
+ */
 export type PhysicalEvaluationRequestDto = {
     weight: number;
     height: number;
@@ -123,6 +163,9 @@ export type PhysicalImpairmentRequestDto = {
     observations?: string;
 };
 
+/**
+ * Student creation data
+ */
 export type StudentRequestDto = {
     email: string;
     name: string;
@@ -249,6 +292,9 @@ export type EventResponseDto = {
     deletedAt?: string;
 };
 
+/**
+ * Administrator creation request
+ */
 export type AdministratorCreateRequestDto = {
     firstName: string;
     lastName: string;
@@ -267,6 +313,9 @@ export type AdministratorResponseDto = {
     updatedAt?: string;
 };
 
+/**
+ * User creation request
+ */
 export type UserCreateRequestDto = {
     email: string;
     password: string;
@@ -279,6 +328,9 @@ export type UserResponseDto = {
     role?: 'ROLE_ADMIN' | 'ROLE_TRAINER' | 'ROLE_STUDENT';
 };
 
+/**
+ * Password change request
+ */
 export type ChangePasswordRequestDto = {
     oldPassword: string;
     newPassword: string;
@@ -362,6 +414,9 @@ export type SessionParticipant = {
     excluded?: boolean;
 };
 
+/**
+ * Session update request
+ */
 export type SessionUpdateRequestDto = {
     participants?: Array<SessionParticipant>;
     notes?: string;
@@ -405,19 +460,31 @@ export type Trainer = {
     compensationType?: 'HOURLY' | 'MONTHLY';
 };
 
+/**
+ * Trainer update request
+ */
 export type SessionTrainerUpdateRequestDto = {
     trainerId?: string;
 };
 
+/**
+ * Add participant request
+ */
 export type SessionParticipantAddRequestDto = {
     studentId?: string;
 };
 
+/**
+ * Presence update request
+ */
 export type SessionParticipantPresenceRequestDto = {
     present?: boolean;
     notes?: string;
 };
 
+/**
+ * Exercise creation request
+ */
 export type ParticipantExerciseCreateRequestDto = {
     exerciseId?: string;
     setsCompleted?: number;
@@ -427,11 +494,17 @@ export type ParticipantExerciseCreateRequestDto = {
     done?: boolean;
 };
 
+/**
+ * Cancel/restore request
+ */
 export type SessionCancelRequestDto = {
     cancel?: boolean;
     reason?: string;
 };
 
+/**
+ * One-off session creation request
+ */
 export type OneOffSessionCreateRequestDto = {
     seriesName?: string;
     trainerId?: string;
@@ -475,6 +548,9 @@ export type StudentCommitmentResponseDto = {
     attendanceNotes?: string;
 };
 
+/**
+ * Plan creation request
+ */
 export type StudentPlanRequestDto = {
     name: string;
     maxDays: number;
@@ -492,6 +568,9 @@ export type StudentPlanResponseDto = {
     createdAt?: string;
 };
 
+/**
+ * Plan assignment request
+ */
 export type AssignPlanRequestDto = {
     planId: string;
     startDate: string;
@@ -518,6 +597,9 @@ export type StudentPlanAssignmentResponseDto = {
     daysRemaining?: number;
 };
 
+/**
+ * Commitment update request
+ */
 export type StudentCommitmentRequestDto = {
     commitmentStatus: 'ATTENDING' | 'NOT_ATTENDING' | 'TENTATIVE';
     effectiveFromTimestamp?: string;
@@ -534,12 +616,18 @@ export type CommitmentDetailResponseDto = {
     createdAt?: string;
 };
 
+/**
+ * Bulk commitment update request
+ */
 export type BulkCommitmentRequestDto = {
     sessionSeriesIds: Array<string>;
     commitmentStatus: 'ATTENDING' | 'NOT_ATTENDING' | 'TENTATIVE';
     effectiveFromTimestamp?: string;
 };
 
+/**
+ * Login credentials
+ */
 export type LoginRequestDto = {
     email: string;
     password: string;
@@ -560,6 +648,9 @@ export type AdministratorListItemResponseDto = {
     joinDate?: string;
 };
 
+/**
+ * Role update request
+ */
 export type PatchUserRoleRequestDto = {
     role?: 'ROLE_ADMIN' | 'ROLE_TRAINER' | 'ROLE_STUDENT';
 };
@@ -568,6 +659,9 @@ export type TrainerPasswordResetRequestDto = {
     newPassword: string;
 };
 
+/**
+ * Exercise update request
+ */
 export type ParticipantExerciseUpdateRequestDto = {
     setsCompleted?: number;
     repsCompleted?: number;
@@ -592,59 +686,97 @@ export type PatchEventRequestDto = {
     participantIds?: Array<string>;
 };
 
+/**
+ * Partial update request
+ */
 export type PatchAdministratorRequestDto = {
     firstName?: string;
     lastName?: string;
     email?: string;
 };
 
-export type Pageable = {
-    page?: number;
-    size?: number;
-    sort?: Array<string>;
-};
-
-export type PageUserResponseDto = {
-    totalElements?: number;
-    totalPages?: number;
-    size?: number;
+/**
+ * Paginated response wrapper
+ */
+export type PageResponseUserResponseDto = {
+    /**
+     * Current page content
+     */
     content?: Array<UserResponseDto>;
-    number?: number;
-    sort?: SortObject;
-    numberOfElements?: number;
-    first?: boolean;
-    last?: boolean;
-    pageable?: PageableObject;
-    empty?: boolean;
-};
-
-export type PageableObject = {
-    offset?: number;
-    sort?: SortObject;
-    paged?: boolean;
-    pageSize?: number;
-    pageNumber?: number;
-    unpaged?: boolean;
-};
-
-export type SortObject = {
-    empty?: boolean;
-    sorted?: boolean;
-    unsorted?: boolean;
-};
-
-export type PageStudentResponseDto = {
-    totalElements?: number;
-    totalPages?: number;
+    /**
+     * Current page number (zero-based)
+     */
+    page?: number;
+    /**
+     * Page size
+     */
     size?: number;
-    content?: Array<StudentResponseDto>;
-    number?: number;
-    sort?: SortObject;
-    numberOfElements?: number;
+    /**
+     * Total number of elements across all pages
+     */
+    totalElements?: number;
+    /**
+     * Total number of pages
+     */
+    totalPages?: number;
+    /**
+     * Whether this is the first page
+     */
     first?: boolean;
+    /**
+     * Whether this is the last page
+     */
     last?: boolean;
-    pageable?: PageableObject;
+    /**
+     * Whether the page is empty
+     */
     empty?: boolean;
+    /**
+     * Number of elements in current page
+     */
+    numberOfElements?: number;
+};
+
+/**
+ * Paginated response wrapper
+ */
+export type PageResponseStudentResponseDto = {
+    /**
+     * Current page content
+     */
+    content?: Array<StudentResponseDto>;
+    /**
+     * Current page number (zero-based)
+     */
+    page?: number;
+    /**
+     * Page size
+     */
+    size?: number;
+    /**
+     * Total number of elements across all pages
+     */
+    totalElements?: number;
+    /**
+     * Total number of pages
+     */
+    totalPages?: number;
+    /**
+     * Whether this is the first page
+     */
+    first?: boolean;
+    /**
+     * Whether this is the last page
+     */
+    last?: boolean;
+    /**
+     * Whether the page is empty
+     */
+    empty?: boolean;
+    /**
+     * Number of elements in current page
+     */
+    numberOfElements?: number;
 };
 
 export type ScheduleResponseDto = {
@@ -672,18 +804,46 @@ export type TrainerReportResponseDto = {
     specialties?: Array<string>;
 };
 
-export type PageExerciseResponseDto = {
-    totalElements?: number;
-    totalPages?: number;
-    size?: number;
+/**
+ * Paginated response wrapper
+ */
+export type PageResponseExerciseResponseDto = {
+    /**
+     * Current page content
+     */
     content?: Array<ExerciseResponseDto>;
-    number?: number;
-    sort?: SortObject;
-    numberOfElements?: number;
+    /**
+     * Current page number (zero-based)
+     */
+    page?: number;
+    /**
+     * Page size
+     */
+    size?: number;
+    /**
+     * Total number of elements across all pages
+     */
+    totalElements?: number;
+    /**
+     * Total number of pages
+     */
+    totalPages?: number;
+    /**
+     * Whether this is the first page
+     */
     first?: boolean;
+    /**
+     * Whether this is the last page
+     */
     last?: boolean;
-    pageable?: PageableObject;
+    /**
+     * Whether the page is empty
+     */
     empty?: boolean;
+    /**
+     * Number of elements in current page
+     */
+    numberOfElements?: number;
 };
 
 export type TrainerLookupResponseDto = {
@@ -711,48 +871,102 @@ export type TrainerSchedule = {
     dayOfWeek?: 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
 };
 
-export type PageAdministratorListItemResponseDto = {
-    totalElements?: number;
-    totalPages?: number;
-    size?: number;
+/**
+ * Paginated response wrapper
+ */
+export type PageResponseAdministratorListItemResponseDto = {
+    /**
+     * Current page content
+     */
     content?: Array<AdministratorListItemResponseDto>;
-    number?: number;
-    sort?: SortObject;
-    numberOfElements?: number;
+    /**
+     * Current page number (zero-based)
+     */
+    page?: number;
+    /**
+     * Page size
+     */
+    size?: number;
+    /**
+     * Total number of elements across all pages
+     */
+    totalElements?: number;
+    /**
+     * Total number of pages
+     */
+    totalPages?: number;
+    /**
+     * Whether this is the first page
+     */
     first?: boolean;
+    /**
+     * Whether this is the last page
+     */
     last?: boolean;
-    pageable?: PageableObject;
+    /**
+     * Whether the page is empty
+     */
     empty?: boolean;
+    /**
+     * Number of elements in current page
+     */
+    numberOfElements?: number;
 };
 
 export type SoftDeleteTrainerUserData = {
     body?: never;
     path: {
+        /**
+         * Trainer ID
+         */
         id: string;
     };
     query?: never;
     url: '/trainers/{id}';
 };
 
+export type SoftDeleteTrainerUserErrors = {
+    /**
+     * Trainer not found
+     */
+    404: ErrorResponse;
+};
+
+export type SoftDeleteTrainerUserError = SoftDeleteTrainerUserErrors[keyof SoftDeleteTrainerUserErrors];
+
 export type SoftDeleteTrainerUserResponses = {
     /**
-     * OK
+     * Trainer deleted successfully
      */
-    200: unknown;
+    204: void;
 };
+
+export type SoftDeleteTrainerUserResponse = SoftDeleteTrainerUserResponses[keyof SoftDeleteTrainerUserResponses];
 
 export type FindTrainerByIdData = {
     body?: never;
     path: {
+        /**
+         * Trainer ID
+         */
         id: string;
     };
     query?: never;
     url: '/trainers/{id}';
 };
 
+export type FindTrainerByIdErrors = {
+    /**
+     * Trainer not found
+     */
+    404: ErrorResponse;
+};
+
+export type FindTrainerByIdError = FindTrainerByIdErrors[keyof FindTrainerByIdErrors];
+
 export type FindTrainerByIdResponses = {
     /**
-     * OK
+     * Trainer found
      */
     200: TrainerListItemResponseDto;
 };
@@ -762,15 +976,35 @@ export type FindTrainerByIdResponse = FindTrainerByIdResponses[keyof FindTrainer
 export type UpdateTrainerAndUserData = {
     body: TrainerCreateRequestDto;
     path: {
+        /**
+         * Trainer ID
+         */
         id: string;
     };
     query?: never;
     url: '/trainers/{id}';
 };
 
+export type UpdateTrainerAndUserErrors = {
+    /**
+     * Invalid input
+     */
+    400: ErrorResponse;
+    /**
+     * Trainer not found
+     */
+    404: ErrorResponse;
+    /**
+     * Email already exists
+     */
+    409: ErrorResponse;
+};
+
+export type UpdateTrainerAndUserError = UpdateTrainerAndUserErrors[keyof UpdateTrainerAndUserErrors];
+
 export type UpdateTrainerAndUserResponses = {
     /**
-     * OK
+     * Trainer updated successfully
      */
     200: TrainerResponseDto;
 };
@@ -780,31 +1014,55 @@ export type UpdateTrainerAndUserResponse = UpdateTrainerAndUserResponses[keyof U
 export type DeleteScheduleData = {
     body?: never;
     path: {
+        /**
+         * Schedule ID
+         */
         id: string;
     };
     query?: never;
     url: '/trainer-schedules/{id}';
+};
+
+export type DeleteScheduleErrors = {
+    /**
+     * Schedule not found
+     */
+    404: unknown;
 };
 
 export type DeleteScheduleResponses = {
     /**
-     * OK
+     * Schedule deleted successfully
      */
-    200: unknown;
+    204: void;
 };
+
+export type DeleteScheduleResponse = DeleteScheduleResponses[keyof DeleteScheduleResponses];
 
 export type GetScheduleByIdData = {
     body?: never;
     path: {
+        /**
+         * Schedule ID
+         */
         id: string;
     };
     query?: never;
     url: '/trainer-schedules/{id}';
 };
 
+export type GetScheduleByIdErrors = {
+    /**
+     * Schedule not found
+     */
+    404: TrainerScheduleResponseDto;
+};
+
+export type GetScheduleByIdError = GetScheduleByIdErrors[keyof GetScheduleByIdErrors];
+
 export type GetScheduleByIdResponses = {
     /**
-     * OK
+     * Schedule found
      */
     200: TrainerScheduleResponseDto;
 };
@@ -814,15 +1072,31 @@ export type GetScheduleByIdResponse = GetScheduleByIdResponses[keyof GetSchedule
 export type UpdateScheduleData = {
     body: TrainerScheduleRequestDto;
     path: {
+        /**
+         * Schedule ID
+         */
         id: string;
     };
     query?: never;
     url: '/trainer-schedules/{id}';
 };
 
+export type UpdateScheduleErrors = {
+    /**
+     * Invalid input
+     */
+    400: ErrorResponse;
+    /**
+     * Schedule not found
+     */
+    404: TrainerScheduleResponseDto;
+};
+
+export type UpdateScheduleError = UpdateScheduleErrors[keyof UpdateScheduleErrors];
+
 export type UpdateScheduleResponses = {
     /**
-     * OK
+     * Schedule updated successfully
      */
     200: TrainerScheduleResponseDto;
 };
@@ -832,33 +1106,65 @@ export type UpdateScheduleResponse = UpdateScheduleResponses[keyof UpdateSchedul
 export type DeleteEvaluationData = {
     body?: never;
     path: {
+        /**
+         * Student ID
+         */
         studentId: string;
+        /**
+         * Evaluation ID
+         */
         evaluationId: string;
     };
     query?: never;
     url: '/students/{studentId}/evaluations/{evaluationId}';
 };
 
+export type DeleteEvaluationErrors = {
+    /**
+     * Evaluation or student not found
+     */
+    404: ErrorResponse;
+};
+
+export type DeleteEvaluationError = DeleteEvaluationErrors[keyof DeleteEvaluationErrors];
+
 export type DeleteEvaluationResponses = {
     /**
-     * OK
+     * Evaluation deleted successfully
      */
-    200: unknown;
+    204: void;
 };
+
+export type DeleteEvaluationResponse = DeleteEvaluationResponses[keyof DeleteEvaluationResponses];
 
 export type GetEvaluationData = {
     body?: never;
     path: {
+        /**
+         * Student ID
+         */
         studentId: string;
+        /**
+         * Evaluation ID
+         */
         evaluationId: string;
     };
     query?: never;
     url: '/students/{studentId}/evaluations/{evaluationId}';
 };
 
+export type GetEvaluationErrors = {
+    /**
+     * Evaluation or student not found
+     */
+    404: ErrorResponse;
+};
+
+export type GetEvaluationError = GetEvaluationErrors[keyof GetEvaluationErrors];
+
 export type GetEvaluationResponses = {
     /**
-     * OK
+     * Evaluation found
      */
     200: PhysicalEvaluationResponseDto;
 };
@@ -868,16 +1174,35 @@ export type GetEvaluationResponse = GetEvaluationResponses[keyof GetEvaluationRe
 export type UpdateEvaluationData = {
     body: PhysicalEvaluationRequestDto;
     path: {
+        /**
+         * Student ID
+         */
         studentId: string;
+        /**
+         * Evaluation ID
+         */
         evaluationId: string;
     };
     query?: never;
     url: '/students/{studentId}/evaluations/{evaluationId}';
 };
 
+export type UpdateEvaluationErrors = {
+    /**
+     * Invalid input
+     */
+    400: ErrorResponse;
+    /**
+     * Evaluation or student not found
+     */
+    404: ErrorResponse;
+};
+
+export type UpdateEvaluationError = UpdateEvaluationErrors[keyof UpdateEvaluationErrors];
+
 export type UpdateEvaluationResponses = {
     /**
-     * OK
+     * Evaluation updated successfully
      */
     200: PhysicalEvaluationResponseDto;
 };
@@ -887,31 +1212,57 @@ export type UpdateEvaluationResponse = UpdateEvaluationResponses[keyof UpdateEva
 export type DeleteStudentData = {
     body?: never;
     path: {
+        /**
+         * Student ID
+         */
         id: string;
     };
     query?: never;
     url: '/students/{id}';
 };
 
+export type DeleteStudentErrors = {
+    /**
+     * Student not found
+     */
+    404: ErrorResponse;
+};
+
+export type DeleteStudentError = DeleteStudentErrors[keyof DeleteStudentErrors];
+
 export type DeleteStudentResponses = {
     /**
-     * OK
+     * Student deleted successfully
      */
-    200: unknown;
+    204: void;
 };
+
+export type DeleteStudentResponse = DeleteStudentResponses[keyof DeleteStudentResponses];
 
 export type FindStudentByIdData = {
     body?: never;
     path: {
+        /**
+         * Student ID
+         */
         id: string;
     };
     query?: never;
     url: '/students/{id}';
 };
 
+export type FindStudentByIdErrors = {
+    /**
+     * Student not found
+     */
+    404: ErrorResponse;
+};
+
+export type FindStudentByIdError = FindStudentByIdErrors[keyof FindStudentByIdErrors];
+
 export type FindStudentByIdResponses = {
     /**
-     * OK
+     * Student found
      */
     200: StudentResponseDto;
 };
@@ -921,15 +1272,31 @@ export type FindStudentByIdResponse = FindStudentByIdResponses[keyof FindStudent
 export type UpdateStudentData = {
     body: StudentRequestDto;
     path: {
+        /**
+         * Student ID
+         */
         id: string;
     };
     query?: never;
     url: '/students/{id}';
 };
 
+export type UpdateStudentErrors = {
+    /**
+     * Student not found
+     */
+    404: ErrorResponse;
+    /**
+     * Email already exists
+     */
+    409: ErrorResponse;
+};
+
+export type UpdateStudentError = UpdateStudentErrors[keyof UpdateStudentErrors];
+
 export type UpdateStudentResponses = {
     /**
-     * OK
+     * Student updated successfully
      */
     200: StudentResponseDto;
 };
@@ -939,31 +1306,57 @@ export type UpdateStudentResponse = UpdateStudentResponses[keyof UpdateStudentRe
 export type DeleteExerciseData = {
     body?: never;
     path: {
+        /**
+         * Exercise ID
+         */
         id: string;
     };
     query?: never;
     url: '/exercises/{id}';
 };
 
+export type DeleteExerciseErrors = {
+    /**
+     * Exercise not found
+     */
+    404: ErrorResponse;
+};
+
+export type DeleteExerciseError = DeleteExerciseErrors[keyof DeleteExerciseErrors];
+
 export type DeleteExerciseResponses = {
     /**
-     * OK
+     * Exercise deleted successfully
      */
-    200: unknown;
+    204: void;
 };
+
+export type DeleteExerciseResponse = DeleteExerciseResponses[keyof DeleteExerciseResponses];
 
 export type FindExerciseByIdData = {
     body?: never;
     path: {
+        /**
+         * Exercise ID
+         */
         id: string;
     };
     query?: never;
     url: '/exercises/{id}';
 };
 
+export type FindExerciseByIdErrors = {
+    /**
+     * Exercise not found
+     */
+    404: ErrorResponse;
+};
+
+export type FindExerciseByIdError = FindExerciseByIdErrors[keyof FindExerciseByIdErrors];
+
 export type FindExerciseByIdResponses = {
     /**
-     * OK
+     * Exercise found
      */
     200: ExerciseResponseDto;
 };
@@ -973,15 +1366,35 @@ export type FindExerciseByIdResponse = FindExerciseByIdResponses[keyof FindExerc
 export type PatchExerciseData = {
     body: PatchExerciseRequestDto;
     path: {
+        /**
+         * Exercise ID
+         */
         id: string;
     };
     query?: never;
     url: '/exercises/{id}';
 };
 
+export type PatchExerciseErrors = {
+    /**
+     * Invalid input
+     */
+    400: ErrorResponse;
+    /**
+     * Exercise not found
+     */
+    404: ErrorResponse;
+    /**
+     * Exercise name already exists
+     */
+    409: ErrorResponse;
+};
+
+export type PatchExerciseError = PatchExerciseErrors[keyof PatchExerciseErrors];
+
 export type PatchExerciseResponses = {
     /**
-     * OK
+     * Exercise patched successfully
      */
     200: ExerciseResponseDto;
 };
@@ -991,15 +1404,35 @@ export type PatchExerciseResponse = PatchExerciseResponses[keyof PatchExerciseRe
 export type UpdateExerciseData = {
     body: ExerciseRequestDto;
     path: {
+        /**
+         * Exercise ID
+         */
         id: string;
     };
     query?: never;
     url: '/exercises/{id}';
 };
 
+export type UpdateExerciseErrors = {
+    /**
+     * Invalid input
+     */
+    400: ErrorResponse;
+    /**
+     * Exercise not found
+     */
+    404: ErrorResponse;
+    /**
+     * Exercise name already exists
+     */
+    409: ErrorResponse;
+};
+
+export type UpdateExerciseError = UpdateExerciseErrors[keyof UpdateExerciseErrors];
+
 export type UpdateExerciseResponses = {
     /**
-     * OK
+     * Exercise updated successfully
      */
     200: ExerciseResponseDto;
 };
@@ -1009,31 +1442,57 @@ export type UpdateExerciseResponse = UpdateExerciseResponses[keyof UpdateExercis
 export type DeleteEventData = {
     body?: never;
     path: {
+        /**
+         * Event ID
+         */
         id: string;
     };
     query?: never;
     url: '/events/{id}';
 };
 
+export type DeleteEventErrors = {
+    /**
+     * Event not found
+     */
+    404: ErrorResponse;
+};
+
+export type DeleteEventError = DeleteEventErrors[keyof DeleteEventErrors];
+
 export type DeleteEventResponses = {
     /**
-     * OK
+     * Event deleted successfully
      */
-    200: unknown;
+    204: void;
 };
+
+export type DeleteEventResponse = DeleteEventResponses[keyof DeleteEventResponses];
 
 export type FindEventByIdData = {
     body?: never;
     path: {
+        /**
+         * Event ID
+         */
         id: string;
     };
     query?: never;
     url: '/events/{id}';
 };
 
+export type FindEventByIdErrors = {
+    /**
+     * Event not found
+     */
+    404: ErrorResponse;
+};
+
+export type FindEventByIdError = FindEventByIdErrors[keyof FindEventByIdErrors];
+
 export type FindEventByIdResponses = {
     /**
-     * OK
+     * Event found
      */
     200: EventResponseDto;
 };
@@ -1043,15 +1502,31 @@ export type FindEventByIdResponse = FindEventByIdResponses[keyof FindEventByIdRe
 export type PatchEventData = {
     body: PatchEventRequestDto;
     path: {
+        /**
+         * Event ID
+         */
         id: string;
     };
     query?: never;
     url: '/events/{id}';
 };
 
+export type PatchEventErrors = {
+    /**
+     * Invalid input
+     */
+    400: ErrorResponse;
+    /**
+     * Event not found
+     */
+    404: ErrorResponse;
+};
+
+export type PatchEventError = PatchEventErrors[keyof PatchEventErrors];
+
 export type PatchEventResponses = {
     /**
-     * OK
+     * Event patched successfully
      */
     200: EventResponseDto;
 };
@@ -1061,49 +1536,91 @@ export type PatchEventResponse = PatchEventResponses[keyof PatchEventResponses];
 export type UpdateEventData = {
     body: EventRequestDto;
     path: {
+        /**
+         * Event ID
+         */
         id: string;
     };
     query?: never;
     url: '/events/{id}';
 };
 
+export type UpdateEventErrors = {
+    /**
+     * Invalid input
+     */
+    400: ErrorResponse;
+    /**
+     * Event or trainer not found
+     */
+    404: ErrorResponse;
+};
+
+export type UpdateEventError = UpdateEventErrors[keyof UpdateEventErrors];
+
 export type UpdateEventResponses = {
     /**
-     * OK
+     * Event updated successfully
      */
     200: EventResponseDto;
 };
 
 export type UpdateEventResponse = UpdateEventResponses[keyof UpdateEventResponses];
 
-export type SoftDeleteAdministratorUserData = {
+export type DeleteAdministratorData = {
     body?: never;
     path: {
+        /**
+         * Administrator ID
+         */
         id: string;
     };
     query?: never;
     url: '/administrators/{id}';
 };
 
-export type SoftDeleteAdministratorUserResponses = {
+export type DeleteAdministratorErrors = {
     /**
-     * OK
+     * Administrator not found
      */
-    200: unknown;
+    404: ErrorResponse;
 };
+
+export type DeleteAdministratorError = DeleteAdministratorErrors[keyof DeleteAdministratorErrors];
+
+export type DeleteAdministratorResponses = {
+    /**
+     * Administrator deleted successfully
+     */
+    204: void;
+};
+
+export type DeleteAdministratorResponse = DeleteAdministratorResponses[keyof DeleteAdministratorResponses];
 
 export type FindAdministratorByIdData = {
     body?: never;
     path: {
+        /**
+         * Administrator ID
+         */
         id: string;
     };
     query?: never;
     url: '/administrators/{id}';
 };
 
+export type FindAdministratorByIdErrors = {
+    /**
+     * Administrator not found
+     */
+    404: ErrorResponse;
+};
+
+export type FindAdministratorByIdError = FindAdministratorByIdErrors[keyof FindAdministratorByIdErrors];
+
 export type FindAdministratorByIdResponses = {
     /**
-     * OK
+     * Administrator found
      */
     200: AdministratorListItemResponseDto;
 };
@@ -1113,56 +1630,94 @@ export type FindAdministratorByIdResponse = FindAdministratorByIdResponses[keyof
 export type PatchAdministratorData = {
     body: PatchAdministratorRequestDto;
     path: {
+        /**
+         * Administrator ID
+         */
         id: string;
     };
     query?: never;
     url: '/administrators/{id}';
 };
 
+export type PatchAdministratorErrors = {
+    /**
+     * Invalid input
+     */
+    400: ErrorResponse;
+    /**
+     * Administrator not found
+     */
+    404: ErrorResponse;
+    /**
+     * Email already exists
+     */
+    409: ErrorResponse;
+};
+
+export type PatchAdministratorError = PatchAdministratorErrors[keyof PatchAdministratorErrors];
+
 export type PatchAdministratorResponses = {
     /**
-     * OK
+     * Administrator updated successfully
      */
     200: AdministratorResponseDto;
 };
 
 export type PatchAdministratorResponse = PatchAdministratorResponses[keyof PatchAdministratorResponses];
 
-export type UpdateAdministratorAndUserData = {
+export type UpdateAdministratorData = {
     body: AdministratorCreateRequestDto;
     path: {
+        /**
+         * Administrator ID
+         */
         id: string;
     };
     query?: never;
     url: '/administrators/{id}';
 };
 
-export type UpdateAdministratorAndUserResponses = {
+export type UpdateAdministratorErrors = {
     /**
-     * OK
+     * Invalid input
+     */
+    400: ErrorResponse;
+    /**
+     * Administrator not found
+     */
+    404: ErrorResponse;
+    /**
+     * Email already exists
+     */
+    409: ErrorResponse;
+};
+
+export type UpdateAdministratorError = UpdateAdministratorErrors[keyof UpdateAdministratorErrors];
+
+export type UpdateAdministratorResponses = {
+    /**
+     * Administrator updated successfully
      */
     200: AdministratorResponseDto;
 };
 
-export type UpdateAdministratorAndUserResponse = UpdateAdministratorAndUserResponses[keyof UpdateAdministratorAndUserResponses];
+export type UpdateAdministratorResponse = UpdateAdministratorResponses[keyof UpdateAdministratorResponses];
 
-export type GetAllUsersSimpleData = {
+export type GetAllUsersData = {
     body?: never;
     path?: never;
-    query: {
-        pageable: Pageable;
-    };
+    query?: never;
     url: '/users';
 };
 
-export type GetAllUsersSimpleResponses = {
+export type GetAllUsersResponses = {
     /**
-     * OK
+     * Users retrieved successfully
      */
-    200: PageUserResponseDto;
+    200: PageResponseUserResponseDto;
 };
 
-export type GetAllUsersSimpleResponse = GetAllUsersSimpleResponses[keyof GetAllUsersSimpleResponses];
+export type GetAllUsersResponse = GetAllUsersResponses[keyof GetAllUsersResponses];
 
 export type CreateUserData = {
     body: UserCreateRequestDto;
@@ -1171,11 +1726,20 @@ export type CreateUserData = {
     url: '/users';
 };
 
+export type CreateUserErrors = {
+    /**
+     * Invalid input or email already in use
+     */
+    400: ErrorResponse;
+};
+
+export type CreateUserError = CreateUserErrors[keyof CreateUserErrors];
+
 export type CreateUserResponses = {
     /**
-     * OK
+     * User created successfully
      */
-    200: UserResponseDto;
+    201: UserResponseDto;
 };
 
 export type CreateUserResponse = CreateUserResponses[keyof CreateUserResponses];
@@ -1187,12 +1751,27 @@ export type ChangeOwnPasswordData = {
     url: '/users/me/change-password';
 };
 
+export type ChangeOwnPasswordErrors = {
+    /**
+     * Invalid password or validation failed
+     */
+    400: ErrorResponse;
+    /**
+     * Unauthorized
+     */
+    401: unknown;
+};
+
+export type ChangeOwnPasswordError = ChangeOwnPasswordErrors[keyof ChangeOwnPasswordErrors];
+
 export type ChangeOwnPasswordResponses = {
     /**
-     * OK
+     * Password changed successfully
      */
-    200: unknown;
+    204: void;
 };
+
+export type ChangeOwnPasswordResponse = ChangeOwnPasswordResponses[keyof ChangeOwnPasswordResponses];
 
 export type FindAllTrainersData = {
     body?: never;
@@ -1203,7 +1782,7 @@ export type FindAllTrainersData = {
 
 export type FindAllTrainersResponses = {
     /**
-     * OK
+     * Trainers retrieved successfully
      */
     200: Array<TrainerListItemResponseDto>;
 };
@@ -1217,11 +1796,24 @@ export type CreateTrainerAndUserData = {
     url: '/trainers';
 };
 
+export type CreateTrainerAndUserErrors = {
+    /**
+     * Invalid input
+     */
+    400: ErrorResponse;
+    /**
+     * Email already exists
+     */
+    409: ErrorResponse;
+};
+
+export type CreateTrainerAndUserError = CreateTrainerAndUserErrors[keyof CreateTrainerAndUserErrors];
+
 export type CreateTrainerAndUserResponses = {
     /**
-     * OK
+     * Trainer created successfully
      */
-    200: TrainerListItemResponseDto;
+    201: TrainerListItemResponseDto;
 };
 
 export type CreateTrainerAndUserResponse = CreateTrainerAndUserResponses[keyof CreateTrainerAndUserResponses];
@@ -1235,7 +1827,7 @@ export type GetAllSchedulesData = {
 
 export type GetAllSchedulesResponses = {
     /**
-     * OK
+     * Schedules retrieved successfully
      */
     200: Array<TrainerScheduleResponseDto>;
 };
@@ -1249,11 +1841,20 @@ export type CreateScheduleData = {
     url: '/trainer-schedules';
 };
 
+export type CreateScheduleErrors = {
+    /**
+     * Invalid input
+     */
+    400: ErrorResponse;
+};
+
+export type CreateScheduleError = CreateScheduleErrors[keyof CreateScheduleErrors];
+
 export type CreateScheduleResponses = {
     /**
-     * OK
+     * Schedule created successfully
      */
-    200: TrainerScheduleResponseDto;
+    201: TrainerScheduleResponseDto;
 };
 
 export type CreateScheduleResponse = CreateScheduleResponses[keyof CreateScheduleResponses];
@@ -1261,25 +1862,57 @@ export type CreateScheduleResponse = CreateScheduleResponses[keyof CreateSchedul
 export type FindAllStudentsData = {
     body?: never;
     path?: never;
-    query: {
+    query?: {
+        /**
+         * Search term for name/email
+         */
         search?: string;
+        /**
+         * Gender filter (M, F, or O)
+         */
         gender?: string;
+        /**
+         * Profession filter
+         */
         profession?: string;
+        /**
+         * Minimum age filter
+         */
         minAge?: number;
+        /**
+         * Maximum age filter
+         */
         maxAge?: number;
+        /**
+         * Registration start date
+         */
         registrationPeriodMinDate?: string;
+        /**
+         * Registration end date
+         */
         registrationPeriodMaxDate?: string;
+        /**
+         * Include soft-deleted students
+         */
         includeInactive?: boolean;
-        pageable: Pageable;
     };
     url: '/students';
 };
 
+export type FindAllStudentsErrors = {
+    /**
+     * Invalid filter parameters
+     */
+    400: ErrorResponse;
+};
+
+export type FindAllStudentsError = FindAllStudentsErrors[keyof FindAllStudentsErrors];
+
 export type FindAllStudentsResponses = {
     /**
-     * OK
+     * Students retrieved successfully
      */
-    200: PageStudentResponseDto;
+    200: PageResponseStudentResponseDto;
 };
 
 export type FindAllStudentsResponse = FindAllStudentsResponses[keyof FindAllStudentsResponses];
@@ -1291,11 +1924,24 @@ export type CreateStudentData = {
     url: '/students';
 };
 
+export type CreateStudentErrors = {
+    /**
+     * Invalid input data
+     */
+    400: ErrorResponse;
+    /**
+     * Email already exists
+     */
+    409: ErrorResponse;
+};
+
+export type CreateStudentError = CreateStudentErrors[keyof CreateStudentErrors];
+
 export type CreateStudentResponses = {
     /**
-     * OK
+     * Student created successfully
      */
-    200: StudentResponseDto;
+    201: StudentResponseDto;
 };
 
 export type CreateStudentResponse = CreateStudentResponses[keyof CreateStudentResponses];
@@ -1303,15 +1949,27 @@ export type CreateStudentResponse = CreateStudentResponses[keyof CreateStudentRe
 export type GetAllEvaluationsData = {
     body?: never;
     path: {
+        /**
+         * Student ID
+         */
         studentId: string;
     };
     query?: never;
     url: '/students/{studentId}/evaluations';
 };
 
+export type GetAllEvaluationsErrors = {
+    /**
+     * Student not found
+     */
+    404: ErrorResponse;
+};
+
+export type GetAllEvaluationsError = GetAllEvaluationsErrors[keyof GetAllEvaluationsErrors];
+
 export type GetAllEvaluationsResponses = {
     /**
-     * OK
+     * Evaluations retrieved successfully
      */
     200: Array<PhysicalEvaluationResponseDto>;
 };
@@ -1321,17 +1979,33 @@ export type GetAllEvaluationsResponse = GetAllEvaluationsResponses[keyof GetAllE
 export type CreateEvaluationData = {
     body: PhysicalEvaluationRequestDto;
     path: {
+        /**
+         * Student ID
+         */
         studentId: string;
     };
     query?: never;
     url: '/students/{studentId}/evaluations';
 };
 
+export type CreateEvaluationErrors = {
+    /**
+     * Invalid input
+     */
+    400: ErrorResponse;
+    /**
+     * Student not found
+     */
+    404: ErrorResponse;
+};
+
+export type CreateEvaluationError = CreateEvaluationErrors[keyof CreateEvaluationErrors];
+
 export type CreateEvaluationResponses = {
     /**
-     * OK
+     * Evaluation created successfully
      */
-    200: PhysicalEvaluationResponseDto;
+    201: PhysicalEvaluationResponseDto;
 };
 
 export type CreateEvaluationResponse = CreateEvaluationResponses[keyof CreateEvaluationResponses];
@@ -1339,17 +2013,32 @@ export type CreateEvaluationResponse = CreateEvaluationResponses[keyof CreateEva
 export type GetSessionData = {
     body?: never;
     path: {
+        /**
+         * Session ID
+         */
         sessionId: string;
     };
     query?: {
+        /**
+         * Optional trainer ID filter
+         */
         trainerId?: string;
     };
     url: '/schedule/sessions/{sessionId}';
 };
 
+export type GetSessionErrors = {
+    /**
+     * Session not found
+     */
+    404: ErrorResponse;
+};
+
+export type GetSessionError = GetSessionErrors[keyof GetSessionErrors];
+
 export type GetSessionResponses = {
     /**
-     * OK
+     * Session found
      */
     200: SessionResponseDto;
 };
@@ -1359,17 +2048,29 @@ export type GetSessionResponse = GetSessionResponses[keyof GetSessionResponses];
 export type UpdateSessionData = {
     body: SessionUpdateRequestDto;
     path: {
+        /**
+         * Session ID
+         */
         sessionId: string;
     };
     query?: never;
     url: '/schedule/sessions/{sessionId}';
 };
 
+export type UpdateSessionErrors = {
+    /**
+     * Session not found
+     */
+    404: ErrorResponse;
+};
+
+export type UpdateSessionError = UpdateSessionErrors[keyof UpdateSessionErrors];
+
 export type UpdateSessionResponses = {
     /**
-     * OK
+     * Session updated successfully
      */
-    200: string;
+    204: void;
 };
 
 export type UpdateSessionResponse = UpdateSessionResponses[keyof UpdateSessionResponses];
@@ -1377,17 +2078,29 @@ export type UpdateSessionResponse = UpdateSessionResponses[keyof UpdateSessionRe
 export type UpdateSessionTrainerData = {
     body: SessionTrainerUpdateRequestDto;
     path: {
+        /**
+         * Session ID
+         */
         sessionId: string;
     };
     query?: never;
     url: '/schedule/sessions/{sessionId}/trainer';
 };
 
+export type UpdateSessionTrainerErrors = {
+    /**
+     * Session or trainer not found
+     */
+    404: ErrorResponse;
+};
+
+export type UpdateSessionTrainerError = UpdateSessionTrainerErrors[keyof UpdateSessionTrainerErrors];
+
 export type UpdateSessionTrainerResponses = {
     /**
-     * OK
+     * Trainer updated successfully
      */
-    200: string;
+    204: void;
 };
 
 export type UpdateSessionTrainerResponse = UpdateSessionTrainerResponses[keyof UpdateSessionTrainerResponses];
@@ -1395,17 +2108,29 @@ export type UpdateSessionTrainerResponse = UpdateSessionTrainerResponses[keyof U
 export type AddSessionParticipantData = {
     body: SessionParticipantAddRequestDto;
     path: {
+        /**
+         * Session ID
+         */
         sessionId: string;
     };
     query?: never;
     url: '/schedule/sessions/{sessionId}/participants';
 };
 
+export type AddSessionParticipantErrors = {
+    /**
+     * Session or student not found
+     */
+    404: ErrorResponse;
+};
+
+export type AddSessionParticipantError = AddSessionParticipantErrors[keyof AddSessionParticipantErrors];
+
 export type AddSessionParticipantResponses = {
     /**
-     * OK
+     * Participant added successfully
      */
-    200: string;
+    204: void;
 };
 
 export type AddSessionParticipantResponse = AddSessionParticipantResponses[keyof AddSessionParticipantResponses];
@@ -1413,18 +2138,33 @@ export type AddSessionParticipantResponse = AddSessionParticipantResponses[keyof
 export type UpdatePresenceData = {
     body: SessionParticipantPresenceRequestDto;
     path: {
+        /**
+         * Session ID
+         */
         sessionId: string;
+        /**
+         * Student ID
+         */
         studentId: string;
     };
     query?: never;
     url: '/schedule/sessions/{sessionId}/participants/{studentId}/presence';
 };
 
+export type UpdatePresenceErrors = {
+    /**
+     * Session or participant not found
+     */
+    404: ErrorResponse;
+};
+
+export type UpdatePresenceError = UpdatePresenceErrors[keyof UpdatePresenceErrors];
+
 export type UpdatePresenceResponses = {
     /**
-     * OK
+     * Presence updated successfully
      */
-    200: string;
+    204: void;
 };
 
 export type UpdatePresenceResponse = UpdatePresenceResponses[keyof UpdatePresenceResponses];
@@ -1432,18 +2172,33 @@ export type UpdatePresenceResponse = UpdatePresenceResponses[keyof UpdatePresenc
 export type AddRegisteredParticipantExerciseData = {
     body: ParticipantExerciseCreateRequestDto;
     path: {
+        /**
+         * Session ID
+         */
         sessionId: string;
+        /**
+         * Student ID
+         */
         studentId: string;
     };
     query?: never;
     url: '/schedule/sessions/{sessionId}/participants/{studentId}/exercises';
 };
 
+export type AddRegisteredParticipantExerciseErrors = {
+    /**
+     * Session or participant not found
+     */
+    404: ErrorResponse;
+};
+
+export type AddRegisteredParticipantExerciseError = AddRegisteredParticipantExerciseErrors[keyof AddRegisteredParticipantExerciseErrors];
+
 export type AddRegisteredParticipantExerciseResponses = {
     /**
-     * OK
+     * Exercise added successfully
      */
-    200: string;
+    201: string;
 };
 
 export type AddRegisteredParticipantExerciseResponse = AddRegisteredParticipantExerciseResponses[keyof AddRegisteredParticipantExerciseResponses];
@@ -1451,17 +2206,29 @@ export type AddRegisteredParticipantExerciseResponse = AddRegisteredParticipantE
 export type CancelOrRestoreSessionData = {
     body: SessionCancelRequestDto;
     path: {
+        /**
+         * Session ID
+         */
         sessionId: string;
     };
     query?: never;
     url: '/schedule/sessions/{sessionId}/cancel';
 };
 
+export type CancelOrRestoreSessionErrors = {
+    /**
+     * Session not found
+     */
+    404: ErrorResponse;
+};
+
+export type CancelOrRestoreSessionError = CancelOrRestoreSessionErrors[keyof CancelOrRestoreSessionErrors];
+
 export type CancelOrRestoreSessionResponses = {
     /**
-     * OK
+     * Session status updated successfully
      */
-    200: string;
+    204: void;
 };
 
 export type CancelOrRestoreSessionResponse = CancelOrRestoreSessionResponses[keyof CancelOrRestoreSessionResponses];
@@ -1473,11 +2240,20 @@ export type CreateOneOffSessionData = {
     url: '/schedule/sessions/one-off';
 };
 
+export type CreateOneOffSessionErrors = {
+    /**
+     * Invalid input
+     */
+    400: ErrorResponse;
+};
+
+export type CreateOneOffSessionError = CreateOneOffSessionErrors[keyof CreateOneOffSessionErrors];
+
 export type CreateOneOffSessionResponses = {
     /**
-     * OK
+     * Session created successfully
      */
-    200: SessionResponseDto;
+    201: SessionResponseDto;
 };
 
 export type CreateOneOffSessionResponse = CreateOneOffSessionResponses[keyof CreateOneOffSessionResponses];
@@ -1486,6 +2262,9 @@ export type GetAllPlansData = {
     body?: never;
     path?: never;
     query?: {
+        /**
+         * Status filter (active, inactive, all)
+         */
         status?: string;
     };
     url: '/plans';
@@ -1493,7 +2272,7 @@ export type GetAllPlansData = {
 
 export type GetAllPlansResponses = {
     /**
-     * OK
+     * Plans retrieved successfully
      */
     200: Array<StudentPlanResponseDto>;
 };
@@ -1507,11 +2286,24 @@ export type CreatePlanData = {
     url: '/plans';
 };
 
+export type CreatePlanErrors = {
+    /**
+     * Invalid input
+     */
+    400: ErrorResponse;
+    /**
+     * Plan name already exists
+     */
+    409: ErrorResponse;
+};
+
+export type CreatePlanError = CreatePlanErrors[keyof CreatePlanErrors];
+
 export type CreatePlanResponses = {
     /**
-     * OK
+     * Plan created successfully
      */
-    200: StudentPlanResponseDto;
+    201: StudentPlanResponseDto;
 };
 
 export type CreatePlanResponse = CreatePlanResponses[keyof CreatePlanResponses];
@@ -1519,15 +2311,31 @@ export type CreatePlanResponse = CreatePlanResponses[keyof CreatePlanResponses];
 export type RestorePlanData = {
     body?: never;
     path: {
+        /**
+         * Plan ID
+         */
         planId: string;
     };
     query?: never;
     url: '/plans/{planId}/restore';
 };
 
+export type RestorePlanErrors = {
+    /**
+     * Plan not found
+     */
+    404: ErrorResponse;
+    /**
+     * Plan already active
+     */
+    409: ErrorResponse;
+};
+
+export type RestorePlanError = RestorePlanErrors[keyof RestorePlanErrors];
+
 export type RestorePlanResponses = {
     /**
-     * OK
+     * Plan restored successfully
      */
     200: StudentPlanResponseDto;
 };
@@ -1537,17 +2345,37 @@ export type RestorePlanResponse = RestorePlanResponses[keyof RestorePlanResponse
 export type AssignPlanToStudentData = {
     body: AssignPlanRequestDto;
     path: {
+        /**
+         * Student ID
+         */
         studentId: string;
     };
     query?: never;
     url: '/plans/students/{studentId}/assign';
 };
 
+export type AssignPlanToStudentErrors = {
+    /**
+     * Unauthorized
+     */
+    401: StudentPlanAssignmentResponseDto;
+    /**
+     * Student or plan not found
+     */
+    404: ErrorResponse;
+    /**
+     * Overlapping plan assignment
+     */
+    409: ErrorResponse;
+};
+
+export type AssignPlanToStudentError = AssignPlanToStudentErrors[keyof AssignPlanToStudentErrors];
+
 export type AssignPlanToStudentResponses = {
     /**
-     * OK
+     * Plan assigned successfully
      */
-    200: StudentPlanAssignmentResponseDto;
+    201: StudentPlanAssignmentResponseDto;
 };
 
 export type AssignPlanToStudentResponse = AssignPlanToStudentResponses[keyof AssignPlanToStudentResponses];
@@ -1555,19 +2383,24 @@ export type AssignPlanToStudentResponse = AssignPlanToStudentResponses[keyof Ass
 export type FindAllExercisesData = {
     body?: never;
     path?: never;
-    query: {
+    query?: {
+        /**
+         * Search term for name/description
+         */
         search?: string;
+        /**
+         * Include soft-deleted exercises
+         */
         includeInactive?: boolean;
-        pageable: Pageable;
     };
     url: '/exercises';
 };
 
 export type FindAllExercisesResponses = {
     /**
-     * OK
+     * Exercises retrieved successfully
      */
-    200: PageExerciseResponseDto;
+    200: PageResponseExerciseResponseDto;
 };
 
 export type FindAllExercisesResponse = FindAllExercisesResponses[keyof FindAllExercisesResponses];
@@ -1579,11 +2412,24 @@ export type CreateExerciseData = {
     url: '/exercises';
 };
 
+export type CreateExerciseErrors = {
+    /**
+     * Invalid input
+     */
+    400: ErrorResponse;
+    /**
+     * Exercise name already exists
+     */
+    409: ErrorResponse;
+};
+
+export type CreateExerciseError = CreateExerciseErrors[keyof CreateExerciseErrors];
+
 export type CreateExerciseResponses = {
     /**
-     * OK
+     * Exercise created successfully
      */
-    200: ExerciseResponseDto;
+    201: ExerciseResponseDto;
 };
 
 export type CreateExerciseResponse = CreateExerciseResponses[keyof CreateExerciseResponses];
@@ -1592,7 +2438,13 @@ export type FindAllEventsData = {
     body?: never;
     path?: never;
     query?: {
+        /**
+         * Search term for name/description
+         */
         search?: string;
+        /**
+         * Include soft-deleted events
+         */
         includeInactive?: boolean;
     };
     url: '/events';
@@ -1600,7 +2452,7 @@ export type FindAllEventsData = {
 
 export type FindAllEventsResponses = {
     /**
-     * OK
+     * Events retrieved successfully
      */
     200: Array<EventResponseDto>;
 };
@@ -1614,11 +2466,24 @@ export type CreateEventData = {
     url: '/events';
 };
 
+export type CreateEventErrors = {
+    /**
+     * Invalid input
+     */
+    400: ErrorResponse;
+    /**
+     * Trainer not found
+     */
+    404: ErrorResponse;
+};
+
+export type CreateEventError = CreateEventErrors[keyof CreateEventErrors];
+
 export type CreateEventResponses = {
     /**
-     * OK
+     * Event created successfully
      */
-    200: EventResponseDto;
+    201: EventResponseDto;
 };
 
 export type CreateEventResponse = CreateEventResponses[keyof CreateEventResponses];
@@ -1626,33 +2491,69 @@ export type CreateEventResponse = CreateEventResponses[keyof CreateEventResponse
 export type RemoveParticipantData = {
     body?: never;
     path: {
+        /**
+         * Event ID
+         */
         id: string;
+        /**
+         * Student ID
+         */
         studentId: string;
     };
     query?: never;
     url: '/events/{id}/participants/{studentId}';
 };
 
+export type RemoveParticipantErrors = {
+    /**
+     * Event or participant not found
+     */
+    404: ErrorResponse;
+};
+
+export type RemoveParticipantError = RemoveParticipantErrors[keyof RemoveParticipantErrors];
+
 export type RemoveParticipantResponses = {
     /**
-     * OK
+     * Participant removed successfully
      */
-    200: unknown;
+    204: void;
 };
+
+export type RemoveParticipantResponse = RemoveParticipantResponses[keyof RemoveParticipantResponses];
 
 export type AddParticipantData = {
     body?: never;
     path: {
+        /**
+         * Event ID
+         */
         id: string;
+        /**
+         * Student ID
+         */
         studentId: string;
     };
     query?: never;
     url: '/events/{id}/participants/{studentId}';
 };
 
+export type AddParticipantErrors = {
+    /**
+     * Event or student not found
+     */
+    404: ErrorResponse;
+    /**
+     * Student already enrolled
+     */
+    409: ErrorResponse;
+};
+
+export type AddParticipantError = AddParticipantErrors[keyof AddParticipantErrors];
+
 export type AddParticipantResponses = {
     /**
-     * OK
+     * Participant added successfully
      */
     200: EventResponseDto;
 };
@@ -1662,18 +2563,37 @@ export type AddParticipantResponse = AddParticipantResponses[keyof AddParticipan
 export type UpdateCommitmentData = {
     body: StudentCommitmentRequestDto;
     path: {
+        /**
+         * Student ID
+         */
         studentId: string;
+        /**
+         * Session series ID
+         */
         sessionSeriesId: string;
     };
     query?: never;
     url: '/commitments/students/{studentId}/sessions/{sessionSeriesId}';
 };
 
+export type UpdateCommitmentErrors = {
+    /**
+     * Invalid input
+     */
+    400: ErrorResponse;
+    /**
+     * Student or session not found
+     */
+    404: ErrorResponse;
+};
+
+export type UpdateCommitmentError = UpdateCommitmentErrors[keyof UpdateCommitmentErrors];
+
 export type UpdateCommitmentResponses = {
     /**
-     * OK
+     * Commitment updated successfully
      */
-    200: CommitmentDetailResponseDto;
+    201: CommitmentDetailResponseDto;
 };
 
 export type UpdateCommitmentResponse = UpdateCommitmentResponses[keyof UpdateCommitmentResponses];
@@ -1681,17 +2601,29 @@ export type UpdateCommitmentResponse = UpdateCommitmentResponses[keyof UpdateCom
 export type BulkUpdateCommitmentsData = {
     body: BulkCommitmentRequestDto;
     path: {
+        /**
+         * Student ID
+         */
         studentId: string;
     };
     query?: never;
     url: '/commitments/students/{studentId}/bulk';
 };
 
+export type BulkUpdateCommitmentsErrors = {
+    /**
+     * Invalid input
+     */
+    400: ErrorResponse;
+};
+
+export type BulkUpdateCommitmentsError = BulkUpdateCommitmentsErrors[keyof BulkUpdateCommitmentsErrors];
+
 export type BulkUpdateCommitmentsResponses = {
     /**
-     * OK
+     * Commitments updated successfully
      */
-    200: Array<CommitmentDetailResponseDto>;
+    201: Array<CommitmentDetailResponseDto>;
 };
 
 export type BulkUpdateCommitmentsResponse = BulkUpdateCommitmentsResponses[keyof BulkUpdateCommitmentsResponses];
@@ -1705,9 +2637,9 @@ export type LogoutData = {
 
 export type LogoutResponses = {
     /**
-     * OK
+     * Logout successful
      */
-    200: string;
+    204: void;
 };
 
 export type LogoutResponse = LogoutResponses[keyof LogoutResponses];
@@ -1719,9 +2651,22 @@ export type LoginData = {
     url: '/auth/login';
 };
 
+export type LoginErrors = {
+    /**
+     * Invalid input
+     */
+    400: ErrorResponse;
+    /**
+     * Invalid credentials
+     */
+    401: ErrorResponse;
+};
+
+export type LoginError = LoginErrors[keyof LoginErrors];
+
 export type LoginResponses = {
     /**
-     * OK
+     * Login successful
      */
     200: JwtResponseDto;
 };
@@ -1737,59 +2682,96 @@ export type FindAllAdministratorsData = {
 
 export type FindAllAdministratorsResponses = {
     /**
-     * OK
+     * Administrators retrieved successfully
      */
     200: Array<AdministratorListItemResponseDto>;
 };
 
 export type FindAllAdministratorsResponse = FindAllAdministratorsResponses[keyof FindAllAdministratorsResponses];
 
-export type CreateAdministratorAndUserData = {
+export type CreateAdministratorData = {
     body: AdministratorCreateRequestDto;
     path?: never;
     query?: never;
     url: '/administrators';
 };
 
-export type CreateAdministratorAndUserResponses = {
+export type CreateAdministratorErrors = {
     /**
-     * OK
+     * Invalid input
      */
-    200: AdministratorListItemResponseDto;
+    400: ErrorResponse;
+    /**
+     * Email already exists
+     */
+    409: ErrorResponse;
 };
 
-export type CreateAdministratorAndUserResponse = CreateAdministratorAndUserResponses[keyof CreateAdministratorAndUserResponses];
+export type CreateAdministratorError = CreateAdministratorErrors[keyof CreateAdministratorErrors];
 
-export type PatchData = {
+export type CreateAdministratorResponses = {
+    /**
+     * Administrator created successfully
+     */
+    201: AdministratorListItemResponseDto;
+};
+
+export type CreateAdministratorResponse = CreateAdministratorResponses[keyof CreateAdministratorResponses];
+
+export type PatchUserRoleData = {
     body: PatchUserRoleRequestDto;
     path: {
+        /**
+         * User ID
+         */
         id: string;
     };
     query?: never;
     url: '/users/{id}';
 };
 
-export type PatchResponses = {
+export type PatchUserRoleErrors = {
     /**
-     * OK
+     * User not found
+     */
+    404: ErrorResponse;
+};
+
+export type PatchUserRoleError = PatchUserRoleErrors[keyof PatchUserRoleErrors];
+
+export type PatchUserRoleResponses = {
+    /**
+     * User role updated successfully
      */
     200: UserResponseDto;
 };
 
-export type PatchResponse = PatchResponses[keyof PatchResponses];
+export type PatchUserRoleResponse = PatchUserRoleResponses[keyof PatchUserRoleResponses];
 
 export type RestoreTrainerData = {
     body?: never;
     path: {
+        /**
+         * Trainer ID
+         */
         id: string;
     };
     query?: never;
     url: '/trainers/{id}/restore';
 };
 
+export type RestoreTrainerErrors = {
+    /**
+     * Trainer not found
+     */
+    404: ErrorResponse;
+};
+
+export type RestoreTrainerError = RestoreTrainerErrors[keyof RestoreTrainerErrors];
+
 export type RestoreTrainerResponses = {
     /**
-     * OK
+     * Trainer restored successfully
      */
     200: TrainerListItemResponseDto;
 };
@@ -1799,31 +2781,65 @@ export type RestoreTrainerResponse = RestoreTrainerResponses[keyof RestoreTraine
 export type ResetPasswordData = {
     body: TrainerPasswordResetRequestDto;
     path: {
+        /**
+         * Trainer ID
+         */
         id: string;
     };
     query?: never;
     url: '/trainers/{id}/reset-password';
 };
 
+export type ResetPasswordErrors = {
+    /**
+     * Invalid password
+     */
+    400: ErrorResponse;
+    /**
+     * Trainer not found
+     */
+    404: ErrorResponse;
+};
+
+export type ResetPasswordError = ResetPasswordErrors[keyof ResetPasswordErrors];
+
 export type ResetPasswordResponses = {
     /**
-     * OK
+     * Password reset successfully
      */
-    200: unknown;
+    204: void;
 };
+
+export type ResetPasswordResponse = ResetPasswordResponses[keyof ResetPasswordResponses];
 
 export type RestoreStudentData = {
     body?: never;
     path: {
+        /**
+         * Student ID
+         */
         id: string;
     };
     query?: never;
     url: '/students/{id}/restore';
 };
 
+export type RestoreStudentErrors = {
+    /**
+     * Student not found
+     */
+    404: ErrorResponse;
+    /**
+     * Email conflict or student not deleted
+     */
+    409: ErrorResponse;
+};
+
+export type RestoreStudentError = RestoreStudentErrors[keyof RestoreStudentErrors];
+
 export type RestoreStudentResponses = {
     /**
-     * OK
+     * Student restored successfully
      */
     200: StudentResponseDto;
 };
@@ -1833,17 +2849,29 @@ export type RestoreStudentResponse = RestoreStudentResponses[keyof RestoreStuden
 export type RemoveRegisteredParticipantExerciseData = {
     body?: never;
     path: {
+        /**
+         * Exercise record ID
+         */
         exerciseRecordId: string;
     };
     query?: never;
     url: '/schedule/sessions/participants/exercises/{exerciseRecordId}';
 };
 
+export type RemoveRegisteredParticipantExerciseErrors = {
+    /**
+     * Exercise record not found
+     */
+    404: ErrorResponse;
+};
+
+export type RemoveRegisteredParticipantExerciseError = RemoveRegisteredParticipantExerciseErrors[keyof RemoveRegisteredParticipantExerciseErrors];
+
 export type RemoveRegisteredParticipantExerciseResponses = {
     /**
-     * OK
+     * Exercise removed successfully
      */
-    200: string;
+    204: void;
 };
 
 export type RemoveRegisteredParticipantExerciseResponse = RemoveRegisteredParticipantExerciseResponses[keyof RemoveRegisteredParticipantExerciseResponses];
@@ -1851,17 +2879,29 @@ export type RemoveRegisteredParticipantExerciseResponse = RemoveRegisteredPartic
 export type UpdateRegisteredParticipantExerciseData = {
     body: ParticipantExerciseUpdateRequestDto;
     path: {
+        /**
+         * Exercise record ID
+         */
         exerciseRecordId: string;
     };
     query?: never;
     url: '/schedule/sessions/participants/exercises/{exerciseRecordId}';
 };
 
+export type UpdateRegisteredParticipantExerciseErrors = {
+    /**
+     * Exercise record not found
+     */
+    404: ErrorResponse;
+};
+
+export type UpdateRegisteredParticipantExerciseError = UpdateRegisteredParticipantExerciseErrors[keyof UpdateRegisteredParticipantExerciseErrors];
+
 export type UpdateRegisteredParticipantExerciseResponses = {
     /**
-     * OK
+     * Exercise updated successfully
      */
-    200: string;
+    204: void;
 };
 
 export type UpdateRegisteredParticipantExerciseResponse = UpdateRegisteredParticipantExerciseResponses[keyof UpdateRegisteredParticipantExerciseResponses];
@@ -1869,15 +2909,31 @@ export type UpdateRegisteredParticipantExerciseResponse = UpdateRegisteredPartic
 export type RestoreExerciseData = {
     body?: never;
     path: {
+        /**
+         * Exercise ID
+         */
         id: string;
     };
     query?: never;
     url: '/exercises/{id}/restore';
 };
 
+export type RestoreExerciseErrors = {
+    /**
+     * Cannot restore exercise
+     */
+    400: ErrorResponse;
+    /**
+     * Exercise not found
+     */
+    404: ErrorResponse;
+};
+
+export type RestoreExerciseError = RestoreExerciseErrors[keyof RestoreExerciseErrors];
+
 export type RestoreExerciseResponses = {
     /**
-     * OK
+     * Exercise restored successfully
      */
     200: ExerciseResponseDto;
 };
@@ -1887,15 +2943,31 @@ export type RestoreExerciseResponse = RestoreExerciseResponses[keyof RestoreExer
 export type RestoreEventData = {
     body?: never;
     path: {
+        /**
+         * Event ID
+         */
         id: string;
     };
     query?: never;
     url: '/events/{id}/restore';
 };
 
+export type RestoreEventErrors = {
+    /**
+     * Event already active
+     */
+    400: ErrorResponse;
+    /**
+     * Event not found
+     */
+    404: ErrorResponse;
+};
+
+export type RestoreEventError = RestoreEventErrors[keyof RestoreEventErrors];
+
 export type RestoreEventResponses = {
     /**
-     * OK
+     * Event restored successfully
      */
     200: EventResponseDto;
 };
@@ -1905,16 +2977,31 @@ export type RestoreEventResponse = RestoreEventResponses[keyof RestoreEventRespo
 export type ToggleAttendanceData = {
     body?: never;
     path: {
+        /**
+         * Event ID
+         */
         id: string;
+        /**
+         * Student ID
+         */
         studentId: string;
     };
     query?: never;
     url: '/events/{id}/participants/{studentId}/attendance';
 };
 
+export type ToggleAttendanceErrors = {
+    /**
+     * Participant not found
+     */
+    404: ErrorResponse;
+};
+
+export type ToggleAttendanceError = ToggleAttendanceErrors[keyof ToggleAttendanceErrors];
+
 export type ToggleAttendanceResponses = {
     /**
-     * OK
+     * Attendance toggled successfully
      */
     200: EventResponseDto;
 };
@@ -1924,15 +3011,27 @@ export type ToggleAttendanceResponse = ToggleAttendanceResponses[keyof ToggleAtt
 export type RestoreAdministratorData = {
     body?: never;
     path: {
+        /**
+         * Administrator ID
+         */
         id: string;
     };
     query?: never;
     url: '/administrators/{id}/restore';
 };
 
+export type RestoreAdministratorErrors = {
+    /**
+     * Administrator not found
+     */
+    404: ErrorResponse;
+};
+
+export type RestoreAdministratorError = RestoreAdministratorErrors[keyof RestoreAdministratorErrors];
+
 export type RestoreAdministratorResponses = {
     /**
-     * OK
+     * Administrator restored successfully
      */
     200: AdministratorResponseDto;
 };
@@ -1942,15 +3041,27 @@ export type RestoreAdministratorResponse = RestoreAdministratorResponses[keyof R
 export type FindTrainerByUserIdData = {
     body?: never;
     path: {
+        /**
+         * User ID
+         */
         id: string;
     };
     query?: never;
     url: '/trainers/user-profile/{id}';
 };
 
+export type FindTrainerByUserIdErrors = {
+    /**
+     * Trainer not found
+     */
+    404: ErrorResponse;
+};
+
+export type FindTrainerByUserIdError = FindTrainerByUserIdErrors[keyof FindTrainerByUserIdErrors];
+
 export type FindTrainerByUserIdResponses = {
     /**
-     * OK
+     * Trainer found
      */
     200: TrainerListItemResponseDto;
 };
@@ -1960,6 +3071,9 @@ export type FindTrainerByUserIdResponse = FindTrainerByUserIdResponses[keyof Fin
 export type GetSchedulesByTrainerData = {
     body?: never;
     path: {
+        /**
+         * Trainer ID
+         */
         trainerId: string;
     };
     query?: never;
@@ -1968,7 +3082,7 @@ export type GetSchedulesByTrainerData = {
 
 export type GetSchedulesByTrainerResponses = {
     /**
-     * OK
+     * Schedules retrieved successfully
      */
     200: Array<TrainerScheduleResponseDto>;
 };
@@ -1979,7 +3093,13 @@ export type GetScheduleData = {
     body?: never;
     path?: never;
     query: {
+        /**
+         * Start date
+         */
         startDate: string;
+        /**
+         * End date
+         */
         endDate: string;
     };
     url: '/schedule';
@@ -1987,7 +3107,7 @@ export type GetScheduleData = {
 
 export type GetScheduleResponses = {
     /**
-     * OK
+     * Schedule retrieved successfully
      */
     200: ScheduleResponseDto;
 };
@@ -1998,8 +3118,17 @@ export type GetReportsData = {
     body?: never;
     path?: never;
     query: {
+        /**
+         * Start date and time for the reporting period (ISO format)
+         */
         startDate: string;
+        /**
+         * End date and time for the reporting period (ISO format)
+         */
         endDate: string;
+        /**
+         * Optional trainer ID to filter reports by specific trainer
+         */
         trainerId?: string;
     };
     url: '/reports';
@@ -2007,7 +3136,7 @@ export type GetReportsData = {
 
 export type GetReportsResponses = {
     /**
-     * OK
+     * Reports generated successfully
      */
     200: ReportsResponseDto;
 };
@@ -2017,31 +3146,57 @@ export type GetReportsResponse = GetReportsResponses[keyof GetReportsResponses];
 export type DeletePlanData = {
     body?: never;
     path: {
+        /**
+         * Plan ID
+         */
         planId: string;
     };
     query?: never;
     url: '/plans/{planId}';
 };
 
+export type DeletePlanErrors = {
+    /**
+     * Plan not found
+     */
+    404: ErrorResponse;
+};
+
+export type DeletePlanError = DeletePlanErrors[keyof DeletePlanErrors];
+
 export type DeletePlanResponses = {
     /**
-     * OK
+     * Plan deleted successfully
      */
-    200: unknown;
+    204: void;
 };
+
+export type DeletePlanResponse = DeletePlanResponses[keyof DeletePlanResponses];
 
 export type GetPlanByIdData = {
     body?: never;
     path: {
+        /**
+         * Plan ID
+         */
         planId: string;
     };
     query?: never;
     url: '/plans/{planId}';
 };
 
+export type GetPlanByIdErrors = {
+    /**
+     * Plan not found
+     */
+    404: ErrorResponse;
+};
+
+export type GetPlanByIdError = GetPlanByIdErrors[keyof GetPlanByIdErrors];
+
 export type GetPlanByIdResponses = {
     /**
-     * OK
+     * Plan found
      */
     200: StudentPlanResponseDto;
 };
@@ -2051,15 +3206,27 @@ export type GetPlanByIdResponse = GetPlanByIdResponses[keyof GetPlanByIdResponse
 export type GetStudentPlanHistoryData = {
     body?: never;
     path: {
+        /**
+         * Student ID
+         */
         studentId: string;
     };
     query?: never;
     url: '/plans/students/{studentId}/history';
 };
 
+export type GetStudentPlanHistoryErrors = {
+    /**
+     * Student not found
+     */
+    404: ErrorResponse;
+};
+
+export type GetStudentPlanHistoryError = GetStudentPlanHistoryErrors[keyof GetStudentPlanHistoryErrors];
+
 export type GetStudentPlanHistoryResponses = {
     /**
-     * OK
+     * History retrieved successfully
      */
     200: Array<StudentPlanAssignmentResponseDto>;
 };
@@ -2069,15 +3236,27 @@ export type GetStudentPlanHistoryResponse = GetStudentPlanHistoryResponses[keyof
 export type GetCurrentStudentPlanData = {
     body?: never;
     path: {
+        /**
+         * Student ID
+         */
         studentId: string;
     };
     query?: never;
     url: '/plans/students/{studentId}/current';
 };
 
+export type GetCurrentStudentPlanErrors = {
+    /**
+     * Student or plan not found
+     */
+    404: ErrorResponse;
+};
+
+export type GetCurrentStudentPlanError = GetCurrentStudentPlanErrors[keyof GetCurrentStudentPlanErrors];
+
 export type GetCurrentStudentPlanResponses = {
     /**
-     * OK
+     * Current plan retrieved successfully
      */
     200: StudentPlanAssignmentResponseDto;
 };
@@ -2088,6 +3267,9 @@ export type GetExpiringSoonAssignmentsData = {
     body?: never;
     path?: never;
     query?: {
+        /**
+         * Number of days to look ahead
+         */
         days?: number;
     };
     url: '/plans/assignments/expiring-soon';
@@ -2095,7 +3277,7 @@ export type GetExpiringSoonAssignmentsData = {
 
 export type GetExpiringSoonAssignmentsResponses = {
     /**
-     * OK
+     * Assignments retrieved successfully
      */
     200: Array<StudentPlanAssignmentResponseDto>;
 };
@@ -2111,7 +3293,7 @@ export type GetAllActiveAssignmentsData = {
 
 export type GetAllActiveAssignmentsResponses = {
     /**
-     * OK
+     * Assignments retrieved successfully
      */
     200: Array<StudentPlanAssignmentResponseDto>;
 };
@@ -2127,7 +3309,7 @@ export type GetTrainersForLookupData = {
 
 export type GetTrainersForLookupResponses = {
     /**
-     * OK
+     * Trainers retrieved successfully
      */
     200: Array<TrainerLookupResponseDto>;
 };
@@ -2143,7 +3325,7 @@ export type GetStudentsForLookupData = {
 
 export type GetStudentsForLookupResponses = {
     /**
-     * OK
+     * Students retrieved successfully
      */
     200: Array<StudentLookupResponseDto>;
 };
@@ -2153,6 +3335,9 @@ export type GetStudentsForLookupResponse = GetStudentsForLookupResponses[keyof G
 export type GetStudentCommitmentsData = {
     body?: never;
     path: {
+        /**
+         * Student ID
+         */
         studentId: string;
     };
     query?: never;
@@ -2161,7 +3346,7 @@ export type GetStudentCommitmentsData = {
 
 export type GetStudentCommitmentsResponses = {
     /**
-     * OK
+     * Commitments retrieved successfully
      */
     200: Array<CommitmentDetailResponseDto>;
 };
@@ -2171,10 +3356,19 @@ export type GetStudentCommitmentsResponse = GetStudentCommitmentsResponses[keyof
 export type GetCurrentCommitmentStatusData = {
     body?: never;
     path: {
+        /**
+         * Student ID
+         */
         studentId: string;
+        /**
+         * Session series ID
+         */
         sessionSeriesId: string;
     };
     query?: {
+        /**
+         * Timestamp to query (defaults to now)
+         */
         timestamp?: string;
     };
     url: '/commitments/students/{studentId}/sessions/{sessionSeriesId}/status';
@@ -2182,7 +3376,7 @@ export type GetCurrentCommitmentStatusData = {
 
 export type GetCurrentCommitmentStatusResponses = {
     /**
-     * OK
+     * Status retrieved successfully
      */
     200: 'ATTENDING' | 'NOT_ATTENDING' | 'TENTATIVE';
 };
@@ -2192,7 +3386,13 @@ export type GetCurrentCommitmentStatusResponse = GetCurrentCommitmentStatusRespo
 export type GetCommitmentHistoryData = {
     body?: never;
     path: {
+        /**
+         * Student ID
+         */
         studentId: string;
+        /**
+         * Session series ID
+         */
         sessionSeriesId: string;
     };
     query?: never;
@@ -2201,7 +3401,7 @@ export type GetCommitmentHistoryData = {
 
 export type GetCommitmentHistoryResponses = {
     /**
-     * OK
+     * History retrieved successfully
      */
     200: Array<CommitmentDetailResponseDto>;
 };
@@ -2211,9 +3411,15 @@ export type GetCommitmentHistoryResponse = GetCommitmentHistoryResponses[keyof G
 export type GetCurrentActiveCommitmentsData = {
     body?: never;
     path: {
+        /**
+         * Student ID
+         */
         studentId: string;
     };
     query?: {
+        /**
+         * Timestamp to query (defaults to now)
+         */
         timestamp?: string;
     };
     url: '/commitments/students/{studentId}/active';
@@ -2221,7 +3427,7 @@ export type GetCurrentActiveCommitmentsData = {
 
 export type GetCurrentActiveCommitmentsResponses = {
     /**
-     * OK
+     * Active commitments retrieved successfully
      */
     200: Array<CommitmentDetailResponseDto>;
 };
@@ -2231,6 +3437,9 @@ export type GetCurrentActiveCommitmentsResponse = GetCurrentActiveCommitmentsRes
 export type GetSessionSeriesCommitmentsData = {
     body?: never;
     path: {
+        /**
+         * Session series ID
+         */
         sessionSeriesId: string;
     };
     query?: never;
@@ -2239,7 +3448,7 @@ export type GetSessionSeriesCommitmentsData = {
 
 export type GetSessionSeriesCommitmentsResponses = {
     /**
-     * OK
+     * Commitments retrieved successfully
      */
     200: Array<CommitmentDetailResponseDto>;
 };
@@ -2255,7 +3464,7 @@ export type GetAvailableSessionSeriesData = {
 
 export type GetAvailableSessionSeriesResponses = {
     /**
-     * OK
+     * Available sessions retrieved successfully
      */
     200: Array<TrainerSchedule>;
 };
@@ -2265,53 +3474,54 @@ export type GetAvailableSessionSeriesResponse = GetAvailableSessionSeriesRespons
 export type FindAdministratorByUserIdData = {
     body?: never;
     path: {
-        id: string;
+        /**
+         * User ID
+         */
+        userId: string;
     };
     query?: never;
-    url: '/administrators/user-profile/{id}';
+    url: '/administrators/user-profile/{userId}';
 };
+
+export type FindAdministratorByUserIdErrors = {
+    /**
+     * Administrator not found
+     */
+    404: ErrorResponse;
+};
+
+export type FindAdministratorByUserIdError = FindAdministratorByUserIdErrors[keyof FindAdministratorByUserIdErrors];
 
 export type FindAdministratorByUserIdResponses = {
     /**
-     * OK
+     * Administrator found
      */
     200: AdministratorListItemResponseDto;
 };
 
 export type FindAdministratorByUserIdResponse = FindAdministratorByUserIdResponses[keyof FindAdministratorByUserIdResponses];
 
-export type TestData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/administrators/test';
-};
-
-export type TestResponses = {
-    /**
-     * OK
-     */
-    200: string;
-};
-
-export type TestResponse = TestResponses[keyof TestResponses];
-
 export type FindAllPaginatedData = {
     body?: never;
     path?: never;
-    query: {
+    query?: {
+        /**
+         * Search term for name/email
+         */
         search?: string;
+        /**
+         * Include soft-deleted administrators
+         */
         includeInactive?: boolean;
-        pageable: Pageable;
     };
     url: '/administrators/paginated';
 };
 
 export type FindAllPaginatedResponses = {
     /**
-     * OK
+     * Administrators retrieved successfully
      */
-    200: PageAdministratorListItemResponseDto;
+    200: PageResponseAdministratorListItemResponseDto;
 };
 
 export type FindAllPaginatedResponse = FindAllPaginatedResponses[keyof FindAllPaginatedResponses];
@@ -2319,18 +3529,33 @@ export type FindAllPaginatedResponse = FindAllPaginatedResponses[keyof FindAllPa
 export type RemoveSessionParticipantData = {
     body?: never;
     path: {
+        /**
+         * Session ID
+         */
         sessionId: string;
+        /**
+         * Student ID
+         */
         studentId: string;
     };
     query?: never;
     url: '/schedule/sessions/{sessionId}/participants/{studentId}';
 };
 
+export type RemoveSessionParticipantErrors = {
+    /**
+     * Session or participant not found
+     */
+    404: ErrorResponse;
+};
+
+export type RemoveSessionParticipantError = RemoveSessionParticipantErrors[keyof RemoveSessionParticipantErrors];
+
 export type RemoveSessionParticipantResponses = {
     /**
-     * OK
+     * Participant removed successfully
      */
-    200: string;
+    204: void;
 };
 
 export type RemoveSessionParticipantResponse = RemoveSessionParticipantResponses[keyof RemoveSessionParticipantResponses];

@@ -76,7 +76,7 @@ export default function ProfilePage() {
   // Admin integration
   const { data: adminDataByUser, isLoading: isLoadingAdminId } = useQuery({
     ...findAdministratorByUserIdOptions({
-      path: { id: userId },
+      path: { userId: userId },
       client: apiClient,
     }),
     enabled: !!userId && !!token && userRole === "admin",

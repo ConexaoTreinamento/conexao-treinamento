@@ -2,10 +2,18 @@ import { toast } from "@/hooks/use-toast"
 
 type FieldErrors = Record<string, string>
 
+/**
+ * Normalized error structure matching backend ErrorResponse and ValidationErrorResponse
+ * @see backend/docs/MIGRATION-GUIDE.md for details
+ */
 interface NormalizedError {
   status?: number
   message?: string
-  fieldErrors?: FieldErrors
+  errorCode?: string // NEW: errorCode from backend (e.g., "RESOURCE_NOT_FOUND", "VALIDATION_ERROR")
+  traceId?: string // NEW: traceId for debugging 500 errors
+  fieldErrors?: FieldErrors // For ValidationErrorResponse (maps to 'errors' field in backend)
+  timestamp?: string
+  path?: string
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -41,6 +49,10 @@ const normalizeFieldErrors = (raw: Record<string, unknown>): FieldErrors | undef
   return Object.keys(entries).length > 0 ? entries : undefined
 }
 
+/**
+ * Normalize error from backend to consistent structure
+ * Handles both ErrorResponse and ValidationErrorResponse formats
+ */
 const normalizeError = (error: unknown): NormalizedError => {
   if (!isRecord(error)) {
     return {}
@@ -54,14 +66,40 @@ const normalizeError = (error: unknown): NormalizedError => {
     ? (error as { message: string }).message
     : undefined
 
-  const rawFieldErrorsCandidate = (error as { fieldErrors?: unknown }).fieldErrors
+  // NEW: Extract errorCode from backend response
+  const errorCode = typeof (error as { errorCode?: unknown }).errorCode === "string"
+    ? (error as { errorCode: string }).errorCode
+    : undefined
+
+  // NEW: Extract traceId for 500 errors
+  const traceId = typeof (error as { traceId?: unknown }).traceId === "string"
+    ? (error as { traceId: string }).traceId
+    : undefined
+
+  const timestamp = typeof (error as { timestamp?: unknown }).timestamp === "string"
+    ? (error as { timestamp: string }).timestamp
+    : undefined
+
+  const path = typeof (error as { path?: unknown }).path === "string"
+    ? (error as { path: string }).path
+    : undefined
+
+  // Try both 'fieldErrors' (old) and 'errors' (new backend format)
+  const rawFieldErrorsCandidate = (error as { fieldErrors?: unknown }).fieldErrors || 
+                                   (error as { errors?: unknown }).errors
   const fieldErrors = isRecord(rawFieldErrorsCandidate)
     ? normalizeFieldErrors(rawFieldErrorsCandidate)
     : undefined
 
-  return { status, message, fieldErrors }
+  return { status, message, errorCode, traceId, fieldErrors, timestamp, path }
 }
 
+/**
+ * Handle HTTP errors with enhanced errorCode and traceId support
+ * @param error - The error object from the API
+ * @param context - Context string for the error (e.g., "criar estudante")
+ * @param defaultMessage - Optional default message if none is provided
+ */
 export function handleHttpError(
   error: unknown,
   context: string,
@@ -70,22 +108,61 @@ export function handleHttpError(
   console.error(`Error while ${context}:`, error)
 
   const normalized = normalizeError(error)
-  const status = normalized.status
-  const fieldErrors = normalized.fieldErrors
+  const { status, errorCode, traceId, fieldErrors, message } = normalized
 
-  if (status === 400 && fieldErrors) {
+  // Log traceId for debugging server errors
+  if (traceId) {
+    console.error(`🔍 TraceId for debugging: ${traceId}`)
+    console.error(`📍 Path: ${normalized.path || 'unknown'}`)
+    console.error(`⏰ Timestamp: ${normalized.timestamp || 'unknown'}`)
+  }
+
+  // Handle by errorCode first (more specific), then fallback to status code
+  if (errorCode === 'VALIDATION_ERROR' || (status === 400 && fieldErrors)) {
     // validation errors
-    const errorCount = Object.keys(fieldErrors).length
-    const firstError = Object.values(fieldErrors)[0]
+    const errorCount = fieldErrors ? Object.keys(fieldErrors).length : 0
+    const firstError = fieldErrors ? Object.values(fieldErrors)[0] : null
 
     toast({
       title: "Dados inválidos",
       description:
-        errorCount === 1
+        errorCount === 1 && firstError
           ? firstError
-          : `${errorCount} campos têm dados inválidos. Verifique os campos destacados.`,
+          : errorCount > 1
+            ? `${errorCount} campos têm dados inválidos. Verifique os campos destacados.`
+            : message || "Verifique os dados fornecidos.",
       variant: "destructive",
       duration: 6000,
+    })
+    return
+  }
+
+  if (errorCode === 'RESOURCE_NOT_FOUND' || status === 404) {
+    toast({
+      title: "Recurso não encontrado",
+      description: message || "O recurso solicitado não foi encontrado. Pode ter sido removido.",
+      variant: "destructive",
+      duration: 5000,
+    })
+    return
+  }
+
+  if (errorCode === 'BUSINESS_RULE_VIOLATION' || status === 409) {
+    toast({
+      title: "Operação não permitida",
+      description: message || "Esta operação não pode ser realizada. Verifique os dados e tente novamente.",
+      variant: "destructive",
+      duration: 5000,
+    })
+    return
+  }
+
+  if (errorCode === 'DUPLICATE_RESOURCE' || (status === 409 && !errorCode)) {
+    toast({
+      title: "Conflito",
+      description: message || "Este item já existe. Verifique os dados e tente novamente.",
+      variant: "destructive",
+      duration: 5000,
     })
     return
   }
@@ -94,7 +171,7 @@ export function handleHttpError(
     // unauthorized (user not authenticated or session expired)
     toast({
       title: "Sessão expirada",
-      description: "Você não está autenticado ou sua sessão expirou. Faça login novamente para continuar.",
+      description: message || "Você não está autenticado ou sua sessão expirou. Faça login novamente para continuar.",
       variant: "destructive",
       duration: 5000,
     })
@@ -105,29 +182,7 @@ export function handleHttpError(
     // forbidden (user authenticated but does not have permission)
     toast({
       title: "Acesso negado",
-      description: "Você não tem permissão para realizar esta ação.",
-      variant: "destructive",
-      duration: 5000,
-    })
-    return
-  }
-
-  if (status === 404) {
-    // not found
-    toast({
-      title: "Recurso não encontrado",
-      description: "O recurso solicitado não foi encontrado. Pode ter sido removido.",
-      variant: "destructive",
-      duration: 5000,
-    })
-    return
-  }
-
-  if (status === 409) {
-    // conflict - duplicate resource
-    toast({
-      title: "Conflito",
-      description: "Este item já existe. Verifique os dados e tente novamente.",
+      description: message || "Você não tem permissão para realizar esta ação.",
       variant: "destructive",
       duration: 5000,
     })
@@ -138,7 +193,7 @@ export function handleHttpError(
     // unprocessable entity
     toast({
       title: "Dados inválidos",
-      description: "Os dados fornecidos não podem ser processados. Verifique as informações.",
+      description: message || "Os dados fornecidos não podem ser processados. Verifique as informações.",
       variant: "destructive",
       duration: 5000,
     })
@@ -149,31 +204,33 @@ export function handleHttpError(
     // too many requests
     toast({
       title: "Muitas tentativas",
-      description: "Você fez muitas tentativas. Aguarde alguns minutos antes de tentar novamente.",
+      description: message || "Você fez muitas tentativas. Aguarde alguns minutos antes de tentar novamente.",
       variant: "destructive",
       duration: 5000,
     })
     return
   }
 
-  if (status === 500) {
+  if (status === 500 || errorCode === 'INTERNAL_SERVER_ERROR') {
     // internal server error
+    const debugInfo = traceId ? `\n\nCódigo para suporte: ${traceId}` : ''
     toast({
       title: "Erro interno do servidor",
-      description: "Ocorreu um erro interno. Tente novamente em alguns instantes.",
+      description: (message || "Ocorreu um erro interno. Tente novamente em alguns instantes.") + debugInfo,
       variant: "destructive",
-      duration: 5000,
+      duration: 7000, // Longer duration for server errors
     })
     return
   }
 
   if (typeof status === "number" && status >= 500) {
     // other server errors
+    const debugInfo = traceId ? `\n\nCódigo para suporte: ${traceId}` : ''
     toast({
       title: "Erro do servidor",
-      description: "O servidor está temporariamente indisponível. Tente novamente mais tarde.",
+      description: (message || "O servidor está temporariamente indisponível. Tente novamente mais tarde.") + debugInfo,
       variant: "destructive",
-      duration: 5000,
+      duration: 7000,
     })
     return
   }
@@ -182,7 +239,7 @@ export function handleHttpError(
     // other client errors
     toast({
       title: `Erro ao ${context}`,
-      description: normalized.message || "Ocorreu um erro na requisição. Tente novamente.",
+      description: message || "Ocorreu um erro na requisição. Tente novamente.",
       variant: "destructive",
       duration: 5000,
     })
@@ -192,7 +249,7 @@ export function handleHttpError(
   // generic error (no HTTP status)
   toast({
     title: `Erro ao ${context}`,
-    description: normalized.message || defaultMessage || "Ocorreu um erro inesperado. Tente novamente.",
+    description: message || defaultMessage || "Ocorreu um erro inesperado. Tente novamente.",
     variant: "destructive",
     duration: 5000,
   })

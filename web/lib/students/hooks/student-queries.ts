@@ -68,6 +68,16 @@ export const useStudents = (params: {
         size: pageSize,
         sort: ["name,ASC"],
       },
+    } as {
+      search?: string;
+      gender?: string;
+      profession?: string;
+      minAge?: number;
+      maxAge?: number;
+      registrationPeriodMinDate?: string;
+      registrationPeriodMaxDate?: string;
+      includeInactive?: boolean;
+      pageable: { page: number; size: number; sort: string[] };
     },
   };
 

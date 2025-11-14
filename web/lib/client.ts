@@ -3,12 +3,20 @@ import {
   createClient,
   createConfig,
 } from "./api-client/client";
+import { authInterceptor } from "./auth/interceptor";
 
-// Create a custom client with query serializer for nested objects
+/**
+ * Centralized API client configuration
+ * Uses @hey-api/openapi-ts generated client with custom interceptors
+ */
 export const apiClient = createClient(
   createConfig<ClientOptions>({
     baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080",
-    auth: () => localStorage.getItem("token") ?? undefined,
+    
+    // Auth interceptor - automatically injects Bearer token
+    auth: authInterceptor,
+    
+    // Query serializer - handles nested objects and arrays for Spring Boot pagination
     querySerializer: (params: Record<string, unknown>) => {
       const searchParams = new URLSearchParams();
 

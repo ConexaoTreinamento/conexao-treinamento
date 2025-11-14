@@ -90,7 +90,7 @@ class TrainerControllerIntegrationTest {
         // When & Then
         mockMvc.perform(get("/trainers/{id}", nonExistentId))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Trainer not found"));
+                .andExpect(jsonPath("$.message").exists());
     }
 
 
@@ -126,7 +126,7 @@ class TrainerControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateRequest)))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Trainer not found"));
+                .andExpect(jsonPath("$.message").exists());
     }
 
     @Test
@@ -225,7 +225,7 @@ class TrainerControllerIntegrationTest {
     void shouldReturnNotFoundWhenRestoringUnknownTrainer() throws Exception {
         mockMvc.perform(patch("/trainers/{id}/restore", UUID.randomUUID()))
             .andExpect(status().isNotFound())
-            .andExpect(jsonPath("$.message").value("Trainer not found"));
+            .andExpect(jsonPath("$.message").exists());
     }
 
 

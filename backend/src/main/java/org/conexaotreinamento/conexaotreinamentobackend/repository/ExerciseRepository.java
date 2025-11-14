@@ -13,6 +13,8 @@ import java.util.UUID;
 public interface ExerciseRepository extends JpaRepository<Exercise, UUID> {
     boolean existsByNameIgnoringCaseAndDeletedAtIsNull(String name);
     
+    boolean existsByNameIgnoringCaseAndDeletedAtIsNullAndIdNot(String name, UUID excludeId);
+    
     Optional<Exercise> findByIdAndDeletedAtIsNull(UUID id);
     
     Page<Exercise> findByDeletedAtIsNull(Pageable pageable);

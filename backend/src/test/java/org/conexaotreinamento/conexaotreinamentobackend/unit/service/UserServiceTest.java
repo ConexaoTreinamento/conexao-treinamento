@@ -30,9 +30,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.BusinessException;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.ResourceNotFoundException;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.ValidationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.server.ResponseStatusException;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserService Unit Tests")
@@ -102,8 +103,7 @@ class UserServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.createUser(createUserRequestDTO))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Email já está em uso");
 
         verify(userRepository).findByEmail("john@example.com");
@@ -189,8 +189,7 @@ class UserServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.delete(userId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("User not found");
 
         verify(userRepository).findByIdAndDeletedAtIsNull(userId);
@@ -239,8 +238,7 @@ class UserServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.patch(userId, patchUserRoleRequestDTO))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("User not found");
 
         verify(userRepository).findByIdAndDeletedAtIsNull(userId);
@@ -293,14 +291,12 @@ class UserServiceTest {
     void shouldThrowBadRequestWhenEmailIsNullOrEmpty() {
         // When & Then - null email
         assertThatThrownBy(() -> userService.updateUserEmail(userId, null))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
+                .isInstanceOf(ValidationException.class)
                 .hasMessageContaining("Email is required");
 
         // When & Then - empty email
         assertThatThrownBy(() -> userService.updateUserEmail(userId, "   "))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
+                .isInstanceOf(ValidationException.class)
                 .hasMessageContaining("Email is required");
 
         verify(userRepository, never()).findByIdAndDeletedAtIsNull(any());
@@ -314,8 +310,7 @@ class UserServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.updateUserEmail(userId, "newemail@example.com"))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("User not found");
 
         verify(userRepository).findByIdAndDeletedAtIsNull(userId);
@@ -334,8 +329,7 @@ class UserServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.updateUserEmail(userId, newEmail))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.CONFLICT)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Email already in use");
 
         verify(userRepository).findByIdAndDeletedAtIsNull(userId);
@@ -376,14 +370,12 @@ class UserServiceTest {
     void shouldThrowBadRequestWhenPasswordIsNullOrEmpty() {
         // When & Then - null password
         assertThatThrownBy(() -> userService.resetUserPassword(userId, null))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
+                .isInstanceOf(ValidationException.class)
                 .hasMessageContaining("Password is required");
 
         // When & Then - empty password
         assertThatThrownBy(() -> userService.resetUserPassword(userId, "   "))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
+                .isInstanceOf(ValidationException.class)
                 .hasMessageContaining("Password is required");
 
         verify(userRepository, never()).findByIdAndDeletedAtIsNull(any());
@@ -398,8 +390,7 @@ class UserServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.resetUserPassword(userId, "newPassword"))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("User not found");
 
         verify(userRepository).findByIdAndDeletedAtIsNull(userId);
@@ -490,8 +481,7 @@ class UserServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.restore(userId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("User not found");
         
         verify(userRepository).findById(userId);
@@ -507,8 +497,7 @@ class UserServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.restore(userId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.CONFLICT)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("User is already active");
         
         verify(userRepository).findById(userId);
@@ -529,8 +518,7 @@ class UserServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.restore(userId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.CONFLICT)
+                .isInstanceOf(BusinessException.class)
                 .hasMessageContaining("Cannot restore user due to email conflict");
         
         verify(userRepository).findById(userId);

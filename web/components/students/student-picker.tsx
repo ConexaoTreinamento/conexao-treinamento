@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useStudents } from "@/lib/students/hooks/student-queries";
-import type { PageStudentResponseDto } from "@/lib/api-client";
+import type { PageResponseStudentResponseDto, StudentResponseDto } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/use-debounce";
 
@@ -51,11 +51,11 @@ export function StudentPicker({
     pageSize,
   });
 
-  const pageData = studentsQuery.data as PageStudentResponseDto | undefined;
+  const pageData = studentsQuery.data as PageResponseStudentResponseDto | undefined;
   const students = pageData?.content ?? [];
   const totalPages = Math.max(1, pageData?.totalPages ?? 1);
   const filteredStudents = students.filter(
-    (student) => student.id && !excludedIds.has(student.id),
+    (student: StudentResponseDto) => student.id && !excludedIds.has(student.id),
   );
 
   const handleSelect = (student: StudentSummary) => {
@@ -88,7 +88,7 @@ export function StudentPicker({
           </div>
         )}
 
-        {filteredStudents.map((student) => {
+        {filteredStudents.map((student: StudentResponseDto) => {
           const fullName =
             `${student.name ?? ""} ${student.surname ?? ""}`.trim() ||
             student.id!;

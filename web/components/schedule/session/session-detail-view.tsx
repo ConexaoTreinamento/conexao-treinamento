@@ -16,7 +16,7 @@ import { ConfirmDeleteDialog } from "@/components/base/confirm-delete-dialog";
 import { formatISODateToDisplay } from "@/lib/formatters/time";
 import {
   exercisesQueryOptions,
-  type PageExerciseResponseDto,
+  type PageResponse,
   scheduleByDateQueryOptions,
   sessionQueryOptions,
   type SessionResponseDto,
@@ -72,7 +72,7 @@ export function SessionDetailView({
   const trainersQuery = useQuery(trainersLookupQueryOptions());
   const exercisesQuery = useQuery(exercisesQueryOptions());
   const allExercises: ExerciseResponseDto[] = useMemo(() => {
-    const page = exercisesQuery.data as PageExerciseResponseDto | undefined;
+    const page = exercisesQuery.data as PageResponse | undefined;
     return page?.content ?? [];
   }, [exercisesQuery.data]);
 
@@ -319,7 +319,7 @@ export function SessionDetailView({
   };
 
   const addToExercisesCaches = (exercise: ExerciseResponseDto) => {
-    const entries = qc.getQueriesData<PageExerciseResponseDto>({
+    const entries = qc.getQueriesData<PageResponse>({
       predicate: (query) => {
         const root = (query.queryKey as unknown[])?.[0] as
           | { _id?: string }
@@ -332,7 +332,7 @@ export function SessionDetailView({
     entries.forEach(([key, data]) => {
       if (!data) return;
       const content = data.content ?? [];
-      if (content.some((entry) => entry.id === exercise.id)) return;
+      if (content.some((entry: ExerciseResponseDto) => entry.id === exercise.id)) return;
       qc.setQueryData(key, { ...data, content: [exercise, ...content] });
     });
   };

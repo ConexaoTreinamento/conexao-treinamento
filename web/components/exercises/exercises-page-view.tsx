@@ -58,10 +58,10 @@ export function ExercisesPageView() {
     ...findAllExercisesOptions({
       client: apiClient,
       query: {
-        pageable: { page: currentPage },
-    ...(debouncedSearchTerm ? { search: debouncedSearchTerm } : {}),
-    includeInactive: shouldIncludeInactive(statusFilter),
-      },
+        pageable: { page: currentPage, size: 20 },
+        ...(debouncedSearchTerm ? { search: debouncedSearchTerm } : {}),
+        includeInactive: shouldIncludeInactive(statusFilter),
+      } as { pageable: { page: number; size: number }; search?: string; includeInactive?: boolean },
     }),
   });
 

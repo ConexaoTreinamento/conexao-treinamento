@@ -1,5 +1,6 @@
 package org.conexaotreinamento.conexaotreinamentobackend.controller;
 
+import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
@@ -8,7 +9,7 @@ import org.conexaotreinamento.conexaotreinamentobackend.dto.request.TrainerPassw
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerListItemResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.service.TrainerService;
-import org.springframework.http.HttpStatus;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.dto.ErrorResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,39 +20,85 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * REST Controller for managing Trainers.
+ */
 @RestController
 @RequestMapping("/trainers")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Trainers", description = "Endpoints for managing trainers and their accounts")
 public class TrainerController {
+    
     private final TrainerService trainerService;
 
     @PostMapping
-    public ResponseEntity<TrainerListItemResponseDTO> createTrainerAndUser(@RequestBody @Valid TrainerCreateRequestDTO request) {
+    @Operation(summary = "Create new trainer", description = "Creates a new trainer with an associated user account")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Trainer created successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "409", description = "Email already exists", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<TrainerListItemResponseDTO> createTrainerAndUser(
+            @RequestBody @Valid TrainerCreateRequestDTO request) {
+        
         log.info("Creating new trainer - Name: {}, Email: {}", request.name(), request.email());
         TrainerListItemResponseDTO response = trainerService.create(request);
+        
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(response.id())
+                .toUri();
+        
         log.info("Trainer created successfully [ID: {}] - Name: {}", response.id(), response.name());
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.created(location).body(response);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TrainerListItemResponseDTO> findTrainerById(@PathVariable UUID id) {
+    @Operation(summary = "Get trainer by ID", description = "Retrieves a trainer by their unique identifier")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Trainer found"),
+        @ApiResponse(responseCode = "404", description = "Trainer not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<TrainerListItemResponseDTO> findTrainerById(
+            @PathVariable @Parameter(description = "Trainer ID") UUID id) {
+        
         log.debug("Fetching trainer by ID: {}", id);
         return ResponseEntity.ok(trainerService.findById(id));
     }
 
     @GetMapping("/user-profile/{id}")
-    public ResponseEntity<TrainerListItemResponseDTO> findTrainerByUserId(@PathVariable UUID id) {
+    @Operation(summary = "Get trainer by user ID", description = "Retrieves a trainer by their associated user ID")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Trainer found"),
+        @ApiResponse(responseCode = "404", description = "Trainer not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<TrainerListItemResponseDTO> findTrainerByUserId(
+            @PathVariable @Parameter(description = "User ID") UUID id) {
+        
         log.debug("Fetching trainer by user ID: {}", id);
         return ResponseEntity.ok(trainerService.findByUserId(id));
     }
 
     @GetMapping
+    @Operation(summary = "List all trainers", description = "Retrieves all active trainers")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Trainers retrieved successfully")
+    })
     public ResponseEntity<List<TrainerListItemResponseDTO>> findAllTrainers() {
         log.debug("Fetching all trainers");
         List<TrainerListItemResponseDTO> response = trainerService.findAll();
@@ -60,15 +107,32 @@ public class TrainerController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TrainerResponseDTO> updateTrainerAndUser(@PathVariable UUID id, @RequestBody @Valid TrainerCreateRequestDTO request) {
+    @Operation(summary = "Update trainer", description = "Updates an existing trainer and their user account")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Trainer updated successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid input", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Trainer not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "409", description = "Email already exists", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<TrainerResponseDTO> updateTrainerAndUser(
+            @PathVariable @Parameter(description = "Trainer ID") UUID id,
+            @RequestBody @Valid TrainerCreateRequestDTO request) {
+        
         log.info("Updating trainer [ID: {}] - Name: {}", id, request.name());
-        TrainerResponseDTO response = trainerService.put(id, request);
+        TrainerResponseDTO response = trainerService.update(id, request);
         log.info("Trainer updated successfully [ID: {}]", id);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> softDeleteTrainerUser(@PathVariable UUID id) {
+    @Operation(summary = "Delete trainer", description = "Soft deletes a trainer and their user account")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "204", description = "Trainer deleted successfully"),
+        @ApiResponse(responseCode = "404", description = "Trainer not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<Void> softDeleteTrainerUser(
+            @PathVariable @Parameter(description = "Trainer ID") UUID id) {
+        
         log.info("Deleting trainer [ID: {}]", id);
         trainerService.delete(id);
         log.info("Trainer deleted successfully [ID: {}]", id);
@@ -76,7 +140,14 @@ public class TrainerController {
     }
 
     @PatchMapping("/{id}/restore")
-    public ResponseEntity<TrainerListItemResponseDTO> restoreTrainer(@PathVariable UUID id) {
+    @Operation(summary = "Restore trainer", description = "Restores a soft-deleted trainer")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Trainer restored successfully"),
+        @ApiResponse(responseCode = "404", description = "Trainer not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<TrainerListItemResponseDTO> restoreTrainer(
+            @PathVariable @Parameter(description = "Trainer ID") UUID id) {
+        
         log.info("Restoring trainer [ID: {}]", id);
         TrainerListItemResponseDTO response = trainerService.restore(id);
         log.info("Trainer restored successfully [ID: {}]", id);
@@ -84,10 +155,16 @@ public class TrainerController {
     }
 
     @PatchMapping("/{id}/reset-password")
+    @Operation(summary = "Reset trainer password", description = "Resets the password for a trainer's user account")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "204", description = "Password reset successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid password", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Trainer not found", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     public ResponseEntity<Void> resetPassword(
-            @PathVariable UUID id,
-            @RequestBody @Valid TrainerPasswordResetRequestDTO request
-    ) {
+            @PathVariable @Parameter(description = "Trainer ID") UUID id,
+            @RequestBody @Valid TrainerPasswordResetRequestDTO request) {
+        
         log.info("Resetting password for trainer [ID: {}]", id);
         trainerService.resetPassword(id, request.newPassword());
         log.info("Password reset successfully for trainer [ID: {}]", id);

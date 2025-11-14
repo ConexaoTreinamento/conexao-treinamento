@@ -14,7 +14,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -24,6 +23,8 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import org.conexaotreinamento.conexaotreinamentobackend.mapper.PhysicalEvaluationMapper;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.ResourceNotFoundException;
 
 @ExtendWith(MockitoExtension.class)
 class PhysicalEvaluationServiceTest {
@@ -33,6 +34,8 @@ class PhysicalEvaluationServiceTest {
 
     @Mock
     private StudentRepository studentRepository;
+
+    private PhysicalEvaluationMapper evaluationMapper = new PhysicalEvaluationMapper();
 
     @InjectMocks
     private PhysicalEvaluationService evaluationService;
@@ -72,6 +75,9 @@ class PhysicalEvaluationServiceTest {
                 22.9
         );
         ReflectionTestUtils.setField(student, "id", studentId);
+        
+        // Inject real mapper into service
+        ReflectionTestUtils.setField(evaluationService, "evaluationMapper", evaluationMapper);
     }
 
     @Test
@@ -97,7 +103,7 @@ class PhysicalEvaluationServiceTest {
         when(studentRepository.findByIdAndDeletedAtIsNull(studentId)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThrows(ResponseStatusException.class, () -> evaluationService.create(studentId, requestDTO));
+        assertThrows(ResourceNotFoundException.class, () -> evaluationService.create(studentId, requestDTO));
         verify(evaluationRepository, never()).save(any());
     }
 
@@ -122,7 +128,7 @@ class PhysicalEvaluationServiceTest {
                 .thenReturn(Optional.empty());
 
         // When & Then
-        assertThrows(ResponseStatusException.class, () -> evaluationService.findById(studentId, evaluationId));
+        assertThrows(ResourceNotFoundException.class, () -> evaluationService.findById(studentId, evaluationId));
     }
 
     @Test
@@ -185,7 +191,7 @@ class PhysicalEvaluationServiceTest {
     when(evaluationRepository.findByIdAndStudentIdAndDeletedAtIsNull(evaluationId, studentId))
         .thenReturn(Optional.empty());
 
-        assertThrows(ResponseStatusException.class, () -> evaluationService.delete(studentId, evaluationId));
+        assertThrows(ResourceNotFoundException.class, () -> evaluationService.delete(studentId, evaluationId));
         verify(evaluationRepository, never()).save(any());
     }
 

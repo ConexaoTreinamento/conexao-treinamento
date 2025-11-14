@@ -15,6 +15,11 @@ public interface TrainerRepository extends JpaRepository<Trainer, UUID> {
             " FROM Trainer t INNER JOIN User u ON t.userId = u.id" +
             " WHERE LOWER(u.email) = LOWER(:email)")
     boolean existsByEmailIgnoreCase(String email);
+    
+    @Query(" SELECT (COUNT(t) > 0)" +
+            " FROM Trainer t INNER JOIN User u ON t.userId = u.id" +
+            " WHERE LOWER(u.email) = LOWER(:email) AND t.userId != :excludeUserId")
+    boolean existsByEmailIgnoreCaseAndUserIdNot(String email, UUID excludeUserId);
 
     @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerListItemResponseDTO(" +
             "t.id, t.name, u.email, t.phone, t.address, t.birthDate, t.specialties, t.compensationType, (u.deletedAt IS NULL), u.createdAt) " +

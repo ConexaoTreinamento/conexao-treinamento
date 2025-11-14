@@ -55,6 +55,9 @@ export default function HomePage() {
       localStorage.setItem(STORAGE_KEYS.token, result.token)
       localStorage.setItem(STORAGE_KEYS.userId, payload.userId)
 
+      // Set token in cookie for middleware
+      document.cookie = `token=${result.token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict`
+
       router.push("/schedule")
     },
     onError: (error) => {

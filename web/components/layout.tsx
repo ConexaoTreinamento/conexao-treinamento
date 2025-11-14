@@ -27,6 +27,7 @@ import {useQuery} from "@tanstack/react-query"
 import ExpiringPlansModal from "@/components/plans/expiring-plans-modal"
 import {EXPIRING_LOOKAHEAD_DAYS} from "@/lib/students/constants"
 import {expiringPlanAssignmentsQueryOptions} from "@/lib/students/hooks/student-queries"
+import {clearAuthToken} from "@/lib/auth/interceptor"
 
 const navigation = [
 	{ name: "Agenda", href: "/schedule", icon: Calendar },
@@ -131,10 +132,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 	}, [])
 
 	const handleLogout = () => {
-		localStorage.removeItem("userRole")
-		localStorage.removeItem("userName")
-		localStorage.removeItem("token")
-		localStorage.removeItem("userId")
+		clearAuthToken()
 		router.push("/")
 	}
 

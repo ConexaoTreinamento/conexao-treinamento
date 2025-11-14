@@ -1,11 +1,10 @@
 package org.conexaotreinamento.conexaotreinamentobackend.repository;
 
-import org.conexaotreinamento.conexaotreinamentobackend.entity.PhysicalImpairment;
-import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import java.util.List;
 import java.util.UUID;
+
+import org.conexaotreinamento.conexaotreinamentobackend.entity.PhysicalImpairment;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PhysicalImpairmentRepository extends JpaRepository<PhysicalImpairment, UUID> {
     List<PhysicalImpairment> findByStudentId(UUID studentId);

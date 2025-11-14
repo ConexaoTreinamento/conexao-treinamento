@@ -20,7 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { createAdministratorAndUserMutation } from "@/lib/api-client/@tanstack/react-query.gen";
+import { createAdministratorMutation } from "@/lib/api-client/@tanstack/react-query.gen";
 import { apiClient } from "@/lib/client";
 import { extractFieldErrors, handleHttpError } from "@/lib/error-utils";
 
@@ -71,7 +71,7 @@ export function AdministratorCreateDialog({
   });
 
   const createAdministrator = useMutation({
-    ...createAdministratorAndUserMutation({ client: apiClient }),
+    ...createAdministratorMutation({ client: apiClient }),
   });
 
   const closeAndReset = () => {
