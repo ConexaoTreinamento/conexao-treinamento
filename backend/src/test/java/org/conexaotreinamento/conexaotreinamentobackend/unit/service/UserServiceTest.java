@@ -57,6 +57,7 @@ class UserServiceTest {
         userId = UUID.randomUUID();
         user = new User("john@example.com", "encodedPassword", Role.ROLE_ADMIN);
         setIdViaReflection(user, userId);
+        user.setPasswordExpired(true);
 
         createUserRequestDTO = new UserCreateRequestDTO("john@example.com", "password123", Role.ROLE_ADMIN);
         patchUserRoleRequestDTO = new PatchUserRoleRequestDTO(Role.ROLE_TRAINER);
@@ -88,6 +89,7 @@ class UserServiceTest {
         assertThat(result.email()).isEqualTo("john@example.com");
         assertThat(result.role()).isEqualTo(Role.ROLE_ADMIN);
         assertThat(result.id()).isEqualTo(userId);
+        assertThat(result.passwordExpiredAt()).isNotNull();
 
         verify(userRepository).findByEmail("john@example.com");
         verify(passwordEncoder).encode("password123");
@@ -365,6 +367,7 @@ class UserServiceTest {
         // Then
         assertThat(result).isNotNull();
         assertThat(user.getPassword()).isEqualTo(encodedNewPassword);
+        assertThat(user.isPasswordExpired()).isFalse();
 
         verify(userRepository).findById(userId);
         verify(passwordEncoder).matches(oldPassword, encodedOldPassword);
@@ -536,5 +539,61 @@ class UserServiceTest {
         verify(userRepository).findById(userId);
         verify(userRepository).findByEmailAndDeletedAtIsNull("john@example.com");
         verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Should reset trainer password successfully")
+    void shouldResetTrainerPasswordSuccessfully() {
+        // Given
+        String newPassword = "newPassword123";
+        String encodedNewPassword = "encodedNew";
+
+        user.setPassword("oldEncoded");
+        user.setRole(Role.ROLE_TRAINER);
+        user.setPasswordExpired(true);
+
+        when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(newPassword)).thenReturn(encodedNewPassword);
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        // When
+        UserResponseDTO result = userService.resetUserPassword(userId, newPassword);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(user.getPassword()).isEqualTo(encodedNewPassword);
+        assertThat(user.isPasswordExpired()).isFalse();
+
+        verify(userRepository).findByIdAndDeletedAtIsNull(userId);
+        verify(passwordEncoder).encode(newPassword);
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    @DisplayName("Should update trainer password successfully")
+    void shouldUpdateTrainerPasswordSuccessfully() {
+        // Given
+        String newPassword = "updatedPassword456";
+        String encodedNewPassword = "encodedUpdated";
+
+        user.setPassword("oldEncoded");
+        user.setRole(Role.ROLE_TRAINER);
+        user.setPasswordExpired(true);
+
+        when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(newPassword)).thenReturn(encodedNewPassword);
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        // When
+        UserResponseDTO result = userService.updateUserPassword(userId, newPassword);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(user.getPassword()).isEqualTo(encodedNewPassword);
+        assertThat(user.isPasswordExpired()).isFalse();
+
+        verify(userRepository).findByIdAndDeletedAtIsNull(userId);
+        verify(passwordEncoder).encode(newPassword);
+        verify(userRepository).save(user);
     }
 }

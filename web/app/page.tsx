@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { ChangePasswordDialog } from "@/components/base/change-password-dialog"
 import { LoginCard } from "@/components/auth/login-card"
 import { useLoginMutation } from "@/lib/auth/hooks/auth-mutations"
 import { decodeJwtPayload, mapRoleToName } from "@/lib/auth/utils"
@@ -21,6 +22,7 @@ const STORAGE_KEYS = {
 export default function HomePage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false)
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
 
   const router = useRouter()
@@ -55,7 +57,17 @@ export default function HomePage() {
       localStorage.setItem(STORAGE_KEYS.token, result.token)
       localStorage.setItem(STORAGE_KEYS.userId, payload.userId)
 
-      router.push("/schedule")
+      if (result.passwordExpired) {
+        toast({
+          title: "Senha Expirada",
+          description: "Sua senha expirou. Por favor, altere sua senha.",
+          variant: "destructive",
+          duration: 5000
+        })
+        setShowChangePasswordDialog(true)
+      } else {
+        router.push("/schedule")
+      }
     },
     onError: (error) => {
       console.error("Erro no login:", error)
@@ -84,17 +96,23 @@ export default function HomePage() {
   )
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-green-100 p-4 dark:from-green-950 dark:to-green-900">
-      <LoginCard
-        email={email}
-        password={password}
-        isPasswordVisible={isPasswordVisible}
-        isSubmitting={isLoggingIn}
-        onSubmit={handleSubmit}
-        onEmailChange={setEmail}
-        onPasswordChange={setPassword}
-        onTogglePasswordVisibility={() => setIsPasswordVisible((prev) => !prev)}
+    <>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-green-100 p-4 dark:from-green-950 dark:to-green-900">
+        <LoginCard
+          email={email}
+          password={password}
+          isPasswordVisible={isPasswordVisible}
+          isSubmitting={isLoggingIn}
+          onSubmit={handleSubmit}
+          onEmailChange={setEmail}
+          onPasswordChange={setPassword}
+          onTogglePasswordVisibility={() => setIsPasswordVisible((prev) => !prev)}
+        />
+      </div>
+      <ChangePasswordDialog 
+        open={showChangePasswordDialog} 
+        onOpenChange={setShowChangePasswordDialog}
       />
-    </div>
+    </>
   )
 }

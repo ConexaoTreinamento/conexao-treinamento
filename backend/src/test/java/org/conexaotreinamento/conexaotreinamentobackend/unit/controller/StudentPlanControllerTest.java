@@ -184,7 +184,7 @@ class StudentPlanControllerTest {
 
     // Mock user lookup by email to provide the expected userId
     when(userService.getUserByEmail(adminEmail))
-        .thenReturn(java.util.Optional.of(new UserResponseDTO(userId, adminEmail, Role.ROLE_ADMIN)));
+        .thenReturn(java.util.Optional.of(new UserResponseDTO(userId, adminEmail, Role.ROLE_ADMIN, null)));
 
     AssignPlanRequestDTO req = new AssignPlanRequestDTO(planId, LocalDate.now(), "notes");
         StudentPlanAssignmentResponseDTO assigned = assignDto(UUID.randomUUID(), studentId, planId, "Stu Dent", "Gold", adminEmail);

@@ -74,9 +74,14 @@ public class TrainerService {
         // Always update the associated user's email (mandatory)
         UserResponseDTO updatedUser = userService.updateUserEmail(trainer.getUserId(), request.email());
 
+        User user = userRepository.findById(trainer.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
         // Conditionally update password (optional)
         if (request.hasPassword()) {
             userService.resetUserPassword(trainer.getUserId(), request.password());
+            user.setPasswordExpired(true);
+            userRepository.save(user);
         }
 
         // Update trainer fields
@@ -89,9 +94,6 @@ public class TrainerService {
 
         Trainer savedTrainer = trainerRepository.save(trainer);
 
-        // Buscar o User para obter o createdAt (joinDate)
-        User user = userRepository.findById(trainer.getUserId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         return TrainerResponseDTO.fromEntity(savedTrainer, updatedUser.email(), user.getCreatedAt());
     }
 

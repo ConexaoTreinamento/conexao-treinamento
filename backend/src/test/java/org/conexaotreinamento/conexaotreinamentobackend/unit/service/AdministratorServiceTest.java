@@ -100,8 +100,8 @@ class AdministratorServiceTest {
             "password123"
         );
 
-        UserResponseDTO userResponse = new UserResponseDTO(newUserId, "joao@test.com", Role.ROLE_ADMIN);
-        
+        UserResponseDTO userResponse = new UserResponseDTO(newUserId, "joao@test.com", Role.ROLE_ADMIN, null);
+
         Administrator savedAdministrator = new Administrator();
         savedAdministrator.setId(newAdministratorId);
         savedAdministrator.setUserId(newUserId);
@@ -239,7 +239,7 @@ class AdministratorServiceTest {
                 "joao@example.com",
                 "newpassword123");
 
-        UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "joao@example.com", Role.ROLE_ADMIN);
+        UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "joao@example.com", Role.ROLE_ADMIN, null);
 
         when(administratorRepository.findById(administratorId)).thenReturn(Optional.of(administrator));
         when(userService.updateUserEmail(userId, "joao@example.com")).thenReturn(updatedUserResponse);
@@ -273,7 +273,7 @@ class AdministratorServiceTest {
                 null // No password provided
         );
 
-        UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "joao.updated@example.com", Role.ROLE_ADMIN);
+        UserResponseDTO updatedUserResponse = new UserResponseDTO(userId, "joao.updated@example.com", Role.ROLE_ADMIN, null);
 
         when(administratorRepository.findById(administratorId)).thenReturn(Optional.of(administrator));
         when(userService.updateUserEmail(userId, "joao.updated@example.com")).thenReturn(updatedUserResponse);
@@ -315,8 +315,8 @@ class AdministratorServiceTest {
     void shouldRestoreAdministratorSuccessfully() {
         // Given
         user.deactivate(); // Mark user as inactive
-        UserResponseDTO restoredUserResponse = new UserResponseDTO(userId, "joao@example.com", Role.ROLE_ADMIN);
-        
+        UserResponseDTO restoredUserResponse = new UserResponseDTO(userId, "joao@example.com", Role.ROLE_ADMIN, null);
+
         // Create a restored (active) user
         User restoredUser = new User("joao@example.com", "password123", Role.ROLE_ADMIN);
         

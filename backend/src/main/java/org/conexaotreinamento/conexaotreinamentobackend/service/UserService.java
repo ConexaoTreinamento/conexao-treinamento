@@ -37,6 +37,7 @@ public class UserService {
         }
 
         User user = new User(request.email(), passwordEncoder.encode(request.password()), request.role());
+        user.setPasswordExpired(true);
         User savedUser = userRepository.save(user);
         
         log.info("User created successfully [ID: {}] - Email: {}, Role: {}", 
@@ -137,6 +138,7 @@ public class UserService {
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordExpired(false);
 
         User savedUser = userRepository.save(user);
         return UserResponseDTO.fromEntity(savedUser);
@@ -160,6 +162,7 @@ public class UserService {
         }
 
         user.setPassword(passwordEncoder.encode(request.newPassword()));
+        user.setPasswordExpired(false);
         log.info("Password changed successfully for user [ID: {}]", currentUserId);
 
         return UserResponseDTO.fromEntity(user);
@@ -179,6 +182,7 @@ public class UserService {
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordExpired(false);
 
         User savedUser = userRepository.save(user);
         return UserResponseDTO.fromEntity(savedUser);
