@@ -3,13 +3,11 @@ import { CalendarDays, Plus } from "lucide-react";
 
 interface ScheduleToolbarProps {
   onGoToday: () => void;
-  canCreateClass: boolean;
   onCreateClass: () => void;
 }
 
 export function ScheduleToolbar({
   onGoToday,
-  canCreateClass,
   onCreateClass,
 }: ScheduleToolbarProps) {
   return (
@@ -20,16 +18,14 @@ export function ScheduleToolbar({
           Hoje
         </Button>
       </div>
-      {canCreateClass ? (
-        <Button
-          size="sm"
-          className="bg-green-600 hover:bg-green-700"
-          onClick={onCreateClass}
-        >
-          <Plus className="h-4 w-4" aria-hidden="true" />
-          <span className="ml-1">Nova aula</span>
-        </Button>
-      ) : null}
+      <Button
+        size="sm"
+        className="bg-green-600 hover:bg-green-700"
+        onClick={onCreateClass}
+      >
+        <Plus className="h-4 w-4" aria-hidden="true" />
+        <span className="ml-1">Nova aula</span>
+      </Button>
     </div>
   );
 }
