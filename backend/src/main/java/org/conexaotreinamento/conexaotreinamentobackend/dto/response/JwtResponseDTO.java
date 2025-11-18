@@ -4,5 +4,6 @@ import java.util.UUID;
 
 public record JwtResponseDTO(
     UUID id,
-    String token
+    String token,
+    boolean passwordExpired
 ) {}

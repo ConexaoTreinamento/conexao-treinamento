@@ -8,11 +8,13 @@ import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 public record UserResponseDTO(
         UUID id,
         String email,
-        Role role) {
+        Role role,
+        java.time.Instant passwordExpiredAt) {
     public static UserResponseDTO fromEntity(User user) {
         return new UserResponseDTO(
                 user.getId(),
                 user.getEmail(),
-                user.getRole());
+                user.getRole(),
+                user.getPasswordExpiredAt());
     }
 }

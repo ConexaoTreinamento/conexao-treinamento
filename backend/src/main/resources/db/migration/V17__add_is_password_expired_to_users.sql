@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS users
+ADD COLUMN IF NOT EXISTS password_expired_at TIMESTAMP;

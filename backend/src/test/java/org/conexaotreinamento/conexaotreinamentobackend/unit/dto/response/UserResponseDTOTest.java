@@ -68,35 +68,37 @@ class UserResponseDTOTest {
     @Test
     @DisplayName("Should create DTO from constructor")
     void shouldCreateDTOFromConstructor() {
-        // When
-        UserResponseDTO dto = new UserResponseDTO(userId, "direct@example.com", Role.ROLE_ADMIN);
+        // When - use null for passwordExpiredAt (not expired)
+        UserResponseDTO dto = new UserResponseDTO(userId, "direct@example.com", Role.ROLE_ADMIN, null);
 
         // Then
         assertThat(dto).isNotNull();
         assertThat(dto.id()).isEqualTo(userId);
         assertThat(dto.email()).isEqualTo("direct@example.com");
         assertThat(dto.role()).isEqualTo(Role.ROLE_ADMIN);
+        assertThat(dto.passwordExpiredAt()).isNull();
     }
 
     @Test
     @DisplayName("Should handle null values gracefully")
     void shouldHandleNullValuesGracefully() {
         // When
-        UserResponseDTO dto = new UserResponseDTO(null, null, null);
+        UserResponseDTO dto = new UserResponseDTO(null, null, null, null);
 
         // Then
         assertThat(dto).isNotNull();
         assertThat(dto.id()).isNull();
         assertThat(dto.email()).isNull();
         assertThat(dto.role()).isNull();
+        assertThat(dto.passwordExpiredAt()).isNull();
     }
 
     @Test
     @DisplayName("Should be equal when same values")
     void shouldBeEqualWhenSameValues() {
         // Given
-        UserResponseDTO dto1 = new UserResponseDTO(userId, "test@example.com", Role.ROLE_ADMIN);
-        UserResponseDTO dto2 = new UserResponseDTO(userId, "test@example.com", Role.ROLE_ADMIN);
+        UserResponseDTO dto1 = new UserResponseDTO(userId, "test@example.com", Role.ROLE_ADMIN, null);
+        UserResponseDTO dto2 = new UserResponseDTO(userId, "test@example.com", Role.ROLE_ADMIN, null);
 
         // Then
         assertThat(dto1).isEqualTo(dto2);
@@ -107,8 +109,8 @@ class UserResponseDTOTest {
     @DisplayName("Should not be equal when different values")
     void shouldNotBeEqualWhenDifferentValues() {
         // Given
-        UserResponseDTO dto1 = new UserResponseDTO(userId, "test@example.com", Role.ROLE_ADMIN);
-        UserResponseDTO dto2 = new UserResponseDTO(UUID.randomUUID(), "test@example.com", Role.ROLE_ADMIN);
+        UserResponseDTO dto1 = new UserResponseDTO(userId, "test@example.com", Role.ROLE_ADMIN, null);
+        UserResponseDTO dto2 = new UserResponseDTO(UUID.randomUUID(), "test@example.com", Role.ROLE_ADMIN, null);
 
         // Then
         assertThat(dto1).isNotEqualTo(dto2);
@@ -118,7 +120,7 @@ class UserResponseDTOTest {
     @DisplayName("Should have proper toString")
     void shouldHaveProperToString() {
         // Given
-        UserResponseDTO dto = new UserResponseDTO(userId, "test@example.com", Role.ROLE_ADMIN);
+        UserResponseDTO dto = new UserResponseDTO(userId, "test@example.com", Role.ROLE_ADMIN, null);
 
         // When
         String toString = dto.toString();
@@ -166,7 +168,7 @@ class UserResponseDTOTest {
     @DisplayName("Should maintain immutability")
     void shouldMaintainImmutability() {
         // Given
-        UserResponseDTO dto = new UserResponseDTO(userId, "test@example.com", Role.ROLE_ADMIN);
+        UserResponseDTO dto = new UserResponseDTO(userId, "test@example.com", Role.ROLE_ADMIN, null);
 
         // When/Then - Record fields should be final and immutable
         assertThat(dto.id()).isEqualTo(userId);
@@ -174,7 +176,7 @@ class UserResponseDTOTest {
         assertThat(dto.role()).isEqualTo(Role.ROLE_ADMIN);
         
         // Creating new instance with same values should be equal
-        UserResponseDTO sameDto = new UserResponseDTO(userId, "test@example.com", Role.ROLE_ADMIN);
+        UserResponseDTO sameDto = new UserResponseDTO(userId, "test@example.com", Role.ROLE_ADMIN, null);
         assertThat(dto).isEqualTo(sameDto);
     }
 

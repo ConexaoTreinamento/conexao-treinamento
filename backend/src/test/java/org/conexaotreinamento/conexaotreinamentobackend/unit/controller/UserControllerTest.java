@@ -51,7 +51,7 @@ class UserControllerTest {
                 Role.ROLE_ADMIN
         );
         patchUserRoleRequestDTO = new PatchUserRoleRequestDTO(Role.ROLE_TRAINER);
-        userResponseDTO = new UserResponseDTO(userId, "admin@example.com", Role.ROLE_ADMIN);
+        userResponseDTO = new UserResponseDTO(userId, "admin@example.com", Role.ROLE_ADMIN, null);
     }
 
     @Test
@@ -78,7 +78,7 @@ class UserControllerTest {
                 "password456", 
                 Role.ROLE_TRAINER
         );
-        UserResponseDTO trainerResponse = new UserResponseDTO(UUID.randomUUID(), "trainer@example.com", Role.ROLE_TRAINER);
+        UserResponseDTO trainerResponse = new UserResponseDTO(UUID.randomUUID(), "trainer@example.com", Role.ROLE_TRAINER, null);
         when(userService.createUser(trainerRequest)).thenReturn(trainerResponse);
 
         // When
@@ -116,8 +116,8 @@ class UserControllerTest {
     void shouldGetAllUsersWithCustomPagination() {
         // Given
         Pageable customPageable = PageRequest.of(1, 5);
-        UserResponseDTO user1 = new UserResponseDTO(UUID.randomUUID(), "user1@example.com", Role.ROLE_ADMIN);
-        UserResponseDTO user2 = new UserResponseDTO(UUID.randomUUID(), "user2@example.com", Role.ROLE_TRAINER);
+        UserResponseDTO user1 = new UserResponseDTO(UUID.randomUUID(), "user1@example.com", Role.ROLE_ADMIN, null);
+        UserResponseDTO user2 = new UserResponseDTO(UUID.randomUUID(), "user2@example.com", Role.ROLE_TRAINER, null);
         List<UserResponseDTO> users = List.of(user1, user2);
         Page<UserResponseDTO> page = new PageImpl<>(users, customPageable, 10);
         when(userService.findAll(customPageable)).thenReturn(page);
@@ -158,7 +158,7 @@ class UserControllerTest {
     @DisplayName("Should patch user role successfully")
     void shouldPatchUserRoleSuccessfully() {
         // Given
-        UserResponseDTO updatedUser = new UserResponseDTO(userId, "admin@example.com", Role.ROLE_TRAINER);
+        UserResponseDTO updatedUser = new UserResponseDTO(userId, "admin@example.com", Role.ROLE_TRAINER, null);
         when(userService.patch(userId, patchUserRoleRequestDTO)).thenReturn(updatedUser);
 
         // When
@@ -176,8 +176,8 @@ class UserControllerTest {
     void shouldPatchUserRoleFromTrainerToAdmin() {
         // Given
         PatchUserRoleRequestDTO changeToAdmin = new PatchUserRoleRequestDTO(Role.ROLE_ADMIN);
-        UserResponseDTO trainerUser = new UserResponseDTO(userId, "trainer@example.com", Role.ROLE_TRAINER);
-        UserResponseDTO adminUser = new UserResponseDTO(userId, "trainer@example.com", Role.ROLE_ADMIN);
+        UserResponseDTO trainerUser = new UserResponseDTO(userId, "trainer@example.com", Role.ROLE_TRAINER, null);
+        UserResponseDTO adminUser = new UserResponseDTO(userId, "trainer@example.com", Role.ROLE_ADMIN, null);
         when(userService.patch(userId, changeToAdmin)).thenReturn(adminUser);
 
         // When
@@ -300,7 +300,8 @@ class UserControllerTest {
         UserResponseDTO specificResponse = new UserResponseDTO(
                 UUID.randomUUID(), 
                 "specific@example.com", 
-                Role.ROLE_ADMIN
+                Role.ROLE_ADMIN,
+                null
         );
         when(userService.createUser(specificRequest)).thenReturn(specificResponse);
 
