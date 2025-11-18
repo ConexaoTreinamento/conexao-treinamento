@@ -1,37 +1,37 @@
 package org.conexaotreinamento.conexaotreinamentobackend.unit.controller;
 
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+import org.conexaotreinamento.conexaotreinamentobackend.controller.StudentCommitmentController;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.CommitmentDetailResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.StudentCommitment;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.CommitmentStatus;
-import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentRepository;
-import org.conexaotreinamento.conexaotreinamentobackend.repository.TrainerScheduleRepository;
+import org.conexaotreinamento.conexaotreinamentobackend.mapper.StudentCommitmentMapper;
 import org.conexaotreinamento.conexaotreinamentobackend.service.StudentCommitmentService;
-import org.conexaotreinamento.conexaotreinamentobackend.controller.StudentCommitmentController;
+import static org.hamcrest.Matchers.hasSize;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.hamcrest.Matchers.hasSize;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 @ExtendWith(MockitoExtension.class)
 class StudentCommitmentControllerTest {
@@ -40,10 +40,10 @@ class StudentCommitmentControllerTest {
     private StudentCommitmentService studentCommitmentService;
 
     @Mock
-    private TrainerScheduleRepository trainerScheduleRepository;
+    private StudentCommitmentMapper commitmentMapper;
 
     @Mock
-    private StudentRepository studentRepository;
+    private org.conexaotreinamento.conexaotreinamentobackend.repository.TrainerScheduleRepository trainerScheduleRepository;
 
     @InjectMocks
     private StudentCommitmentController controller;
@@ -98,8 +98,11 @@ class StudentCommitmentControllerTest {
         when(studentCommitmentService.updateCommitment(eq(studentId), eq(seriesId), eq(CommitmentStatus.ATTENDING), any(Instant.class)))
                 .thenReturn(saved);
 
-        when(studentRepository.findById(studentId)).thenReturn(Optional.of(student(studentId, "Alice")));
-        when(trainerScheduleRepository.findById(seriesId)).thenReturn(Optional.of(schedule(seriesId, "Yoga Basics")));
+        CommitmentDetailResponseDTO dto = new CommitmentDetailResponseDTO(
+                saved.getId(), studentId, "Alice", seriesId, "Yoga Basics",
+                CommitmentStatus.ATTENDING, saved.getEffectiveFromTimestamp(), saved.getCreatedAt()
+        );
+        when(commitmentMapper.toDetailResponse(saved)).thenReturn(dto);
 
         String body = "{ \"commitmentStatus\": \"ATTENDING\", \"effectiveFromTimestamp\": \"2025-09-01T00:00:00Z\" }";
 
@@ -122,14 +125,14 @@ class StudentCommitmentControllerTest {
 
         String body = "{ \"commitmentStatus\": \"ATTENDING\" }";
 
-    jakarta.servlet.ServletException ex = assertThrows(jakarta.servlet.ServletException.class,
-                () -> mockMvc.perform(post("/commitments/students/{studentId}/sessions/{sessionSeriesId}", studentId, seriesId)
+        // Act + Assert - GlobalExceptionHandler should catch and return 500
+        mockMvc.perform(post("/commitments/students/{studentId}/sessions/{sessionSeriesId}", studentId, seriesId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body)));
-        Throwable cause = ex.getCause();
-        assertNotNull(cause);
-        assertTrue(cause instanceof RuntimeException);
-        assertTrue(cause.getMessage().contains("oops"));
+                        .content(body))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.status").value(500))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.path").exists());
     }
 
     @Test
@@ -149,9 +152,12 @@ class StudentCommitmentControllerTest {
         // Arrange
         StudentCommitment c1 = commitment(UUID.randomUUID(), CommitmentStatus.ATTENDING, Instant.now());
         when(studentCommitmentService.getStudentCommitments(studentId)).thenReturn(List.of(c1));
-
-        when(studentRepository.findById(studentId)).thenReturn(Optional.of(student(studentId, "Bob")));
-        when(trainerScheduleRepository.findById(seriesId)).thenReturn(Optional.of(schedule(seriesId, "Power Yoga")));
+        
+        CommitmentDetailResponseDTO dto1 = new CommitmentDetailResponseDTO(
+                c1.getId(), studentId, "Bob", seriesId, "Power Yoga",
+                CommitmentStatus.ATTENDING, c1.getEffectiveFromTimestamp(), c1.getCreatedAt()
+        );
+        when(commitmentMapper.toDetailResponse(c1)).thenReturn(dto1);
 
         // Act + Assert
         mockMvc.perform(get("/commitments/students/{studentId}", studentId))
@@ -167,9 +173,12 @@ class StudentCommitmentControllerTest {
         // Arrange
         StudentCommitment c1 = commitment(UUID.randomUUID(), CommitmentStatus.NOT_ATTENDING, Instant.now());
         when(studentCommitmentService.getSessionSeriesCommitments(seriesId)).thenReturn(List.of(c1));
-
-        when(studentRepository.findById(studentId)).thenReturn(Optional.of(student(studentId, "Carol")));
-        when(trainerScheduleRepository.findById(seriesId)).thenReturn(Optional.of(schedule(seriesId, "Pilates")));
+        
+        CommitmentDetailResponseDTO dto1 = new CommitmentDetailResponseDTO(
+                c1.getId(), studentId, "Carol", seriesId, "Pilates",
+                CommitmentStatus.NOT_ATTENDING, c1.getEffectiveFromTimestamp(), c1.getCreatedAt()
+        );
+        when(commitmentMapper.toDetailResponse(c1)).thenReturn(dto1);
 
         // Act + Assert
         mockMvc.perform(get("/commitments/sessions/{sessionSeriesId}", seriesId))
@@ -184,9 +193,12 @@ class StudentCommitmentControllerTest {
         StudentCommitment c1 = commitment(UUID.randomUUID(), CommitmentStatus.ATTENDING, Instant.now().minusSeconds(10));
         when(studentCommitmentService.getCurrentActiveCommitments(eq(studentId), any(Instant.class)))
                 .thenReturn(List.of(c1));
-
-        when(studentRepository.findById(studentId)).thenReturn(Optional.of(student(studentId, "Dave")));
-        when(trainerScheduleRepository.findById(seriesId)).thenReturn(Optional.of(schedule(seriesId, "Evening Flow")));
+        
+        CommitmentDetailResponseDTO dto1 = new CommitmentDetailResponseDTO(
+                c1.getId(), studentId, "Dave", seriesId, "Evening Flow",
+                CommitmentStatus.ATTENDING, c1.getEffectiveFromTimestamp(), c1.getCreatedAt()
+        );
+        when(commitmentMapper.toDetailResponse(c1)).thenReturn(dto1);
 
         // Act + Assert
         mockMvc.perform(get("/commitments/students/{studentId}/active", studentId))
@@ -200,9 +212,12 @@ class StudentCommitmentControllerTest {
         // Arrange
         StudentCommitment c1 = commitment(UUID.randomUUID(), CommitmentStatus.TENTATIVE, Instant.now().minusSeconds(100));
         when(studentCommitmentService.getCommitmentHistory(studentId, seriesId)).thenReturn(List.of(c1));
-
-        when(studentRepository.findById(studentId)).thenReturn(Optional.of(student(studentId, "Eve")));
-        when(trainerScheduleRepository.findById(seriesId)).thenReturn(Optional.of(schedule(seriesId, "Morning Strength")));
+        
+        CommitmentDetailResponseDTO dto1 = new CommitmentDetailResponseDTO(
+                c1.getId(), studentId, "Eve", seriesId, "Morning Strength",
+                CommitmentStatus.TENTATIVE, c1.getEffectiveFromTimestamp(), c1.getCreatedAt()
+        );
+        when(commitmentMapper.toDetailResponse(c1)).thenReturn(dto1);
 
         // Act + Assert
         mockMvc.perform(get("/commitments/students/{studentId}/sessions/{sessionSeriesId}/history", studentId, seriesId))
@@ -220,9 +235,17 @@ class StudentCommitmentControllerTest {
         StudentCommitment c2 = commitment(UUID.randomUUID(), CommitmentStatus.ATTENDING, Instant.parse("2025-09-01T00:00:00Z"));
         when(studentCommitmentService.bulkUpdateCommitments(eq(studentId), anyList(), eq(CommitmentStatus.ATTENDING), any()))
                 .thenReturn(List.of(c1, c2));
-
-        when(studentRepository.findById(studentId)).thenReturn(Optional.of(student(studentId, "Frank")));
-        when(trainerScheduleRepository.findById(any(UUID.class))).thenReturn(Optional.of(schedule(seriesId, "Series X")));
+        
+        CommitmentDetailResponseDTO dto1 = new CommitmentDetailResponseDTO(
+                c1.getId(), studentId, "Frank", seriesId, "Series X",
+                CommitmentStatus.ATTENDING, c1.getEffectiveFromTimestamp(), c1.getCreatedAt()
+        );
+        CommitmentDetailResponseDTO dto2 = new CommitmentDetailResponseDTO(
+                c2.getId(), studentId, "Frank", seriesId, "Series X",
+                CommitmentStatus.ATTENDING, c2.getEffectiveFromTimestamp(), c2.getCreatedAt()
+        );
+        when(commitmentMapper.toDetailResponse(c1)).thenReturn(dto1);
+        when(commitmentMapper.toDetailResponse(c2)).thenReturn(dto2);
 
         String body = "{ \"sessionSeriesIds\": [\"" + s1 + "\", \"" + s2 + "\"], \"commitmentStatus\": \"ATTENDING\", \"effectiveFromTimestamp\": \"2025-09-01T00:00:00Z\" }";
 
@@ -242,14 +265,14 @@ class StudentCommitmentControllerTest {
 
         String body = "{ \"sessionSeriesIds\": [\"" + UUID.randomUUID() + "\"], \"commitmentStatus\": \"NOT_ATTENDING\" }";
 
-    jakarta.servlet.ServletException ex = assertThrows(jakarta.servlet.ServletException.class,
-                () -> mockMvc.perform(post("/commitments/students/{studentId}/bulk", studentId)
+        // Act + Assert - GlobalExceptionHandler should catch and return 500
+        mockMvc.perform(post("/commitments/students/{studentId}/bulk", studentId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body)));
-        Throwable cause = ex.getCause();
-        assertNotNull(cause);
-        assertTrue(cause instanceof RuntimeException);
-        assertTrue(cause.getMessage().contains("bad"));
+                        .content(body))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.status").value(500))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.path").exists());
     }
 
     @Test

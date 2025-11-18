@@ -1,5 +1,11 @@
 package org.conexaotreinamento.conexaotreinamentobackend.unit.service;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.AssignPlanRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.StudentPlanRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentPlanAssignmentResponseDTO;
@@ -7,27 +13,30 @@ import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentPlan
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.StudentPlan;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.StudentPlanAssignment;
+import org.conexaotreinamento.conexaotreinamentobackend.mapper.StudentPlanMapper;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentPlanAssignmentRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentPlanRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.service.StudentCommitmentService;
 import org.conexaotreinamento.conexaotreinamentobackend.service.StudentPlanService;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.BusinessException;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.ResourceNotFoundException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class StudentPlanServiceTest {
@@ -41,6 +50,8 @@ class StudentPlanServiceTest {
     @Mock
     private StudentCommitmentService studentCommitmentService;
 
+    private StudentPlanMapper planMapper = new StudentPlanMapper();
+
     @InjectMocks
     private StudentPlanService studentPlanService;
 
@@ -53,6 +64,9 @@ class StudentPlanServiceTest {
         planId = UUID.randomUUID();
         studentId = UUID.randomUUID();
         userId = UUID.randomUUID();
+        
+        // Inject real mapper into service
+        ReflectionTestUtils.setField(studentPlanService, "planMapper", planMapper);
     }
 
     private StudentPlan newPlan(UUID id, String name, int maxDays, int durationDays, boolean active) {
@@ -103,8 +117,7 @@ class StudentPlanServiceTest {
         when(studentPlanRepository.existsByName("Gold")).thenReturn(true);
 
         // Act + Assert
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.createPlan(req));
-        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        assertThrows(BusinessException.class, () -> studentPlanService.createPlan(req));
         verify(studentPlanRepository, never()).save(any());
     }
 
@@ -143,8 +156,7 @@ class StudentPlanServiceTest {
         when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.empty());
 
         // Act + Assert
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.deletePlan(planId));
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        assertThrows(ResourceNotFoundException.class, () -> studentPlanService.deletePlan(planId));
     }
 
     @Test
@@ -168,8 +180,7 @@ class StudentPlanServiceTest {
         when(studentPlanRepository.findById(planId)).thenReturn(Optional.empty());
 
         // Act + Assert
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.restorePlan(planId));
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        assertThrows(ResourceNotFoundException.class, () -> studentPlanService.restorePlan(planId));
     }
 
     @Test
@@ -179,8 +190,7 @@ class StudentPlanServiceTest {
         when(studentPlanRepository.findById(planId)).thenReturn(Optional.of(active));
 
         // Act + Assert
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.restorePlan(planId));
-        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        assertThrows(BusinessException.class, () -> studentPlanService.restorePlan(planId));
         verify(studentPlanRepository, never()).save(any());
     }
 
@@ -221,8 +231,7 @@ class StudentPlanServiceTest {
         when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.empty());
 
         // Act + Assert
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.getPlanById(planId));
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        assertThrows(ResourceNotFoundException.class, () -> studentPlanService.getPlanById(planId));
     }
 
     @Test
@@ -233,8 +242,7 @@ class StudentPlanServiceTest {
         AssignPlanRequestDTO req = new AssignPlanRequestDTO(planId, LocalDate.now(), "notes");
 
         // Act + Assert
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.assignPlanToStudent(studentId, req, userId));
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        assertThrows(ResourceNotFoundException.class, () -> studentPlanService.assignPlanToStudent(studentId, req, userId));
     }
 
     @Test
@@ -246,8 +254,7 @@ class StudentPlanServiceTest {
         AssignPlanRequestDTO req = new AssignPlanRequestDTO(planId, LocalDate.now(), "notes");
 
         // Act + Assert
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.assignPlanToStudent(studentId, req, userId));
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        assertThrows(ResourceNotFoundException.class, () -> studentPlanService.assignPlanToStudent(studentId, req, userId));
     }
 
     @Test
@@ -271,8 +278,7 @@ class StudentPlanServiceTest {
         when(studentRepository.findById(studentId)).thenReturn(Optional.empty());
 
         // Act + Assert
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.getStudentPlanHistory(studentId));
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        assertThrows(ResourceNotFoundException.class, () -> studentPlanService.getStudentPlanHistory(studentId));
     }
 
     @Test
@@ -297,8 +303,7 @@ class StudentPlanServiceTest {
         when(assignmentRepository.findCurrentActiveAssignment(studentId)).thenReturn(Optional.empty());
 
         // Act + Assert
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> studentPlanService.getCurrentStudentPlan(studentId));
-        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        assertThrows(ResourceNotFoundException.class, () -> studentPlanService.getCurrentStudentPlan(studentId));
     }
 
     @Test

@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 700">
+  <defs>
+    <style>
+      .title { font: bold 24px sans-serif; fill: #1a1a1a; }
+      .layer-title { font: bold 16px sans-serif; fill: #fff; }
+      .component-title { font: bold 14px sans-serif; fill: #1e293b; }
+      .component-text { font: 12px sans-serif; fill: #475569; }
+      .arrow { stroke: #64748b; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+      .arrow-label { font: 11px sans-serif; fill: #64748b; }
+      .pattern-label { font: bold 12px sans-serif; fill: #7c3aed; }
+      
+      .layer1 { fill: #3b82f6; }
+      .layer2 { fill: #10b981; }
+      .layer3 { fill: #f59e0b; }
+      .layer4 { fill: #8b5cf6; }
+      .component { fill: #fff; stroke: #cbd5e1; stroke-width: 1.5; }
+    </style>
+    
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <polygon points="0 0, 8 4, 0 8" fill="#64748b" />
+    </marker>
+  </defs>
+  
+  <!-- Title -->
+  <text x="450" y="35" text-anchor="middle" class="title">Backend Layered Architecture</text>
+  
+  <!-- Layer 1: Controllers -->
+  <rect x="50" y="70" width="800" height="120" rx="8" class="layer1" />
+  <text x="70" y="95" class="layer-title">1. Presentation Layer - Controllers</text>
+  
+  <rect x="70" y="110" width="240" height="65" rx="4" class="component" />
+  <text x="190" y="130" text-anchor="middle" class="component-title">REST Controllers</text>
+  <text x="190" y="148" text-anchor="middle" class="component-text">• HTTP Endpoints (GET, POST, PUT, DELETE)</text>
+  <text x="190" y="163" text-anchor="middle" class="component-text">• Request/Response Handling</text>
+  
+  <rect x="330" y="110" width="240" height="65" rx="4" class="component" />
+  <text x="450" y="130" text-anchor="middle" class="component-title">Validation & DTOs</text>
+  <text x="450" y="148" text-anchor="middle" class="component-text">• Jakarta Bean Validation</text>
+  <text x="450" y="163" text-anchor="middle" class="component-text">• Request/Response DTOs</text>
+  
+  <rect x="590" y="110" width="240" height="65" rx="4" class="component" />
+  <text x="710" y="130" text-anchor="middle" class="component-title">Exception Handling</text>
+  <text x="710" y="148" text-anchor="middle" class="component-text">• @RestControllerAdvice</text>
+  <text x="710" y="163" text-anchor="middle" class="component-text">• Standardized Error Responses</text>
+  
+  <!-- Arrow 1 -> 2 -->
+  <line x1="450" y1="200" x2="450" y2="230" class="arrow" />
+  <text x="470" y="220" class="arrow-label">delegates to</text>
+  
+  <!-- Layer 2: Services -->
+  <rect x="50" y="240" width="800" height="120" rx="8" class="layer2" />
+  <text x="70" y="265" class="layer-title">2. Business Layer - Services</text>
+  
+  <rect x="70" y="280" width="180" height="65" rx="4" class="component" />
+  <text x="160" y="300" text-anchor="middle" class="component-title">Service Layer</text>
+  <text x="160" y="318" text-anchor="middle" class="component-text">• Business Logic</text>
+  <text x="160" y="333" text-anchor="middle" class="component-text">• @Transactional</text>
+  
+  <rect x="270" y="280" width="180" height="65" rx="4" class="component" />
+  <text x="360" y="300" text-anchor="middle" class="component-title">Validation Services</text>
+  <text x="360" y="318" text-anchor="middle" class="component-text">• Business Rules</text>
+  <text x="360" y="333" text-anchor="middle" class="component-text">• Uniqueness Checks</text>
+  
+  <rect x="470" y="280" width="180" height="65" rx="4" class="component" />
+  <text x="560" y="300" text-anchor="middle" class="component-title">Mappers</text>
+  <text x="560" y="318" text-anchor="middle" class="component-text">• DTO ↔ Entity</text>
+  <text x="560" y="333" text-anchor="middle" class="component-text">• Data Transformation</text>
+  
+  <rect x="670" y="280" width="160" height="65" rx="4" class="component" />
+  <text x="750" y="300" text-anchor="middle" class="component-title">Security</text>
+  <text x="750" y="318" text-anchor="middle" class="component-text">• JWT Validation</text>
+  <text x="750" y="333" text-anchor="middle" class="component-text">• RBAC Logic</text>
+  
+  <!-- Arrow 2 -> 3 -->
+  <line x1="450" y1="370" x2="450" y2="400" class="arrow" />
+  <text x="470" y="390" class="arrow-label">uses</text>
+  
+  <!-- Layer 3: Repositories -->
+  <rect x="50" y="410" width="800" height="120" rx="8" class="layer3" />
+  <text x="70" y="435" class="layer-title">3. Persistence Layer - Repositories</text>
+  
+  <rect x="70" y="450" width="240" height="65" rx="4" class="component" />
+  <text x="190" y="470" text-anchor="middle" class="component-title">JPA Repositories</text>
+  <text x="190" y="488" text-anchor="middle" class="component-text">• Spring Data JPA</text>
+  <text x="190" y="503" text-anchor="middle" class="component-text">• Custom Queries (@Query)</text>
+  
+  <rect x="330" y="450" width="240" height="65" rx="4" class="component" />
+  <text x="450" y="470" text-anchor="middle" class="component-title">Entities</text>
+  <text x="450" y="488" text-anchor="middle" class="component-text">• JPA Entities (@Entity)</text>
+  <text x="450" y="503" text-anchor="middle" class="component-text">• Relationships (@OneToMany, etc.)</text>
+  
+  <rect x="590" y="450" width="240" height="65" rx="4" class="component" />
+  <text x="710" y="470" text-anchor="middle" class="component-title">Auditing</text>
+  <text x="710" y="488" text-anchor="middle" class="component-text">• @CreatedDate, @LastModifiedDate</text>
+  <text x="710" y="503" text-anchor="middle" class="component-text">• Soft Deletes (deletedAt)</text>
+  
+  <!-- Arrow 3 -> 4 -->
+  <line x1="450" y1="540" x2="450" y2="570" class="arrow" />
+  <text x="470" y="560" class="arrow-label">persists to</text>
+  
+  <!-- Layer 4: Database -->
+  <rect x="50" y="580" width="800" height="90" rx="8" class="layer4" />
+  <text x="70" y="605" class="layer-title">4. Database Layer - PostgreSQL 16</text>
+  
+  <rect x="70" y="620" width="200" height="35" rx="4" class="component" />
+  <text x="170" y="643" text-anchor="middle" class="component-title">Tables & Schema</text>
+  
+  <rect x="290" y="620" width="200" height="35" rx="4" class="component" />
+  <text x="390" y="643" text-anchor="middle" class="component-title">Flyway Migrations</text>
+  
+  <rect x="510" y="620" width="160" height="35" rx="4" class="component" />
+  <text x="590" y="643" text-anchor="middle" class="component-title">Indexes</text>
+  
+  <rect x="690" y="620" width="140" height="35" rx="4" class="component" />
+  <text x="760" y="643" text-anchor="middle" class="component-title">JSONB Support</text>
+  
+  <!-- Design Patterns -->
+  <g transform="translate(50, 685)">
+    <text x="0" y="0" class="pattern-label">Design Patterns:</text>
+    <text x="130" y="0" class="component-text">Layered Architecture • Dependency Injection • Repository Pattern • Mapper Pattern • DTO Pattern • Service Pattern</text>
+  </g>
+</svg>
+

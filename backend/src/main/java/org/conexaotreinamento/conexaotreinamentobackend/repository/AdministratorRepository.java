@@ -18,6 +18,11 @@ public interface AdministratorRepository extends JpaRepository<Administrator, UU
             " FROM Administrator a INNER JOIN User u ON a.userId = u.id" +
             " WHERE LOWER(u.email) = LOWER(:email) AND u.deletedAt IS NULL")
     boolean existsByEmailIgnoreCase(String email);
+    
+    @Query("SELECT (COUNT(a) > 0)" +
+            " FROM Administrator a INNER JOIN User u ON a.userId = u.id" +
+            " WHERE LOWER(u.email) = LOWER(:email) AND a.userId != :excludeUserId AND u.deletedAt IS NULL")
+    boolean existsByEmailIgnoreCaseAndUserIdNot(String email, UUID excludeUserId);
 
     @Query("SELECT new org.conexaotreinamento.conexaotreinamentobackend.dto.response.AdministratorListItemResponseDTO(" +
             "a.id, a.firstName, a.lastName, u.email, " +

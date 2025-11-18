@@ -1,6 +1,11 @@
 package org.conexaotreinamento.conexaotreinamentobackend.service;
 
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.AssignPlanRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.StudentPlanRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentPlanAssignmentResponseDTO;
@@ -8,85 +13,128 @@ import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentPlan
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.StudentPlan;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.StudentPlanAssignment;
-import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
+import org.conexaotreinamento.conexaotreinamentobackend.mapper.StudentPlanMapper;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentPlanAssignmentRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentPlanRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.StudentRepository;
-import org.springframework.http.HttpStatus;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.BusinessException;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Service for managing student plans and assignments.
+ */
 @Service
 @RequiredArgsConstructor
+@Slf4j
+@Transactional
 public class StudentPlanService {
     
     private final StudentPlanRepository studentPlanRepository;
     private final StudentPlanAssignmentRepository assignmentRepository;
     private final StudentRepository studentRepository;
     private final StudentCommitmentService studentCommitmentService;
+    private final StudentPlanMapper planMapper;
     
-    @Transactional
+    /**
+     * Creates a new student plan.
+     * 
+     * @param requestDTO Plan creation request
+     * @return Created plan
+     * @throws BusinessException if plan name already exists
+     */
     public StudentPlanResponseDTO createPlan(StudentPlanRequestDTO requestDTO) {
+        log.info("Creating student plan: {}", requestDTO.name());
+        
         // Check if plan with same name already exists
         if (studentPlanRepository.existsByName(requestDTO.name())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, 
-                "Plan with name '" + requestDTO.name() + "' already exists");
+            throw new BusinessException(
+                    "Plan with name '" + requestDTO.name() + "' already exists",
+                    "PLAN_NAME_EXISTS"
+            );
         }
         
-    StudentPlan plan = new StudentPlan(); // Leave id null so @GeneratedValue treats as new
-        plan.setName(requestDTO.name());
-        plan.setMaxDays(requestDTO.maxDays());
-        plan.setDurationDays(requestDTO.durationDays());
-        plan.setDescription(requestDTO.description());
-        plan.setActive(true);
-        
+        StudentPlan plan = planMapper.toEntity(requestDTO);
         StudentPlan savedPlan = studentPlanRepository.save(plan);
-        return mapToResponseDTO(savedPlan);
+        
+        log.info("Student plan created successfully [ID: {}]", savedPlan.getId());
+        return planMapper.toResponse(savedPlan);
     }
     
-    @Transactional
+    /**
+     * Soft deletes a student plan.
+     * 
+     * @param planId Plan ID
+     * @throws ResourceNotFoundException if plan not found or inactive
+     */
     public void deletePlan(UUID planId) {
+        log.info("Deleting student plan [ID: {}]", planId);
+        
         StudentPlan plan = studentPlanRepository.findByIdAndActiveTrue(planId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
-                "Plan not found or inactive"));
+                .orElseThrow(() -> new ResourceNotFoundException("StudentPlan", planId));
 
         plan.softDelete();
         studentPlanRepository.save(plan);
+        
+        log.info("Student plan deleted successfully [ID: {}]", planId);
     }
 
-    @Transactional
+    /**
+     * Restores a soft-deleted student plan.
+     * 
+     * @param planId Plan ID
+     * @return Restored plan
+     * @throws ResourceNotFoundException if plan not found
+     * @throws BusinessException if plan is already active
+     */
     public StudentPlanResponseDTO restorePlan(UUID planId) {
-        // Look up the plan regardless of active status
+        log.info("Restoring student plan [ID: {}]", planId);
+        
         StudentPlan plan = studentPlanRepository.findById(planId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Plan not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("StudentPlan", planId));
 
         if (plan.isActive()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Plan is already active");
+            throw new BusinessException("Plan is already active", "PLAN_ALREADY_ACTIVE");
         }
 
         plan.restore();
         StudentPlan saved = studentPlanRepository.save(plan);
-        return mapToResponseDTO(saved);
+        
+        log.info("Student plan restored successfully [ID: {}]", planId);
+        return planMapper.toResponse(saved);
     }
     
+    /**
+     * Retrieves all active student plans.
+     * 
+     * @return List of active plans
+     */
     @Transactional(readOnly = true)
     public List<StudentPlanResponseDTO> getAllActivePlans() {
-        return studentPlanRepository.findByActiveTrueOrderByNameAsc()
-            .stream()
-            .map(this::mapToResponseDTO)
-            .toList();
+        log.debug("Finding all active student plans");
+        List<StudentPlanResponseDTO> plans = studentPlanRepository.findByActiveTrueOrderByNameAsc()
+                .stream()
+                .map(planMapper::toResponse)
+                .toList();
+        log.debug("Found {} active plans", plans.size());
+        return plans;
     }
 
+    /**
+     * Retrieves student plans by status.
+     * 
+     * @param status Status filter ("active", "inactive", "all")
+     * @return List of plans matching the status
+     */
     @Transactional(readOnly = true)
     public List<StudentPlanResponseDTO> getPlansByStatus(String status) {
         String normalized = status == null ? "active" : status.trim().toLowerCase();
+        log.debug("Finding student plans by status: {}", normalized);
+        
         List<StudentPlan> plans;
         switch (normalized) {
             case "all":
@@ -99,31 +147,50 @@ public class StudentPlanService {
             default:
                 plans = studentPlanRepository.findByActiveTrueOrderByNameAsc();
         }
-        return plans.stream().map(this::mapToResponseDTO).toList();
+        
+        log.debug("Found {} plans with status: {}", plans.size(), normalized);
+        return plans.stream().map(planMapper::toResponse).toList();
     }
     
+    /**
+     * Retrieves a student plan by ID.
+     * 
+     * @param planId Plan ID
+     * @return Student plan
+     * @throws ResourceNotFoundException if plan not found or inactive
+     */
     @Transactional(readOnly = true)
     public StudentPlanResponseDTO getPlanById(UUID planId) {
+        log.debug("Finding student plan by ID: {}", planId);
         StudentPlan plan = studentPlanRepository.findByIdAndActiveTrue(planId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
-                "Plan not found or inactive"));
+                .orElseThrow(() -> new ResourceNotFoundException("StudentPlan", planId));
         
-        return mapToResponseDTO(plan);
+        return planMapper.toResponse(plan);
     }
     
+    /**
+     * Assigns a student plan to a student.
+     * 
+     * @param studentId Student ID
+     * @param requestDTO Assignment request
+     * @param assignedByUserId ID of user making the assignment
+     * @return Plan assignment details
+     * @throws ResourceNotFoundException if student or plan not found
+     * @throws BusinessException if assignment overlaps with existing active assignment
+     */
     @Transactional
     public StudentPlanAssignmentResponseDTO assignPlanToStudent(UUID studentId, 
                                                                AssignPlanRequestDTO requestDTO, 
                                                                UUID assignedByUserId) {
+        log.info("Assigning plan [ID: {}] to student [ID: {}]", requestDTO.planId(), studentId);
         
         // Validate student exists
         Student student = studentRepository.findById(studentId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Student", studentId));
         
         // Validate plan exists and is active
         StudentPlan plan = studentPlanRepository.findByIdAndActiveTrue(requestDTO.planId())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
-                "Plan not found or inactive"));
+                .orElseThrow(() -> new ResourceNotFoundException("StudentPlan", requestDTO.planId()));
         
         // Validate assigning user exists
 //        User assigningUser = userRepository.findById(assignedByUserId)
@@ -176,8 +243,10 @@ public class StudentPlanService {
             overlapping.removeIf(existing -> existing.getId().equals(currentAssignmentId));
         }
         if (!overlapping.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                "O aluno já possui um plano atribuído que se sobrepõe ao período indicado.");
+            throw new BusinessException(
+                    "O aluno já possui um plano atribuído que se sobrepõe ao período indicado",
+                    "OVERLAPPING_PLAN_ASSIGNMENT"
+            );
         }
 
         StudentPlanAssignment assignment = new StudentPlanAssignment();
@@ -193,115 +262,100 @@ public class StudentPlanService {
         // Ensure student's schedule respects the new plan limits
         studentCommitmentService.resetScheduleIfExceedsPlan(studentId, plan.getMaxDays());
 
-        return mapToAssignmentResponseDTO(savedAssignment, student, plan, null);
+        log.info("Plan assigned successfully to student [ID: {}] - Assignment [ID: {}]", 
+                studentId, savedAssignment.getId());
+        return planMapper.toAssignmentResponse(savedAssignment, student, plan, null);
     }
     
+    /**
+     * Retrieves plan assignment history for a student.
+     * 
+     * @param studentId Student ID
+     * @return List of plan assignments (ordered by start date descending)
+     * @throws ResourceNotFoundException if student not found
+     */
     @Transactional(readOnly = true)
     public List<StudentPlanAssignmentResponseDTO> getStudentPlanHistory(UUID studentId) {
+        log.debug("Finding plan history for student [ID: {}]", studentId);
+        
         // Validate student exists
         studentRepository.findById(studentId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Student", studentId));
         
-        return assignmentRepository.findByStudentIdOrderByStartDateDesc(studentId)
-            .stream()
-            .map(this::mapToAssignmentResponseDTO)
-            .toList();
+        List<StudentPlanAssignmentResponseDTO> history = assignmentRepository.findByStudentIdOrderByStartDateDesc(studentId)
+                .stream()
+                .map(planMapper::toAssignmentResponse)
+                .toList();
+        
+        log.debug("Found {} plan assignments for student [ID: {}]", history.size(), studentId);
+        return history;
     }
     
+    /**
+     * Retrieves the current active plan for a student.
+     * 
+     * @param studentId Student ID
+     * @return Current active plan assignment
+     * @throws ResourceNotFoundException if student not found or no active plan
+     */
     @Transactional(readOnly = true)
     public StudentPlanAssignmentResponseDTO getCurrentStudentPlan(UUID studentId) {
+        log.debug("Finding current plan for student [ID: {}]", studentId);
+        
         // Validate student exists
         studentRepository.findById(studentId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Student", studentId));
         
         return assignmentRepository.findCurrentActiveAssignment(studentId)
-            .map(this::mapToAssignmentResponseDTO)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, 
-                "No active plan found for student"));
+                .map(planMapper::toAssignmentResponse)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No active plan found for student with ID: " + studentId
+                ));
     }
     
-    // Helper method for internal service use
+    /**
+     * Helper method for internal service use.
+     * Retrieves the current assignment for a student without validation.
+     * 
+     * @param studentId Student ID
+     * @return Optional containing current assignment if exists
+     */
     @Transactional(readOnly = true)
-    public java.util.Optional<StudentPlanAssignment> getCurrentAssignment(UUID studentId) {
+    public Optional<StudentPlanAssignment> getCurrentAssignment(UUID studentId) {
         return assignmentRepository.findCurrentActiveAssignment(studentId);
     }
     
+    /**
+     * Retrieves plan assignments expiring soon.
+     * 
+     * @param days Number of days to look ahead
+     * @return List of assignments expiring within the specified days
+     */
     @Transactional(readOnly = true)
     public List<StudentPlanAssignmentResponseDTO> getExpiringSoonAssignments(int days) {
+        log.debug("Finding plan assignments expiring within {} days", days);
         LocalDate futureDate = LocalDate.now().plusDays(days);
-        return assignmentRepository.findExpiringSoon(futureDate)
-            .stream()
-            .map(this::mapToAssignmentResponseDTO)
-            .toList();
+        List<StudentPlanAssignmentResponseDTO> expiring = assignmentRepository.findExpiringSoon(futureDate)
+                .stream()
+                .map(planMapper::toAssignmentResponse)
+                .toList();
+        log.debug("Found {} expiring assignments", expiring.size());
+        return expiring;
     }
     
+    /**
+     * Retrieves all currently active plan assignments.
+     * 
+     * @return List of all active assignments
+     */
     @Transactional(readOnly = true)
     public List<StudentPlanAssignmentResponseDTO> getAllCurrentlyActiveAssignments() {
-        return assignmentRepository.findAllCurrentlyActive()
-            .stream()
-            .map(this::mapToAssignmentResponseDTO)
-            .toList();
-    }
-    
-    // Mapping methods
-    private StudentPlanResponseDTO mapToResponseDTO(StudentPlan plan) {
-        return new StudentPlanResponseDTO(
-            plan.getId(),
-            plan.getName(),
-            plan.getMaxDays(),
-            plan.getDurationDays(),
-            plan.getDescription(),
-            plan.isActive(),
-            plan.getCreatedAt()
-        );
-    }
-    
-    private StudentPlanAssignmentResponseDTO mapToAssignmentResponseDTO(StudentPlanAssignment assignment) {
-        return mapToAssignmentResponseDTO(assignment, assignment.getStudent(), assignment.getPlan(), assignment.getAssignedByUser());
-    }
-    
-    private StudentPlanAssignmentResponseDTO mapToAssignmentResponseDTO(StudentPlanAssignment assignment,
-                                                                       Student student,
-                                                                       StudentPlan plan,
-                                                                       User assigningUser) {
-        String studentName = null;
-        if (student != null) {
-            studentName = student.getName() + " " + student.getSurname();
-        }
-
-        String planName = null;
-        Integer planMaxDays = null;
-        Integer planDurationDays = null;
-        if (plan != null) {
-            planName = plan.getName();
-            planMaxDays = plan.getMaxDays();
-            planDurationDays = plan.getDurationDays();
-        }
-
-        String assignedByUserEmail = assigningUser != null ? assigningUser.getEmail() : null;
-
-        long daysRemaining = assignment.isActive()
-            ? ChronoUnit.DAYS.between(LocalDate.now(), assignment.getEndDateExclusive())
-            : 0;
-
-        return new StudentPlanAssignmentResponseDTO(
-            assignment.getId(),
-            assignment.getStudentId(),
-            studentName,
-            assignment.getPlanId(),
-            planName,
-            planMaxDays,
-            planDurationDays,
-            assignment.getDurationDays(),
-            assignment.getStartDate(),
-            assignment.getAssignedByUserId(),
-            assignedByUserEmail,
-            assignment.getAssignmentNotes(),
-            assignment.getCreatedAt(),
-            assignment.isActive(),
-            assignment.isExpired(),
-            assignment.isExpiringSoon(7),
-            daysRemaining
-        );
+        log.debug("Finding all currently active plan assignments");
+        List<StudentPlanAssignmentResponseDTO> active = assignmentRepository.findAllCurrentlyActive()
+                .stream()
+                .map(planMapper::toAssignmentResponse)
+                .toList();
+        log.debug("Found {} active assignments", active.size());
+        return active;
     }
 }

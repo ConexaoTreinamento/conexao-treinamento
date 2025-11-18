@@ -2,7 +2,11 @@ package org.conexaotreinamento.conexaotreinamentobackend.unit.service;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -14,10 +18,14 @@ import org.conexaotreinamento.conexaotreinamentobackend.entity.Trainer;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
+import org.conexaotreinamento.conexaotreinamentobackend.mapper.TrainerMapper;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.TrainerRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.UserRepository;
 import org.conexaotreinamento.conexaotreinamentobackend.service.TrainerService;
+import org.conexaotreinamento.conexaotreinamentobackend.service.TrainerValidationService;
 import org.conexaotreinamento.conexaotreinamentobackend.service.UserService;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.BusinessException;
+import org.conexaotreinamento.conexaotreinamentobackend.shared.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,8 +39,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("TrainerService Unit Tests")
@@ -46,6 +53,11 @@ class TrainerServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    private TrainerMapper trainerMapper = new TrainerMapper();
+    
+    @Mock
+    private TrainerValidationService validationService;
 
     @InjectMocks
     private TrainerService trainerService;
@@ -74,6 +86,9 @@ class TrainerServiceTest {
 
         user = new User("john@example.com", "password123", Role.ROLE_TRAINER);
 
+        // Inject real mapper into service
+        ReflectionTestUtils.setField(trainerService, "trainerMapper", trainerMapper);
+        
         createTrainerDTO = new TrainerCreateRequestDTO(
             "John Trainer",
             "john@example.com",
@@ -141,7 +156,7 @@ class TrainerServiceTest {
             Instant.now()
         );
 
-        when(trainerRepository.existsByEmailIgnoreCase("joao@test.com")).thenReturn(false);
+        doNothing().when(validationService).validateEmailUniqueness("joao@test.com");
         when(userService.createUser(any())).thenReturn(userResponse);
         when(trainerRepository.save(any(Trainer.class))).thenReturn(savedTrainer);
         when(trainerRepository.findActiveTrainerProfileById(newTrainerId)).thenReturn(Optional.of(expectedResult));
@@ -162,7 +177,7 @@ class TrainerServiceTest {
         assertThat(result.active()).isTrue();
         assertThat(result.joinDate()).isNotNull();
 
-        verify(trainerRepository).existsByEmailIgnoreCase("joao@test.com");
+        verify(validationService).validateEmailUniqueness("joao@test.com");
         verify(userService).createUser(any());
         verify(trainerRepository).save(any(Trainer.class));
         verify(trainerRepository).findActiveTrainerProfileById(newTrainerId);
@@ -172,14 +187,12 @@ class TrainerServiceTest {
     @DisplayName("Should throw conflict when user email already exists")
     void shouldThrowConflictWhenUserEmailAlreadyExists() {
         // Given
-        when(userService.createUser(any())).thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "User with this email already exists"));
+        when(userService.createUser(any())).thenThrow(new BusinessException("User with this email already exists"));
 
         // When & Then
         assertThatThrownBy(() -> trainerService.create(createTrainerDTO))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("User with this email already exists")
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
-                .isEqualTo(HttpStatus.CONFLICT);
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("User with this email already exists");
 
         verify(userService).createUser(any());
         verify(trainerRepository, never()).save(any());
@@ -212,10 +225,8 @@ class TrainerServiceTest {
 
         // When & Then
         assertThatThrownBy(() -> trainerService.findById(trainerId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Trainer not found")
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
-                .isEqualTo(HttpStatus.NOT_FOUND);
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Trainer not found");
 
         verify(trainerRepository).findActiveTrainerProfileById(trainerId);
     }
@@ -277,7 +288,7 @@ class TrainerServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         // When
-        TrainerResponseDTO result = trainerService.put(trainerId, updateTrainerDTO);
+        TrainerResponseDTO result = trainerService.update(trainerId, updateTrainerDTO);
 
         // Then
         assertThat(result).isNotNull();
@@ -316,7 +327,7 @@ class TrainerServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         // When
-        TrainerResponseDTO result = trainerService.put(trainerId, updateTrainerDTO);
+        TrainerResponseDTO result = trainerService.update(trainerId, updateTrainerDTO);
 
         // Then
         assertThat(result).isNotNull();
@@ -350,11 +361,9 @@ class TrainerServiceTest {
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> trainerService.put(trainerId, updateTrainerDTO))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Trainer not found")
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
-                .isEqualTo(HttpStatus.NOT_FOUND);
+        assertThatThrownBy(() -> trainerService.update(trainerId, updateTrainerDTO))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Trainer not found");
 
         verify(trainerRepository).findById(trainerId);
         verify(trainerRepository, never()).save(any());
@@ -376,18 +385,18 @@ class TrainerServiceTest {
         );
         
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
-        when(userService.updateUserEmail(userId, "existing@example.com"))
-                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use"));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        doThrow(new BusinessException("Email already in use"))
+                .when(validationService).validateEmailUniqueness("existing@example.com", userId);
 
         // When & Then
-        assertThatThrownBy(() -> trainerService.put(trainerId, updateDTO))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Email already in use")
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
-                .isEqualTo(HttpStatus.CONFLICT);
+        assertThatThrownBy(() -> trainerService.update(trainerId, updateDTO))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("Email already in use");
 
         verify(trainerRepository).findById(trainerId);
-        verify(userService).updateUserEmail(userId, "existing@example.com");
+        verify(userRepository).findById(userId);
+        verify(validationService).validateEmailUniqueness("existing@example.com", userId);
         verify(trainerRepository, never()).save(any());
     }
 
@@ -414,7 +423,7 @@ class TrainerServiceTest {
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         // When
-        TrainerResponseDTO result = trainerService.put(trainerId, updateTrainerDTO);
+        TrainerResponseDTO result = trainerService.update(trainerId, updateTrainerDTO);
 
         // Then
         assertThat(result).isNotNull();
@@ -447,12 +456,12 @@ class TrainerServiceTest {
     void shouldHandleUserServiceExceptionDuringDelete() {
         // Given
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
-        doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"))
+        doThrow(new ResourceNotFoundException("User", userId))
                 .when(userService).delete(userId);
 
         // When & Then
         assertThatThrownBy(() -> trainerService.delete(trainerId))
-                .isInstanceOf(ResponseStatusException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("User not found");
 
         verify(trainerRepository).findById(trainerId);
@@ -479,10 +488,8 @@ class TrainerServiceTest {
         when(trainerRepository.findTrainerByUserId(userId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> trainerService.findByUserId(userId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Trainer not found")
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
-                .isEqualTo(HttpStatus.NOT_FOUND);
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Trainer not found");
 
         verify(trainerRepository).findTrainerByUserId(userId);
     }
@@ -506,10 +513,8 @@ class TrainerServiceTest {
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> trainerService.resetPassword(trainerId, "any"))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Trainer not found")
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
-                .isEqualTo(HttpStatus.NOT_FOUND);
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Trainer not found");
 
         verify(trainerRepository).findById(trainerId);
         verify(userService, never()).resetUserPassword(any(), any());
@@ -550,10 +555,8 @@ class TrainerServiceTest {
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> trainerService.restore(trainerId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Trainer not found")
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
-                .isEqualTo(HttpStatus.NOT_FOUND);
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Trainer not found");
 
         verify(trainerRepository).findById(trainerId);
         verify(userService, never()).restore(any(UUID.class));
@@ -567,10 +570,8 @@ class TrainerServiceTest {
         when(trainerRepository.findActiveTrainerProfileById(trainerId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> trainerService.restore(trainerId))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Restored trainer not found")
-                .extracting(ex -> ((ResponseStatusException) ex).getStatusCode())
-                .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Trainer not found");
 
         verify(trainerRepository).findById(trainerId);
         verify(userService).restore(userId);
