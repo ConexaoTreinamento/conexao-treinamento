@@ -8,7 +8,7 @@ on:
 
 jobs:
   frontend-coverage:
-    name: Frontend Coverage
+    name: Frontend Tests
     runs-on: ubuntu-22.04
     defaults:
       run:
