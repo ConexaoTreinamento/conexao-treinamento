@@ -7,6 +7,52 @@ on:
     branches: [ main, develop ]
 
 jobs:
+  frontend-coverage:
+    name: Frontend Coverage
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: ./web
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run frontend coverage
+        run: npm run test:coverage
+
+      - name: Calculate line coverage
+        id: coverage
+        run: |
+          COVERAGE=$(node -p "require('./coverage/coverage-summary.json').total.lines.pct")
+          echo "line_coverage=$COVERAGE" >> "$GITHUB_OUTPUT"
+
+      - name: Report line coverage
+        if: always()
+        run: |
+          echo "Frontend line coverage: ${{ steps.coverage.outputs.line_coverage }}%"
+
+      - name: Enforce minimum line coverage
+        run: |
+          COVERAGE=${{ steps.coverage.outputs.line_coverage }}
+          echo "Minimum required line coverage: 70%"
+          if awk "BEGIN {exit !(${COVERAGE} < 70)}"; then
+            echo "❌ Frontend line coverage below 70% (actual: ${COVERAGE}%)"
+            exit 1
+          else
+            echo "✅ Frontend line coverage is ${COVERAGE}% (>= 70%)"
+          fi
+
   backend-tests:
     name: Backend Tests Using Cache Maven
     runs-on: ubuntu-22.04
