@@ -1,3 +1,7 @@
+**/*.test.ts
+**/*.test.tsx
+**/*.test.js
+**/*.test.jsx
 # Generated API client files
 lib/api-client/@tanstack/react-query.gen.ts
 lib/api-client/client.gen.ts
