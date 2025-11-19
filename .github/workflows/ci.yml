@@ -34,7 +34,37 @@ jobs:
       - name: Calculate line coverage
         id: coverage
         run: |
-          COVERAGE=$(node -p "require('./coverage/coverage-summary.json').total.lines.pct")
+          COVERAGE=$(node <<'NODE'
+          const fs = require('fs')
+          const path = require('path')
+          const candidates = [
+            path.resolve('coverage/coverage-summary.json'),
+            path.resolve('coverage/coverage-final.json'),
+            path.resolve('coverage/json-summary/coverage-summary.json'),
+          ]
+
+          let pct = null
+          for (const file of candidates) {
+            if (!fs.existsSync(file)) continue
+            const data = JSON.parse(fs.readFileSync(file, 'utf-8'))
+            if (data.total && data.total.lines && data.total.lines.pct != null) {
+              pct = data.total.lines.pct
+              break
+            }
+            if (data.lines && data.lines.pct != null) {
+              pct = data.lines.pct
+              break
+            }
+          }
+
+          if (pct == null) {
+            console.error('Coverage summary file not found or invalid.')
+            process.exit(1)
+          }
+
+          console.log(pct)
+          NODE
+          )
           echo "line_coverage=$COVERAGE" >> "$GITHUB_OUTPUT"
 
       - name: Report line coverage
