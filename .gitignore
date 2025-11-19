@@ -5,3 +5,4 @@ docs/api/openapi.json
 .idea
 .env
 !.env.test
+node_modules/
