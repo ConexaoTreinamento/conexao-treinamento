@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Calendar } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -59,7 +59,6 @@ export function SchedulePageView() {
     }
     return new Date();
   }, [dayParam, monthParam]);
-  const [userRole, setUserRole] = useState<string>("");
   const [isNewClassOpen, setIsNewClassOpen] = useState(false);
   const [modalInitialData, setModalInitialData] = useState<
     Partial<OneOffClassData>
@@ -71,11 +70,6 @@ export function SchedulePageView() {
   });
   const [trainerFilter, setTrainerFilter] = useState<string>("all");
   const router = useRouter();
-
-  useEffect(() => {
-    const role = localStorage.getItem("userRole") || "professor";
-    setUserRole(role);
-  }, []);
 
   const invalidateReportsQueries = useCallback(() => {
     void queryClient.invalidateQueries({
@@ -301,8 +295,6 @@ export function SchedulePageView() {
     [currentMonth],
   );
 
-  const canCreateClass = userRole === "admin";
-
   const handleCreateClass = async (formData: OneOffClassData) => {
     const start = `${selectedIso}T${formData.startTime}:00`;
     const end = `${selectedIso}T${formData.endTime}:00`;
@@ -423,7 +415,6 @@ export function SchedulePageView() {
             />
             <ScheduleToolbar
               onGoToday={goToToday}
-              canCreateClass={canCreateClass}
               onCreateClass={handleOpenClassModal}
             />
           </div>
@@ -490,14 +481,14 @@ export function SchedulePageView() {
             title="Nenhuma aula para este dia"
             description="Selecione outra data ou crie uma nova aula para preencher a agenda."
             action={
-              canCreateClass ? (
+              (
                 <Button
                   className="bg-green-600 hover:bg-green-700"
                   onClick={handleOpenClassModal}
                 >
                   Criar aula
                 </Button>
-              ) : undefined
+              )
             }
           />
         ) : null}
