@@ -170,4 +170,95 @@ class StudentSpecificationsTest {
         verify(criteriaBuilder).greaterThan(any(), any(LocalDate.class)); // For maxAge (birth date > X)
         verify(criteriaBuilder).lessThanOrEqualTo(any(), any(LocalDate.class)); // For minAge (birth date <= Y)
     }
+
+    @Test
+    @DisplayName("Should filter by min age only")
+    void shouldFilterByMinAgeOnly() {
+        // Given
+        Integer minAge = 20;
+        Specification<Student> spec = StudentSpecifications.withFilters(
+                null, null, null, minAge, null, null, null, true
+        );
+
+        // When
+        spec.toPredicate(root, query, criteriaBuilder);
+
+        // Then
+        verify(root, atLeastOnce()).get("birthDate");
+        verify(criteriaBuilder).lessThanOrEqualTo(any(), any(LocalDate.class)); // For minAge (birth date <= Y)
+        verify(criteriaBuilder, never()).greaterThan(any(), any(LocalDate.class));
+    }
+
+    @Test
+    @DisplayName("Should filter by max age only")
+    void shouldFilterByMaxAgeOnly() {
+        // Given
+        Integer maxAge = 30;
+        Specification<Student> spec = StudentSpecifications.withFilters(
+                null, null, null, null, maxAge, null, null, true
+        );
+
+        // When
+        spec.toPredicate(root, query, criteriaBuilder);
+
+        // Then
+        verify(root, atLeastOnce()).get("birthDate");
+        verify(criteriaBuilder).greaterThan(any(), any(LocalDate.class)); // For maxAge (birth date > X)
+        verify(criteriaBuilder, never()).lessThanOrEqualTo(any(), any(LocalDate.class));
+    }
+
+    @Test
+    @DisplayName("Should filter by registration date range")
+    void shouldFilterByRegistrationDateRange() {
+        // Given
+        LocalDate minDate = LocalDate.of(2023, 1, 1);
+        LocalDate maxDate = LocalDate.of(2023, 12, 31);
+        Specification<Student> spec = StudentSpecifications.withFilters(
+                null, null, null, null, null, minDate, maxDate, true
+        );
+
+        // When
+        spec.toPredicate(root, query, criteriaBuilder);
+
+        // Then
+        verify(root, atLeastOnce()).get("registrationDate");
+        verify(criteriaBuilder).greaterThanOrEqualTo(any(), any(Instant.class));
+        verify(criteriaBuilder).lessThan(any(), any(Instant.class));
+    }
+
+    @Test
+    @DisplayName("Should filter by registration min date only")
+    void shouldFilterByRegistrationMinDateOnly() {
+        // Given
+        LocalDate minDate = LocalDate.of(2023, 1, 1);
+        Specification<Student> spec = StudentSpecifications.withFilters(
+                null, null, null, null, null, minDate, null, true
+        );
+
+        // When
+        spec.toPredicate(root, query, criteriaBuilder);
+
+        // Then
+        verify(root, atLeastOnce()).get("registrationDate");
+        verify(criteriaBuilder).greaterThanOrEqualTo(any(), any(Instant.class));
+        verify(criteriaBuilder, never()).lessThan(any(), any(Instant.class));
+    }
+
+    @Test
+    @DisplayName("Should filter by registration max date only")
+    void shouldFilterByRegistrationMaxDateOnly() {
+        // Given
+        LocalDate maxDate = LocalDate.of(2023, 12, 31);
+        Specification<Student> spec = StudentSpecifications.withFilters(
+                null, null, null, null, null, null, maxDate, true
+        );
+
+        // When
+        spec.toPredicate(root, query, criteriaBuilder);
+
+        // Then
+        verify(root, atLeastOnce()).get("registrationDate");
+        verify(criteriaBuilder).lessThan(any(), any(Instant.class));
+        verify(criteriaBuilder, never()).greaterThanOrEqualTo(any(), any(Instant.class));
+    }
 }

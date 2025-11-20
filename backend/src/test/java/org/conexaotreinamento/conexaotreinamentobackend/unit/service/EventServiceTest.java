@@ -551,4 +551,97 @@ class EventServiceTest {
         // Verify list is empty
         assertThat(event.getParticipants()).isEmpty();
     }
+
+    @Test
+    @DisplayName("Should patch event with all fields")
+    void shouldPatchEventWithAllFields() {
+        // Given
+        UUID newTrainerId = UUID.randomUUID();
+        Trainer newTrainer = new Trainer();
+        setIdViaReflection(newTrainer, newTrainerId);
+        
+        UUID newStudentId = UUID.randomUUID();
+        Student newStudent = new Student("new@example.com", "New", "Student", Student.Gender.M, LocalDate.now());
+        setIdViaReflection(newStudent, newStudentId);
+
+        PatchEventRequestDTO fullPatchRequest = new PatchEventRequestDTO(
+                "Patched Name",
+                LocalDate.of(2025, 1, 1),
+                LocalTime.of(14, 0),
+                LocalTime.of(15, 0),
+                "Patched Location",
+                "Patched Description",
+                newTrainerId,
+                Arrays.asList(newStudentId)
+        );
+
+        when(eventRepository.findByIdAndDeletedAtIsNull(eventId)).thenReturn(Optional.of(event));
+        when(trainerRepository.findById(newTrainerId)).thenReturn(Optional.of(newTrainer));
+        when(studentRepository.findById(newStudentId)).thenReturn(Optional.of(newStudent));
+        when(participantRepository.existsByEventIdAndStudentId(eventId, newStudentId)).thenReturn(false);
+
+        // When
+        EventResponseDTO result = eventService.patchEvent(eventId, fullPatchRequest);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.name()).isEqualTo("Patched Name");
+        assertThat(result.date()).isEqualTo(LocalDate.of(2025, 1, 1));
+        assertThat(result.startTime()).isEqualTo(LocalTime.of(14, 0));
+        assertThat(result.endTime()).isEqualTo(LocalTime.of(15, 0));
+        assertThat(result.location()).isEqualTo("Patched Location");
+        assertThat(result.description()).isEqualTo("Patched Description");
+        
+        verify(eventRepository).findByIdAndDeletedAtIsNull(eventId);
+        verify(trainerRepository).findById(newTrainerId);
+        verify(participantRepository).save(any(EventParticipant.class));
+    }
+
+    @Test
+    @DisplayName("Should update event participants (add new, keep existing, remove old)")
+    void shouldUpdateEventParticipantsComplex() {
+        // Given
+        UUID keepStudentId = UUID.randomUUID();
+        Student keepStudent = new Student("keep@example.com", "Keep", "Student", Student.Gender.F, LocalDate.now());
+        setIdViaReflection(keepStudent, keepStudentId);
+        
+        UUID removeStudentId = UUID.randomUUID();
+        Student removeStudent = new Student("remove@example.com", "Remove", "Student", Student.Gender.M, LocalDate.now());
+        setIdViaReflection(removeStudent, removeStudentId);
+        
+        UUID addStudentId = UUID.randomUUID();
+        Student addStudent = new Student("add@example.com", "Add", "Student", Student.Gender.F, LocalDate.now());
+        setIdViaReflection(addStudent, addStudentId);
+
+        // Existing participants: keep and remove
+        EventParticipant pKeep = new EventParticipant(event, keepStudent);
+        EventParticipant pRemove = new EventParticipant(event, removeStudent);
+        List<EventParticipant> currentParticipants = new ArrayList<>(Arrays.asList(pKeep, pRemove));
+        event.setParticipants(currentParticipants);
+
+        // Request: keep and add
+        EventRequestDTO request = new EventRequestDTO(
+                "Event", LocalDate.now(), LocalTime.now(), LocalTime.now().plusHours(1), "Loc", "Desc", trainerId,
+                Arrays.asList(keepStudentId, addStudentId)
+        );
+
+        when(eventRepository.findByIdAndDeletedAtIsNull(eventId)).thenReturn(Optional.of(event));
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        when(studentRepository.findById(addStudentId)).thenReturn(Optional.of(addStudent));
+        // For keepStudent, addParticipantsToEvent will check existence
+        when(studentRepository.findById(keepStudentId)).thenReturn(Optional.of(keepStudent));
+        when(participantRepository.existsByEventIdAndStudentId(eventId, keepStudentId)).thenReturn(true);
+        when(participantRepository.existsByEventIdAndStudentId(eventId, addStudentId)).thenReturn(false);
+
+        // When
+        eventService.updateEvent(eventId, request);
+
+        // Then
+        // pRemove should be deleted
+        verify(participantRepository).delete(pRemove);
+        // pKeep should NOT be deleted
+        verify(participantRepository, never()).delete(pKeep);
+        // New participant for addStudent should be saved
+        verify(participantRepository).save(argThat(p -> p.getStudent().getId().equals(addStudentId)));
+    }
 }

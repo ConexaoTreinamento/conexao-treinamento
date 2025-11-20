@@ -250,5 +250,59 @@ class PhysicalEvaluationServiceTest {
         assertNotNull(result.diameters());
         assertEquals(10.0, result.diameters().umerus());
     }
+
+    @Test
+    void update_ShouldUpdateAllNestedObjectsCorrectly() {
+        // Given
+        when(evaluationRepository.findByIdAndStudentIdAndDeletedAtIsNull(evaluationId, studentId))
+                .thenReturn(Optional.of(evaluation));
+        when(evaluationRepository.save(any(PhysicalEvaluation.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PhysicalEvaluationRequestDTO.CircumferencesDTO circumferencesDTO = new PhysicalEvaluationRequestDTO.CircumferencesDTO(
+            31.0, 31.0, 33.0, 33.0, 81.0, 86.0, 101.0, 56.0, 56.0, 36.0, 36.0
+        );
+        PhysicalEvaluationRequestDTO.SubcutaneousFoldsDTO foldsDTO = new PhysicalEvaluationRequestDTO.SubcutaneousFoldsDTO(
+            11.0, 13.0, 16.0, 19.0, 21.0, 23.0, 26.0
+        );
+        PhysicalEvaluationRequestDTO.DiametersDTO diametersDTO = new PhysicalEvaluationRequestDTO.DiametersDTO(
+            11.0, 13.0
+        );
+
+        PhysicalEvaluationRequestDTO updateRequest = new PhysicalEvaluationRequestDTO(
+                75.0,
+                175.0,
+                circumferencesDTO,
+                foldsDTO,
+                diametersDTO
+        );
+
+        // When
+        PhysicalEvaluationResponseDTO result = evaluationService.update(studentId, evaluationId, updateRequest);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(75.0, result.weight());
+        
+        assertNotNull(result.circumferences());
+        assertEquals(31.0, result.circumferences().rightArmRelaxed());
+        
+        assertNotNull(result.subcutaneousFolds());
+        assertEquals(11.0, result.subcutaneousFolds().triceps());
+        
+        assertNotNull(result.diameters());
+        assertEquals(11.0, result.diameters().umerus());
+        
+        verify(evaluationRepository).save(any(PhysicalEvaluation.class));
+    }
+
+    @Test
+    void findAllByStudentId_ShouldThrowException_WhenStudentNotFound() {
+        // Given
+        when(studentRepository.findByIdAndDeletedAtIsNull(studentId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThrows(ResponseStatusException.class, () -> evaluationService.findAllByStudentId(studentId));
+        verify(evaluationRepository, never()).findByStudentIdAndDeletedAtIsNullOrderByDateDesc(any());
+    }
 }
 
