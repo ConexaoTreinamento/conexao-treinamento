@@ -211,25 +211,59 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Install Docker Compose
+      - name: Ensure Docker Compose is available
+        uses: docker/setup-compose-action@v2
+        with:
+          version: 'v2'
+
+      - name: Diagnose runner and compose files
         run: |
-          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          sudo chmod +x /usr/local/bin/docker-compose
-          docker-compose --version
+          echo "--- Checking docker-compose.test.yml line endings ---"
+          if command -v file >/dev/null 2>&1; then
+            file docker-compose.test.yml || true
+          fi
+          if grep -q $'\r' docker-compose.test.yml 2>/dev/null; then
+            echo "CRLF line endings detected in docker-compose.test.yml"
+            echo "Converting to LF for the job (in-memory)"
+            sed 's/\r$//' docker-compose.test.yml > docker-compose.test.yml.fixed && mv docker-compose.test.yml.fixed docker-compose.test.yml
+          else
+            echo "docker-compose.test.yml uses LF line endings"
+          fi
 
       - name: Start services
-        run: |
-          docker-compose -f docker-compose.test.yml --env-file .env.test up -d
-          sleep 30 # Wait for services to be ready
+        uses: docker/compose-action@v2
+        with:
+          files: docker-compose.test.yml
+          args: --env-file .env.test up -d --build
+
+      - name: Wait for services
+        run: sleep 30 # Wait for services to be ready
 
       - name: Run Smoke Tests
         run: |
           curl -f http://localhost:8080/actuator/health
           curl -f http://localhost:3000
 
+      - name: Show backend logs on failure
+        if: failure()
+        uses: docker/compose-action@v2
+        with:
+          files: docker-compose.test.yml
+          args: logs backend
+
+      - name: Show frontend logs on failure
+        if: failure()
+        uses: docker/compose-action@v2
+        with:
+          files: docker-compose.test.yml
+          args: logs frontend
+
       - name: Stop services
         if: always()
-        run: docker-compose -f docker-compose.test.yml --env-file .env.test down
+        uses: docker/compose-action@v2
+        with:
+          files: docker-compose.test.yml
+          args: --env-file .env.test down
 
       - name: Clean up failed images
         if: failure()
