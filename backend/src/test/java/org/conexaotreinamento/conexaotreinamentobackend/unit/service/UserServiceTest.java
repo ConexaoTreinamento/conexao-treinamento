@@ -537,4 +537,97 @@ class UserServiceTest {
         verify(userRepository).findByEmailAndDeletedAtIsNull("john@example.com");
         verify(userRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("Should throw conflict when updating email to existing one")
+    void shouldThrowConflictWhenUpdatingEmailToExistingOne() {
+        // Given
+        String newEmail = "existing@example.com";
+        User existingUser = new User(newEmail, "pass", Role.ROLE_TRAINER);
+        setIdViaReflection(existingUser, UUID.randomUUID());
+
+        when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailAndDeletedAtIsNull(newEmail)).thenReturn(Optional.of(existingUser));
+
+        // When & Then
+        assertThatThrownBy(() -> userService.updateUserEmail(userId, newEmail))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Email already in use");
+    }
+
+    @Test
+    @DisplayName("Should reset user password successfully for trainer")
+    void shouldResetUserPasswordSuccessfully() {
+        // Given
+        user.setRole(Role.ROLE_TRAINER);
+        String newPassword = "newPassword123";
+        when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(newPassword)).thenReturn("encodedNewPassword");
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        // When
+        UserResponseDTO result = userService.resetUserPassword(userId, newPassword);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(user.getPassword()).isEqualTo("encodedNewPassword");
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    @DisplayName("Should throw bad request when resetting password for non-trainer")
+    void shouldThrowBadRequestWhenResettingPasswordForNonTrainer() {
+        // Given
+        user.setRole(Role.ROLE_ADMIN); // Not a trainer
+        when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.of(user));
+
+        // When & Then
+        assertThatThrownBy(() -> userService.resetUserPassword(userId, "newPass"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Only trainers can have their password reset");
+    }
+
+    @Test
+    @DisplayName("Should change own password successfully")
+    void shouldChangeOwnPasswordSuccessfully() {
+        // Given
+        ChangePasswordRequestDTO request = new ChangePasswordRequestDTO("oldPass", "newPass", "newPass");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("oldPass", "encodedPassword")).thenReturn(true);
+        when(passwordEncoder.encode("newPass")).thenReturn("encodedNewPass");
+        // Removed unnecessary stubbing for save()
+
+        // When
+        UserResponseDTO result = userService.changeOwnPassword(userId, request);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(user.getPassword()).isEqualTo("encodedNewPass");
+    }
+
+    @Test
+    @DisplayName("Should throw bad request when changing password with mismatch")
+    void shouldThrowBadRequestWhenChangingPasswordWithMismatch() {
+        // Given
+        ChangePasswordRequestDTO request = new ChangePasswordRequestDTO("oldPass", "newPass", "mismatch");
+
+        // When & Then
+        assertThatThrownBy(() -> userService.changeOwnPassword(userId, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("The new password and confirm password do not match");
+    }
+
+    @Test
+    @DisplayName("Should throw bad request when changing password with incorrect old password")
+    void shouldThrowBadRequestWhenChangingPasswordWithIncorrectOldPassword() {
+        // Given
+        ChangePasswordRequestDTO request = new ChangePasswordRequestDTO("wrongOldPass", "newPass", "newPass");
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("wrongOldPass", "encodedPassword")).thenReturn(false);
+
+        // When & Then
+        assertThatThrownBy(() -> userService.changeOwnPassword(userId, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("The old password is incorrect");
+    }
 }

@@ -7,6 +7,7 @@ import org.conexaotreinamento.conexaotreinamentobackend.enums.CommitmentStatus;
 import org.conexaotreinamento.conexaotreinamentobackend.repository.*;
 import org.conexaotreinamento.conexaotreinamentobackend.service.ScheduleService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -1118,5 +1119,299 @@ class ScheduleServiceTest {
         assertEquals(session, newParticipant.getScheduledSession());
         assertTrue(session.isInstanceOverride());
         verify(scheduledSessionRepository).save(session);
+    }
+
+    @Test
+    @DisplayName("getSessionById: Should throw exception for invalid session ID format")
+    void getSessionById_InvalidFormat() {
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> scheduleService.getSessionById("invalid-id"));
+        assertTrue(exception.getMessage().contains("Invalid sessionId format"));
+    }
+
+    @Test
+    @DisplayName("getSessionById: Should resolve lazy session with 3-part ID")
+    void getSessionById_LazyResolve_3PartId() {
+        LocalDate date = LocalDate.of(2025, 10, 1);
+        LocalTime time = LocalTime.of(10, 0);
+        String sessionId = "yoga-basics__" + date + "__" + time;
+
+        TrainerSchedule schedule = new TrainerSchedule();
+        schedule.setId(UUID.randomUUID());
+        schedule.setTrainerId(trainerId);
+        schedule.setSeriesName("Yoga Basics");
+        schedule.setStartTime(time);
+        schedule.setIntervalDuration(60);
+        schedule.setEffectiveFromTimestamp(Instant.now().minus(Duration.ofDays(1)));
+
+        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(sessionId)).thenReturn(Optional.empty());
+        when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(anyInt(), any(Instant.class)))
+                .thenReturn(List.of(schedule));
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+
+        SessionResponseDTO result = scheduleService.getSessionById(sessionId);
+
+        assertNotNull(result);
+        assertTrue(result.sessionId().contains(trainerId.toString())); // Canonical ID should be generated
+        assertEquals("John Trainer", result.trainerName());
+    }
+
+    @Test
+    @DisplayName("getSessionById: Should resolve lazy session with 4-part ID")
+    void getSessionById_LazyResolve_4PartId() {
+        LocalDate date = LocalDate.of(2025, 10, 1);
+        LocalTime time = LocalTime.of(10, 0);
+        String sessionId = "yoga-basics__" + date + "__" + time + "__" + trainerId;
+
+        TrainerSchedule schedule = new TrainerSchedule();
+        schedule.setId(UUID.randomUUID());
+        schedule.setTrainerId(trainerId);
+        schedule.setSeriesName("Yoga Basics");
+        schedule.setStartTime(time);
+        schedule.setIntervalDuration(60);
+        schedule.setEffectiveFromTimestamp(Instant.now().minus(Duration.ofDays(1)));
+
+        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(sessionId)).thenReturn(Optional.empty());
+        when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(anyInt(), any(Instant.class)))
+                .thenReturn(List.of(schedule));
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+
+        SessionResponseDTO result = scheduleService.getSessionById(sessionId);
+
+        assertNotNull(result);
+        assertEquals(sessionId, result.sessionId());
+    }
+
+    @Test
+    @DisplayName("getSessionById: Should disambiguate using provided trainer ID in 4-part ID")
+    void getSessionById_DisambiguateWithProvidedTrainerId() {
+        LocalDate date = LocalDate.of(2025, 10, 1);
+        LocalTime time = LocalTime.of(10, 0);
+        String sessionId = "yoga__" + date + "__" + time + "__" + trainerId;
+
+        TrainerSchedule schedule1 = new TrainerSchedule();
+        schedule1.setId(UUID.randomUUID());
+        schedule1.setTrainerId(trainerId); // Matches
+        schedule1.setSeriesName("Yoga Advanced");
+        schedule1.setStartTime(time);
+        schedule1.setIntervalDuration(60);
+        schedule1.setEffectiveFromTimestamp(Instant.now().minus(Duration.ofDays(1)));
+
+        TrainerSchedule schedule2 = new TrainerSchedule();
+        schedule2.setId(UUID.randomUUID());
+        schedule2.setTrainerId(UUID.randomUUID()); // Different trainer
+        schedule2.setSeriesName("Yoga Beginner");
+        schedule2.setStartTime(time);
+        schedule2.setIntervalDuration(60);
+        schedule2.setEffectiveFromTimestamp(Instant.now().minus(Duration.ofDays(1)));
+
+        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(sessionId)).thenReturn(Optional.empty());
+        when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(anyInt(), any(Instant.class)))
+                .thenReturn(List.of(schedule1, schedule2));
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+
+        SessionResponseDTO result = scheduleService.getSessionById(sessionId);
+
+        assertNotNull(result);
+        assertEquals(trainerId, result.trainerId());
+        assertEquals("Yoga Advanced", result.seriesName());
+    }
+
+    @Test
+    @DisplayName("getSessionById: Should throw exception when ambiguous slug")
+    void getSessionById_AmbiguousSlug() {
+        LocalDate date = LocalDate.of(2025, 10, 1);
+        LocalTime time = LocalTime.of(10, 0);
+        String sessionId = "yoga__" + date + "__" + time;
+
+        TrainerSchedule schedule1 = new TrainerSchedule();
+        schedule1.setId(UUID.randomUUID());
+        schedule1.setTrainerId(trainerId);
+        schedule1.setSeriesName("Yoga Advanced");
+        schedule1.setStartTime(time);
+        schedule1.setIntervalDuration(60);
+        schedule1.setEffectiveFromTimestamp(Instant.now().minus(Duration.ofDays(1)));
+
+        TrainerSchedule schedule2 = new TrainerSchedule();
+        schedule2.setId(UUID.randomUUID());
+        schedule2.setTrainerId(trainerId);
+        schedule2.setSeriesName("Yoga Beginner");
+        schedule2.setStartTime(time);
+        schedule2.setIntervalDuration(60);
+        schedule2.setEffectiveFromTimestamp(Instant.now().minus(Duration.ofDays(1)));
+
+        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(sessionId)).thenReturn(Optional.empty());
+        when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(anyInt(), any(Instant.class)))
+                .thenReturn(List.of(schedule1, schedule2));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> scheduleService.getSessionById(sessionId));
+        assertNotNull(exception.getCause());
+        assertTrue(exception.getCause().getMessage().contains("Ambiguous session slug/time"));
+    }
+
+    @Test
+    @DisplayName("getSessionById: Should resolve using prefix match")
+    void getSessionById_PrefixMatch() {
+        LocalDate date = LocalDate.of(2025, 10, 1);
+        LocalTime time = LocalTime.of(10, 0);
+        String sessionId = "yoga__" + date + "__" + time;
+
+        TrainerSchedule schedule1 = new TrainerSchedule();
+        schedule1.setId(UUID.randomUUID());
+        schedule1.setTrainerId(trainerId);
+        schedule1.setSeriesName("Yoga Advanced"); // Starts with "yoga"
+        schedule1.setStartTime(time);
+        schedule1.setIntervalDuration(60);
+        schedule1.setEffectiveFromTimestamp(Instant.now().minus(Duration.ofDays(1)));
+
+        // schedule2 does not match prefix
+        TrainerSchedule schedule2 = new TrainerSchedule();
+        schedule2.setId(UUID.randomUUID());
+        schedule2.setTrainerId(trainerId);
+        schedule2.setSeriesName("Pilates");
+        schedule2.setStartTime(time);
+        schedule2.setIntervalDuration(60);
+        schedule2.setEffectiveFromTimestamp(Instant.now().minus(Duration.ofDays(1)));
+
+        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(sessionId)).thenReturn(Optional.empty());
+        when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(anyInt(), any(Instant.class)))
+                .thenReturn(List.of(schedule1, schedule2));
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+
+        SessionResponseDTO result = scheduleService.getSessionById(sessionId);
+
+        assertNotNull(result);
+        assertEquals("Yoga Advanced", result.seriesName());
+    }
+    
+    @Test
+    @DisplayName("getSessionById: Should return existing persisted session if found")
+    void getSessionById_ExistingPersistedSession() {
+        String sessionId = "existing-session-id";
+        ScheduledSession existingSession = new ScheduledSession();
+        existingSession.setSessionId(sessionId);
+        existingSession.setTrainerId(trainerId);
+        existingSession.setStartTime(LocalDateTime.now());
+        existingSession.setEndTime(LocalDateTime.now().plusHours(1));
+        existingSession.setSeriesName("Existing Series");
+        
+        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(sessionId)).thenReturn(Optional.of(existingSession));
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        
+        SessionResponseDTO result = scheduleService.getSessionById(sessionId);
+        
+        assertNotNull(result);
+        assertEquals(sessionId, result.sessionId());
+        assertEquals("Existing Series", result.seriesName());
+    }
+
+    @Test
+    @DisplayName("getScheduledSessions: Should include standalone sessions not matching any schedule")
+    void getScheduledSessions_StandaloneSessions() {
+        LocalDate startDate = LocalDate.of(2025, 10, 1);
+        LocalDate endDate = LocalDate.of(2025, 10, 1);
+        
+        ScheduledSession standaloneSession = new ScheduledSession();
+        standaloneSession.setSessionId("oneoff__2025-10-01__10:00");
+        standaloneSession.setTrainerId(trainerId);
+        standaloneSession.setStartTime(LocalDateTime.of(startDate, LocalTime.of(10, 0)));
+        standaloneSession.setEndTime(LocalDateTime.of(startDate, LocalTime.of(11, 0)));
+        standaloneSession.setSeriesName("One-off Session");
+        standaloneSession.setInstanceOverride(true);
+        
+        when(scheduledSessionRepository.findByStartTimeBetweenAndActiveTrue(any(), any()))
+                .thenReturn(List.of(standaloneSession));
+        when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(anyInt(), any(Instant.class)))
+                .thenReturn(Collections.emptyList());
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        
+        List<SessionResponseDTO> result = scheduleService.getScheduledSessions(startDate, endDate);
+        
+        assertEquals(1, result.size());
+        assertEquals("oneoff__2025-10-01__10:00", result.get(0).sessionId());
+        assertEquals("One-off Session", result.get(0).seriesName());
+    }
+
+    @Test
+    @DisplayName("getScheduledSessions: Should avoid duplicates when standalone session matches generated schedule")
+    void getScheduledSessions_AvoidDuplicates() {
+        LocalDate startDate = LocalDate.of(2025, 10, 1);
+        LocalDate endDate = LocalDate.of(2025, 10, 1);
+        LocalTime time = LocalTime.of(10, 0);
+        
+        // Generated schedule
+        TrainerSchedule schedule = new TrainerSchedule();
+        schedule.setId(UUID.randomUUID());
+        schedule.setTrainerId(trainerId);
+        schedule.setSeriesName("Yoga Basics");
+        schedule.setStartTime(time);
+        schedule.setIntervalDuration(60);
+        schedule.setEffectiveFromTimestamp(Instant.now().minus(Duration.ofDays(1)));
+        
+        // Persisted session that matches the generated one (same ID)
+        String sessionId = "yoga-basics__" + startDate + "__" + time + "__" + trainerId;
+        ScheduledSession persistedSession = new ScheduledSession();
+        persistedSession.setSessionId(sessionId);
+        persistedSession.setTrainerId(trainerId);
+        persistedSession.setStartTime(LocalDateTime.of(startDate, time));
+        persistedSession.setEndTime(LocalDateTime.of(startDate, time.plusHours(1)));
+        persistedSession.setSeriesName("Yoga Basics");
+        persistedSession.setInstanceOverride(true); // Modified
+        
+        when(scheduledSessionRepository.findByStartTimeBetweenAndActiveTrue(any(), any()))
+                .thenReturn(List.of(persistedSession));
+        when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(anyInt(), any(Instant.class)))
+                .thenReturn(List.of(schedule));
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        
+        List<SessionResponseDTO> result = scheduleService.getScheduledSessions(startDate, endDate);
+        
+        // Should only return 1 session (the persisted one, which overrides the generated one)
+        assertEquals(1, result.size());
+        assertEquals(sessionId, result.get(0).sessionId());
+        assertTrue(result.get(0).instanceOverride());
+    }
+    
+    @Test
+    @DisplayName("getScheduledSessions: Should avoid duplicates when standalone session matches legacy ID")
+    void getScheduledSessions_AvoidDuplicates_LegacyId() {
+        LocalDate startDate = LocalDate.of(2025, 10, 1);
+        LocalDate endDate = LocalDate.of(2025, 10, 1);
+        LocalTime time = LocalTime.of(10, 0);
+        
+        // Generated schedule
+        TrainerSchedule schedule = new TrainerSchedule();
+        schedule.setId(UUID.randomUUID());
+        schedule.setTrainerId(trainerId);
+        schedule.setSeriesName("Yoga Basics");
+        schedule.setStartTime(time);
+        schedule.setIntervalDuration(60);
+        schedule.setEffectiveFromTimestamp(Instant.now().minus(Duration.ofDays(1)));
+        
+        // Persisted session with LEGACY ID format (3 parts)
+        String legacyId = "yoga-basics__" + startDate + "__" + time;
+        ScheduledSession persistedSession = new ScheduledSession();
+        persistedSession.setSessionId(legacyId);
+        persistedSession.setTrainerId(trainerId);
+        persistedSession.setStartTime(LocalDateTime.of(startDate, time));
+        persistedSession.setEndTime(LocalDateTime.of(startDate, time.plusHours(1)));
+        persistedSession.setSeriesName("Yoga Basics");
+        persistedSession.setInstanceOverride(true);
+        
+        when(scheduledSessionRepository.findByStartTimeBetweenAndActiveTrue(any(), any()))
+                .thenReturn(List.of(persistedSession));
+        when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(anyInt(), any(Instant.class)))
+                .thenReturn(List.of(schedule));
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        
+        List<SessionResponseDTO> result = scheduleService.getScheduledSessions(startDate, endDate);
+        
+        // Should only return 1 session
+        assertEquals(1, result.size());
+        
+        // The service returns the CANONICAL ID (4 parts) even if the persisted session has a legacy ID,
+        // because it matches a schedule.
+        String canonicalId = "yoga-basics__" + startDate + "__" + time + "__" + trainerId;
+        assertEquals(canonicalId, result.get(0).sessionId());
+        assertTrue(result.get(0).instanceOverride());
     }
 }

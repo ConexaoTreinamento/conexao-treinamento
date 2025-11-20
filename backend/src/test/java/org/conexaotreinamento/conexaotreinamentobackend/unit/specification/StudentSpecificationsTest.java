@@ -1,379 +1,170 @@
 package org.conexaotreinamento.conexaotreinamentobackend.unit.specification;
 
+import jakarta.persistence.criteria.*;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
 import org.conexaotreinamento.conexaotreinamentobackend.specification.StudentSpecifications;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 
-@DisplayName("StudentSpecifications Unit Tests")
+@ExtendWith(MockitoExtension.class)
 class StudentSpecificationsTest {
 
-    @Test
-    @DisplayName("Should create specification with no filters (only includeInactive=false)")
-    void shouldCreateSpecificationWithNoFilters() {
-        // When
-        Specification<Student> spec = StudentSpecifications.withFilters(
-                null, null, null, null, null, null, null, false
-        );
+    @Mock
+    private Root<Student> root;
 
-        // Then
-        assertThat(spec).isNotNull();
-        assertThat(spec.toString()).isNotNull();
+    @Mock
+    private CriteriaQuery<?> query;
+
+    @Mock
+    private CriteriaBuilder criteriaBuilder;
+
+    @Mock
+    private Path<Object> path;
+
+    @Mock
+    private Expression<String> stringExpression;
+
+    @Mock
+    private Predicate predicate;
+
+    @BeforeEach
+    void setUp() {
+        // Default behavior for root.get() to return a path
+        lenient().when(root.get(anyString())).thenReturn(path);
+        
+        // Default behavior for criteriaBuilder methods to return a predicate
+        lenient().when(criteriaBuilder.and(any(Predicate[].class))).thenReturn(predicate);
+        lenient().when(criteriaBuilder.or(any(Predicate[].class))).thenReturn(predicate);
+        lenient().when(criteriaBuilder.equal(any(), any())).thenReturn(predicate);
+        lenient().when(criteriaBuilder.like(any(), anyString())).thenReturn(predicate);
+        lenient().when(criteriaBuilder.isNull(any())).thenReturn(predicate);
+        lenient().when(criteriaBuilder.greaterThan(any(Expression.class), any(LocalDate.class))).thenReturn(predicate);
+        lenient().when(criteriaBuilder.lessThanOrEqualTo(any(Expression.class), any(LocalDate.class))).thenReturn(predicate);
+        
+        // Default behavior for lower() and coalesce()
+        lenient().when(criteriaBuilder.lower(any())).thenReturn(stringExpression);
+        // Cast to avoid ambiguity and type mismatch for coalesce
+        lenient().doReturn(stringExpression).when(criteriaBuilder).coalesce(any(), any());
     }
 
     @Test
-    @DisplayName("Should create specification including inactive when includeInactive is true")
-    void shouldCreateSpecificationIncludingInactiveWhenIncludeInactiveIsTrue() {
-        // When
+    @DisplayName("Should return specification with no filters when all parameters are null")
+    void shouldReturnSpecificationWithNoFilters() {
+        // Given
         Specification<Student> spec = StudentSpecifications.withFilters(
                 null, null, null, null, null, null, null, true
         );
 
-        // Then
-        assertThat(spec).isNotNull();
-        assertThat(spec.toString()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should create specification with search term")
-    void shouldCreateSpecificationWithSearchTerm() {
         // When
-        Specification<Student> spec = StudentSpecifications.withFilters(
-                "john", null, null, null, null, null, null, false
-        );
+        Predicate result = spec.toPredicate(root, query, criteriaBuilder);
 
         // Then
-        assertThat(spec).isNotNull();
-        assertThat(spec.toString()).isNotNull();
+        assertThat(result).isEqualTo(predicate);
+        verify(criteriaBuilder).and(any(Predicate[].class)); // Should call and() with empty or minimal predicates
     }
 
     @Test
-    @DisplayName("Should create specification with blank search term")
-    void shouldCreateSpecificationWithBlankSearchTerm() {
-        // When
-        Specification<Student> spec = StudentSpecifications.withFilters(
-                "   ", null, null, null, null, null, null, false
-        );
-
-        // Then
-        assertThat(spec).isNotNull();
-        assertThat(spec.toString()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should create specification with gender filter")
-    void shouldCreateSpecificationWithGenderFilter() {
-        // When
-        Specification<Student> spec = StudentSpecifications.withFilters(
-                null, Student.Gender.M, null, null, null, null, null, false
-        );
-
-        // Then
-        assertThat(spec).isNotNull();
-        assertThat(spec.toString()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should create specification with profession filter")
-    void shouldCreateSpecificationWithProfessionFilter() {
-        // When
-        Specification<Student> spec = StudentSpecifications.withFilters(
-                null, null, "Engineer", null, null, null, null, false
-        );
-
-        // Then
-        assertThat(spec).isNotNull();
-        assertThat(spec.toString()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should create specification with blank profession filter")
-    void shouldCreateSpecificationWithBlankProfessionFilter() {
-        // When
-        Specification<Student> spec = StudentSpecifications.withFilters(
-                null, null, "   ", null, null, null, null, false
-        );
-
-        // Then
-        assertThat(spec).isNotNull();
-        assertThat(spec.toString()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should create specification with minAge filter")
-    void shouldCreateSpecificationWithMinAgeFilter() {
-        // When
-        Specification<Student> spec = StudentSpecifications.withFilters(
-                null, null, null, 25, null, null, null, false
-        );
-
-        // Then
-        assertThat(spec).isNotNull();
-        assertThat(spec.toString()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should create specification with maxAge filter")
-    void shouldCreateSpecificationWithMaxAgeFilter() {
-        // When
-        Specification<Student> spec = StudentSpecifications.withFilters(
-                null, null, null, null, 35, null, null, false
-        );
-
-        // Then
-        assertThat(spec).isNotNull();
-        assertThat(spec.toString()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should create specification with age range filter")
-    void shouldCreateSpecificationWithAgeRangeFilter() {
-        // When
-        Specification<Student> spec = StudentSpecifications.withFilters(
-                null, null, null, 25, 35, null, null, false
-        );
-
-        // Then
-        assertThat(spec).isNotNull();
-        assertThat(spec.toString()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should create specification with zero age values")
-    void shouldCreateSpecificationWithZeroAgeValues() {
-        // When
-        Specification<Student> spec = StudentSpecifications.withFilters(
-                null, null, null, 0, 0, null, null, false
-        );
-
-        // Then
-        assertThat(spec).isNotNull();
-        assertThat(spec.toString()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should create specification with registration min date filter")
-    void shouldCreateSpecificationWithRegistrationMinDateFilter() {
+    @DisplayName("Should filter by deletedAt is null when includeInactive is false")
+    void shouldFilterByDeletedAtIsNull() {
         // Given
-        LocalDate registrationMinDate = LocalDate.of(2023, 1, 1);
-
-        // When
-        Specification<Student> spec = StudentSpecifications.withFilters(
-                null, null, null, null, null, registrationMinDate, null, false
-        );
-
-        // Then
-        assertThat(spec).isNotNull();
-        assertThat(spec.toString()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should create specification with registration max date filter")
-    void shouldCreateSpecificationWithRegistrationMaxDateFilter() {
-        // Given
-        LocalDate registrationMaxDate = LocalDate.of(2023, 12, 31);
-
-        // When
-        Specification<Student> spec = StudentSpecifications.withFilters(
-                null, null, null, null, null, null, registrationMaxDate, false
-        );
-
-        // Then
-        assertThat(spec).isNotNull();
-        assertThat(spec.toString()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should create specification with registration date range filter")
-    void shouldCreateSpecificationWithRegistrationDateRangeFilter() {
-        // Given
-        LocalDate registrationMinDate = LocalDate.of(2023, 1, 1);
-        LocalDate registrationMaxDate = LocalDate.of(2023, 12, 31);
-
-        // When
-        Specification<Student> spec = StudentSpecifications.withFilters(
-                null, null, null, null, null, registrationMinDate, registrationMaxDate, false
-        );
-
-        // Then
-        assertThat(spec).isNotNull();
-        assertThat(spec.toString()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should create specification with all filters combined")
-    void shouldCreateSpecificationWithAllFiltersCombined() {
-        // Given
-        String search = "john";
-        Student.Gender gender = Student.Gender.M;
-        String profession = "Engineer";
-        Integer minAge = 25;
-        Integer maxAge = 35;
-        LocalDate registrationMinDate = LocalDate.of(2023, 1, 1);
-        LocalDate registrationMaxDate = LocalDate.of(2023, 12, 31);
-
-        // When
-        Specification<Student> spec = StudentSpecifications.withFilters(
-                search, gender, profession, minAge, maxAge, registrationMinDate, registrationMaxDate, false
-        );
-
-        // Then
-        assertThat(spec).isNotNull();
-        assertThat(spec.toString()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should create specification with all filters including inactive")
-    void shouldCreateSpecificationWithAllFiltersIncludingInactive() {
-        // Given
-        String search = "jane";
-        Student.Gender gender = Student.Gender.F;
-        String profession = "Teacher";
-        Integer minAge = 30;
-        Integer maxAge = 40;
-        LocalDate registrationMinDate = LocalDate.of(2022, 1, 1);
-        LocalDate registrationMaxDate = LocalDate.of(2024, 12, 31);
-
-        // When
-        Specification<Student> spec = StudentSpecifications.withFilters(
-                search, gender, profession, minAge, maxAge, registrationMinDate, registrationMaxDate, true
-        );
-
-        // Then
-        assertThat(spec).isNotNull();
-        assertThat(spec.toString()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should create specification with female gender")
-    void shouldCreateSpecificationWithFemaleGender() {
-        // When
-        Specification<Student> spec = StudentSpecifications.withFilters(
-                null, Student.Gender.F, null, null, null, null, null, false
-        );
-
-        // Then
-        assertThat(spec).isNotNull();
-        assertThat(spec.toString()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should create specification with other gender")
-    void shouldCreateSpecificationWithOtherGender() {
-        // When
-        Specification<Student> spec = StudentSpecifications.withFilters(
-                null, Student.Gender.O, null, null, null, null, null, false
-        );
-
-        // Then
-        assertThat(spec).isNotNull();
-        assertThat(spec.toString()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should handle null values gracefully")
-    void shouldHandleNullValuesGracefully() {
-        // When
         Specification<Student> spec = StudentSpecifications.withFilters(
                 null, null, null, null, null, null, null, false
         );
 
+        // When
+        spec.toPredicate(root, query, criteriaBuilder);
+
         // Then
-        assertThat(spec).isNotNull();
-        assertThat(spec.toString()).isNotNull();
+        verify(root).get("deletedAt");
+        verify(criteriaBuilder).isNull(path);
     }
 
     @Test
-    @DisplayName("Should create different specifications for different parameters")
-    void shouldCreateDifferentSpecificationsForDifferentParameters() {
+    @DisplayName("Should filter by search term")
+    void shouldFilterBySearchTerm() {
         // Given
-        Specification<Student> spec1 = StudentSpecifications.withFilters(
-                "john", null, null, null, null, null, null, false
+        String search = "John";
+        Specification<Student> spec = StudentSpecifications.withFilters(
+                search, null, null, null, null, null, null, true
         );
-
-        Specification<Student> spec2 = StudentSpecifications.withFilters(
-                "jane", null, null, null, null, null, null, false
-        );
-
-        // Then
-        assertThat(spec1).isNotNull();
-        assertThat(spec2).isNotNull();
-        assertThat(spec1.toString()).isNotEqualTo(spec2.toString());
-    }
-
-    @Test
-    @DisplayName("Should create equal specifications for same parameters")
-    void shouldCreateEqualSpecificationsForSameParameters() {
-        // Given
-        String search = "john";
-        Student.Gender gender = Student.Gender.M;
-        
-        Specification<Student> spec1 = StudentSpecifications.withFilters(
-                search, gender, null, null, null, null, null, false
-        );
-
-        Specification<Student> spec2 = StudentSpecifications.withFilters(
-                search, gender, null, null, null, null, null, false
-        );
-
-        // Then
-        assertThat(spec1).isNotNull();
-        assertThat(spec2).isNotNull();
-        // Note: Since specifications are lambda-based, we can't easily test equality
-        // but we can verify they're both created successfully
-        assertThat(spec1.toString()).isNotNull();
-        assertThat(spec2.toString()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should handle extreme age values")
-    void shouldHandleExtremeAgeValues() {
-        // When - Test with very high age values
-        Specification<Student> spec1 = StudentSpecifications.withFilters(
-                null, null, null, 100, 120, null, null, false
-        );
-
-        // When - Test with very low age values  
-        Specification<Student> spec2 = StudentSpecifications.withFilters(
-                null, null, null, 0, 5, null, null, false
-        );
-
-        // Then
-        assertThat(spec1).isNotNull();
-        assertThat(spec2).isNotNull();
-        assertThat(spec1.toString()).isNotNull();
-        assertThat(spec2.toString()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should handle various date ranges")
-    void shouldHandleVariousDateRanges() {
-        // Given - Past dates
-        LocalDate pastMin = LocalDate.of(2020, 1, 1);
-        LocalDate pastMax = LocalDate.of(2021, 12, 31);
-
-        // Given - Future dates
-        LocalDate futureMin = LocalDate.of(2030, 1, 1);
-        LocalDate futureMax = LocalDate.of(2031, 12, 31);
 
         // When
-        Specification<Student> pastSpec = StudentSpecifications.withFilters(
-                null, null, null, null, null, pastMin, pastMax, false
-        );
-
-        Specification<Student> futureSpec = StudentSpecifications.withFilters(
-                null, null, null, null, null, futureMin, futureMax, false
-        );
+        spec.toPredicate(root, query, criteriaBuilder);
 
         // Then
-        assertThat(pastSpec).isNotNull();
-        assertThat(futureSpec).isNotNull();
-        assertThat(pastSpec.toString()).isNotNull();
-        assertThat(futureSpec.toString()).isNotNull();
+        verify(root).get("name");
+        verify(root).get("surname");
+        verify(root).get("email");
+        verify(root).get("phone");
+        verify(root).get("profession");
+        
+        // Verify that like was called multiple times (5 times for the OR clause)
+        verify(criteriaBuilder, atLeast(5)).like(any(), eq("%john%"));
+        verify(criteriaBuilder).or(any(Predicate[].class));
+    }
+
+    @Test
+    @DisplayName("Should filter by gender")
+    void shouldFilterByGender() {
+        // Given
+        Student.Gender gender = Student.Gender.M;
+        Specification<Student> spec = StudentSpecifications.withFilters(
+                null, gender, null, null, null, null, null, true
+        );
+
+        // When
+        spec.toPredicate(root, query, criteriaBuilder);
+
+        // Then
+        verify(root).get("gender");
+        verify(criteriaBuilder).equal(path, gender);
+    }
+
+    @Test
+    @DisplayName("Should filter by profession")
+    void shouldFilterByProfession() {
+        // Given
+        String profession = "Developer";
+        Specification<Student> spec = StudentSpecifications.withFilters(
+                null, null, profession, null, null, null, null, true
+        );
+
+        // When
+        spec.toPredicate(root, query, criteriaBuilder);
+
+        // Then
+        verify(root).get("profession");
+        verify(criteriaBuilder).like(any(), eq("%developer%"));
+    }
+
+    @Test
+    @DisplayName("Should filter by age range")
+    void shouldFilterByAgeRange() {
+        // Given
+        Integer minAge = 20;
+        Integer maxAge = 30;
+        Specification<Student> spec = StudentSpecifications.withFilters(
+                null, null, null, minAge, maxAge, null, null, true
+        );
+
+        // When
+        spec.toPredicate(root, query, criteriaBuilder);
+
+        // Then
+        verify(root, atLeastOnce()).get("birthDate");
+        verify(criteriaBuilder).greaterThan(any(), any(LocalDate.class)); // For maxAge (birth date > X)
+        verify(criteriaBuilder).lessThanOrEqualTo(any(), any(LocalDate.class)); // For minAge (birth date <= Y)
     }
 }

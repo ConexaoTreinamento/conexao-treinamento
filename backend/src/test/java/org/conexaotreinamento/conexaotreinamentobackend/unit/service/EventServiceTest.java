@@ -500,4 +500,58 @@ class EventServiceTest {
                 .hasFieldOrPropertyWithValue("status", HttpStatus.NOT_FOUND)
                 .hasMessageContaining("Participant not found");
     }
+
+    @Test
+    @DisplayName("Should find all events with search term including inactive")
+    void shouldFindAllEventsWithSearchTermIncludingInactive() {
+        // Given
+        String searchTerm = "test";
+        List<Event> events = Arrays.asList(event);
+        when(eventRepository.findBySearchTermIncludingInactiveOrderByCreatedAtDesc("%test%")).thenReturn(events);
+
+        // When
+        List<EventResponseDTO> result = eventService.findAllEvents(searchTerm, true);
+
+        // Then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).name()).isEqualTo("Test Event");
+
+        verify(eventRepository).findBySearchTermIncludingInactiveOrderByCreatedAtDesc("%test%");
+    }
+
+    @Test
+    @DisplayName("Should update event removing participants")
+    void shouldUpdateEventRemovingParticipants() {
+        // Given
+        // Setup existing participant
+        EventParticipant existingParticipant = new EventParticipant(event, student);
+        List<EventParticipant> participants = new ArrayList<>();
+        participants.add(existingParticipant);
+        event.setParticipants(participants);
+
+        // Request with NO participants (empty list)
+        EventRequestDTO requestEmptyParticipants = new EventRequestDTO(
+                "Updated Event",
+                LocalDate.of(2024, 12, 26),
+                LocalTime.of(12, 0),
+                LocalTime.of(13, 0),
+                "Updated Location",
+                "Updated Description",
+                trainerId,
+                Collections.emptyList()
+        );
+
+        when(eventRepository.findByIdAndDeletedAtIsNull(eventId)).thenReturn(Optional.of(event));
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        
+        // When
+        EventResponseDTO result = eventService.updateEvent(eventId, requestEmptyParticipants);
+
+        // Then
+        assertThat(result).isNotNull();
+        // Verify delete was called
+        verify(participantRepository).delete(existingParticipant);
+        // Verify list is empty
+        assertThat(event.getParticipants()).isEmpty();
+    }
 }

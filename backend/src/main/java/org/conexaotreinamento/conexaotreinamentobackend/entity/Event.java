@@ -58,6 +58,7 @@ public class Event {
 
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Setter
     private List<EventParticipant> participants;
 
     @CreatedDate
