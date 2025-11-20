@@ -150,4 +150,146 @@ class ScheduleControllerTest {
         verify(scheduleService, never()).updateSessionNotes(anyString(), anyString());
         verify(scheduleService, never()).updateSessionParticipants(anyString(), anyList());
     }
+
+    @Test
+    void getSession_returnsSession() throws Exception {
+        String sessionId = "session-1";
+        SessionResponseDTO session = new SessionResponseDTO(sessionId, null, null, null, null, null, null, false, List.of(), false, 0);
+        when(scheduleService.getSessionById(sessionId, null)).thenReturn(session);
+
+        mockMvc.perform(get("/schedule/sessions/{sessionId}", sessionId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sessionId").value(sessionId));
+    }
+
+    @Test
+    void updateSessionTrainer_callsService() throws Exception {
+        String sessionId = "session-1";
+        UUID trainerId = UUID.randomUUID();
+        String body = "{ \"trainerId\": \"" + trainerId + "\" }";
+
+        mockMvc.perform(post("/schedule/sessions/{sessionId}/trainer", sessionId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Trainer updated"));
+
+        verify(scheduleService).updateSessionTrainer(sessionId, trainerId);
+    }
+
+    @Test
+    void cancelOrRestoreSession_callsService() throws Exception {
+        String sessionId = "session-1";
+        String body = "{ \"cancel\": true }";
+
+        mockMvc.perform(post("/schedule/sessions/{sessionId}/cancel", sessionId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Session status updated"));
+
+        verify(scheduleService).cancelOrRestoreSession(sessionId, true);
+    }
+
+    @Test
+    void addSessionParticipant_callsService() throws Exception {
+        String sessionId = "session-1";
+        UUID studentId = UUID.randomUUID();
+        String body = "{ \"studentId\": \"" + studentId + "\" }";
+
+        mockMvc.perform(post("/schedule/sessions/{sessionId}/participants", sessionId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Participant added"));
+
+        verify(scheduleService).addParticipant(sessionId, studentId);
+    }
+
+    @Test
+    void removeSessionParticipant_callsService() throws Exception {
+        String sessionId = "session-1";
+        UUID studentId = UUID.randomUUID();
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/schedule/sessions/{sessionId}/participants/{studentId}", sessionId, studentId))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Participant removed"));
+
+        verify(scheduleService).removeParticipant(sessionId, studentId);
+    }
+
+    @Test
+    void updatePresence_callsService() throws Exception {
+        String sessionId = "session-1";
+        UUID studentId = UUID.randomUUID();
+        String body = "{ \"present\": true, \"notes\": \"On time\" }";
+
+        mockMvc.perform(post("/schedule/sessions/{sessionId}/participants/{studentId}/presence", sessionId, studentId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Presence updated"));
+
+        verify(scheduleService).updateParticipantPresence(sessionId, studentId, true, "On time");
+    }
+
+    @Test
+    void addRegisteredParticipantExercise_callsService() throws Exception {
+        String sessionId = "session-1";
+        UUID studentId = UUID.randomUUID();
+        UUID exerciseId = UUID.randomUUID();
+        String body = "{ \"exerciseId\": \"" + exerciseId + "\", \"setsCompleted\": 3 }";
+        
+        org.conexaotreinamento.conexaotreinamentobackend.entity.ParticipantExercise pe = new org.conexaotreinamento.conexaotreinamentobackend.entity.ParticipantExercise();
+        pe.setId(UUID.randomUUID());
+        
+        when(scheduleService.addParticipantExercise(eq(sessionId), eq(studentId), any(org.conexaotreinamento.conexaotreinamentobackend.dto.request.ParticipantExerciseCreateRequestDTO.class)))
+            .thenReturn(pe);
+
+        mockMvc.perform(post("/schedule/sessions/{sessionId}/participants/{studentId}/exercises", sessionId, studentId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+                .andExpect(status().isOk())
+                .andExpect(content().string("\"" + pe.getId().toString() + "\""));
+    }
+
+    @Test
+    void updateRegisteredParticipantExercise_callsService() throws Exception {
+        UUID exerciseRecordId = UUID.randomUUID();
+        String body = "{ \"setsCompleted\": 4 }";
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch("/schedule/sessions/participants/exercises/{exerciseRecordId}", exerciseRecordId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Exercise updated"));
+
+        verify(scheduleService).updateParticipantExercise(eq(exerciseRecordId), any(org.conexaotreinamento.conexaotreinamentobackend.dto.request.ParticipantExerciseUpdateRequestDTO.class));
+    }
+
+    @Test
+    void removeRegisteredParticipantExercise_callsService() throws Exception {
+        UUID exerciseRecordId = UUID.randomUUID();
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/schedule/sessions/participants/exercises/{exerciseRecordId}", exerciseRecordId))
+                .andExpect(status().isOk())
+                .andExpect(content().string("Exercise removed"));
+
+        verify(scheduleService).removeParticipantExercise(exerciseRecordId);
+    }
+
+    @Test
+    void createOneOffSession_callsService() throws Exception {
+        String body = "{ \"seriesName\": \"Workshop\", \"startTime\": \"2025-10-01T14:00:00\", \"endTime\": \"2025-10-01T15:00:00\" }";
+        SessionResponseDTO session = new SessionResponseDTO("oneoff", null, null, null, null, null, null, true, List.of(), false, 0);
+        
+        when(scheduleService.createOneOffSession(any(org.conexaotreinamento.conexaotreinamentobackend.dto.request.OneOffSessionCreateRequestDTO.class)))
+            .thenReturn(session);
+
+        mockMvc.perform(post("/schedule/sessions/one-off")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sessionId").value("oneoff"));
+    }
 }

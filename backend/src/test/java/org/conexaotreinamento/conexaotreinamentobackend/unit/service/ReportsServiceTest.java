@@ -4,6 +4,7 @@ import org.conexaotreinamento.conexaotreinamentobackend.dto.response.AgeDistribu
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.ReportsResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.SessionResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentCommitmentResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerReportResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Event;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.EventParticipant;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.Student;
@@ -35,6 +36,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -241,6 +243,168 @@ class ReportsServiceTest {
         assertThat(distribution.get(1).count()).isEqualTo(1);
         assertThat(distribution.get(2).count()).isEqualTo(1);
         assertThat(distribution.get(3).count()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Calculates age distribution with no students")
+    void shouldCalculateAgeDistributionWithNoStudents() {
+        when(trainerRepository.findAll()).thenReturn(Collections.emptyList());
+        when(studentRepository.findAllBirthDates()).thenReturn(Collections.emptyList());
+
+        ReportsResponseDTO response = reportsService.generateReports(startDate, endDate, null);
+        List<AgeDistributionResponseDTO> distribution = response.ageDistribution();
+
+        assertThat(distribution).hasSize(4);
+        assertThat(distribution).allMatch(d -> d.count() == 0 && d.percentage() == 0.0);
+    }
+
+    @Test
+    @DisplayName("Returns empty reports when no trainers found")
+    void shouldReturnEmptyReportsWhenNoTrainersFound() {
+        when(trainerRepository.findAll()).thenReturn(Collections.emptyList());
+        when(studentRepository.findAllBirthDates()).thenReturn(Collections.emptyList());
+
+        ReportsResponseDTO response = reportsService.generateReports(startDate, endDate, null);
+
+        assertThat(response.trainerReports()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Ignores canceled sessions in trainer reports")
+    void shouldIgnoreCanceledSessionsInTrainerReports() {
+        Trainer trainer = createTrainer(trainerId, "Trainer", CompensationType.HOURLY, List.of());
+        when(trainerRepository.findAll()).thenReturn(List.of(trainer));
+        when(studentRepository.findAllBirthDates()).thenReturn(Collections.emptyList());
+        when(eventRepository.findActiveWithinDateRangeWithParticipants(any(), any())).thenReturn(Collections.emptyList());
+
+        SessionResponseDTO canceledSession = new SessionResponseDTO(
+                UUID.randomUUID().toString(),
+                trainerId,
+                "Trainer Name",
+                startDate.plusHours(1),
+                startDate.plusHours(2),
+                "Series Name",
+                "Notes",
+                false,
+                List.of(),
+                true,
+                0
+        );
+
+        when(scheduleService.getScheduledSessions(startDate.toLocalDate(), endDate.toLocalDate()))
+                .thenReturn(List.of(canceledSession));
+
+        ReportsResponseDTO response = reportsService.generateReports(startDate, endDate, null);
+
+        assertThat(response.trainerReports()).hasSize(1);
+        assertThat(response.trainerReports().get(0).classesGiven()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("Sorts trainer reports by name, handling nulls")
+    void shouldSortTrainerReportsByNameHandlingNulls() {
+        // Arrange
+        Trainer t1 = createTrainer(UUID.randomUUID(), "Zebra", CompensationType.HOURLY, List.of());
+        Trainer t2 = createTrainer(UUID.randomUUID(), "Alpha", CompensationType.HOURLY, List.of());
+        Trainer t3 = createTrainer(UUID.randomUUID(), null, CompensationType.HOURLY, List.of());
+        Trainer t4 = createTrainer(UUID.randomUUID(), null, CompensationType.HOURLY, List.of());
+
+        // Mock resolveTrainers to return these trainers
+        // We need to mock trainerRepository.findAll() or findById depending on what resolveTrainers does
+        // Let's check resolveTrainers implementation first.
+        // It calls trainerRepository.findAll() if trainerId is null.
+
+        when(trainerRepository.findAll()).thenReturn(List.of(t1, t2, t3, t4));
+
+        // Act
+        ReportsResponseDTO response = reportsService.generateReports(startDate, endDate, null);
+
+        // Assert
+        List<TrainerReportResponseDTO> reports = response.trainerReports();
+        assertThat(reports).hasSize(4);
+
+        // Expected order: Alpha, Zebra, null, null (or nulls last)
+        assertThat(reports.get(0).name()).isEqualTo("Alpha");
+        assertThat(reports.get(1).name()).isEqualTo("Zebra");
+        assertThat(reports.get(2).name()).isNull();
+        assertThat(reports.get(3).name()).isNull();
+    }
+
+    @Test
+    @DisplayName("Should calculate age distribution correctly")
+    void shouldCalculateAgeDistributionCorrectly() {
+        LocalDate today = LocalDate.now();
+        List<LocalDate> birthDates = List.of(
+                today.minusYears(20), // 18-25
+                today.minusYears(30), // 26-35
+                today.minusYears(40), // 36-45
+                today.minusYears(50)  // 46+
+        );
+
+        when(studentRepository.findAllBirthDates()).thenReturn(birthDates);
+        when(trainerRepository.findAll()).thenReturn(Collections.emptyList());
+
+        ReportsResponseDTO report = reportsService.generateReports(LocalDateTime.now(), LocalDateTime.now(), null);
+
+        List<AgeDistributionResponseDTO> ageDistribution = report.ageDistribution();
+        assertThat(ageDistribution).hasSize(4);
+
+        assertThat(ageDistribution).extracting("percentage")
+                .containsOnly(25.0);
+    }
+
+    @Test
+    @DisplayName("Should include events in trainer reports")
+    void shouldIncludeEventsInTrainerReports() {
+        UUID trainerId = UUID.randomUUID();
+        Trainer trainer = createTrainer(trainerId, "Trainer Event", CompensationType.HOURLY, List.of());
+        
+        LocalDateTime startDate = LocalDate.now().atStartOfDay();
+        LocalDateTime endDate = startDate.plusDays(1);
+        
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        when(scheduleService.getScheduledSessions(any(), any())).thenReturn(Collections.emptyList());
+        
+        UUID studentId = UUID.randomUUID();
+        Event event = buildEvent(
+            trainer,
+            startDate.plusHours(10),
+            startDate.plusHours(11),
+            new UUID[]{studentId},
+            new boolean[]{true}
+        );
+        
+        when(eventRepository.findActiveWithinDateRangeWithParticipants(any(), any()))
+                .thenReturn(List.of(event));
+        
+        ReportsResponseDTO report = reportsService.generateReports(startDate, endDate, trainerId);
+        
+        assertThat(report.trainerReports()).hasSize(1);
+        TrainerReportResponseDTO trainerReport = report.trainerReports().get(0);
+        assertThat(trainerReport.classesGiven()).isEqualTo(1);
+        assertThat(trainerReport.hoursWorked()).isEqualTo(1.0);
+        assertThat(trainerReport.studentsManaged()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Should handle empty trainers list")
+    void shouldHandleEmptyTrainersList() {
+        UUID trainerId = UUID.randomUUID();
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.empty());
+        
+        ReportsResponseDTO report = reportsService.generateReports(LocalDateTime.now(), LocalDateTime.now(), trainerId);
+        
+        assertThat(report.trainerReports()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Should handle null trainerId in resolveTrainers")
+    void shouldHandleNullTrainerIdInResolveTrainers() {
+        when(trainerRepository.findAll()).thenReturn(Collections.emptyList());
+        
+        ReportsResponseDTO report = reportsService.generateReports(LocalDateTime.now(), LocalDateTime.now(), null);
+        
+        assertThat(report.trainerReports()).isEmpty();
     }
 
     private Trainer createTrainer(UUID id, String name, CompensationType compensationType, List<String> specialties) {

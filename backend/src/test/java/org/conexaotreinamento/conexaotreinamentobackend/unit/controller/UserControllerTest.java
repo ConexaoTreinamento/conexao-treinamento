@@ -1,11 +1,13 @@
 package org.conexaotreinamento.conexaotreinamentobackend.unit.controller;
 
+import org.conexaotreinamento.conexaotreinamentobackend.dto.request.ChangePasswordRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.UserCreateRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.PatchUserRoleRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.service.UserService;
 import org.conexaotreinamento.conexaotreinamentobackend.controller.UserController;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,8 +21,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
@@ -176,7 +182,6 @@ class UserControllerTest {
     void shouldPatchUserRoleFromTrainerToAdmin() {
         // Given
         PatchUserRoleRequestDTO changeToAdmin = new PatchUserRoleRequestDTO(Role.ROLE_ADMIN);
-        UserResponseDTO trainerUser = new UserResponseDTO(userId, "trainer@example.com", Role.ROLE_TRAINER);
         UserResponseDTO adminUser = new UserResponseDTO(userId, "trainer@example.com", Role.ROLE_ADMIN);
         when(userService.patch(userId, changeToAdmin)).thenReturn(adminUser);
 
@@ -313,6 +318,75 @@ class UserControllerTest {
         verify(userService).createUser(specificRequest);
     }
 
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    @DisplayName("Should change own password successfully")
+    void shouldChangeOwnPasswordSuccessfully() {
+        // Given
+        ChangePasswordRequestDTO request = new ChangePasswordRequestDTO("oldPass", "newPass", "newPass");
+        String userEmail = "admin@example.com";
+        
+        Authentication authentication = mock(Authentication.class);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getName()).thenReturn(userEmail);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(userService.getUserByEmail(userEmail)).thenReturn(Optional.of(userResponseDTO));
+        when(userService.changeOwnPassword(userId, request)).thenReturn(userResponseDTO);
+
+        // When
+        ResponseEntity<Void> response = userController.changeOwnPassword(request);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        verify(userService).getUserByEmail(userEmail);
+        verify(userService).changeOwnPassword(userId, request);
+    }
+
+    @Test
+    @DisplayName("Should return unauthorized when changing password without authentication")
+    void shouldReturnUnauthorizedWhenChangingPasswordWithoutAuthentication() {
+        // Given
+        ChangePasswordRequestDTO request = new ChangePasswordRequestDTO("oldPass", "newPass", "newPass");
+        SecurityContextHolder.clearContext();
+
+        // When
+        ResponseEntity<Void> response = userController.changeOwnPassword(request);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        verify(userService, never()).changeOwnPassword(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should return unauthorized when user not found for password change")
+    void shouldReturnUnauthorizedWhenUserNotFoundForPasswordChange() {
+        // Given
+        ChangePasswordRequestDTO request = new ChangePasswordRequestDTO("oldPass", "newPass", "newPass");
+        String userEmail = "unknown@example.com";
+        
+        Authentication authentication = mock(Authentication.class);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getName()).thenReturn(userEmail);
+        SecurityContextHolder.setContext(securityContext);
+
+        when(userService.getUserByEmail(userEmail)).thenReturn(Optional.empty());
+
+        // When
+        ResponseEntity<Void> response = userController.changeOwnPassword(request);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        verify(userService).getUserByEmail(userEmail);
+        verify(userService, never()).changeOwnPassword(any(), any());
+    }
+
     @Test
     @DisplayName("Should verify all controller methods are tested")
     void shouldVerifyAllControllerMethodsAreTested() {
@@ -322,6 +396,6 @@ class UserControllerTest {
         // Verify createUser method exists and is tested
         assertThat(UserController.class.getDeclaredMethods())
                 .extracting("name")
-                .contains("createUser", "getAllUsersSimple", "patch");
+                .contains("createUser", "getAllUsersSimple", "patch", "changeOwnPassword");
     }
 }

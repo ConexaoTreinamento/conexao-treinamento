@@ -9,7 +9,6 @@ import org.conexaotreinamento.conexaotreinamentobackend.controller.StudentPlanCo
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.UserResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.conexaotreinamento.conexaotreinamentobackend.service.UserService;
-import org.conexaotreinamento.conexaotreinamentobackend.controller.StudentPlanController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -182,11 +181,10 @@ class StudentPlanControllerTest {
         when(securityContext.getAuthentication()).thenReturn(auth);
         SecurityContextHolder.setContext(securityContext);
 
-    // Mock user lookup by email to provide the expected userId
-    when(userService.getUserByEmail(adminEmail))
+        // Mock user lookup by email to provide the expected userId
+        when(userService.getUserByEmail(adminEmail))
         .thenReturn(java.util.Optional.of(new UserResponseDTO(userId, adminEmail, Role.ROLE_ADMIN)));
 
-    AssignPlanRequestDTO req = new AssignPlanRequestDTO(planId, LocalDate.now(), "notes");
         StudentPlanAssignmentResponseDTO assigned = assignDto(UUID.randomUUID(), studentId, planId, "Stu Dent", "Gold", adminEmail);
         when(studentPlanService.assignPlanToStudent(eq(studentId), any(AssignPlanRequestDTO.class), eq(userId)))
                 .thenReturn(assigned);

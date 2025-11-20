@@ -28,7 +28,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -53,7 +52,6 @@ class TrainerControllerIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
-    private UUID authenticatedUserId;
     private User testUser;
 
     @BeforeEach
@@ -64,8 +62,6 @@ class TrainerControllerIntegrationTest {
         // Create test user for authentication
         testUser = new User("trainer@test.com", "password", Role.ROLE_TRAINER);
         testUser = userRepository.save(testUser);
-        
-        authenticatedUserId = testUser.getId();
         
         // Set up security context
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(

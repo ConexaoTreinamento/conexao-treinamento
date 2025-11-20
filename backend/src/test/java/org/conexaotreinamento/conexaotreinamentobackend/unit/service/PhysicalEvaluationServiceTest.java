@@ -211,5 +211,98 @@ class PhysicalEvaluationServiceTest {
         // BMI = 68.5 / (1.65)^2 = 25.2
         assertEquals(25.2, result.bmi(), 0.1);
     }
+
+    @Test
+    void create_ShouldMapNestedObjectsCorrectly() {
+        // Given
+        PhysicalEvaluationRequestDTO.CircumferencesDTO circumferencesDTO = new PhysicalEvaluationRequestDTO.CircumferencesDTO(
+            30.0, 30.0, 32.0, 32.0, 80.0, 85.0, 100.0, 55.0, 55.0, 35.0, 35.0
+        );
+        PhysicalEvaluationRequestDTO.SubcutaneousFoldsDTO foldsDTO = new PhysicalEvaluationRequestDTO.SubcutaneousFoldsDTO(
+            10.0, 12.0, 15.0, 18.0, 20.0, 22.0, 25.0
+        );
+        PhysicalEvaluationRequestDTO.DiametersDTO diametersDTO = new PhysicalEvaluationRequestDTO.DiametersDTO(
+            10.0, 12.0
+        );
+        
+        PhysicalEvaluationRequestDTO fullRequest = new PhysicalEvaluationRequestDTO(
+                70.0,
+                175.0,
+                circumferencesDTO,
+                foldsDTO,
+                diametersDTO
+        );
+
+        when(studentRepository.findByIdAndDeletedAtIsNull(studentId)).thenReturn(Optional.of(student));
+        when(evaluationRepository.save(any(PhysicalEvaluation.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // When
+        PhysicalEvaluationResponseDTO result = evaluationService.create(studentId, fullRequest);
+
+        // Then
+        assertNotNull(result);
+        assertNotNull(result.circumferences());
+        assertEquals(30.0, result.circumferences().rightArmRelaxed());
+        
+        assertNotNull(result.subcutaneousFolds());
+        assertEquals(10.0, result.subcutaneousFolds().triceps());
+        
+        assertNotNull(result.diameters());
+        assertEquals(10.0, result.diameters().umerus());
+    }
+
+    @Test
+    void update_ShouldUpdateAllNestedObjectsCorrectly() {
+        // Given
+        when(evaluationRepository.findByIdAndStudentIdAndDeletedAtIsNull(evaluationId, studentId))
+                .thenReturn(Optional.of(evaluation));
+        when(evaluationRepository.save(any(PhysicalEvaluation.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PhysicalEvaluationRequestDTO.CircumferencesDTO circumferencesDTO = new PhysicalEvaluationRequestDTO.CircumferencesDTO(
+            31.0, 31.0, 33.0, 33.0, 81.0, 86.0, 101.0, 56.0, 56.0, 36.0, 36.0
+        );
+        PhysicalEvaluationRequestDTO.SubcutaneousFoldsDTO foldsDTO = new PhysicalEvaluationRequestDTO.SubcutaneousFoldsDTO(
+            11.0, 13.0, 16.0, 19.0, 21.0, 23.0, 26.0
+        );
+        PhysicalEvaluationRequestDTO.DiametersDTO diametersDTO = new PhysicalEvaluationRequestDTO.DiametersDTO(
+            11.0, 13.0
+        );
+
+        PhysicalEvaluationRequestDTO updateRequest = new PhysicalEvaluationRequestDTO(
+                75.0,
+                175.0,
+                circumferencesDTO,
+                foldsDTO,
+                diametersDTO
+        );
+
+        // When
+        PhysicalEvaluationResponseDTO result = evaluationService.update(studentId, evaluationId, updateRequest);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(75.0, result.weight());
+        
+        assertNotNull(result.circumferences());
+        assertEquals(31.0, result.circumferences().rightArmRelaxed());
+        
+        assertNotNull(result.subcutaneousFolds());
+        assertEquals(11.0, result.subcutaneousFolds().triceps());
+        
+        assertNotNull(result.diameters());
+        assertEquals(11.0, result.diameters().umerus());
+        
+        verify(evaluationRepository).save(any(PhysicalEvaluation.class));
+    }
+
+    @Test
+    void findAllByStudentId_ShouldThrowException_WhenStudentNotFound() {
+        // Given
+        when(studentRepository.findByIdAndDeletedAtIsNull(studentId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThrows(ResponseStatusException.class, () -> evaluationService.findAllByStudentId(studentId));
+        verify(evaluationRepository, never()).findByStudentIdAndDeletedAtIsNullOrderByDateDesc(any());
+    }
 }
 
