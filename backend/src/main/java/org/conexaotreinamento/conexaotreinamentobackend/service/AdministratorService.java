@@ -90,7 +90,7 @@ public class AdministratorService {
             int end = Math.min((start + pageable.getPageSize()), searchResults.size());
             
             if (start > searchResults.size()) {
-                return Page.empty(pageable);
+                return new org.springframework.data.domain.PageImpl<>(java.util.Collections.emptyList(), pageable, searchResults.size());
             }
             
             List<AdministratorListItemResponseDTO> pageContent = searchResults.subList(start, end);

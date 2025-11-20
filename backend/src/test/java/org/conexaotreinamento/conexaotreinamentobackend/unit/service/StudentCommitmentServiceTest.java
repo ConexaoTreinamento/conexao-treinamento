@@ -375,4 +375,121 @@ class StudentCommitmentServiceTest {
         assertEquals(CommitmentStatus.ATTENDING, saved.getCommitmentStatus());
         verify(studentPlanRepository).findById(planId);
     }
+
+    @Test
+    void updateCommitment_attending_noActivePlan_throws() {
+        // Arrange
+        when(studentPlanAssignmentRepository.findCurrentActiveAssignment(studentId)).thenReturn(Optional.empty());
+
+        // Act + Assert
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
+                studentCommitmentService.updateCommitment(studentId, seriesId, CommitmentStatus.ATTENDING));
+        assertTrue(ex.getMessage().contains("no active plan"));
+    }
+
+    @Test
+    void updateCommitment_attending_alreadyAttending_succeeds() {
+        // Arrange
+        UUID planId = UUID.randomUUID();
+        when(studentPlanAssignmentRepository.findCurrentActiveAssignment(studentId))
+                .thenReturn(Optional.of(buildAssignmentWithPlan(planId, 2)));
+        StudentPlan plan = new StudentPlan();
+        plan.setId(planId);
+        plan.setMaxDays(2);
+        when(studentPlanRepository.findById(planId)).thenReturn(Optional.of(plan));
+
+        // Mock existing commitment as ATTENDING for the same series
+        StudentCommitment existing = commitment(null, studentId, seriesId, CommitmentStatus.ATTENDING, Instant.now());
+        when(studentCommitmentRepository.findByStudentId(studentId)).thenReturn(List.of(existing));
+        
+        when(studentCommitmentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        // Act
+        studentCommitmentService.updateCommitment(studentId, seriesId, CommitmentStatus.ATTENDING);
+
+        // Assert
+        verify(studentCommitmentRepository).save(any());
+    }
+
+    @Test
+    void updateCommitment_attending_newWeekday_exceedsLimit_throws() {
+        // Arrange
+        UUID planId = UUID.randomUUID();
+        when(studentPlanAssignmentRepository.findCurrentActiveAssignment(studentId))
+                .thenReturn(Optional.of(buildAssignmentWithPlan(planId, 1)));
+        StudentPlan plan = new StudentPlan();
+        plan.setId(planId);
+        plan.setMaxDays(1);
+        when(studentPlanRepository.findById(planId)).thenReturn(Optional.of(plan));
+
+        // Existing commitment on weekday 1
+        UUID otherSeries = UUID.randomUUID();
+        StudentCommitment existing = commitment(null, studentId, otherSeries, CommitmentStatus.ATTENDING, Instant.now());
+        when(studentCommitmentRepository.findByStudentId(studentId)).thenReturn(List.of(existing));
+
+        org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule tsExisting = new org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule();
+        tsExisting.setId(otherSeries);
+        tsExisting.setWeekday(1);
+        when(trainerScheduleRepository.findById(otherSeries)).thenReturn(Optional.of(tsExisting));
+
+        // New commitment on weekday 2
+        org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule tsNew = new org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule();
+        tsNew.setId(seriesId);
+        tsNew.setWeekday(2);
+        when(trainerScheduleRepository.findById(seriesId)).thenReturn(Optional.of(tsNew));
+
+        // Act + Assert
+        RuntimeException ex = assertThrows(RuntimeException.class, () ->
+                studentCommitmentService.updateCommitment(studentId, seriesId, CommitmentStatus.ATTENDING));
+        assertTrue(ex.getMessage().contains("excede o limite"));
+    }
+
+    @Test
+    void resetScheduleIfExceedsPlan_doesNothing_whenWithinLimits() {
+        // Arrange
+        int maxDays = 2;
+        // 1 active commitment
+        StudentCommitment c1 = commitment(null, studentId, seriesId, CommitmentStatus.ATTENDING, Instant.now());
+        when(studentCommitmentRepository.findByStudentId(studentId)).thenReturn(List.of(c1));
+        
+        org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule ts = new org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule();
+        ts.setId(seriesId);
+        ts.setWeekday(1);
+        when(trainerScheduleRepository.findById(seriesId)).thenReturn(Optional.of(ts));
+
+        // Act
+        studentCommitmentService.resetScheduleIfExceedsPlan(studentId, maxDays);
+
+        // Assert
+        verify(studentCommitmentRepository, never()).save(any());
+    }
+
+    @Test
+    void resetScheduleIfExceedsPlan_resets_whenExceedsLimits() {
+        // Arrange
+        int maxDays = 1;
+        // 2 active commitments on different weekdays
+        UUID s1 = UUID.randomUUID();
+        UUID s2 = UUID.randomUUID();
+        StudentCommitment c1 = commitment(null, studentId, s1, CommitmentStatus.ATTENDING, Instant.now());
+        StudentCommitment c2 = commitment(null, studentId, s2, CommitmentStatus.ATTENDING, Instant.now());
+        when(studentCommitmentRepository.findByStudentId(studentId)).thenReturn(List.of(c1, c2));
+        
+        org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule ts1 = new org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule();
+        ts1.setId(s1);
+        ts1.setWeekday(1);
+        when(trainerScheduleRepository.findById(s1)).thenReturn(Optional.of(ts1));
+
+        org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule ts2 = new org.conexaotreinamento.conexaotreinamentobackend.entity.TrainerSchedule();
+        ts2.setId(s2);
+        ts2.setWeekday(2);
+        when(trainerScheduleRepository.findById(s2)).thenReturn(Optional.of(ts2));
+
+        // Act
+        studentCommitmentService.resetScheduleIfExceedsPlan(studentId, maxDays);
+
+        // Assert
+        // Should call updateCommitment -> save for both
+        verify(studentCommitmentRepository, times(2)).save(argThat(c -> c.getCommitmentStatus() == CommitmentStatus.NOT_ATTENDING));
+    }
 }

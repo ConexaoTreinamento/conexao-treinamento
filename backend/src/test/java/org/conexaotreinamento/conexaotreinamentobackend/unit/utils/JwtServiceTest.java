@@ -1,7 +1,6 @@
 package org.conexaotreinamento.conexaotreinamentobackend.unit.utils;
 
 import org.conexaotreinamento.conexaotreinamentobackend.config.security.jwt.JwtService;
-import org.conexaotreinamento.conexaotreinamentobackend.config.security.user.UserDetailsImpl;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.User;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.Role;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +42,6 @@ class JwtServiceTest {
 
     private User testUser;
     private Authentication authentication;
-    private UserDetailsImpl userDetails;
     private UUID testUserId;
 
     @BeforeEach
@@ -53,7 +51,6 @@ class JwtServiceTest {
 
         ReflectionTestUtils.setField(testUser, "id", testUserId);
         
-        userDetails = TestAuthUtils.createUserDetails(testUser);
         authentication = TestAuthUtils.createAuthentication(testUser);
 
         ReflectionTestUtils.setField(jwtService, "expirationHours", 24L);

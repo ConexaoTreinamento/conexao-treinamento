@@ -186,10 +186,6 @@ class TrainerLookupResponseDTOTest {
         assertThat(dto.name()).isEqualTo("Prof. John2");
     }
 
-    private Trainer createTrainerWithAllFields() {
-        return createTrainer("John", "Doe");
-    }
-
     private Trainer createTrainer(String name, String surname) {
         Trainer trainer = new Trainer();
         setIdViaReflection(trainer, UUID.randomUUID());
