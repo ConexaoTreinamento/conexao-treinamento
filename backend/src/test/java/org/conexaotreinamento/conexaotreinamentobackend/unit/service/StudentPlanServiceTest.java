@@ -408,4 +408,146 @@ class StudentPlanServiceTest {
         assertEquals(oldPlan.getDurationDays(), currentAssignment.getDurationDays());
         verify(studentCommitmentService).resetScheduleIfExceedsPlan(studentId, newPlan.getMaxDays());
     }
+
+    @Test
+    void assignPlanToStudent_handlesNullDurationInCurrentAssignment() {
+        // Arrange
+        UUID oldPlanId = UUID.randomUUID();
+        StudentPlan oldPlan = newPlan(oldPlanId, "Old", 4, 30, true);
+        StudentPlan newPlan = newPlan(planId, "New", 2, 45, true);
+        Student student = new Student("s@example.com", "Stu", "Dent", Student.Gender.M, LocalDate.of(1990, 1, 1));
+
+        LocalDate oldStart = LocalDate.now().minusDays(10);
+        StudentPlanAssignment currentAssignment = assignment(UUID.randomUUID(), studentId, oldPlanId, oldStart, oldStart.plusDays(30), userId);
+        currentAssignment.setDurationDays(null); // Simulate legacy data
+
+        LocalDate newStart = LocalDate.now();
+        AssignPlanRequestDTO request = new AssignPlanRequestDTO(planId, newStart, "upgrade");
+
+        when(studentRepository.findById(studentId)).thenReturn(Optional.of(student));
+        when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(newPlan));
+        when(studentPlanRepository.findById(oldPlanId)).thenReturn(Optional.of(oldPlan));
+        when(assignmentRepository.findCurrentActiveAssignment(studentId)).thenReturn(Optional.of(currentAssignment));
+        when(assignmentRepository.findOverlappingAssignments(eq(studentId), any(LocalDate.class), any(LocalDate.class)))
+            .thenAnswer(inv -> new java.util.ArrayList<>(List.of(currentAssignment)));
+        when(assignmentRepository.save(any(StudentPlanAssignment.class))).thenAnswer(inv -> (StudentPlanAssignment) inv.getArgument(0));
+
+        // Act
+        StudentPlanAssignmentResponseDTO response = studentPlanService.assignPlanToStudent(studentId, request, userId);
+
+        // Assert
+        // Should use oldPlan.durationDays (30) as baseline
+        // 10 days consumed, 20 remaining
+        assertEquals(20, response.durationDays());
+        assertEquals(10, currentAssignment.getDurationDays());
+    }
+
+    @Test
+    void assignPlanToStudent_handlesBackdatedStart() {
+        // Arrange
+        UUID oldPlanId = UUID.randomUUID();
+        StudentPlan oldPlan = newPlan(oldPlanId, "Old", 4, 30, true);
+        StudentPlan newPlan = newPlan(planId, "New", 2, 45, true);
+        Student student = new Student("s@example.com", "Stu", "Dent", Student.Gender.M, LocalDate.of(1990, 1, 1));
+
+        LocalDate oldStart = LocalDate.now();
+        StudentPlanAssignment currentAssignment = assignment(UUID.randomUUID(), studentId, oldPlanId, oldStart, oldStart.plusDays(30), userId);
+        currentAssignment.setDurationDays(30);
+
+        // New plan starts BEFORE current plan (weird but logic handles it)
+        LocalDate newStart = oldStart.minusDays(5);
+        AssignPlanRequestDTO request = new AssignPlanRequestDTO(planId, newStart, "upgrade");
+
+        when(studentRepository.findById(studentId)).thenReturn(Optional.of(student));
+        when(studentPlanRepository.findByIdAndActiveTrue(planId)).thenReturn(Optional.of(newPlan));
+        when(studentPlanRepository.findById(oldPlanId)).thenReturn(Optional.of(oldPlan));
+        when(assignmentRepository.findCurrentActiveAssignment(studentId)).thenReturn(Optional.of(currentAssignment));
+        // Overlapping logic might complain if we don't handle it right, but here we assume findOverlapping returns current
+        when(assignmentRepository.findOverlappingAssignments(eq(studentId), any(LocalDate.class), any(LocalDate.class)))
+            .thenAnswer(inv -> new java.util.ArrayList<>(List.of(currentAssignment)));
+        when(assignmentRepository.save(any(StudentPlanAssignment.class))).thenAnswer(inv -> (StudentPlanAssignment) inv.getArgument(0));
+
+        // Act
+        StudentPlanAssignmentResponseDTO response = studentPlanService.assignPlanToStudent(studentId, request, userId);
+
+        // Assert
+        // daysConsumed should be 0 (clamped)
+        // remainingDays = 30 - 0 = 30
+        // durationDays = 30
+        assertEquals(30, response.durationDays());
+        // currentAssignment duration should be 0 (consumed)
+        assertEquals(0, currentAssignment.getDurationDays());
+    }
+
+    @Test
+    void getPlansByStatus_all_returnsAllPlans() {
+        // Arrange
+        StudentPlan p1 = newPlan(UUID.randomUUID(), "A", 2, 14, true);
+        StudentPlan p2 = newPlan(UUID.randomUUID(), "B", 4, 30, false);
+        when(studentPlanRepository.findAllByOrderByNameAsc()).thenReturn(List.of(p1, p2));
+
+        // Act
+        List<StudentPlanResponseDTO> list = studentPlanService.getPlansByStatus("all");
+
+        // Assert
+        assertEquals(2, list.size());
+        assertTrue(list.stream().anyMatch(StudentPlanResponseDTO::active));
+        assertTrue(list.stream().anyMatch(p -> !p.active()));
+    }
+
+    @Test
+    void getPlansByStatus_inactive_returnsInactivePlans() {
+        // Arrange
+        StudentPlan p1 = newPlan(UUID.randomUUID(), "B", 4, 30, false);
+        when(studentPlanRepository.findByActiveFalseOrderByNameAsc()).thenReturn(List.of(p1));
+
+        // Act
+        List<StudentPlanResponseDTO> list = studentPlanService.getPlansByStatus("inactive");
+
+        // Assert
+        assertEquals(1, list.size());
+        assertFalse(list.get(0).active());
+    }
+
+    @Test
+    void getPlansByStatus_active_returnsActivePlans() {
+        // Arrange
+        StudentPlan p1 = newPlan(UUID.randomUUID(), "A", 2, 14, true);
+        when(studentPlanRepository.findByActiveTrueOrderByNameAsc()).thenReturn(List.of(p1));
+
+        // Act
+        List<StudentPlanResponseDTO> list = studentPlanService.getPlansByStatus("active");
+
+        // Assert
+        assertEquals(1, list.size());
+        assertTrue(list.get(0).active());
+    }
+
+    @Test
+    void getPlansByStatus_null_defaultsToActive() {
+        // Arrange
+        StudentPlan p1 = newPlan(UUID.randomUUID(), "A", 2, 14, true);
+        when(studentPlanRepository.findByActiveTrueOrderByNameAsc()).thenReturn(List.of(p1));
+
+        // Act
+        List<StudentPlanResponseDTO> list = studentPlanService.getPlansByStatus(null);
+
+        // Assert
+        assertEquals(1, list.size());
+        assertTrue(list.get(0).active());
+    }
+
+    @Test
+    void getPlansByStatus_unknown_defaultsToActive() {
+        // Arrange
+        StudentPlan p1 = newPlan(UUID.randomUUID(), "A", 2, 14, true);
+        when(studentPlanRepository.findByActiveTrueOrderByNameAsc()).thenReturn(List.of(p1));
+
+        // Act
+        List<StudentPlanResponseDTO> list = studentPlanService.getPlansByStatus("unknown");
+
+        // Assert
+        assertEquals(1, list.size());
+        assertTrue(list.get(0).active());
+    }
 }

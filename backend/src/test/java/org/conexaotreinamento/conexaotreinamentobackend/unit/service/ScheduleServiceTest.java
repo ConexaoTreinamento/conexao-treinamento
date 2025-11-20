@@ -893,4 +893,230 @@ class ScheduleServiceTest {
         assertTrue(ex.getMessage().contains("Could not create session instance") || 
                    (ex.getCause() != null && ex.getCause().getMessage().contains("Ambiguous session slug/time")));
     }
+
+    @Test
+    void getOrCreateSessionInstance_fallback_findsRenamedSeries() {
+        // Arrange
+        LocalDate date = LocalDate.of(2025, 9, 26);
+        LocalTime time = LocalTime.of(9, 0);
+        String oldSlug = "old-name";
+        String sessionId = oldSlug + "__" + date + "__" + time;
+        
+        TrainerSchedule schedule = buildSchedule(UUID.randomUUID(), trainerId, "New Name", time, 60);
+        
+        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(sessionId)).thenReturn(Optional.empty());
+        when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(anyInt(), any(Instant.class)))
+            .thenReturn(List.of(schedule));
+        when(scheduledSessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        // Act
+        // We can't call private method directly, so we call updateSessionNotes which calls it
+        scheduleService.updateSessionNotes(sessionId, "Notes");
+
+        // Assert
+        ArgumentCaptor<ScheduledSession> captor = ArgumentCaptor.forClass(ScheduledSession.class);
+        verify(scheduledSessionRepository, atLeastOnce()).save(captor.capture());
+        ScheduledSession saved = captor.getAllValues().get(0);
+        assertEquals(schedule.getId(), saved.getSessionSeriesId());
+        // It should save with the NEW canonical ID
+        assertTrue(saved.getSessionId().contains("new-name"));
+    }
+
+    @Test
+    void getStudentCommitmentsForSession_handlesOverrides() {
+        // Arrange
+        LocalDate date = LocalDate.of(2025, 9, 26);
+        LocalTime start = LocalTime.of(9, 0);
+        TrainerSchedule schedule = buildSchedule(UUID.randomUUID(), trainerId, "Yoga", start, 60);
+        
+        // Existing session with overrides
+        ScheduledSession session = buildExistingSession(UUID.randomUUID(), "yoga__"+date+"__09:00", schedule.getId(), trainerId, date, start, start.plusMinutes(60), "", true);
+        
+        UUID studentExcluded = UUID.randomUUID();
+        UUID studentIncluded = UUID.randomUUID();
+        
+        // Commitments: studentExcluded has commitment, studentIncluded does not
+        StudentCommitment c1 = new StudentCommitment();
+        c1.setStudentId(studentExcluded);
+        c1.setSessionSeriesId(schedule.getId());
+        c1.setCommitmentStatus(CommitmentStatus.ATTENDING);
+        c1.setEffectiveFromTimestamp(Instant.now().minusSeconds(100));
+        
+        when(studentCommitmentRepository.findBySessionSeriesId(schedule.getId())).thenReturn(List.of(c1));
+        
+        // Overrides
+        SessionParticipant spExcluded = new SessionParticipant();
+        spExcluded.setStudentId(studentExcluded);
+        spExcluded.setParticipationType(SessionParticipant.ParticipationType.EXCLUDED);
+        
+        SessionParticipant spIncluded = new SessionParticipant();
+        spIncluded.setStudentId(studentIncluded);
+        spIncluded.setParticipationType(SessionParticipant.ParticipationType.INCLUDED);
+        spIncluded.setPresent(true);
+        spIncluded.setId(UUID.randomUUID());
+        
+        when(sessionParticipantRepository.findByScheduledSession_IdAndActiveTrue(session.getId()))
+            .thenReturn(List.of(spExcluded, spIncluded));
+            
+        when(scheduledSessionRepository.findByStartTimeBetweenAndActiveTrue(any(), any()))
+            .thenReturn(List.of(session));
+        when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(anyInt(), any()))
+            .thenReturn(List.of(schedule));
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        
+        when(studentRepository.findById(studentIncluded)).thenReturn(Optional.of(mock(Student.class)));
+        when(participantExerciseRepository.findActiveWithExerciseBySessionParticipantId(any())).thenReturn(List.of());
+
+        // Act
+        List<SessionResponseDTO> sessions = scheduleService.getScheduledSessions(date, date);
+        
+        // Assert
+        assertEquals(1, sessions.size());
+        List<org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentCommitmentResponseDTO> students = sessions.get(0).students();
+        
+        // studentExcluded should be absent (excluded)
+        assertTrue(students.stream().noneMatch(s -> s.studentId().equals(studentExcluded)));
+        
+        // studentIncluded should be present (included)
+        assertTrue(students.stream().anyMatch(s -> s.studentId().equals(studentIncluded)));
+    }
+
+    @Test
+    void getOrCreateSessionInstance_canonicalId_createsSession() {
+        // Arrange
+        LocalDate date = LocalDate.of(2025, 9, 26);
+        LocalTime time = LocalTime.of(9, 0);
+        UUID seriesId = UUID.randomUUID();
+        TrainerSchedule schedule = buildSchedule(seriesId, trainerId, "Yoga", time, 60);
+        
+        // Canonical ID: slug__date__time__trainerId
+        String canonicalId = "yoga__" + date + "__09:00__" + trainerId;
+        
+        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(canonicalId)).thenReturn(Optional.empty());
+        // It should look up by weekday first
+        when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(
+                anyInt(), any(Instant.class)))
+            .thenReturn(List.of(schedule));
+            
+        when(scheduledSessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        // Act
+        scheduleService.updateSessionNotes(canonicalId, "Notes");
+
+        // Assert
+        ArgumentCaptor<ScheduledSession> captor = ArgumentCaptor.forClass(ScheduledSession.class);
+        verify(scheduledSessionRepository, atLeastOnce()).save(captor.capture());
+        ScheduledSession saved = captor.getAllValues().get(0);
+        assertEquals(seriesId, saved.getSessionSeriesId());
+        assertEquals(canonicalId, saved.getSessionId());
+    }
+
+    @Test
+    void getOrCreateSessionInstance_legacyId_createsSessionWithCanonicalId() {
+        // Arrange
+        LocalDate date = LocalDate.of(2025, 9, 26);
+        LocalTime time = LocalTime.of(9, 0);
+        UUID seriesId = UUID.randomUUID();
+        TrainerSchedule schedule = buildSchedule(seriesId, trainerId, "Yoga", time, 60);
+        
+        // Legacy ID: slug__date__time
+        String legacyId = "yoga__" + date + "__09:00";
+        // Canonical ID: slug__date__time__trainerId
+        String canonicalId = "yoga__" + date + "__09:00__" + trainerId;
+        
+        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(legacyId)).thenReturn(Optional.empty());
+        
+        // It should look up by weekday
+        when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(
+                anyInt(), any(Instant.class)))
+            .thenReturn(List.of(schedule));
+            
+        when(scheduledSessionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        // Act
+        scheduleService.updateSessionNotes(legacyId, "Notes");
+
+        // Assert
+        ArgumentCaptor<ScheduledSession> captor = ArgumentCaptor.forClass(ScheduledSession.class);
+        verify(scheduledSessionRepository, atLeastOnce()).save(captor.capture());
+        ScheduledSession saved = captor.getAllValues().get(0);
+        assertEquals(seriesId, saved.getSessionSeriesId());
+        // It should save with the CANONICAL ID, even if requested with legacy ID
+        assertEquals(canonicalId, saved.getSessionId());
+    }
+
+    @Test
+    void getOrCreateSessionInstance_throwsOnMalformedId_BadFormat() {
+        // Arrange
+        String badId = "not-enough-parts";
+        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(badId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> {
+            scheduleService.updateSessionNotes(badId, "Notes");
+        });
+        assertTrue(ex.getMessage().contains("Could not create session instance"));
+    }
+
+    @Test
+    void getOrCreateSessionInstance_throwsOnMalformedId_BadDate() {
+        // Arrange
+        String badId = "slug__not-a-date__09:00";
+        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(badId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> {
+            scheduleService.updateSessionNotes(badId, "Notes");
+        });
+        assertTrue(ex.getMessage().contains("Could not create session instance"));
+        assertNotNull(ex.getCause()); // Should have cause from parsing error
+    }
+
+    @Test
+    void getOrCreateSessionInstance_throwsOnNotFound() {
+        // Arrange
+        LocalDate date = LocalDate.of(2025, 9, 26);
+        String id = "slug__" + date + "__09:00";
+        
+        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(id)).thenReturn(Optional.empty());
+        when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(anyInt(), any()))
+            .thenReturn(List.of()); // No schedules found
+
+        // Act & Assert
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> {
+            scheduleService.updateSessionNotes(id, "Notes");
+        });
+        // Should fall through to the end of the method where it throws "Could not create session instance"
+        // because no schedule matched and no timeMatches were found.
+        assertTrue(ex.getMessage().contains("Could not create session instance"));
+    }
+
+    @Test
+    void updateSessionParticipants_updatesParticipants() {
+        // Arrange
+        String sessionId = "yoga__2025-09-26__09:00__" + trainerId;
+        ScheduledSession session = new ScheduledSession();
+        session.setId(UUID.randomUUID());
+        session.setSessionId(sessionId);
+        
+        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(sessionId)).thenReturn(Optional.of(session));
+        
+        SessionParticipant oldParticipant = mock(SessionParticipant.class);
+        when(sessionParticipantRepository.findByScheduledSession_IdAndActiveTrue(session.getId()))
+            .thenReturn(List.of(oldParticipant));
+            
+        SessionParticipant newParticipant = new SessionParticipant();
+        newParticipant.setStudentId(UUID.randomUUID());
+        
+        // Act
+        scheduleService.updateSessionParticipants(sessionId, List.of(newParticipant));
+        
+        // Assert
+        verify(oldParticipant).softDelete();
+        verify(sessionParticipantRepository).save(oldParticipant);
+        verify(sessionParticipantRepository).save(newParticipant);
+        assertEquals(session, newParticipant.getScheduledSession());
+        assertTrue(session.isInstanceOverride());
+        verify(scheduledSessionRepository).save(session);
+    }
 }

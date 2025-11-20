@@ -211,5 +211,44 @@ class PhysicalEvaluationServiceTest {
         // BMI = 68.5 / (1.65)^2 = 25.2
         assertEquals(25.2, result.bmi(), 0.1);
     }
+
+    @Test
+    void create_ShouldMapNestedObjectsCorrectly() {
+        // Given
+        PhysicalEvaluationRequestDTO.CircumferencesDTO circumferencesDTO = new PhysicalEvaluationRequestDTO.CircumferencesDTO(
+            30.0, 30.0, 32.0, 32.0, 80.0, 85.0, 100.0, 55.0, 55.0, 35.0, 35.0
+        );
+        PhysicalEvaluationRequestDTO.SubcutaneousFoldsDTO foldsDTO = new PhysicalEvaluationRequestDTO.SubcutaneousFoldsDTO(
+            10.0, 12.0, 15.0, 18.0, 20.0, 22.0, 25.0
+        );
+        PhysicalEvaluationRequestDTO.DiametersDTO diametersDTO = new PhysicalEvaluationRequestDTO.DiametersDTO(
+            10.0, 12.0
+        );
+        
+        PhysicalEvaluationRequestDTO fullRequest = new PhysicalEvaluationRequestDTO(
+                70.0,
+                175.0,
+                circumferencesDTO,
+                foldsDTO,
+                diametersDTO
+        );
+
+        when(studentRepository.findByIdAndDeletedAtIsNull(studentId)).thenReturn(Optional.of(student));
+        when(evaluationRepository.save(any(PhysicalEvaluation.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // When
+        PhysicalEvaluationResponseDTO result = evaluationService.create(studentId, fullRequest);
+
+        // Then
+        assertNotNull(result);
+        assertNotNull(result.circumferences());
+        assertEquals(30.0, result.circumferences().rightArmRelaxed());
+        
+        assertNotNull(result.subcutaneousFolds());
+        assertEquals(10.0, result.subcutaneousFolds().triceps());
+        
+        assertNotNull(result.diameters());
+        assertEquals(10.0, result.diameters().umerus());
+    }
 }
 
