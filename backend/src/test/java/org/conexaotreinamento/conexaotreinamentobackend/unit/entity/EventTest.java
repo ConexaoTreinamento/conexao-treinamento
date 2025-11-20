@@ -169,7 +169,6 @@ class EventTest {
 
         // When
         event.deactivate();
-        Instant firstDeactivation = event.getDeletedAt();
         event.deactivate();
         event.deactivate();
 

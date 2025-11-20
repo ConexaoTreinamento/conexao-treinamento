@@ -1,6 +1,7 @@
 package org.conexaotreinamento.conexaotreinamentobackend.unit.service;
 
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.SessionResponseDTO;
+import org.conexaotreinamento.conexaotreinamentobackend.dto.response.StudentCommitmentResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.*;
 import org.conexaotreinamento.conexaotreinamentobackend.entity.*;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.CommitmentStatus;
@@ -650,7 +651,11 @@ class ScheduleServiceTest {
                 .thenReturn(List.of(s1, s2));
 
         // Act & Assert
-        assertThrows(RuntimeException.class, () -> scheduleService.getSessionById(ambiguousId));
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> scheduleService.getSessionById(ambiguousId));
+        // The service wraps exceptions in a new RuntimeException
+        assertTrue(ex.getMessage().contains("Could not resolve session"));
+        assertNotNull(ex.getCause());
+        assertTrue(ex.getCause().getMessage().contains("Ambiguous session slug/time"));
     }
 
     @Test
@@ -1413,5 +1418,208 @@ class ScheduleServiceTest {
         String canonicalId = "yoga-basics__" + startDate + "__" + time + "__" + trainerId;
         assertEquals(canonicalId, result.get(0).sessionId());
         assertTrue(result.get(0).instanceOverride());
+    }
+
+    @Test
+    void getScheduledSessions_mergesDuplicateSessions() {
+        // Arrange
+        LocalDate date = LocalDate.of(2025, 10, 1);
+        LocalDateTime startDateTime = date.atStartOfDay();
+        LocalDateTime endDateTime = date.atTime(23, 59, 59);
+
+        // Trainer schedule
+        TrainerSchedule schedule = new TrainerSchedule();
+        schedule.setId(UUID.randomUUID());
+        schedule.setTrainerId(trainerId);
+        schedule.setSeriesName("Regular Class");
+        schedule.setStartTime(LocalTime.of(10, 0));
+        schedule.setIntervalDuration(60);
+        schedule.setEffectiveFromTimestamp(Instant.now().minus(Duration.ofDays(1)));
+
+        when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(anyInt(), any(Instant.class)))
+                .thenReturn(List.of(schedule));
+
+        // Existing session for the same slot
+        ScheduledSession existing = new ScheduledSession();
+        existing.setId(UUID.randomUUID());
+        existing.setSessionId("regular-class__2025-10-01__10:00__" + trainerId);
+        existing.setStartTime(LocalDateTime.of(date, LocalTime.of(10, 0)));
+        existing.setEndTime(LocalDateTime.of(date, LocalTime.of(11, 0)));
+        existing.setSeriesName("Regular Class");
+        existing.setTrainerId(trainerId);
+        existing.setInstanceOverride(true);
+        existing.setNotes("Updated notes");
+
+        when(scheduledSessionRepository.findByStartTimeBetweenAndActiveTrue(startDateTime, endDateTime))
+                .thenReturn(List.of(existing));
+
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        when(studentCommitmentRepository.findBySessionSeriesId(any())).thenReturn(List.of());
+
+        // Act
+        List<SessionResponseDTO> sessions = scheduleService.getScheduledSessions(date, date);
+
+        // Assert
+        assertEquals(1, sessions.size());
+        assertEquals("Updated notes", sessions.get(0).notes());
+    }
+
+    @Test
+    void getSessionById_resolvesVirtualSession() {
+        // Arrange
+        String sessionId = "yoga-basics__2025-10-01__09:00__" + trainerId;
+        LocalTime time = LocalTime.of(9, 0);
+
+        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(sessionId)).thenReturn(Optional.empty());
+        when(scheduledSessionRepository.findByStartTimeBetweenAndActiveTrue(any(), any())).thenReturn(List.of());
+
+        TrainerSchedule schedule = new TrainerSchedule();
+        schedule.setId(UUID.randomUUID());
+        schedule.setTrainerId(trainerId);
+        schedule.setSeriesName("Yoga Basics");
+        schedule.setStartTime(time);
+        schedule.setIntervalDuration(60);
+        schedule.setEffectiveFromTimestamp(Instant.now().minus(Duration.ofDays(1)));
+
+        when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(anyInt(), any(Instant.class)))
+                .thenReturn(List.of(schedule));
+        
+        when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
+        when(studentCommitmentRepository.findBySessionSeriesId(any())).thenReturn(List.of());
+
+        // Act
+        SessionResponseDTO result = scheduleService.getSessionById(sessionId);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("Yoga Basics", result.seriesName());
+        assertEquals(trainerId, result.trainerId());
+    }
+
+    @Test
+    void getSessionById_excludesStudent_whenExcludedOverrideExists() {
+        // Arrange
+        UUID sessionId = UUID.randomUUID();
+        UUID sessionSeriesId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
+        UUID trainerId = UUID.randomUUID();
+
+        ScheduledSession scheduledSession = new ScheduledSession();
+        scheduledSession.setId(sessionId);
+        scheduledSession.setSessionId("series-name__2023-10-10__10:00");
+        scheduledSession.setSessionSeriesId(sessionSeriesId);
+        scheduledSession.setStartTime(LocalDateTime.of(2023, 10, 10, 10, 0));
+        scheduledSession.setEndTime(LocalDateTime.of(2023, 10, 10, 11, 0));
+        scheduledSession.setTrainerId(trainerId);
+        scheduledSession.setActive(true);
+
+        StudentCommitment studentCommitment = new StudentCommitment();
+        studentCommitment.setStudentId(studentId);
+        studentCommitment.setSessionSeriesId(sessionSeriesId);
+        studentCommitment.setEffectiveFromTimestamp(Instant.parse("2023-01-01T00:00:00Z"));
+
+        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(anyString())).thenReturn(Optional.of(scheduledSession));
+        when(studentCommitmentRepository.findBySessionSeriesId(sessionSeriesId)).thenReturn(List.of(studentCommitment));
+        when(studentRepository.findById(studentId)).thenReturn(Optional.of(new Student("test@example.com", "Test", "Student", Student.Gender.O, LocalDate.now())));
+
+        SessionParticipant excludedParticipant = new SessionParticipant();
+        excludedParticipant.setStudentId(studentId);
+        excludedParticipant.setParticipationType(SessionParticipant.ParticipationType.EXCLUDED);
+        excludedParticipant.setScheduledSession(scheduledSession);
+
+        when(sessionParticipantRepository.findByScheduledSession_IdAndActiveTrue(sessionId)).thenReturn(List.of(excludedParticipant));
+
+        // Act
+        SessionResponseDTO result = scheduleService.getSessionById("some-id");
+
+        // Assert
+        assertTrue(result.students().isEmpty(), "Student should be excluded");
+    }
+
+    @Test
+    void getSessionById_includesStudentWithExercises_whenIncludedOverrideExists() {
+        // Arrange
+        UUID sessionId = UUID.randomUUID();
+        UUID sessionSeriesId = UUID.randomUUID();
+        UUID studentId = UUID.randomUUID();
+        UUID trainerId = UUID.randomUUID();
+
+        ScheduledSession scheduledSession = new ScheduledSession();
+        scheduledSession.setId(sessionId);
+        scheduledSession.setSessionId("series-name__2023-10-10__10:00");
+        scheduledSession.setSessionSeriesId(sessionSeriesId);
+        scheduledSession.setStartTime(LocalDateTime.of(2023, 10, 10, 10, 0));
+        scheduledSession.setEndTime(LocalDateTime.of(2023, 10, 10, 11, 0));
+        scheduledSession.setTrainerId(trainerId);
+        scheduledSession.setActive(true);
+
+        StudentCommitment studentCommitment = new StudentCommitment();
+        studentCommitment.setStudentId(studentId);
+        studentCommitment.setSessionSeriesId(sessionSeriesId);
+        studentCommitment.setEffectiveFromTimestamp(Instant.parse("2023-01-01T00:00:00Z"));
+        studentCommitment.setCommitmentStatus(CommitmentStatus.ATTENDING);
+
+        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(anyString())).thenReturn(Optional.of(scheduledSession));
+        when(studentCommitmentRepository.findBySessionSeriesId(sessionSeriesId)).thenReturn(List.of(studentCommitment));
+        when(studentRepository.findById(studentId)).thenReturn(Optional.of(new Student("test@example.com", "Test", "Student", Student.Gender.O, LocalDate.now())));
+
+        SessionParticipant includedParticipant = new SessionParticipant();
+        includedParticipant.setId(UUID.randomUUID());
+        includedParticipant.setStudentId(studentId);
+        includedParticipant.setParticipationType(SessionParticipant.ParticipationType.INCLUDED);
+        includedParticipant.setScheduledSession(scheduledSession);
+        includedParticipant.setPresent(true);
+        includedParticipant.setAttendanceNotes("Good job");
+
+        when(sessionParticipantRepository.findByScheduledSession_IdAndActiveTrue(sessionId)).thenReturn(List.of(includedParticipant));
+
+        ParticipantExercise exercise = new ParticipantExercise();
+        exercise.setId(UUID.randomUUID());
+        exercise.setExercise(new Exercise("Pushups", "Description")); 
+        
+        when(participantExerciseRepository.findActiveWithExerciseBySessionParticipantId(includedParticipant.getId()))
+                .thenReturn(List.of(exercise));
+
+        // Act
+        SessionResponseDTO result = scheduleService.getSessionById("some-id");
+
+        // Assert
+        assertFalse(result.students().isEmpty());
+        StudentCommitmentResponseDTO dto = result.students().get(0);
+        assertEquals(CommitmentStatus.ATTENDING, dto.commitmentStatus());
+        
+        assertFalse(dto.exercises().isEmpty());
+        assertEquals("Pushups", dto.exercises().get(0).name());
+    }
+    
+    @Test
+    void getSessionById_resolvesAmbiguousSlug_whenExactMatchExists() {
+        // Arrange: No existing session
+        when(scheduledSessionRepository.findBySessionIdAndActiveTrue(anyString())).thenReturn(Optional.empty());
+        
+        // Mock trainer schedules
+        LocalTime time = LocalTime.of(10, 0);
+        String sessionIdStr = "yoga__2023-10-10__10:00"; // "yoga" is the slug
+        
+        TrainerSchedule s1 = new TrainerSchedule();
+        s1.setSeriesName("Yoga Advanced");
+        s1.setStartTime(time);
+        s1.setTrainerId(trainerId);
+        s1.setEffectiveFromTimestamp(Instant.MIN);
+        
+        TrainerSchedule s2 = new TrainerSchedule();
+        s2.setSeriesName("Yoga"); // Exact match
+        s2.setStartTime(time);
+        s2.setTrainerId(trainerId);
+        s2.setEffectiveFromTimestamp(Instant.MIN);
+        
+        when(trainerScheduleRepository.findByWeekdayAndEffectiveFromTimestampLessThanEqual(anyInt(), any())).thenReturn(List.of(s1, s2));
+        
+        // Act
+        SessionResponseDTO result = scheduleService.getSessionById(sessionIdStr);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("Yoga", result.seriesName());
     }
 }

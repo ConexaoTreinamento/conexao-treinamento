@@ -359,7 +359,7 @@ class ReportsServiceTest {
         UUID trainerId = UUID.randomUUID();
         Trainer trainer = createTrainer(trainerId, "Trainer Event", CompensationType.HOURLY, List.of());
         
-        LocalDateTime startDate = LocalDateTime.now();
+        LocalDateTime startDate = LocalDate.now().atStartOfDay();
         LocalDateTime endDate = startDate.plusDays(1);
         
         when(trainerRepository.findById(trainerId)).thenReturn(Optional.of(trainer));
@@ -368,8 +368,8 @@ class ReportsServiceTest {
         UUID studentId = UUID.randomUUID();
         Event event = buildEvent(
             trainer,
-            LocalDateTime.of(startDate.toLocalDate(), LocalTime.of(10, 0)),
-            LocalDateTime.of(startDate.toLocalDate(), LocalTime.of(11, 0)),
+            startDate.plusHours(10),
+            startDate.plusHours(11),
             new UUID[]{studentId},
             new boolean[]{true}
         );

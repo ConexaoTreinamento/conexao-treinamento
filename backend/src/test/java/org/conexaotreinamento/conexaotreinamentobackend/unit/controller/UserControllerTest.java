@@ -182,7 +182,6 @@ class UserControllerTest {
     void shouldPatchUserRoleFromTrainerToAdmin() {
         // Given
         PatchUserRoleRequestDTO changeToAdmin = new PatchUserRoleRequestDTO(Role.ROLE_ADMIN);
-        UserResponseDTO trainerUser = new UserResponseDTO(userId, "trainer@example.com", Role.ROLE_TRAINER);
         UserResponseDTO adminUser = new UserResponseDTO(userId, "trainer@example.com", Role.ROLE_ADMIN);
         when(userService.patch(userId, changeToAdmin)).thenReturn(adminUser);
 

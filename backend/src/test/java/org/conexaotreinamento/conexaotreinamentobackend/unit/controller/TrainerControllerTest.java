@@ -2,7 +2,6 @@ package org.conexaotreinamento.conexaotreinamentobackend.unit.controller;
 
 import org.conexaotreinamento.conexaotreinamentobackend.controller.TrainerController;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.request.TrainerCreateRequestDTO;
-import org.conexaotreinamento.conexaotreinamentobackend.dto.request.TrainerPasswordResetRequestDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerListItemResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.dto.response.TrainerResponseDTO;
 import org.conexaotreinamento.conexaotreinamentobackend.enums.CompensationType;

@@ -1,7 +1,6 @@
 package org.conexaotreinamento.conexaotreinamentobackend.unit.service;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,12 +36,8 @@ import static org.mockito.ArgumentMatchers.any;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AdministratorService Unit Tests")
@@ -923,5 +918,78 @@ class AdministratorServiceTest {
 
         // Then
         verify(userService, never()).delete(any());
+    }
+
+    @Test
+    void findAll_returnsEmptyPage_whenOffsetExceedsResults() {
+        // Arrange
+        String searchTerm = "test";
+        // Page 2 (index 1), size 10. Offset = 10.
+        Pageable pageable = PageRequest.of(1, 10);
+        
+        // Only 5 results found
+        List<AdministratorListItemResponseDTO> results = new java.util.ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            results.add(new AdministratorListItemResponseDTO(UUID.randomUUID(), "First", "Last", "email", "Name", true, Instant.now()));
+        }
+
+        when(administratorRepository.findBySearchTermAndActive("%test%")).thenReturn(results);
+
+        // Act
+        Page<AdministratorListItemResponseDTO> page = administratorService.findAll(searchTerm, pageable, false);
+
+        // Assert
+        assertThat(page.isEmpty()).isTrue();
+        assertThat(page.getNumberOfElements()).isEqualTo(0);
+        assertThat(page.getTotalElements()).isEqualTo(5); // Total elements should still be 5
+        assertThat(page.getTotalPages()).isEqualTo(1);    // 5 elements / 10 per page = 1 page
+    }
+
+    @Test
+    void findAll_returnsPartialPage_whenEndIsClipped() {
+        // Arrange
+        String searchTerm = "test";
+        // Page 0, size 10.
+        Pageable pageable = PageRequest.of(0, 10);
+        
+        // 5 results found (less than page size)
+        List<AdministratorListItemResponseDTO> results = new java.util.ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            results.add(new AdministratorListItemResponseDTO(UUID.randomUUID(), "First", "Last", "email", "Name", true, Instant.now()));
+        }
+
+        when(administratorRepository.findBySearchTermAndActive("%test%")).thenReturn(results);
+
+        // Act
+        Page<AdministratorListItemResponseDTO> page = administratorService.findAll(searchTerm, pageable, false);
+
+        // Assert
+        assertThat(page.getNumberOfElements()).isEqualTo(5);
+        assertThat(page.getTotalElements()).isEqualTo(5);
+        assertThat(page.getTotalPages()).isEqualTo(1);
+    }
+    
+    @Test
+    void findAll_returnsCorrectSublist_whenPaginationIsApplied() {
+        // Arrange
+        String searchTerm = "test";
+        // Page 1 (index 1), size 2. Offset = 2.
+        Pageable pageable = PageRequest.of(1, 2);
+        
+        // 5 results found
+        List<AdministratorListItemResponseDTO> results = new java.util.ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            results.add(new AdministratorListItemResponseDTO(UUID.randomUUID(), "First" + i, "Last", "email", "Name", true, Instant.now()));
+        }
+
+        when(administratorRepository.findBySearchTermAndActive("%test%")).thenReturn(results);
+
+        // Act
+        Page<AdministratorListItemResponseDTO> page = administratorService.findAll(searchTerm, pageable, false);
+
+        // Assert
+        assertThat(page.getNumberOfElements()).isEqualTo(2);
+        assertThat(page.getContent().get(0).firstName()).isEqualTo("First2");
+        assertThat(page.getContent().get(1).firstName()).isEqualTo("First3");
     }
 }

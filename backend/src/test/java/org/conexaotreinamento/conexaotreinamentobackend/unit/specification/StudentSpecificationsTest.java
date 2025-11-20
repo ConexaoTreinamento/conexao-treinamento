@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.Instant;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,6 +53,8 @@ class StudentSpecificationsTest {
         lenient().when(criteriaBuilder.isNull(any())).thenReturn(predicate);
         lenient().when(criteriaBuilder.greaterThan(any(Expression.class), any(LocalDate.class))).thenReturn(predicate);
         lenient().when(criteriaBuilder.lessThanOrEqualTo(any(Expression.class), any(LocalDate.class))).thenReturn(predicate);
+        lenient().when(criteriaBuilder.greaterThanOrEqualTo(any(Expression.class), any(Instant.class))).thenReturn(predicate);
+        lenient().when(criteriaBuilder.lessThan(any(Expression.class), any(Instant.class))).thenReturn(predicate);
         
         // Default behavior for lower() and coalesce()
         lenient().when(criteriaBuilder.lower(any())).thenReturn(stringExpression);
