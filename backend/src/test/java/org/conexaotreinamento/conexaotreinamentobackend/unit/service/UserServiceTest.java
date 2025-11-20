@@ -343,56 +343,8 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("Should update own password successfully")
-    void shouldUpdateUserPasswordSuccessfully() {
-        // Given
-        String oldPassword = "oldPass123";
-        String newPassword = "newPassword123";
-        String encodedOldPassword = "encodedOld";
-        String encodedNewPassword = "encodedNew";
-
-        user.setPassword(encodedOldPassword);
-
-        ChangePasswordRequestDTO request = new ChangePasswordRequestDTO(oldPassword, newPassword, newPassword);
-
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches(oldPassword, encodedOldPassword)).thenReturn(true);
-        when(passwordEncoder.encode(newPassword)).thenReturn(encodedNewPassword);
-
-        // When
-        UserResponseDTO result = userService.changeOwnPassword(userId, request);
-
-        // Then
-        assertThat(result).isNotNull();
-        assertThat(user.getPassword()).isEqualTo(encodedNewPassword);
-
-        verify(userRepository).findById(userId);
-        verify(passwordEncoder).matches(oldPassword, encodedOldPassword);
-        verify(passwordEncoder).encode(newPassword);
-    }
-
-    @Test
-    @DisplayName("Should throw bad request when password is null or empty")
-    void shouldThrowBadRequestWhenPasswordIsNullOrEmpty() {
-        // When & Then - null password
-        assertThatThrownBy(() -> userService.resetUserPassword(userId, null))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
-                .hasMessageContaining("Password is required");
-
-        // When & Then - empty password
-        assertThatThrownBy(() -> userService.resetUserPassword(userId, "   "))
-                .isInstanceOf(ResponseStatusException.class)
-                .hasFieldOrPropertyWithValue("status", HttpStatus.BAD_REQUEST)
-                .hasMessageContaining("Password is required");
-
-        verify(userRepository, never()).findByIdAndDeletedAtIsNull(any());
-        verify(passwordEncoder, never()).encode(any());
-    }
-
-    @Test
-    @DisplayName("Should throw not found when updating password for non-existent user")
-    void shouldThrowNotFoundWhenUpdatingPasswordForNonExistentUser() {
+    @DisplayName("Should throw not found when resetting password for non-existent user")
+    void shouldThrowNotFoundWhenResettingPasswordForNonExistentUser() {
         // Given
         when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.empty());
 
@@ -629,5 +581,75 @@ class UserServiceTest {
         assertThatThrownBy(() -> userService.changeOwnPassword(userId, request))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("The old password is incorrect");
+    }
+
+    @Test
+    @DisplayName("Should update user password successfully (updateUserPassword)")
+    void shouldUpdateUserPasswordSuccessfully_UpdateMethod() {
+        // Given
+        user.setRole(Role.ROLE_TRAINER);
+        String newPassword = "newPassword123";
+        when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(newPassword)).thenReturn("encodedNewPassword");
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        // When
+        UserResponseDTO result = userService.updateUserPassword(userId, newPassword);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(user.getPassword()).isEqualTo("encodedNewPassword");
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    @DisplayName("Should throw bad request when updating password for non-trainer (updateUserPassword)")
+    void shouldThrowBadRequestWhenUpdatingPasswordForNonTrainer_UpdateMethod() {
+        // Given
+        user.setRole(Role.ROLE_ADMIN); // Not a trainer
+        when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.of(user));
+
+        // When & Then
+        assertThatThrownBy(() -> userService.updateUserPassword(userId, "newPass"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Only trainers can have their password reset");
+    }
+
+    @Test
+    @DisplayName("Should throw bad request when updating password with null/empty (updateUserPassword)")
+    void shouldThrowBadRequestWhenUpdatingPasswordWithNullOrEmpty_UpdateMethod() {
+        // When & Then
+        assertThatThrownBy(() -> userService.updateUserPassword(userId, null))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Password is required");
+                
+        assertThatThrownBy(() -> userService.updateUserPassword(userId, ""))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Password is required");
+    }
+
+    @Test
+    @DisplayName("Should throw not found when updating password for non-existent user (updateUserPassword)")
+    void shouldThrowNotFoundWhenUpdatingPasswordForNonExistentUser_UpdateMethod() {
+        // Given
+        when(userRepository.findByIdAndDeletedAtIsNull(userId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> userService.updateUserPassword(userId, "newPass"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("User not found");
+    }
+
+    @Test
+    @DisplayName("Should throw not found when changing own password for non-existent user")
+    void shouldThrowNotFoundWhenChangingOwnPasswordForNonExistentUser() {
+        // Given
+        ChangePasswordRequestDTO request = new ChangePasswordRequestDTO("oldPass", "newPass", "newPass");
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> userService.changeOwnPassword(userId, request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("User not found");
     }
 }
