@@ -16,7 +16,6 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.session.SessionAuthenticationException;
 
 import jakarta.servlet.http.HttpServletResponse;
-import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -58,7 +57,6 @@ class JwtAuthEntryPointTest {
         // Given
         String requestUri = "/api/users";
         request.setRequestURI(requestUri);
-        Instant beforeTest = Instant.now();
 
         // When
         jwtAuthEntryPoint.commence(request, response, authException);

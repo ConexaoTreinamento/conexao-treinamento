@@ -13,7 +13,7 @@ export function ScheduleMonthNavigation({
   onNextMonth,
 }: ScheduleMonthNavigationProps) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center justify-between w-full sm:w-auto sm:justify-start sm:gap-3">
       <Button
         size="sm"
         variant="outline"
@@ -23,7 +23,7 @@ export function ScheduleMonthNavigation({
       >
         <ChevronLeft className="h-4 w-4" aria-hidden="true" />
       </Button>
-      <h2 className="min-w-[140px] text-center text-lg font-semibold capitalize">
+      <h2 className="text-center text-lg font-semibold capitalize flex-1 sm:flex-none sm:min-w-[140px]">
         {monthLabel}
       </h2>
       <Button
