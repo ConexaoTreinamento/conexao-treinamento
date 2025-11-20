@@ -100,7 +100,7 @@ export function ScheduleDayPicker({
   return (
     <div
       ref={containerRef}
-      className="flex gap-2 overflow-x-auto pb-2"
+      className="flex gap-2 overflow-x-auto pb-2 pt-1"
       style={{ scrollbarWidth: "thin" }}
       aria-label="Selecionar dia do mês"
       role="group"
